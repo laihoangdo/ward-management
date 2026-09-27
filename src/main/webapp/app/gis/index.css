@@ -1,0 +1,183 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Smooth transition for theme switching */
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  transition:
+    background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode comprehensive styles for the app */
+html.dark {
+  background-color: #090d16;
+}
+
+html.dark body {
+  background-color: #090d16;
+  color: #f1f5f9;
+}
+
+/* Dark mode surface mappings */
+html.dark .bg-white:not(.keep-white) {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #162032 !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+html.dark .bg-slate-200 {
+  background-color: #334155 !important;
+}
+
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80 {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+}
+
+/* Borders in dark mode */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300 {
+  border-color: #334155 !important;
+}
+
+/* Text colors in dark mode */
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Input fields in dark mode */
+html.dark input:not([type='checkbox']):not([type='radio']),
+html.dark select,
+html.dark textarea {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Tables in dark mode */
+html.dark thead {
+  background-color: #1e293b !important;
+}
+
+html.dark thead th {
+  color: #cbd5e1 !important;
+}
+
+html.dark tbody tr {
+  border-color: #1e293b !important;
+}
+
+html.dark tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+}
+
+/* Light alert / badge adjustments in dark mode for high readability */
+html.dark .bg-blue-50 {
+  background-color: rgba(30, 58, 138, 0.35) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+html.dark .bg-amber-50 {
+  background-color: rgba(120, 53, 15, 0.35) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+html.dark .bg-emerald-50 {
+  background-color: rgba(6, 78, 59, 0.35) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+html.dark .bg-rose-50 {
+  background-color: rgba(136, 19, 55, 0.35) !important;
+  border-color: rgba(244, 63, 94, 0.4) !important;
+}
+
+html.dark .text-blue-900,
+html.dark .text-blue-800 {
+  color: #93c5fd !important;
+}
+
+html.dark .text-amber-900,
+html.dark .text-amber-800 {
+  color: #fde68a !important;
+}
+
+html.dark .text-emerald-900,
+html.dark .text-emerald-800 {
+  color: #a7f3d0 !important;
+}
+
+html.dark .text-rose-900,
+html.dark .text-rose-800 {
+  color: #fecdd3 !important;
+}
+
+/* Map tiles slight dark mode treatment for nighttime patrol */
+html.dark .leaflet-tile-pane {
+  filter: brightness(0.85) contrast(1.1) invert(0.05);
+}
+
+/* Dark mode overrides for Leaflet popups */
+.dark .leaflet-popup-content-wrapper {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.5),
+    0 8px 10px -6px rgba(0, 0, 0, 0.4);
+}
+
+.dark .leaflet-popup-tip {
+  background-color: #1e293b;
+}
+
+/* Leaflet custom styling */
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.15),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+  line-height: 1.4;
+}
+
+.custom-map-marker-detailed:hover {
+  z-index: 9999 !important;
+}
+
+.custom-map-marker-detailed div:hover {
+  transform: translate(-50%, -50%) scale(1.08) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+}

@@ -1,0 +1,52 @@
+{
+  "annotations": {
+    "changelogDate": "20260919110520"
+  },
+  "applications": ["Monolithic"],
+  "documentation": "Cảnh báo an ninh / Vi phạm địa bàn",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "alertType",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "severity",
+      "fieldType": "AlertSeverity",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "INFO,LOW,MEDIUM,HIGH,CRITICAL"
+    },
+    {
+      "fieldName": "title",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "description",
+      "fieldType": "TextBlob"
+    },
+    {
+      "fieldName": "location",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "isResolved",
+      "fieldType": "Boolean"
+    },
+    {
+      "fieldName": "reportedAt",
+      "fieldType": "Instant"
+    },
+    {
+      "fieldName": "resolvedAt",
+      "fieldType": "Instant"
+    }
+  ],
+  "jpaMetamodelFiltering": true,
+  "name": "SecurityAlert",
+  "pagination": "pagination",
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

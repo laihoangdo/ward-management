@@ -1,0 +1,1428 @@
+id;full_name;id_card_number;birth_year;gender;relationship;residence_type;temporary_registered_at;notes;household_id
+1;Huỳnh Thanh Huyền;079164706595;1988;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-001, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;1
+2;Lý Văn Thành;079172291093;1986;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-001;1
+3;Võ Hồng Anh;079184196733;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-001;1
+4;Nguyễn Hồng Linh;079095938378;1980;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-002, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;2
+5;Bùi Hoàng Nghĩa;079168517720;1982;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-002;2
+6;Ngô Thanh Huy;079160542554;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-002;2
+7;Nguyễn Như Yến;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-002;2
+8;Lê Hồng Hà;079195926087;2009;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-002;2
+9;Huỳnh Bích Hoa;079167335499;1966;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-003, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;3
+10;Nguyễn Hoàng Huy;079076117835;1964;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-003;3
+11;Đỗ Quốc Huy;079096624018;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-003;3
+12;Ngô Thị Mai Chi;079179262408;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-003;3
+13;Hồ Thùy Trang;079077405500;1939;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-003;3
+14;Dương Quốc Phúc;079179857664;2003;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-003;3
+15;Lý Thanh Bình;079068905461;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-004, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;4
+16;Lê Thị Mai Hoa;079077329093;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-004;4
+17;Lý Thùy Chi;079180213510;1965;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-005, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;5
+18;Hoàng Trọng Đức;079079336037;1963;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-005;5
+19;Trần Hồng Oanh;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-005;5
+20;Hoàng Thanh Long;0790100844570;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-006, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;6
+21;Phan Phương Huyền;079065407359;1980;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-006;6
+22;Phan Thanh Nam;079178759547;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-007, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;7
+23;Vũ Kim Huyền;079061122234;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-007;7
+24;Dương Thị Mai Hương;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-007;7
+25;Dương Trọng Tài;079067994220;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-007;7
+26;Ngô Văn Khoa;079068160049;1941;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-007;7
+27;Bùi Đức Quân;079198889675;1985;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-008, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;8
+28;Trần Bích Hoa;079066100511;1983;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-008;8
+29;Phan Đình Khoa;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-008;8
+30;Phạm Văn Huy;079086824938;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-009, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;9
+31;Phạm Thanh Trâm;0790102408782;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-009;9
+32;Hồ Bích Quỳnh;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-009;9
+33;Đỗ Thùy Hương;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-009;9
+34;Nguyễn Trọng Thắng;079173101431;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-010, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;10
+35;Ngô Kim Lan;0790103190245;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-010;10
+36;Lê Xuân Khoa;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-010;10
+37;Hoàng Hữu Phúc;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-010;10
+38;Bùi Văn Tài;079065123778;1977;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-011, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;11
+39;Huỳnh Như Lan;079091154022;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-011;11
+40;Lê Văn Tuấn;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-011;11
+41;Vũ Văn Tùng;079065926761;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-011;11
+42;Trần Văn Tài;079091608693;1950;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-011;11
+43;Đỗ Bích Mai;079198950663;1973;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-012, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;12
+44;Bùi Quốc Thắng;079193228836;1975;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-012;12
+45;Phạm Văn Hùng;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-012;12
+46;Vũ Hữu Phúc;079195417854;1960;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-013, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;13
+47;Huỳnh Thị Lan;079071284250;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-013;13
+48;Vũ Hồng Dung;079174662447;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-013;13
+49;Vũ Kim My;079069393890;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-013;13
+50;Vũ Quốc Tài;079083447435;1931;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-013;13
+51;Huỳnh Trọng Vinh;079066230061;1932;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-013;13
+52;Phạm Ngọc My;079165656324;1988;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-014, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;14
+53;Lê Xuân Sơn;079191626519;1987;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-014;14
+54;Võ Thị Mai Hoa;079168968601;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-014;14
+55;Lê Bích Hương;0790101491775;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-014;14
+56;Lý Đình Bình;079164825738;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-015, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;15
+57;Hoàng Thị Mai Huyền;0790102849604;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-015;15
+58;Hoàng Hoàng Nam;0790104639008;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-015;15
+59;Bùi Như Yến;079093522832;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-015;15
+60;Đỗ Phương Huyền;079194835101;1940;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-015;15
+61;Bùi Thanh Nhung;0791104328422;1944;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-015;15
+62;Hồ Như Huyền;079080366088;1980;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-016, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;16
+63;Phạm Minh Cường;079092522450;1979;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-016;16
+64;Vũ Kim Nga;079096791376;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-016;16
+65;Võ Đình Huy;079190885811;1987;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-017, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;17
+66;Lý Phương Dung;079185484406;1984;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-017;17
+67;Hồ Quốc Quân;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-017;17
+68;Phạm Thanh Hà;079098106631;1981;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-018, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;18
+69;Bùi Hoàng Thịnh;079084936199;1982;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-018;18
+70;Võ Trọng An;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-018;18
+71;Hồ Thanh Hạnh;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-018;18
+72;Huỳnh Xuân Thành;0790104530660;1952;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-018;18
+73;Lý Bích Thu;079072996964;1981;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-019, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;19
+74;Bùi Trọng An;079175989552;1979;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-019;19
+75;Đỗ Phương Thu;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-019;19
+76;Lý Hữu Nam;079085479238;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-020, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;20
+77;Võ Phương Dung;079086757503;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-020;20
+78;Võ Kim Anh;079197825126;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-020;20
+79;Lý Quốc Trung;079179342123;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-021, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;21
+80;Lý Thị Mai Nhung;079167163617;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-021;21
+81;Ngô Như Hạnh;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-021;21
+82;Phạm Thị Mai Hoa;079064197067;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-021;21
+83;Lý Văn Cường;079174157959;1987;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-022, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;22
+84;Hoàng Bích Nga;079193275174;1986;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-022;22
+85;Phạm Hữu Huy;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-022;22
+86;Ngô Hữu Trung;079089595694;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-022;22
+87;Vũ Phương Huyền;079166370086;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-023, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;23
+88;Nguyễn Quốc Thịnh;079180305105;1970;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-023;23
+89;Hồ Đình Trung;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-023;23
+90;Hoàng Hồng Thảo;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-023;23
+91;Dương Bích Hạnh;079064830886;2006;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-023;23
+92;Đặng Đức Hùng;0791104687334;1965;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-024, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;24
+93;Vũ Thùy Trang;079167408920;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-024;24
+94;Đỗ Thùy Yến;0790104275355;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-024;24
+95;Lý Quốc Thành;079165500997;1986;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-025, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;25
+96;Ngô Phương Trang;079176525070;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-025;25
+97;Ngô Kim Hoa;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-025;25
+98;Bùi Phương Huyền;079199607474;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-025;25
+99;Đặng Thanh Nam;079072594427;2002;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-025;25
+100;Lý Đức An;079071744092;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-026, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;26
+101;Dương Phương Bích;079163765967;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-026;26
+102;Hồ Kim My;079191444827;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-026;26
+103;Hoàng Trọng Thắng;079196642414;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-026;26
+104;Trần Thanh Tùng;079068758473;2005;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-026;26
+105;Bùi Văn Sơn;079094921480;1995;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-026;26
+106;Dương Hữu Tùng;079179526578;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-027, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;27
+107;Vũ Thùy Huyền;079078763243;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-027;27
+108;Đặng Hồng Hương;079061514773;1979;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-028, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;28
+109;Hoàng Văn Hùng;079180726744;1978;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-028;28
+110;Dương Thùy Trang;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-028;28
+111;Vũ Thị Mai Nhung;0790104273840;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-028;28
+112;Vũ Trọng Tài;0790103902969;1951;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-028;28
+113;Vũ Hoàng Thành;079171699919;1980;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-029, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;29
+114;Lê Phương Chi;079178316634;1980;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-029;29
+115;Huỳnh Ngọc Trang;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-029;29
+116;Huỳnh Phương Hương;079198752947;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-029;29
+117;Vũ Đức An;079164213732;1958;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-029;29
+118;Hoàng Hữu Minh;079162667626;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-030, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;30
+119;Phạm Thùy Bích;079062185939;1980;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-030;30
+120;Phan Hữu Đức;079070130594;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-030;30
+121;Nguyễn Thị Mai Yến;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-030;30
+122;Lý Văn Đức;079084437428;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-031, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;31
+123;Hoàng Kim My;079197226703;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-031;31
+124;Phạm Văn Thắng;079085325716;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-032, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;32
+125;Ngô Bích Huyền;079170853903;1980;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-032;32
+126;Phạm Thanh Tài;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-032;32
+127;Bùi Xuân Sơn;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-032;32
+128;Nguyễn Xuân An;079168270736;1974;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-033, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;33
+129;Ngô Thanh Yến;0791100850919;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-033;33
+130;Lê Hữu Hùng;079099704679;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-033;33
+131;Đỗ Quốc Tài;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-033;33
+132;Phan Như Yến;079098385815;1946;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-033;33
+133;Trần Phương Thảo;079198351066;1949;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-033;33
+134;Lê Xuân Dũng;079089883031;1984;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-034, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;34
+135;Phạm Hồng Dung;079193698116;1982;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-034;34
+136;Hoàng Đình Quân;079060638117;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-034;34
+137;Lê Xuân Vinh;079165713077;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-035, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;35
+138;Hoàng Thị Mai Chi;079178105701;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-035;35
+139;Nguyễn Minh Minh;079083929506;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-036, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;36
+140;Bùi Như Ngân;079177785617;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-036;36
+141;Dương Bích Hà;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-036;36
+142;Nguyễn Trọng Cường;079073637814;1979;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-037, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;37
+143;Hồ Ngọc Lan;079186957306;1981;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-037;37
+144;Dương Văn Minh;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-037;37
+145;Bùi Như Nga;079166511132;1963;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-038, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;38
+146;Hoàng Đức Sơn;079064284095;1962;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-038;38
+147;Lê Hữu Thắng;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-038;38
+148;Dương Thùy Phương;0790104197099;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-038;38
+149;Võ Thị Dung;0791100385701;2003;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-038;38
+150;Hoàng Hoàng Hùng;0791101475886;1965;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-039, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;39
+151;Lê Bích Mai;079176477641;1964;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-039;39
+152;Võ Đình Đức;079083349700;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-039;39
+153;Vũ Thanh Hùng;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-039;39
+154;Phạm Thị Mai Phương;079094286631;1941;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-039;39
+155;Võ Đình Huy;079175448067;1941;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-039;39
+156;Vũ Đức Phúc;079182964346;1964;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-040, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;40
+157;Lê Thị Linh;079061258627;1965;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-040;40
+158;Lý Quốc Cường;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-040;40
+159;Dương Ngọc Trâm;079184348387;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-040;40
+160;Phan Hồng Mai;0790103758409;1939;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-040;40
+161;Nguyễn Xuân An;079068496475;1974;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-041, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;41
+162;Hoàng Bích Thu;079086606097;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-041;41
+163;Vũ Xuân Bình;079163705126;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-041;41
+164;Dương Bích Trang;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-041;41
+165;Nguyễn Kim Hoa;079189396738;2008;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-041;41
+166;Huỳnh Minh Tài;0791103455446;1972;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-042, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;42
+167;Vũ Hồng Thu;079066545935;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-042;42
+168;Hồ Thanh Anh;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-042;42
+169;Nguyễn Minh Long;079177969876;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-042;42
+170;Trần Quốc Tùng;079093488042;1984;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-043, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;43
+171;Ngô Thị Tuyết;079064820298;1982;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-043;43
+172;Đỗ Thùy Ngân;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-043;43
+173;Hồ Hoàng Hải;079188383510;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-043;43
+174;Lê Như Nhung;0790100174487;1995;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-043;43
+175;Dương Minh Hải;0791104823921;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-044, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;44
+176;Phan Thanh Anh;079174250587;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-044;44
+177;Huỳnh Hữu Trung;079080568608;2008;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-044;44
+178;Lê Hồng Phương;079075715941;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-044;44
+179;Phạm Trọng Tuấn;079167662540;1945;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-044;44
+180;Ngô Hoàng Quân;079165280611;2000;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-044;44
+181;Võ Bích Phương;079176772027;1988;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-045, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;45
+182;Trần Đình Vinh;0790104978768;1987;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-045;45
+183;Hoàng Ngọc Thảo;079174998197;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-045;45
+184;Hồ Thùy My;079067649819;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-045;45
+185;Ngô Đình Nam;079171357980;1998;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-045;45
+186;Trần Hồng Linh;079163129297;1996;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-045;45
+187;Hoàng Thị Mai Thu;079177414017;1967;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-046, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;46
+188;Trần Thanh Long;079179697415;1969;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-046;46
+189;Huỳnh Xuân Cường;079082203048;1966;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-047, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;47
+190;Đặng Phương Hoa;079160969708;1967;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-047;47
+191;Nguyễn Xuân Tùng;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-047;47
+192;Đặng Phương Linh;079190232909;1983;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-048, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;48
+193;Trần Trọng Minh;079168615752;1983;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-048;48
+194;Lý Trọng Hùng;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-048;48
+195;Lê Kim Anh;079070957640;1982;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-049, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;49
+196;Huỳnh Văn Hùng;079169851422;1983;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-049;49
+197;Đỗ Thanh Sơn;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-049;49
+198;Nguyễn Ngọc Nhung;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-049;49
+199;Phan Đình Đức;079187854022;1960;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-050, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;50
+200;Vũ Thùy Lan;079161371342;1958;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-050;50
+201;Đặng Thùy Lan;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-050;50
+202;Hồ Thùy Dung;079189835210;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-050;50
+203;Lý Đình Trung;079089438076;1996;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-050;50
+204;Dương Hoàng Quân;079070434475;1966;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-051, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;51
+205;Phan Hồng Mai;079182921641;1968;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-051;51
+206;Phạm Thị Nga;079060741919;1984;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-052, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;52
+207;Trần Minh Hải;079079353079;1984;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-052;52
+208;Đỗ Văn Long;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-052;52
+209;Hồ Thị Hạnh;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-052;52
+210;Lý Minh Tài;079184401929;1988;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-053, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;53
+211;Đặng Thanh Trang;079183674027;1987;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-053;53
+212;Phan Thị My;079192656017;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-053;53
+213;Phan Ngọc Bích;0791103668541;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-053;53
+214;Phan Xuân Vinh;079098750409;1998;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-053;53
+215;Võ Quốc Tuấn;0791100353225;1959;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-053;53
+216;Vũ Thị Mai Phương;079094446216;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-054, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;54
+217;Trần Đình Nghĩa;079191116720;1971;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-054;54
+218;Võ Văn Sơn;079075244713;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-054;54
+219;Vũ Hồng Bích;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-054;54
+220;Hoàng Ngọc Hương;079078572672;2004;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-054;54
+221;Ngô Quốc Hiếu;079163696653;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-055, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;55
+222;Hồ Bích Nhung;079170368571;1984;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-055;55
+223;Huỳnh Đức Thành;079063966828;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-055;55
+224;Đặng Thanh Thảo;079161124361;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-056, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;56
+225;Phan Minh Bình;079182113404;1968;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-056;56
+226;Phạm Thanh Ngân;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-056;56
+227;Đặng Kim Trâm;079177451114;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-056;56
+228;Hồ Minh Sơn;079196118992;1979;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-057, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;57
+229;Đặng Hồng Lan;079060448268;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-057;57
+230;Đặng Như Hương;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-057;57
+231;Nguyễn Minh Phúc;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-057;57
+232;Ngô Thanh Nhung;079099389634;2004;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-BL-057;57
+233;Đặng Thanh Thịnh;079189795888;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-058, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;58
+234;Dương Phương Lan;079193828704;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-058;58
+235;Đỗ Phương Linh;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-058;58
+236;Bùi Đình Thịnh;079170146207;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-059, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;59
+237;Hồ Hồng Anh;079066454455;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-059;59
+238;Phan Thùy Oanh;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-BL-059;59
+239;Trần Đức Tuấn;0790102451338;1979;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-BL-060, thường trú tại Ấp Bắc Lân, Xã Bà Điểm;60
+240;Hồ Như Chi;079163879122;1981;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-BL-060;60
+241;Dương Bích Quỳnh;079162146576;1989;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-001, thường trú tại Ấp Nam Lân, Xã Bà Điểm;61
+242;Huỳnh Quốc Tài;079191549934;1986;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-001;61
+243;Võ Kim Hạnh;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-001;61
+244;Huỳnh Kim Tuyết;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-001;61
+245;Nguyễn Văn Tuấn;079090501888;1966;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-001;61
+246;Vũ Phương Nhung;079177613098;1961;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-001;61
+247;Phạm Đức Nam;079194198542;1977;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-002, thường trú tại Ấp Nam Lân, Xã Bà Điểm;62
+248;Hoàng Hồng Linh;079095516727;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-002;62
+249;Đặng Kim Thu;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-002;62
+250;Nguyễn Xuân Sơn;079182552059;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-002;62
+251;Hồ Bích Chi;079060539886;1960;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-003, thường trú tại Ấp Nam Lân, Xã Bà Điểm;63
+252;Bùi Văn Thành;079183634200;1958;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-003;63
+253;Huỳnh Đức Sơn;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-003;63
+254;Hoàng Đình Quân;079062235639;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-004, thường trú tại Ấp Nam Lân, Xã Bà Điểm;64
+255;Lý Thị Anh;079064698082;1966;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-004;64
+256;Phan Minh Phúc;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-004;64
+257;Phạm Thanh Hạnh;079180746918;1984;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-005, thường trú tại Ấp Nam Lân, Xã Bà Điểm;65
+258;Đặng Hữu Huy;079187174817;1983;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-005;65
+259;Bùi Xuân Long;079197990561;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-005;65
+260;Nguyễn Thanh Đức;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-005;65
+261;Hồ Đình Thành;079097407463;1955;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-005;65
+262;Hoàng Quốc Vinh;079195403913;1999;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-005;65
+263;Vũ Hữu Thắng;079061828985;1966;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-006, thường trú tại Ấp Nam Lân, Xã Bà Điểm;66
+264;Bùi Thanh Nhung;079160668705;1967;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-006;66
+265;Lê Thanh Hải;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-006;66
+266;Đặng Thùy Hạnh;079170256732;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-006;66
+267;Huỳnh Bích Bích;079188574101;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-007, thường trú tại Ấp Nam Lân, Xã Bà Điểm;67
+268;Phan Xuân Đức;079083439137;1970;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-007;67
+269;Dương Thị Mai Yến;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-007;67
+270;Đặng Đức Phúc;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-007;67
+271;Võ Trọng Long;079094132245;1948;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-007;67
+272;Đỗ Ngọc Hà;079176775070;2004;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-007;67
+273;Lê Xuân Minh;079164216433;1966;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-008, thường trú tại Ấp Nam Lân, Xã Bà Điểm;68
+274;Vũ Ngọc Hạnh;079169664647;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-008;68
+275;Nguyễn Quốc Phúc;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-008;68
+276;Lý Thanh Hà;079163672026;1966;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-009, thường trú tại Ấp Nam Lân, Xã Bà Điểm;69
+277;Phan Hữu Tài;079082423037;1966;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-009;69
+278;Võ Thị Chi;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-009;69
+279;Đặng Thanh Huyền;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-009;69
+280;Võ Bích Nhung;079181848765;1944;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-009;69
+281;Lý Đình Thắng;0790101349592;2005;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-009;69
+282;Phan Trọng Long;079084761251;1974;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-010, thường trú tại Ấp Nam Lân, Xã Bà Điểm;70
+283;Ngô Hồng Lan;079184512329;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-010;70
+284;Phạm Minh Nam;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-010;70
+285;Vũ Quốc Phúc;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-010;70
+286;Lê Kim Hương;079197883531;2000;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-010;70
+287;Lý Phương Bích;079193974358;2007;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-010;70
+288;Nguyễn Phương Hoa;079097459193;1980;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-011, thường trú tại Ấp Nam Lân, Xã Bà Điểm;71
+289;Phạm Quốc Nghĩa;0790102811472;1980;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-011;71
+290;Trần Minh Tài;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-011;71
+291;Ngô Văn Nam;079071472332;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-012, thường trú tại Ấp Nam Lân, Xã Bà Điểm;72
+292;Trần Thanh Thảo;079081743715;1989;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-012;72
+293;Võ Minh An;079068124962;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-012;72
+294;Đỗ Trọng Nghĩa;079161427296;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-013, thường trú tại Ấp Nam Lân, Xã Bà Điểm;73
+295;Lê Phương Huyền;079196487710;1965;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-013;73
+296;Trần Thanh Quỳnh;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-013;73
+297;Trần Trọng An;079066902876;1977;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-014, thường trú tại Ấp Nam Lân, Xã Bà Điểm;74
+298;Lê Thị Mai Trang;0790101130923;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-014;74
+299;Hoàng Hoàng Nam;0790104583355;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-014;74
+300;Hồ Quốc Tùng;079064351272;1979;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-015, thường trú tại Ấp Nam Lân, Xã Bà Điểm;75
+301;Huỳnh Thị Tuyết;079179502239;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-015;75
+302;Hồ Phương Mai;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-015;75
+303;Phan Phương Bích;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-015;75
+304;Lê Thị Tuyết;079184926695;1996;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-015;75
+305;Nguyễn Trọng Tùng;079071436763;1954;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-015;75
+306;Hoàng Trọng An;079064334066;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-016, thường trú tại Ấp Nam Lân, Xã Bà Điểm;76
+307;Lê Phương My;079194111091;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-016;76
+308;Phan Đình Cường;079198146700;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-016;76
+309;Lý Kim Hạnh;079079390337;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-016;76
+310;Võ Xuân Sơn;079090448204;1963;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-017, thường trú tại Ấp Nam Lân, Xã Bà Điểm;77
+311;Đỗ Thùy Quỳnh;079097303862;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-017;77
+312;Võ Ngọc Oanh;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-017;77
+313;Bùi Kim Hương;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-017;77
+314;Lê Hoàng Minh;079070232474;1985;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-018, thường trú tại Ấp Nam Lân, Xã Bà Điểm;78
+315;Đặng Thanh Chi;079190418112;1987;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-018;78
+316;Phạm Phương Yến;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-018;78
+317;Phạm Thanh Dũng;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-018;78
+318;Huỳnh Quốc Bình;079181278710;1958;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-018;78
+319;Bùi Hữu Tùng;0790104990656;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-019, thường trú tại Ấp Nam Lân, Xã Bà Điểm;79
+320;Nguyễn Thùy Phương;079070952968;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-019;79
+321;Nguyễn Văn Nghĩa;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-019;79
+322;Dương Đức Tùng;079076905540;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-020, thường trú tại Ấp Nam Lân, Xã Bà Điểm;80
+323;Võ Ngọc Ngân;079169450207;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-020;80
+324;Hồ Kim Bích;079099423393;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-020;80
+325;Bùi Xuân Cường;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-020;80
+326;Lý Đức Minh;079064736670;2001;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-020;80
+327;Lý Đình Long;079184551983;1972;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-021, thường trú tại Ấp Nam Lân, Xã Bà Điểm;81
+328;Trần Thùy Thu;079178567480;1974;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-021;81
+329;Vũ Minh Huy;079178863896;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-022, thường trú tại Ấp Nam Lân, Xã Bà Điểm;82
+330;Đỗ Như Tuyết;0791104829699;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-022;82
+331;Hoàng Ngọc Dung;079089404812;1973;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-023, thường trú tại Ấp Nam Lân, Xã Bà Điểm;83
+332;Lý Thanh An;0791103637107;1974;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-023;83
+333;Đỗ Kim Dung;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-023;83
+334;Bùi Thanh Tuấn;079183705682;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-023;83
+335;Đỗ Văn An;079089387092;1985;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-024, thường trú tại Ấp Nam Lân, Xã Bà Điểm;84
+336;Nguyễn Ngọc My;079063731851;1987;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-024;84
+337;Hoàng Hữu Vinh;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-024;84
+338;Bùi Đình Hải;079173538413;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-024;84
+339;Hoàng Hữu Tài;079079180460;1997;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-024;84
+340;Ngô Thị Bích;0791104646060;1973;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-025, thường trú tại Ấp Nam Lân, Xã Bà Điểm;85
+341;Lê Xuân Hiếu;079184800605;1974;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-025;85
+342;Phan Kim Huyền;079160502546;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-025;85
+343;Bùi Hữu Tài;079074742703;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-025;85
+344;Trần Văn Hùng;079064359037;1948;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-025;85
+345;Trần Trọng Khoa;079063281596;1986;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-026, thường trú tại Ấp Nam Lân, Xã Bà Điểm;86
+346;Phan Thị Mai Quỳnh;079172579771;1987;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-026;86
+347;Phạm Bích Mai;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-026;86
+348;Phạm Thị Mai Anh;079198326057;1973;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-027, thường trú tại Ấp Nam Lân, Xã Bà Điểm;87
+349;Đặng Trọng Huy;079067921424;1972;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-027;87
+350;Đặng Kim Hạnh;079180232593;1960;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-028, thường trú tại Ấp Nam Lân, Xã Bà Điểm;88
+351;Trần Minh Cường;079062301652;1957;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-028;88
+352;Đặng Thị Mai Linh;079177412891;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-028;88
+353;Ngô Thanh Hải;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-028;88
+354;Phan Đình Bình;079091578024;2004;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-028;88
+355;Vũ Thanh Hương;079088288675;2008;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-028;88
+356;Ngô Thùy Chi;079162978277;1969;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-029, thường trú tại Ấp Nam Lân, Xã Bà Điểm;89
+357;Đỗ Quốc Khoa;079097818152;1966;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-029;89
+358;Đỗ Phương Lan;079098971233;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-029;89
+359;Dương Hồng Linh;0791104547345;1960;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-030, thường trú tại Ấp Nam Lân, Xã Bà Điểm;90
+360;Lý Hoàng An;079190639315;1962;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-030;90
+361;Võ Văn Thịnh;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-030;90
+362;Lê Thanh Vinh;0791103287239;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-031, thường trú tại Ấp Nam Lân, Xã Bà Điểm;91
+363;Ngô Kim Thảo;079090187751;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-031;91
+364;Trần Hồng Linh;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-031;91
+365;Ngô Quốc Tuấn;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-031;91
+366;Nguyễn Hữu Bình;079099620379;2001;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-031;91
+367;Nguyễn Thị Mai Nhung;079068195934;2009;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-031;91
+368;Đỗ Văn Đức;079191608411;1964;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-032, thường trú tại Ấp Nam Lân, Xã Bà Điểm;92
+369;Vũ Thị Thu;0790102910360;1965;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-032;92
+370;Ngô Hồng Linh;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-032;92
+371;Đặng Thị Mai Hà;0791101667326;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-032;92
+372;Lý Đình Hiếu;079163549796;2001;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-032;92
+373;Phan Trọng Minh;079091704691;2001;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-032;92
+374;Võ Thị Oanh;079168799784;1986;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-033, thường trú tại Ấp Nam Lân, Xã Bà Điểm;93
+375;Phan Hữu Hải;079072590327;1987;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-033;93
+376;Hoàng Thanh Quân;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-033;93
+377;Phan Hồng Quỳnh;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-033;93
+378;Hồ Hữu Thắng;079093256402;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-034, thường trú tại Ấp Nam Lân, Xã Bà Điểm;94
+379;Vũ Hồng Mai;079085725644;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-034;94
+380;Võ Đức Nghĩa;079184980917;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-034;94
+381;Phạm Kim Trâm;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-034;94
+382;Ngô Hữu Tài;079082117886;1979;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-035, thường trú tại Ấp Nam Lân, Xã Bà Điểm;95
+383;Phạm Thị Mai Lan;079080737172;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-035;95
+384;Võ Thị Mai Anh;079072358791;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-035;95
+385;Trần Văn Quân;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-035;95
+386;Ngô Hoàng Tuấn;079173248566;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-036, thường trú tại Ấp Nam Lân, Xã Bà Điểm;96
+387;Võ Thị Mai Thu;079176967611;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-036;96
+388;Dương Như Hạnh;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-036;96
+389;Lê Quốc Bình;079185280286;1981;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-037, thường trú tại Ấp Nam Lân, Xã Bà Điểm;97
+390;Hoàng Ngọc Hà;079181171573;1983;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-037;97
+391;Huỳnh Trọng Tài;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-037;97
+392;Dương Thanh Dung;079197101477;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-037;97
+393;Huỳnh Hoàng Dũng;079086757545;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-038, thường trú tại Ấp Nam Lân, Xã Bà Điểm;98
+394;Phạm Thanh Anh;0791101438032;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-038;98
+395;Phan Như Tuyết;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-038;98
+396;Phạm Như Dung;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-038;98
+397;Ngô Minh Bình;079076430451;1942;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-038;98
+398;Đỗ Trọng Thắng;079163622171;1944;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-038;98
+399;Trần Hoàng Vinh;079165921082;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-039, thường trú tại Ấp Nam Lân, Xã Bà Điểm;99
+400;Hồ Bích Bích;079084801861;1987;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-039;99
+401;Lê Đức Khoa;079075817069;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-040, thường trú tại Ấp Nam Lân, Xã Bà Điểm;100
+402;Dương Thùy Oanh;079066423611;1991;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-040;100
+403;Trần Phương My;079070544277;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-040;100
+404;Phan Xuân Nghĩa;079187121724;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-040;100
+405;Ngô Bích Nga;079174585770;1967;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-040;100
+406;Ngô Bích Nga;0790100895732;1960;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-040;100
+407;Bùi Hồng Thảo;079070367306;1985;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-041, thường trú tại Ấp Nam Lân, Xã Bà Điểm;101
+408;Võ Văn Minh;079185371604;1987;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-041;101
+409;Đỗ Quốc Cường;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-041;101
+410;Võ Ngọc Nga;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-041;101
+411;Huỳnh Hồng Thảo;079062389243;1968;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-042, thường trú tại Ấp Nam Lân, Xã Bà Điểm;102
+412;Đặng Đình Khoa;079165753780;1968;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-042;102
+413;Trần Hồng Hoa;079090395426;1978;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-043, thường trú tại Ấp Nam Lân, Xã Bà Điểm;103
+414;Bùi Hoàng Khoa;079071106355;1980;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-043;103
+415;Đặng Trọng Long;079066320219;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-043;103
+416;Lý Hồng Linh;079187390221;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-043;103
+417;Vũ Thị Mai Trang;079177593262;1999;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-043;103
+418;Bùi Thị Mai My;079077390014;1963;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-044, thường trú tại Ấp Nam Lân, Xã Bà Điểm;104
+419;Đặng Quốc Huy;079182781291;1963;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-044;104
+420;Hồ Quốc Tùng;079085120844;1963;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-045, thường trú tại Ấp Nam Lân, Xã Bà Điểm;105
+421;Dương Bích Ngân;079199609276;1960;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-045;105
+422;Nguyễn Đình Tuấn;0791101578513;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-045;105
+423;Phan Thanh Bình;079175377089;1981;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-046, thường trú tại Ấp Nam Lân, Xã Bà Điểm;106
+424;Hoàng Như Tuyết;079095766321;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-046;106
+425;Lý Thanh Tài;079071192235;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-046;106
+426;Lý Văn Phúc;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-046;106
+427;Huỳnh Minh An;079161291706;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-047, thường trú tại Ấp Nam Lân, Xã Bà Điểm;107
+428;Hoàng Thị Mai Huyền;079090912888;1966;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-047;107
+429;Võ Đình Thành;079197703633;1964;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-048, thường trú tại Ấp Nam Lân, Xã Bà Điểm;108
+430;Huỳnh Thùy Tuyết;079071744895;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-048;108
+431;Huỳnh Thị Bích;079098625561;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-048;108
+432;Đỗ Hữu Hùng;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-048;108
+433;Lý Văn Hải;079078942013;1939;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-048;108
+434;Đặng Thị Ngân;079184774020;1938;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-048;108
+435;Ngô Hoàng Tài;079197755265;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-049, thường trú tại Ấp Nam Lân, Xã Bà Điểm;109
+436;Lý Thị Yến;079192927239;1986;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-049;109
+437;Phan Thanh Trang;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-049;109
+438;Bùi Như Linh;079090213567;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-049;109
+439;Hoàng Quốc Huy;079182630134;1965;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-049;109
+440;Trần Hoàng An;079164834851;1988;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-050, thường trú tại Ấp Nam Lân, Xã Bà Điểm;110
+441;Huỳnh Phương Nhung;079078553460;1986;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-050;110
+442;Trần Xuân Hải;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-050;110
+443;Lý Đình Nghĩa;079166937919;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-050;110
+444;Ngô Bích Chi;079198212416;1984;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-051, thường trú tại Ấp Nam Lân, Xã Bà Điểm;111
+445;Bùi Xuân Tùng;079087874366;1985;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-051;111
+446;Ngô Đình Quân;079096408585;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-052, thường trú tại Ấp Nam Lân, Xã Bà Điểm;112
+447;Bùi Thùy Lan;079093436898;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-052;112
+448;Bùi Hữu Phúc;079181152497;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-052;112
+449;Võ Bích Chi;079186746280;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-052;112
+450;Trần Thị Bích;079181126986;2004;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-NL-052;112
+451;Ngô Trọng An;079183221308;1954;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-052;112
+452;Phạm Hữu Đức;079091180166;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-053, thường trú tại Ấp Nam Lân, Xã Bà Điểm;113
+453;Đỗ Phương My;079071513888;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-053;113
+454;Phan Trọng Thịnh;079097475992;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-053;113
+455;Hoàng Văn Thắng;079080901354;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-054, thường trú tại Ấp Nam Lân, Xã Bà Điểm;114
+456;Ngô Thị Bích;079177834000;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-054;114
+457;Lê Kim Yến;079076517949;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-054;114
+458;Võ Hồng Hoa;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-054;114
+459;Lý Thùy Chi;079172860478;1949;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-054;114
+460;Đỗ Thị Mai Bích;079084564695;1945;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-054;114
+461;Dương Hữu Nam;079096550665;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-055, thường trú tại Ấp Nam Lân, Xã Bà Điểm;115
+462;Võ Kim Trang;079073466653;1965;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-055;115
+463;Võ Xuân Long;079092709703;2008;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-055;115
+464;Nguyễn Xuân Tuấn;079084285913;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-056, thường trú tại Ấp Nam Lân, Xã Bà Điểm;116
+465;Lê Phương My;079068403340;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-056;116
+466;Trần Như Linh;079073478384;1968;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-057, thường trú tại Ấp Nam Lân, Xã Bà Điểm;117
+467;Lý Đình Thắng;079199306773;1966;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-057;117
+468;Võ Kim Nhung;079164940199;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-057;117
+469;Trần Quốc Nghĩa;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-057;117
+470;Lý Đình Khoa;079074184514;1977;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-058, thường trú tại Ấp Nam Lân, Xã Bà Điểm;118
+471;Ngô Thị Ngân;079187333225;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-058;118
+472;Phạm Trọng Phúc;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-058;118
+473;Ngô Thanh Quân;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-058;118
+474;Huỳnh Đức Long;079065895847;1949;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-058;118
+475;Hồ Thùy Linh;0791104894380;1949;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-058;118
+476;Vũ Trọng Trung;079066248312;1980;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-059, thường trú tại Ấp Nam Lân, Xã Bà Điểm;119
+477;Huỳnh Thùy Mai;079193165158;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-059;119
+478;Dương Hữu Nam;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-059;119
+479;Huỳnh Thanh Thịnh;079178922731;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-NL-060, thường trú tại Ấp Nam Lân, Xã Bà Điểm;120
+480;Phan Như Hương;079180659917;1959;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-NL-060;120
+481;Bùi Thanh Tuấn;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-NL-060;120
+482;Lý Đình Long;079171878259;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-001, thường trú tại Ấp Tây Lân, Xã Bà Điểm;121
+483;Hoàng Phương Thảo;079098903228;1968;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-001;121
+484;Trần Ngọc Tuyết;079094450423;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-001;121
+485;Vũ Thanh Cường;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-001;121
+486;Hồ Thanh Huy;079194128594;1960;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-002, thường trú tại Ấp Tây Lân, Xã Bà Điểm;122
+487;Huỳnh Phương My;079168682060;1958;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-002;122
+488;Đặng Xuân Dũng;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-002;122
+489;Huỳnh Minh Tuấn;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-002;122
+490;Phan Hoàng Thành;079180185619;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-003, thường trú tại Ấp Tây Lân, Xã Bà Điểm;123
+491;Dương Ngọc Thảo;0791100105467;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-003;123
+492;Ngô Kim Trâm;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-003;123
+493;Huỳnh Thùy Hà;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-003;123
+494;Dương Hữu Huy;079067792129;2007;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-003;123
+495;Hoàng Đình Nghĩa;079185191310;1974;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-004, thường trú tại Ấp Tây Lân, Xã Bà Điểm;124
+496;Bùi Thùy Lan;0790102936394;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-004;124
+497;Huỳnh Bích Quỳnh;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-004;124
+498;Ngô Hoàng Dũng;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-004;124
+499;Lý Như Anh;079190953258;2000;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-004;124
+500;Lê Minh Nghĩa;079073238715;1948;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-004;124
+501;Huỳnh Văn Tuấn;079180960653;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-005, thường trú tại Ấp Tây Lân, Xã Bà Điểm;125
+502;Hoàng Thị Mai Trâm;079072181800;1983;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-005;125
+503;Hoàng Quốc Cường;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-005;125
+504;Phan Quốc Nam;0790100887440;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-005;125
+505;Lý Kim Tuyết;079160424075;1965;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-006, thường trú tại Ấp Tây Lân, Xã Bà Điểm;126
+506;Hoàng Đình Trung;079074636050;1964;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-006;126
+507;Võ Hoàng Phúc;079188268696;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-006;126
+508;Đặng Hồng Anh;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-006;126
+509;Vũ Kim Trâm;079064250939;1989;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-007, thường trú tại Ấp Tây Lân, Xã Bà Điểm;127
+510;Trần Xuân Thịnh;079165385773;1990;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-007;127
+511;Đỗ Hoàng Hùng;079166722717;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-007;127
+512;Đặng Hoàng Đức;079164369098;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-007;127
+513;Võ Như Mai;079065887004;2001;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-007;127
+514;Bùi Đình Trung;079168512523;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-008, thường trú tại Ấp Tây Lân, Xã Bà Điểm;128
+515;Huỳnh Thùy Quỳnh;079093639942;1968;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-008;128
+516;Nguyễn Xuân Long;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-008;128
+517;Bùi Như Mai;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-008;128
+518;Võ Văn Thịnh;079098633082;2003;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-008;128
+519;Vũ Văn Long;079069962614;1979;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-009, thường trú tại Ấp Tây Lân, Xã Bà Điểm;129
+520;Hoàng Phương Hương;079085177421;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-009;129
+521;Hoàng Hữu Nghĩa;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-009;129
+522;Phạm Quốc Dũng;079078233417;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-009;129
+523;Hoàng Như Tuyết;079196124080;2007;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-009;129
+524;Nguyễn Thị Huyền;0791101163399;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-010, thường trú tại Ấp Tây Lân, Xã Bà Điểm;130
+525;Huỳnh Hữu Thắng;079170246826;1968;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-010;130
+526;Phạm Phương Quỳnh;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-010;130
+527;Bùi Quốc Trung;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-010;130
+528;Hoàng Quốc Khoa;079065621808;2004;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-010;130
+529;Lê Thị Mai Huyền;079199105409;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-011, thường trú tại Ấp Tây Lân, Xã Bà Điểm;131
+530;Võ Văn Thắng;079163946826;1973;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-011;131
+531;Trần Minh Tuấn;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-011;131
+532;Hoàng Quốc Tùng;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-011;131
+533;Dương Kim Tuyết;0790104556710;1943;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-011;131
+534;Hồ Thùy Dung;079169660197;1964;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-012, thường trú tại Ấp Tây Lân, Xã Bà Điểm;132
+535;Trần Quốc Bình;079179364289;1965;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-012;132
+536;Võ Đức Tuấn;079060625904;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-012;132
+537;Hoàng Thanh Thịnh;079066785181;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-013, thường trú tại Ấp Tây Lân, Xã Bà Điểm;133
+538;Đặng Thị Mai Bích;079077159114;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-013;133
+539;Đặng Quốc Đức;079070705603;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-013;133
+540;Bùi Hồng Hương;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-013;133
+541;Huỳnh Như Anh;079198361685;1996;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-013;133
+542;Đỗ Trọng Quân;079066512844;1984;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-014, thường trú tại Ấp Tây Lân, Xã Bà Điểm;134
+543;Bùi Hồng Yến;079068846017;1983;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-014;134
+544;Phạm Đình Khoa;079164365079;2008;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-014;134
+545;Đỗ Phương Quỳnh;079098747372;1976;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-015, thường trú tại Ấp Tây Lân, Xã Bà Điểm;135
+546;Võ Đình Tùng;079176326723;1974;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-015;135
+547;Hoàng Xuân Hùng;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-015;135
+548;Phan Như Anh;079065571167;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-015;135
+549;Bùi Trọng Tùng;079190967917;2002;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-015;135
+550;Phan Như Anh;079193636775;1989;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-016, thường trú tại Ấp Tây Lân, Xã Bà Điểm;136
+551;Dương Hoàng Long;079065773060;1990;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-016;136
+552;Đỗ Minh An;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-016;136
+553;Bùi Phương Dung;079195479752;1978;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-017, thường trú tại Ấp Tây Lân, Xã Bà Điểm;137
+554;Lý Minh Huy;079163869105;1976;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-017;137
+555;Võ Phương Ngân;079067877123;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-017;137
+556;Võ Thị Mai Chi;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-017;137
+557;Dương Thanh Trung;079093665620;1952;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-017;137
+558;Dương Trọng Hiếu;079193279005;1951;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-017;137
+559;Ngô Xuân Nam;079075737645;1961;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-018, thường trú tại Ấp Tây Lân, Xã Bà Điểm;138
+560;Dương Kim Huyền;0790101157324;1961;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-018;138
+561;Ngô Phương Hoa;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-018;138
+562;Võ Thùy Mai;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-018;138
+563;Hoàng Thị Mai Hạnh;079181726788;1998;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-018;138
+564;Đỗ Thanh Huy;079083987341;1937;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-018;138
+565;Dương Minh Long;079065475195;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-019, thường trú tại Ấp Tây Lân, Xã Bà Điểm;139
+566;Phạm Thanh My;079085416750;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-019;139
+567;Huỳnh Phương Lan;079099292171;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-019;139
+568;Phan Thanh Hải;079062945390;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-019;139
+569;Huỳnh Phương Trâm;079082353411;1956;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-019;139
+570;Phạm Xuân Dũng;079094722045;2000;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-019;139
+571;Đặng Thị Tuyết;079074958829;1989;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-020, thường trú tại Ấp Tây Lân, Xã Bà Điểm;140
+572;Hồ Trọng Vinh;079164869869;1990;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-020;140
+573;Lý Trọng Thành;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-020;140
+574;Trần Ngọc Tuyết;0791102666313;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-020;140
+575;Đỗ Phương Thu;079092533565;2001;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-020;140
+576;Phạm Thanh Sơn;079074864908;1960;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-020;140
+577;Vũ Quốc Minh;079061366663;1972;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-021, thường trú tại Ấp Tây Lân, Xã Bà Điểm;141
+578;Võ Như Thu;079185623622;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-021;141
+579;Trần Đình Khoa;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-021;141
+580;Nguyễn Xuân Thịnh;079074667546;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-021;141
+581;Võ Bích Bích;079198335894;1943;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-021;141
+582;Lê Như Oanh;079174990237;1944;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-021;141
+583;Nguyễn Thanh Mai;079171516249;1988;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-022, thường trú tại Ấp Tây Lân, Xã Bà Điểm;142
+584;Huỳnh Đình Tài;0791101320721;1986;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-022;142
+585;Hoàng Hoàng Sơn;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-022;142
+586;Vũ Hồng Quỳnh;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-022;142
+587;Bùi Thanh Dung;079171261601;1959;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-022;142
+588;Dương Thanh Minh;079096807235;1961;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-023, thường trú tại Ấp Tây Lân, Xã Bà Điểm;143
+589;Phạm Ngọc Hương;079087480399;1958;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-023;143
+590;Vũ Văn Vinh;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-023;143
+591;Dương Thanh Đức;079177940636;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-023;143
+592;Trần Quốc Bình;079172889780;2006;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-023;143
+593;Bùi Hữu Trung;079185886455;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-024, thường trú tại Ấp Tây Lân, Xã Bà Điểm;144
+594;Lê Ngọc Phương;0790103721359;1974;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-024;144
+595;Đỗ Quốc Cường;079178632745;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-025, thường trú tại Ấp Tây Lân, Xã Bà Điểm;145
+596;Lý Như Quỳnh;079173156943;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-025;145
+597;Hồ Hữu Bình;079092856442;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-025;145
+598;Phan Quốc Tùng;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-025;145
+599;Lý Phương Mai;079166700778;1943;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-025;145
+600;Phan Như Mai;079093149376;2003;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-025;145
+601;Phạm Trọng Thắng;079089624577;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-026, thường trú tại Ấp Tây Lân, Xã Bà Điểm;146
+602;Phạm Kim Hương;079183725063;1990;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-026;146
+603;Võ Thanh Linh;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-026;146
+604;Hoàng Xuân Quân;079166305936;1972;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-027, thường trú tại Ấp Tây Lân, Xã Bà Điểm;147
+605;Đỗ Ngọc Huyền;0790104888814;1972;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-027;147
+606;Huỳnh Trọng Vinh;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-027;147
+607;Đỗ Phương Linh;079175751440;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-027;147
+608;Đặng Bích Ngân;079076848484;1944;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-027;147
+609;Huỳnh Văn Minh;079160227257;1981;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-028, thường trú tại Ấp Tây Lân, Xã Bà Điểm;148
+610;Đỗ Thị Mai Phương;079079244767;1982;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-028;148
+611;Lê Thanh Thảo;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-028;148
+612;Phan Quốc Hiếu;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-028;148
+613;Đỗ Thị Thảo;079168992461;1996;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-028;148
+614;Võ Ngọc Thu;0790103499414;1995;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-028;148
+615;Lý Hoàng Sơn;079076467729;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-029, thường trú tại Ấp Tây Lân, Xã Bà Điểm;149
+616;Hồ Thùy Chi;079186484382;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-029;149
+617;Lý Kim Lan;079171744108;1970;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-030, thường trú tại Ấp Tây Lân, Xã Bà Điểm;150
+618;Trần Minh Nam;079084463118;1969;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-030;150
+619;Võ Xuân Sơn;079169558058;1982;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-031, thường trú tại Ấp Tây Lân, Xã Bà Điểm;151
+620;Ngô Phương Hương;079074992241;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-031;151
+621;Lý Hữu Long;079084357772;1963;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-032, thường trú tại Ấp Tây Lân, Xã Bà Điểm;152
+622;Dương Thị Mai Hà;079090264350;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-032;152
+623;Nguyễn Đình Hùng;079072381639;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-032;152
+624;Lê Thị Nga;079069334332;1978;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-033, thường trú tại Ấp Tây Lân, Xã Bà Điểm;153
+625;Đặng Hữu Tuấn;079089549086;1980;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-033;153
+626;Lê Trọng Sơn;079097252648;1963;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-034, thường trú tại Ấp Tây Lân, Xã Bà Điểm;154
+627;Huỳnh Bích Phương;079170242990;1960;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-034;154
+628;Dương Phương Yến;079078464003;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-034;154
+629;Lý Hồng Thảo;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-034;154
+630;Nguyễn Xuân Trung;079178606931;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-035, thường trú tại Ấp Tây Lân, Xã Bà Điểm;155
+631;Lý Kim Nhung;079173659921;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-035;155
+632;Đặng Hồng Mai;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-035;155
+633;Huỳnh Ngọc Dung;079090305387;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-035;155
+634;Đỗ Đức Huy;079165620001;2006;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-035;155
+635;Đặng Thị Mai Hoa;079164436374;2000;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-035;155
+636;Lê Thanh Sơn;079069546535;1974;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-036, thường trú tại Ấp Tây Lân, Xã Bà Điểm;156
+637;Nguyễn Ngọc Hoa;079090422151;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-036;156
+638;Lê Trọng Thành;079199304931;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-036;156
+639;Bùi Thị Mai Lan;079161516466;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-036;156
+640;Hoàng Hữu Huy;079062662183;1952;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-036;156
+641;Lý Thanh Lan;079078525669;1965;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-037, thường trú tại Ấp Tây Lân, Xã Bà Điểm;157
+642;Lý Minh Đức;0791101178650;1963;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-037;157
+643;Bùi Thùy Hà;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-037;157
+644;Vũ Kim Oanh;079177671878;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-037;157
+645;Phạm Thị Mai Phương;079086379700;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-038, thường trú tại Ấp Tây Lân, Xã Bà Điểm;158
+646;Lê Đình Tài;0791103687542;1973;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-038;158
+647;Huỳnh Trọng Hải;079060345620;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-039, thường trú tại Ấp Tây Lân, Xã Bà Điểm;159
+648;Ngô Phương Chi;0790102741734;1966;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-039;159
+649;Phạm Kim Nga;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-039;159
+650;Lê Ngọc Hạnh;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-039;159
+651;Võ Đức Tuấn;079191340817;1943;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-039;159
+652;Hồ Thị Nga;079167825630;2007;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-039;159
+653;Bùi Hữu Long;0790104414378;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-040, thường trú tại Ấp Tây Lân, Xã Bà Điểm;160
+654;Trần Hồng Oanh;079088653669;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-040;160
+655;Huỳnh Minh Dũng;079161762043;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-041, thường trú tại Ấp Tây Lân, Xã Bà Điểm;161
+656;Đỗ Phương Dung;079176757417;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-041;161
+657;Đỗ Văn Hiếu;0790100735350;1986;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-042, thường trú tại Ấp Tây Lân, Xã Bà Điểm;162
+658;Ngô Phương Hạnh;079199457716;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-042;162
+659;Ngô Bích Mai;079188490861;1981;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-043, thường trú tại Ấp Tây Lân, Xã Bà Điểm;163
+660;Lý Văn Phúc;079086224441;1978;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-043;163
+661;Bùi Đức Long;079171167454;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-043;163
+662;Hoàng Văn Nam;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-043;163
+663;Lê Như Bích;0791102518516;1953;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-043;163
+664;Ngô Phương Ngân;079198627282;1953;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-043;163
+665;Hồ Thị Trang;079080844707;1969;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-044, thường trú tại Ấp Tây Lân, Xã Bà Điểm;164
+666;Dương Thanh Bình;079074854602;1967;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-044;164
+667;Hoàng Thị Thảo;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-044;164
+668;Đặng Minh Nghĩa;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-044;164
+669;Võ Thị Mai Tuyết;079089452997;1972;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-045, thường trú tại Ấp Tây Lân, Xã Bà Điểm;165
+670;Đỗ Minh Phúc;079177841621;1970;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-045;165
+671;Phan Ngọc Chi;079167583422;1979;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-046, thường trú tại Ấp Tây Lân, Xã Bà Điểm;166
+672;Dương Quốc Tùng;079085523224;1981;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-046;166
+673;Võ Như My;079171842300;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-046;166
+674;Bùi Phương Nga;0790101297096;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-046;166
+675;Võ Kim Linh;079077106376;1955;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-046;166
+676;Trần Đình Huy;079198440530;1955;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-046;166
+677;Phan Quốc Hải;079089734114;1960;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-047, thường trú tại Ấp Tây Lân, Xã Bà Điểm;167
+678;Hồ Thanh Nga;079167531616;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-047;167
+679;Dương Ngọc Bích;079186201437;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-047;167
+680;Lý Kim My;079099871533;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-047;167
+681;Võ Thanh Huy;079085203427;2009;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-047;167
+682;Võ Quốc Minh;079174803330;1964;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-048, thường trú tại Ấp Tây Lân, Xã Bà Điểm;168
+683;Dương Ngọc Phương;079093219681;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-048;168
+684;Đặng Xuân Hùng;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-048;168
+685;Phạm Thanh Anh;0791103535542;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-048;168
+686;Đặng Thanh Nghĩa;079097429119;1942;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-048;168
+687;Trần Hữu An;079174489419;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-049, thường trú tại Ấp Tây Lân, Xã Bà Điểm;169
+688;Lê Thị Mai Oanh;079187859161;1961;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-049;169
+689;Dương Văn Thịnh;0790102502587;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-050, thường trú tại Ấp Tây Lân, Xã Bà Điểm;170
+690;Phạm Bích Dung;0791101133535;1983;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-050;170
+691;Đặng Thanh Thu;079197896546;1970;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-051, thường trú tại Ấp Tây Lân, Xã Bà Điểm;171
+692;Võ Đình Dũng;079188228749;1971;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-051;171
+693;Phan Thị Mai Yến;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-051;171
+694;Bùi Hoàng Bình;079074451711;1986;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-052, thường trú tại Ấp Tây Lân, Xã Bà Điểm;172
+695;Trần Phương Trâm;079189177826;1987;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-052;172
+696;Bùi Đức Bình;079181782742;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-052;172
+697;Trần Ngọc Anh;079188808096;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-052;172
+698;Phạm Bích Trâm;079093597887;1964;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-052;172
+699;Phan Xuân Tùng;079071133079;1985;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-053, thường trú tại Ấp Tây Lân, Xã Bà Điểm;173
+700;Phan Bích Tuyết;079087916739;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-053;173
+701;Dương Thị Mai Bích;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-053;173
+702;Phạm Hoàng Huy;0790103535126;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-053;173
+703;Vũ Hồng Trang;079099973183;2004;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-053;173
+704;Phan Đình Quân;0791102793765;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-054, thường trú tại Ấp Tây Lân, Xã Bà Điểm;174
+705;Nguyễn Như Linh;079085388990;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-054;174
+706;Vũ Văn Long;079091838629;1965;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-055, thường trú tại Ấp Tây Lân, Xã Bà Điểm;175
+707;Võ Như Nga;079173423916;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-055;175
+708;Phạm Hồng Trâm;0791103981410;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-055;175
+709;Hoàng Thị Nhung;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-055;175
+710;Nguyễn Hữu Hiếu;079187339655;1980;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-056, thường trú tại Ấp Tây Lân, Xã Bà Điểm;176
+711;Trần Thị Hạnh;079070223456;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-056;176
+712;Phạm Văn Phúc;0791101332468;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-057, thường trú tại Ấp Tây Lân, Xã Bà Điểm;177
+713;Phạm Như Hương;079162147031;1991;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-057;177
+714;Bùi Phương Chi;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-057;177
+715;Vũ Xuân Hùng;079182410019;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-058, thường trú tại Ấp Tây Lân, Xã Bà Điểm;178
+716;Phan Thị Mai Thu;079197591851;1977;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-058;178
+717;Đỗ Kim Hà;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-058;178
+718;Phan Thị Trang;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-058;178
+719;Nguyễn Thị Phương;079196840549;2005;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TL-058;178
+720;Hồ Trọng Thịnh;079067967004;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-059, thường trú tại Ấp Tây Lân, Xã Bà Điểm;179
+721;Đặng Thị Mai;079092515792;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-059;179
+722;Lê Thị Linh;079162589853;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-059;179
+723;Lý Thùy Oanh;079163584476;1973;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TL-060, thường trú tại Ấp Tây Lân, Xã Bà Điểm;180
+724;Hoàng Hữu Bình;079189914404;1972;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TL-060;180
+725;Lê Thị Mai Hoa;079083166956;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TL-060;180
+726;Lý Xuân Khoa;079179296691;1984;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-001, thường trú tại Ấp Đông Lân, Xã Bà Điểm;181
+727;Hồ Thị Mai Phương;079197102908;1981;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-001;181
+728;Hoàng Hồng Hoa;079189270521;1973;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-002, thường trú tại Ấp Đông Lân, Xã Bà Điểm;182
+729;Hoàng Văn Phúc;079070321908;1971;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-002;182
+730;Ngô Thùy Thảo;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-002;182
+731;Bùi Kim Chi;079166883230;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-002;182
+732;Lê Phương Nhung;079087622399;1987;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-003, thường trú tại Ấp Đông Lân, Xã Bà Điểm;183
+733;Lý Hoàng Hùng;079078891923;1987;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-003;183
+734;Hoàng Xuân Đức;079172585480;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-003;183
+735;Bùi Bích Nga;079171373508;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-003;183
+736;Lê Đức Bình;079095146443;1966;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-004, thường trú tại Ấp Đông Lân, Xã Bà Điểm;184
+737;Phạm Hồng Chi;079171907926;1968;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-004;184
+738;Phan Thị Hương;079160350761;1977;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-005, thường trú tại Ấp Đông Lân, Xã Bà Điểm;185
+739;Lý Trọng Vinh;079194514223;1975;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-005;185
+740;Hồ Như Trâm;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-005;185
+741;Phan Kim Bích;0791100428764;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-005;185
+742;Trần Văn Dũng;0790103317883;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-006, thường trú tại Ấp Đông Lân, Xã Bà Điểm;186
+743;Trần Thị Hoa;079080564009;1967;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-006;186
+744;Vũ Thanh Trang;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-006;186
+745;Phạm Thùy Tuyết;079163871443;1976;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-007, thường trú tại Ấp Đông Lân, Xã Bà Điểm;187
+746;Hồ Quốc Sơn;079183127526;1976;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-007;187
+747;Lý Trọng Hùng;079068287308;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-007;187
+748;Nguyễn Thanh Nam;079179956839;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-008, thường trú tại Ấp Đông Lân, Xã Bà Điểm;188
+749;Đặng Ngọc Mai;079075333211;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-008;188
+750;Võ Hoàng Cường;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-008;188
+751;Đỗ Như Ngân;079093119413;1980;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-009, thường trú tại Ấp Đông Lân, Xã Bà Điểm;189
+752;Lý Thanh Bình;079092636561;1981;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-009;189
+753;Vũ Thanh Vinh;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-009;189
+754;Trần Trọng Huy;0790103693542;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-009;189
+755;Bùi Xuân Vinh;0790102896872;1957;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-009;189
+756;Bùi Hoàng Vinh;079095129461;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-010, thường trú tại Ấp Đông Lân, Xã Bà Điểm;190
+757;Hoàng Hồng Chi;079193251965;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-010;190
+758;Hoàng Thanh Tài;079198939190;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-011, thường trú tại Ấp Đông Lân, Xã Bà Điểm;191
+759;Nguyễn Hồng Chi;079080677376;1990;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-011;191
+760;Trần Thanh Nga;079062836341;1978;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-012, thường trú tại Ấp Đông Lân, Xã Bà Điểm;192
+761;Phạm Quốc Phúc;079167985790;1979;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-012;192
+762;Võ Thị Mai Hương;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-012;192
+763;Bùi Thanh Tùng;079091248220;1961;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-013, thường trú tại Ấp Đông Lân, Xã Bà Điểm;193
+764;Trần Thị Mai Phương;079076821033;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-013;193
+765;Ngô Trọng Tùng;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-013;193
+766;Võ Thanh Nam;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-013;193
+767;Võ Xuân Tài;079072298137;1987;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-014, thường trú tại Ấp Đông Lân, Xã Bà Điểm;194
+768;Võ Như Tuyết;079197225460;1986;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-014;194
+769;Hồ Bích Hoa;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-014;194
+770;Dương Thị Phương;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-014;194
+771;Hồ Hoàng Cường;079090909467;1964;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-014;194
+772;Võ Quốc Sơn;079072461446;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-015, thường trú tại Ấp Đông Lân, Xã Bà Điểm;195
+773;Phạm Thùy Huyền;079195628152;1974;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-015;195
+774;Huỳnh Phương Phương;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-015;195
+775;Dương Trọng Phúc;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-015;195
+776;Hoàng Phương Thảo;079091769941;1968;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-016, thường trú tại Ấp Đông Lân, Xã Bà Điểm;196
+777;Trần Xuân Huy;079195612867;1970;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-016;196
+778;Bùi Như Anh;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-016;196
+779;Vũ Thanh Quân;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-016;196
+780;Đỗ Bích Yến;079075858884;1940;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-016;196
+781;Hoàng Thị Lan;079160879833;1985;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-017, thường trú tại Ấp Đông Lân, Xã Bà Điểm;197
+782;Huỳnh Đình Dũng;079190761506;1984;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-017;197
+783;Đặng Văn Cường;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-017;197
+784;Hoàng Xuân Dũng;079099290340;1965;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-018, thường trú tại Ấp Đông Lân, Xã Bà Điểm;198
+785;Bùi Hồng Hoa;079198743073;1965;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-018;198
+786;Bùi Văn Quân;079061353594;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-018;198
+787;Hồ Đình Tùng;079177692618;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-019, thường trú tại Ấp Đông Lân, Xã Bà Điểm;199
+788;Đặng Thùy Hoa;079180836007;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-019;199
+789;Nguyễn Kim Quỳnh;0791102790067;1984;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-020, thường trú tại Ấp Đông Lân, Xã Bà Điểm;200
+790;Lê Thanh Cường;079099857949;1983;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-020;200
+791;Bùi Hữu Khoa;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-020;200
+792;Hoàng Quốc Hiếu;0791102804841;1985;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-021, thường trú tại Ấp Đông Lân, Xã Bà Điểm;201
+793;Huỳnh Phương Hương;079063436579;1983;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-021;201
+794;Lê Thị Huyền;079182967408;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-021;201
+795;Lý Ngọc Trang;079080439424;1980;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-022, thường trú tại Ấp Đông Lân, Xã Bà Điểm;202
+796;Ngô Hoàng Phúc;079183156979;1981;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-022;202
+797;Bùi Hoàng Hải;0790102459332;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-022;202
+798;Phạm Xuân Phúc;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-022;202
+799;Ngô Bích Mai;079091901944;2008;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-022;202
+800;Phan Như Hạnh;079171521337;2000;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-022;202
+801;Hồ Thanh Sơn;079093708355;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-023, thường trú tại Ấp Đông Lân, Xã Bà Điểm;203
+802;Bùi Hồng Anh;079174459365;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-023;203
+803;Phạm Đình Vinh;079062775928;1980;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-024, thường trú tại Ấp Đông Lân, Xã Bà Điểm;204
+804;Vũ Hồng My;079161557756;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-024;204
+805;Đặng Thị Mai Mai;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-024;204
+806;Dương Kim Nga;079061524472;1976;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-025, thường trú tại Ấp Đông Lân, Xã Bà Điểm;205
+807;Huỳnh Đức Hiếu;079163825178;1978;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-025;205
+808;Võ Đình Bình;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-025;205
+809;Phạm Hữu Hiếu;0790101133759;2008;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-025;205
+810;Ngô Xuân Trung;0791100692802;2009;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-025;205
+811;Hoàng Thanh Trung;0790104537092;1984;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-026, thường trú tại Ấp Đông Lân, Xã Bà Điểm;206
+812;Lý Thanh Lan;079163839407;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-026;206
+813;Lê Minh Quân;0791104896881;1963;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-027, thường trú tại Ấp Đông Lân, Xã Bà Điểm;207
+814;Vũ Ngọc Oanh;079074351951;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-027;207
+815;Trần Minh Hùng;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-027;207
+816;Hoàng Phương Bích;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-027;207
+817;Phạm Xuân Tuấn;0791104190646;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-028, thường trú tại Ấp Đông Lân, Xã Bà Điểm;208
+818;Đỗ Thùy Quỳnh;079060307571;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-028;208
+819;Hoàng Quốc Khoa;079193103989;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-028;208
+820;Lê Bích Oanh;079198895205;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-028;208
+821;Võ Thanh Long;079086171511;1995;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-028;208
+822;Hoàng Xuân An;079189523547;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-029, thường trú tại Ấp Đông Lân, Xã Bà Điểm;209
+823;Lê Phương Bích;0791103482676;1967;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-029;209
+824;Hoàng Hồng Tuyết;0790101303258;1982;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-030, thường trú tại Ấp Đông Lân, Xã Bà Điểm;210
+825;Phạm Thanh Minh;079071180283;1979;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-030;210
+826;Lê Xuân Thịnh;079080289312;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-030;210
+827;Vũ Như Thu;079074485795;1972;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-031, thường trú tại Ấp Đông Lân, Xã Bà Điểm;211
+828;Phan Hoàng Long;079178299302;1970;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-031;211
+829;Nguyễn Quốc Tùng;079161121192;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-031;211
+830;Đỗ Trọng Thịnh;079189622440;1966;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-032, thường trú tại Ấp Đông Lân, Xã Bà Điểm;212
+831;Phan Phương Bích;079089959443;1968;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-032;212
+832;Nguyễn Đức Tài;079181108823;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-033, thường trú tại Ấp Đông Lân, Xã Bà Điểm;213
+833;Ngô Thị Trang;079175586180;1964;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-033;213
+834;Đặng Văn Tùng;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-033;213
+835;Lê Thùy Nhung;0791103111169;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-033;213
+836;Nguyễn Văn Tuấn;0791103551592;1934;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-033;213
+837;Hồ Quốc Thành;079168406277;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-034, thường trú tại Ấp Đông Lân, Xã Bà Điểm;214
+838;Nguyễn Phương Hương;079085594141;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-034;214
+839;Ngô Phương Chi;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-034;214
+840;Lý Kim Trang;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-034;214
+841;Trần Hoàng Long;079086758201;1998;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-034;214
+842;Hoàng Hoàng Hiếu;079162376270;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-035, thường trú tại Ấp Đông Lân, Xã Bà Điểm;215
+843;Phan Phương Thu;0791102434596;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-035;215
+844;Phan Kim Trâm;079094166182;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-035;215
+845;Hồ Thị Mai Trang;079063820516;2012;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-035;215
+846;Hoàng Quốc Hải;079071212916;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-036, thường trú tại Ấp Đông Lân, Xã Bà Điểm;216
+847;Hoàng Như Lan;079198970690;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-036;216
+848;Lê Văn Long;0791104283351;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-036;216
+849;Hồ Thị Mai Nhung;079078425754;1984;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-037, thường trú tại Ấp Đông Lân, Xã Bà Điểm;217
+850;Võ Minh Hùng;079178332810;1985;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-037;217
+851;Hồ Thị Mai Hoa;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-037;217
+852;Hoàng Xuân Thắng;079086864654;1977;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-038, thường trú tại Ấp Đông Lân, Xã Bà Điểm;218
+853;Lê Hồng Yến;079092303871;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-038;218
+854;Võ Thị Mai Thu;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-038;218
+855;Lê Xuân Phúc;079065265505;1964;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-039, thường trú tại Ấp Đông Lân, Xã Bà Điểm;219
+856;Lê Thị Thu;0790104578754;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-039;219
+857;Nguyễn Hồng Tuyết;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-039;219
+858;Phạm Đức Thịnh;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-039;219
+859;Lý Hoàng Long;079073522376;1938;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-039;219
+860;Đỗ Hoàng Hiếu;079178809743;1960;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-040, thường trú tại Ấp Đông Lân, Xã Bà Điểm;220
+861;Hoàng Thị Mai Nhung;079074671969;1961;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-040;220
+862;Huỳnh Thùy Hà;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-040;220
+863;Ngô Thị My;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-040;220
+864;Dương Phương Hương;079096706211;1981;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-041, thường trú tại Ấp Đông Lân, Xã Bà Điểm;221
+865;Ngô Thanh Đức;079193773884;1982;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-041;221
+866;Huỳnh Thị Mai Yến;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-041;221
+867;Hồ Như Nhung;079092727152;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-041;221
+868;Phan Đình Dũng;079062486835;2007;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-041;221
+869;Lê Hoàng Sơn;079074458279;2005;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-041;221
+870;Phan Hoàng Dũng;0791103167597;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-042, thường trú tại Ấp Đông Lân, Xã Bà Điểm;222
+871;Dương Ngọc Yến;079077714884;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-042;222
+872;Ngô Đình Long;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-042;222
+873;Ngô Hoàng Thịnh;079088550937;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-042;222
+874;Võ Quốc Long;0790103914399;1941;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-042;222
+875;Đặng Hoàng Hùng;079175365400;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-043, thường trú tại Ấp Đông Lân, Xã Bà Điểm;223
+876;Võ Hồng Linh;079097503016;1968;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-043;223
+877;Nguyễn Thanh Đức;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-043;223
+878;Trần Đức Hiếu;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-043;223
+879;Ngô Thùy Bích;079066380711;1985;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-044, thường trú tại Ấp Đông Lân, Xã Bà Điểm;224
+880;Đặng Đức Quân;079086521414;1984;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-044;224
+881;Dương Đức Hiếu;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-044;224
+882;Hoàng Thị Mai Linh;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-044;224
+883;Huỳnh Thanh My;079091165305;1976;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-045, thường trú tại Ấp Đông Lân, Xã Bà Điểm;225
+884;Huỳnh Xuân Đức;079073552587;1973;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-045;225
+885;Lê Thùy Nhung;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-045;225
+886;Lý Thanh Hiếu;079078617849;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-046, thường trú tại Ấp Đông Lân, Xã Bà Điểm;226
+887;Lê Như Dung;079061832600;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-046;226
+888;Dương Thùy Chi;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-046;226
+889;Hồ Thị Mai Thảo;079087527280;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-046;226
+890;Trần Hữu Long;079169829542;1963;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-047, thường trú tại Ấp Đông Lân, Xã Bà Điểm;227
+891;Võ Như Trang;079190602003;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-047;227
+892;Võ Như Hà;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-047;227
+893;Nguyễn Kim My;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-047;227
+894;Huỳnh Trọng Tuấn;079172660745;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-048, thường trú tại Ấp Đông Lân, Xã Bà Điểm;228
+895;Phạm Phương Yến;079166118016;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-048;228
+896;Phan Thanh Hạnh;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-048;228
+897;Ngô Kim Tuyết;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-048;228
+898;Vũ Thanh Tùng;079163963526;1965;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-049, thường trú tại Ấp Đông Lân, Xã Bà Điểm;229
+899;Nguyễn Phương Ngân;079182450412;1964;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-049;229
+900;Nguyễn Ngọc Lan;079082541503;1960;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-050, thường trú tại Ấp Đông Lân, Xã Bà Điểm;230
+901;Đỗ Xuân Hải;079086510952;1961;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-050;230
+902;Hồ Đình Nam;0790103722169;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-051, thường trú tại Ấp Đông Lân, Xã Bà Điểm;231
+903;Huỳnh Như Quỳnh;079091487024;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-051;231
+904;Trần Đình Hải;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-051;231
+905;Đặng Đình Long;079175445568;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-051;231
+906;Nguyễn Đức Thắng;079198187986;2005;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-051;231
+907;Ngô Thùy Hương;079199779344;1985;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-052, thường trú tại Ấp Đông Lân, Xã Bà Điểm;232
+908;Lý Hữu Tuấn;079167616365;1987;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-052;232
+909;Phan Như Bích;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-052;232
+910;Phan Như Nga;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-052;232
+911;Lý Bích Ngân;079065837398;1961;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-052;232
+912;Nguyễn Hồng Hoa;079060152957;1999;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-052;232
+913;Dương Văn Long;079169176255;1972;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-053, thường trú tại Ấp Đông Lân, Xã Bà Điểm;233
+914;Hồ Kim Hương;079164850870;1972;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-053;233
+915;Trần Thanh Đức;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-053;233
+916;Lê Thị Linh;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-053;233
+917;Hồ Văn Huy;079096733611;1996;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-053;233
+918;Trần Hồng My;079180785396;1979;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-054, thường trú tại Ấp Đông Lân, Xã Bà Điểm;234
+919;Nguyễn Văn Trung;079190921010;1979;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-054;234
+920;Vũ Đình Dũng;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-054;234
+921;Trần Hoàng Long;079087453949;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-055, thường trú tại Ấp Đông Lân, Xã Bà Điểm;235
+922;Võ Thị Nhung;079089448883;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-055;235
+923;Huỳnh Quốc Minh;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-055;235
+924;Dương Văn Trung;079070956737;2008;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-055;235
+925;Nguyễn Trọng Sơn;079183107815;1950;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-055;235
+926;Phan Văn Hải;079062126466;1949;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-055;235
+927;Ngô Đức Quân;0790102671646;1977;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-056, thường trú tại Ấp Đông Lân, Xã Bà Điểm;236
+928;Đỗ Như Tuyết;079070878866;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-056;236
+929;Đỗ Thanh Trang;079072502414;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-057, thường trú tại Ấp Đông Lân, Xã Bà Điểm;237
+930;Nguyễn Quốc Đức;079092619416;1968;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-057;237
+931;Phan Đình Quân;079183766287;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-058, thường trú tại Ấp Đông Lân, Xã Bà Điểm;238
+932;Vũ Thùy Mai;079091330101;1991;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-058;238
+933;Trần Hoàng Sơn;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-058;238
+934;Vũ Kim Thu;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-058;238
+935;Đỗ Phương Nga;079161405314;1960;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-058;238
+936;Nguyễn Thị Mai Nga;079198393448;1964;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-059, thường trú tại Ấp Đông Lân, Xã Bà Điểm;239
+937;Trần Đức Thịnh;079190162448;1964;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-059;239
+938;Võ Hoàng Thành;079095385723;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-059;239
+939;Hồ Xuân Minh;079187258133;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-DL-059;239
+940;Hồ Văn Nam;079185564310;1998;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-DL-059;239
+941;Đỗ Quốc Hải;079169679845;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-DL-060, thường trú tại Ấp Đông Lân, Xã Bà Điểm;240
+942;Phan Thị Mai Anh;079176553854;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-DL-060;240
+943;Lý Hữu Huy;079161523855;1969;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-001, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;241
+944;Bùi Thị Anh;079063364743;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-001;241
+945;Đỗ Kim Anh;079162450987;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-001;241
+946;Phan Kim Dung;079185601729;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-001;241
+947;Hoàng Minh Dũng;079193438546;2005;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-001;241
+948;Trần Hoàng Dũng;0791103838643;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-002, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;242
+949;Dương Thị Thu;0791104333850;1961;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-002;242
+950;Lý Thanh Nga;079094689677;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-002;242
+951;Lê Hoàng Trung;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-002;242
+952;Ngô Phương Dung;0791100176669;1988;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-003, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;243
+953;Bùi Hữu Huy;079167319894;1988;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-003;243
+954;Đặng Thị Mai Chi;079083884345;1969;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-004, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;244
+955;Hoàng Đức Dũng;079097185214;1969;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-004;244
+956;Ngô Văn Minh;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-004;244
+957;Hoàng Thùy Trâm;079063320626;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-004;244
+958;Ngô Bích Ngân;079196424651;1947;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-004;244
+959;Nguyễn Thanh Thảo;079063842078;1944;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-004;244
+960;Đặng Quốc Thành;079178212142;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-005, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;245
+961;Hoàng Ngọc Trang;079193743421;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-005;245
+962;Võ Bích Ngân;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-005;245
+963;Lý Hữu Thành;079065538868;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-006, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;246
+964;Đỗ Thùy Phương;079068154596;1972;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-006;246
+965;Lý Thị Mai Nhung;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-006;246
+966;Đặng Minh Thắng;0791101425481;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-006;246
+967;Dương Văn Nghĩa;079099988708;1944;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-006;246
+968;Phạm Thùy Oanh;079191350445;1949;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-006;246
+969;Võ Đình Hải;079165578669;1965;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-007, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;247
+970;Võ Như Lan;079179914367;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-007;247
+971;Nguyễn Hồng Quỳnh;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-007;247
+972;Hoàng Thanh Bích;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-007;247
+973;Lê Thùy Linh;079090102045;1979;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-008, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;248
+974;Phan Hoàng Hiếu;079172785518;1980;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-008;248
+975;Bùi Hồng Quỳnh;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-008;248
+976;Bùi Đình Khoa;079071953264;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-008;248
+977;Bùi Đức Tài;079085135528;1953;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-008;248
+978;Lê Đức Tài;079185141141;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-009, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;249
+979;Đỗ Hồng Thảo;079070180254;1974;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-009;249
+980;Võ Bích Yến;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-009;249
+981;Vũ Thị Trang;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-009;249
+982;Vũ Quốc Sơn;079198654271;1952;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-009;249
+983;Hồ Trọng Hùng;079096782438;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-010, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;250
+984;Phan Thị Tuyết;079186989066;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-010;250
+985;Phạm Đình Sơn;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-010;250
+986;Dương Như Hoa;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-010;250
+987;Trần Ngọc Hà;079169365751;2006;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-010;250
+988;Đỗ Hoàng Hùng;0791103496882;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-011, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;251
+989;Vũ Thị Mai Thảo;079195265310;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-011;251
+990;Trần Hoàng Long;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-011;251
+991;Ngô Xuân Vinh;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-011;251
+992;Phan Văn Thịnh;079179276677;1945;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-011;251
+993;Đặng Ngọc Bích;079179849470;2000;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-011;251
+994;Dương Hồng Chi;079171620333;1986;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-012, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;252
+995;Hồ Minh Nghĩa;079090369256;1985;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-012;252
+996;Võ Quốc Phúc;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-012;252
+997;Dương Bích Thảo;079187610887;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-012;252
+998;Trần Thanh Dũng;079080170303;2002;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-012;252
+999;Võ Văn Sơn;079060159766;1980;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-013, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;253
+1000;Phạm Kim Chi;079066324201;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-013;253
+1001;Đỗ Hữu Vinh;079193762065;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-014, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;254
+1002;Bùi Thị Mai Hạnh;079169532867;1972;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-014;254
+1003;Hoàng Thanh Phúc;079066527943;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-014;254
+1004;Đặng Quốc Phúc;079084944662;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-015, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;255
+1005;Đặng Thùy Hoa;079187222729;1984;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-015;255
+1006;Dương Quốc Nghĩa;0790103372505;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-015;255
+1007;Phan Kim Trâm;079092193324;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-015;255
+1008;Huỳnh Hồng Quỳnh;079161323040;1968;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-016, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;256
+1009;Lê Hữu Phúc;079183725126;1965;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-016;256
+1010;Phan Hoàng Tùng;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-016;256
+1011;Hoàng Thị Dung;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-016;256
+1012;Lê Trọng Thắng;0791103568342;1944;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-016;256
+1013;Nguyễn Văn Hiếu;079075327859;2005;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-016;256
+1014;Phan Hữu Nam;079169937359;1974;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-017, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;257
+1015;Phan Thị My;079161449691;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-017;257
+1016;Dương Thùy Trang;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-017;257
+1017;Hoàng Văn Dũng;079060650465;1961;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-018, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;258
+1018;Phan Hồng Tuyết;079094122130;1961;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-018;258
+1019;Lý Thùy Huyền;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-018;258
+1020;Dương Đình Hùng;079182918103;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-019, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;259
+1021;Bùi Thị Hạnh;079069525948;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-019;259
+1022;Nguyễn Ngọc Tuyết;079063264715;1966;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-020, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;260
+1023;Nguyễn Văn Thịnh;079075581208;1964;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-020;260
+1024;Hồ Minh Dũng;079071810923;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-021, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;261
+1025;Võ Thị Mai My;079176687212;1965;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-021;261
+1026;Đặng Kim Mai;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-021;261
+1027;Vũ Như Anh;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-021;261
+1028;Võ Hữu An;079062849516;1981;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-022, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;262
+1029;Lý Như Lan;079098694110;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-022;262
+1030;Ngô Thanh Tùng;079178337504;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-023, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;263
+1031;Võ Thùy Lan;079082501301;1972;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-023;263
+1032;Đặng Phương Nga;079198888908;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-023;263
+1033;Nguyễn Bích Huyền;079083779399;1987;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-024, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;264
+1034;Lý Thanh Khoa;0791102512769;1989;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-024;264
+1035;Vũ Quốc Nam;079177959306;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-024;264
+1036;Võ Phương Nhung;079182991563;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-024;264
+1037;Vũ Đức Dũng;079077267259;1965;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-024;264
+1038;Phan Ngọc Trang;079184296262;1961;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-024;264
+1039;Dương Kim Oanh;079184475830;1985;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-025, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;265
+1040;Đặng Hoàng Nghĩa;079070380030;1986;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-025;265
+1041;Huỳnh Hữu Đức;079197379476;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-025;265
+1042;Ngô Hữu Nghĩa;079095761076;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-026, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;266
+1043;Dương Bích Hương;079198137510;1959;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-026;266
+1044;Hoàng Xuân Long;;2018;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-026;266
+1045;Đỗ Ngọc My;079193231849;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-026;266
+1046;Ngô Thùy Phương;0791103579281;2008;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-026;266
+1047;Dương Hồng Lan;079170225278;1937;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-026;266
+1048;Phan Đình Hùng;079067836709;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-027, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;267
+1049;Dương Thanh Hà;079161803599;1972;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-027;267
+1050;Lê Đình Khoa;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-027;267
+1051;Võ Trọng Trung;079083301127;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-027;267
+1052;Vũ Trọng Cường;079164806877;1996;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-027;267
+1053;Vũ Thị Thu;079091980739;2008;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-027;267
+1054;Hồ Bích Phương;079097210691;1988;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-028, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;268
+1055;Ngô Đình Đức;079089598291;1990;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-028;268
+1056;Võ Ngọc Yến;079068668941;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-028;268
+1057;Lý Quốc Tài;079082506371;1961;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-029, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;269
+1058;Đỗ Thị Mai;079173364331;1961;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-029;269
+1059;Nguyễn Thùy Trâm;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-029;269
+1060;Lê Thị Oanh;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-029;269
+1061;Đặng Thị Mai Hương;079187177498;1977;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-030, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;270
+1062;Huỳnh Trọng Thành;079198831014;1975;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-030;270
+1063;Trần Hoàng Hiếu;079066918442;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-030;270
+1064;Dương Kim Trâm;079084459783;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-030;270
+1065;Lê Hoàng Cường;079171942959;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-031, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;271
+1066;Phan Kim Hương;079197894564;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-031;271
+1067;Lý Như Thảo;079179200320;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-031;271
+1068;Ngô Như Thảo;079168756831;1962;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-032, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;272
+1069;Dương Xuân Thắng;079065782033;1962;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-032;272
+1070;Đỗ Kim Hạnh;079167340346;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-032;272
+1071;Phạm Minh Phúc;079083703299;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-032;272
+1072;Dương Kim Ngân;079190203488;1940;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-032;272
+1073;Huỳnh Hoàng Quân;079080341356;2002;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-032;272
+1074;Dương Xuân Sơn;079176304829;1965;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-033, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;273
+1075;Huỳnh Như Hạnh;079166138230;1967;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-033;273
+1076;Phan Xuân Cường;079165756964;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-033;273
+1077;Lê Bích Bích;079191308771;1984;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-034, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;274
+1078;Trần Quốc Phúc;079072923005;1986;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-034;274
+1079;Bùi Trọng Cường;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-034;274
+1080;Lê Phương Phương;079198332038;1988;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-035, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;275
+1081;Phan Đức Bình;079097680900;1985;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-035;275
+1082;Bùi Đình Minh;079198342346;1986;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-036, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;276
+1083;Hồ Như Nga;0790101410997;1987;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-036;276
+1084;Võ Hoàng Phúc;079088279890;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-036;276
+1085;Bùi Thị Hoa;079092877981;1980;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-037, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;277
+1086;Phạm Hữu Thành;079077544670;1978;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-037;277
+1087;Vũ Phương Quỳnh;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-037;277
+1088;Lý Thị Quỳnh;079077208892;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-037;277
+1089;Hoàng Thanh Tài;079065423535;1998;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-037;277
+1090;Võ Đình Quân;079197726687;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-038, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;278
+1091;Hoàng Kim Oanh;079085224210;1980;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-038;278
+1092;Nguyễn Hoàng Hiếu;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-038;278
+1093;Phan Văn Huy;0791100374331;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-039, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;279
+1094;Phạm Thùy Hương;079062624480;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-039;279
+1095;Ngô Thanh Tùng;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-039;279
+1096;Lê Hồng Ngân;079066472008;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-039;279
+1097;Lý Phương Trang;079175365106;1945;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-039;279
+1098;Hoàng Văn Cường;079067101669;2009;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-039;279
+1099;Vũ Minh Hải;079065521876;1974;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-040, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;280
+1100;Võ Như Hà;0790101592781;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-040;280
+1101;Huỳnh Xuân Vinh;079160254676;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-040;280
+1102;Phạm Kim Lan;079182210707;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-040;280
+1103;Trần Như Hoa;0790104864684;1989;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-041, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;281
+1104;Lê Đức Minh;079173697519;1991;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-041;281
+1105;Lê Văn Đức;;2022;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-041;281
+1106;Bùi Kim Nga;079083510646;1964;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-042, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;282
+1107;Đặng Minh Hải;079181199378;1964;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-042;282
+1108;Võ Văn Bình;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-042;282
+1109;Dương Minh Tuấn;079196735186;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-043, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;283
+1110;Phan Kim Bích;079094877285;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-043;283
+1111;Vũ Ngọc Anh;079063918366;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-043;283
+1112;Đỗ Hoàng Trung;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-043;283
+1113;Lý Phương Linh;0791102640915;1952;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-043;283
+1114;Lý Hữu Hải;079068899956;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-044, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;284
+1115;Lý Thùy Nhung;079182991111;1968;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-044;284
+1116;Hoàng Ngọc Huyền;079187287526;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-044;284
+1117;Đỗ Xuân Hiếu;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-044;284
+1118;Ngô Đức Minh;079090589080;1964;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-045, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;285
+1119;Lê Thùy Lan;079081307130;1966;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-045;285
+1120;Võ Bích Bích;079176947507;1989;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-046, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;286
+1121;Trần Trọng Đức;079170261030;1991;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-046;286
+1122;Trần Thị Mai Huyền;079167866008;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-046;286
+1123;Phạm Phương Hạnh;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-046;286
+1124;Lý Đình An;079176341490;1964;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-046;286
+1125;Bùi Quốc Thắng;079082239856;1961;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-046;286
+1126;Võ Thanh Minh;079177623680;1974;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-047, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;287
+1127;Bùi Thanh Dung;079167344146;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-047;287
+1128;Đỗ Thanh Thu;079084538738;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-047;287
+1129;Vũ Bích Hạnh;079081545947;1978;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-048, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;288
+1130;Võ Văn Tài;079065205254;1978;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-048;288
+1131;Ngô Thị Phương;079084146620;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-048;288
+1132;Đặng Trọng Tài;079082646723;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-048;288
+1133;Đặng Thùy Trâm;0790104784693;1968;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-049, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;289
+1134;Ngô Văn Trung;079072544239;1967;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-049;289
+1135;Huỳnh Thùy Quỳnh;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-049;289
+1136;Lý Đình Hiếu;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-049;289
+1137;Võ Hồng My;079077703215;2004;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-049;289
+1138;Võ Thị Mai Dung;079163398122;1988;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-050, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;290
+1139;Huỳnh Quốc Thịnh;079165495951;1989;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-050;290
+1140;Đỗ Minh Thắng;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-050;290
+1141;Võ Trọng Minh;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-050;290
+1142;Đặng Như Yến;079190561421;1996;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-050;290
+1143;Đặng Đức Dũng;079182201852;2002;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-050;290
+1144;Trần Ngọc Tuyết;079061822725;1960;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-051, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;291
+1145;Đỗ Xuân Long;079192906403;1957;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-051;291
+1146;Trần Hữu Nghĩa;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-051;291
+1147;Phan Văn Nghĩa;0791103314437;1983;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-052, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;292
+1148;Nguyễn Thùy Hương;079184541396;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-052;292
+1149;Dương Thanh Linh;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-052;292
+1150;Lê Quốc Huy;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-052;292
+1151;Hồ Hoàng Nghĩa;079185590801;1960;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-052;292
+1152;Ngô Như Nga;079162716957;1960;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-052;292
+1153;Đặng Bích Lan;079071766969;1978;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-053, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;293
+1154;Hoàng Trọng Tùng;079191228096;1978;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-053;293
+1155;Phạm Thị Mai Yến;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-053;293
+1156;Dương Thị Mai Ngân;079196727622;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-054, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;294
+1157;Huỳnh Trọng Hiếu;079175757289;1972;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-054;294
+1158;Dương Thùy Mai;079166894846;1961;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-055, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;295
+1159;Phạm Quốc Long;079181254829;1962;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-055;295
+1160;Ngô Thùy Thảo;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-055;295
+1161;Lý Thùy Yến;079195109424;1973;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-056, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;296
+1162;Hồ Thanh Thịnh;079077194955;1975;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-056;296
+1163;Hồ Ngọc Hạnh;079173889102;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-056;296
+1164;Huỳnh Bích Dung;079180400653;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-056;296
+1165;Ngô Ngọc Ngân;079080834777;1965;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-057, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;297
+1166;Lê Hoàng Nam;079167608646;1967;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-057;297
+1167;Nguyễn Minh Tài;079199541446;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-057;297
+1168;Đỗ Minh Hải;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-057;297
+1169;Phan Bích Bích;079078909254;1941;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-057;297
+1170;Nguyễn Hồng Ngân;079074812629;1995;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-HL-057;297
+1171;Đặng Hoàng Nam;0791103595509;1982;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-058, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;298
+1172;Đặng Kim Oanh;079092319740;1982;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-058;298
+1173;Trần Kim Phương;079082263818;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-059, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;299
+1174;Lê Hữu Nam;079197966958;1973;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-059;299
+1175;Trần Hữu Hùng;079080888598;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-059;299
+1176;Hồ Quốc Long;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-059;299
+1177;Lê Xuân Tuấn;079196772896;1949;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-HL-059;299
+1178;Nguyễn Đức Minh;079167786026;1984;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-HL-060, thường trú tại Ấp Hậu Lân, Xã Bà Điểm;300
+1179;Huỳnh Phương Bích;079079557113;1986;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-HL-060;300
+1180;Lý Đức Sơn;079080528731;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-001, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;301
+1181;Hoàng Thùy Hương;079198221850;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-001;301
+1182;Đỗ Ngọc Phương;079190881757;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-001;301
+1183;Đỗ Minh Hiếu;079065965435;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-001;301
+1184;Đặng Kim Hạnh;079197686457;1987;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-002, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;302
+1185;Phan Quốc Nghĩa;079087363894;1987;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-002;302
+1186;Võ Hồng Chi;079178896984;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-002;302
+1187;Lê Bích Nhung;079172292882;1984;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-003, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;303
+1188;Võ Thanh Dũng;079091409252;1986;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-003;303
+1189;Trần Trọng Hùng;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-003;303
+1190;Đặng Hữu Trung;079181531582;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-003;303
+1191;Bùi Thanh Dung;079095428806;1955;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-003;303
+1192;Đặng Kim Trang;079177976944;1958;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-003;303
+1193;Huỳnh Hữu Minh;079096598220;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-004, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;304
+1194;Nguyễn Thùy Mai;079067560318;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-004;304
+1195;Hoàng Hữu Cường;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-004;304
+1196;Nguyễn Quốc Nghĩa;0791100795671;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-005, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;305
+1197;Ngô Thị Mai;079062844012;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-005;305
+1198;Võ Quốc Đức;0791104549282;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-005;305
+1199;Lê Thanh Minh;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-005;305
+1200;Trần Thanh Huyền;079161903219;1951;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-005;305
+1201;Bùi Đình Hiếu;079180483338;1973;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-006, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;306
+1202;Hồ Thanh Chi;079062732345;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-006;306
+1203;Trần Quốc An;079193987503;1965;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-007, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;307
+1204;Nguyễn Thùy Hà;079161133231;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-007;307
+1205;Nguyễn Minh Hiếu;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-007;307
+1206;Lý Văn Minh;079177984738;1961;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-008, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;308
+1207;Hoàng Phương Trang;079080938414;1959;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-008;308
+1208;Hoàng Văn Minh;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-008;308
+1209;Trần Minh Phúc;079164505653;1960;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-009, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;309
+1210;Võ Thanh Ngân;079067548983;1961;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-009;309
+1211;Phan Thị Thu;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-009;309
+1212;Hồ Đình Quân;079080539415;1963;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-010, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;310
+1213;Hoàng Kim Huyền;079064300074;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-010;310
+1214;Nguyễn Hồng Oanh;079073878065;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-010;310
+1215;Hoàng Hồng Thu;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-010;310
+1216;Huỳnh Thanh Bích;079098813028;1997;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-010;310
+1217;Trần Như Dung;079075532531;1965;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-011, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;311
+1218;Vũ Hữu Bình;079073800171;1967;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-011;311
+1219;Đỗ Bích My;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-011;311
+1220;Vũ Bích Quỳnh;;2022;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-011;311
+1221;Võ Văn Huy;079061237985;2006;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-011;311
+1222;Lý Thanh Dung;079064787745;1995;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-011;311
+1223;Vũ Hồng Nhung;079073220816;1969;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-012, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;312
+1224;Hồ Trọng An;079181618019;1970;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-012;312
+1225;Phan Kim Hạnh;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-012;312
+1226;Huỳnh Trọng Tùng;;2021;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-012;312
+1227;Hồ Thị Mai Dung;079168573012;1945;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-012;312
+1228;Dương Đình Trung;079193775641;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-013, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;313
+1229;Phan Như Dung;079080646788;1971;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-013;313
+1230;Hoàng Thị Anh;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-013;313
+1231;Hoàng Thùy Ngân;079185376692;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-013;313
+1232;Lê Ngọc Yến;079199376066;1965;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-014, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;314
+1233;Lê Minh Vinh;079061919382;1964;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-014;314
+1234;Hồ Đức Huy;079078917082;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-015, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;315
+1235;Hồ Như Quỳnh;079081770818;1972;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-015;315
+1236;Hồ Thị Bích;079092678312;1980;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-016, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;316
+1237;Phan Thanh Tài;079088523663;1979;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-016;316
+1238;Đỗ Phương Huyền;;2015;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-016;316
+1239;Lý Hoàng Nam;079165786728;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-016;316
+1240;Đỗ Bích Hoa;079067488392;1954;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-016;316
+1241;Võ Đình Huy;079073833861;1957;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-016;316
+1242;Huỳnh Văn Đức;079176800924;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-017, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;317
+1243;Phạm Hồng Hoa;079173312338;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-017;317
+1244;Đặng Ngọc My;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-017;317
+1245;Lý Văn An;079099439599;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-017;317
+1246;Phạm Như My;079092752980;1947;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-017;317
+1247;Lê Như Tuyết;079084506629;1974;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-018, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;318
+1248;Hoàng Quốc Thịnh;079095393410;1973;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-018;318
+1249;Hồ Thị Nhung;079174187961;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-018;318
+1250;Trần Hữu Quân;0790100747726;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-019, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;319
+1251;Vũ Phương Tuyết;079171243479;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-019;319
+1252;Dương Trọng Huy;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-019;319
+1253;Lý Thùy Hoa;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-019;319
+1254;Hoàng Hoàng Bình;079065318406;1945;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-019;319
+1255;Ngô Thanh Cường;079072878784;1942;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-019;319
+1256;Trần Thị Mai Thảo;079090760868;1974;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-020, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;320
+1257;Đỗ Hữu Sơn;079092793917;1972;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-020;320
+1258;Lý Hữu Long;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-020;320
+1259;Hoàng Quốc Nghĩa;;2019;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-020;320
+1260;Phạm Hữu Vinh;079161623892;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-021, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;321
+1261;Đặng Kim Nhung;0791100466444;1967;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-021;321
+1262;Trần Văn An;079176411768;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-021;321
+1263;Lê Xuân Hiếu;079066987333;2008;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-021;321
+1264;Lê Thanh Trung;0790103472639;1939;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-021;321
+1265;Dương Hữu Sơn;079092532061;2006;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-021;321
+1266;Võ Hồng Thảo;079178993364;1982;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-022, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;322
+1267;Dương Hữu Bình;079191673676;1980;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-022;322
+1268;Đỗ Đức Nghĩa;;2014;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-022;322
+1269;Dương Trọng Quân;079072718167;1977;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-023, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;323
+1270;Nguyễn Thị Mai Huyền;079082812645;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-023;323
+1271;Trần Văn Dũng;079191700094;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-024, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;324
+1272;Nguyễn Bích My;079160661822;1973;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-024;324
+1273;Bùi Trọng Khoa;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-024;324
+1274;Đặng Trọng Tùng;0791100297112;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-024;324
+1275;Nguyễn Hoàng Cường;079062189086;1960;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-025, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;325
+1276;Hoàng Phương Hoa;079196391312;1962;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-025;325
+1277;Vũ Văn Hiếu;079091970504;1982;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-026, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;326
+1278;Dương Như Dung;0791101965679;1984;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-026;326
+1279;Huỳnh Ngọc Tuyết;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-026;326
+1280;Trần Kim Hương;079176210491;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-026;326
+1281;Vũ Minh Huy;079083973420;2004;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-026;326
+1282;Vũ Trọng An;079089273045;1997;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-026;326
+1283;Hoàng Hữu Thắng;079099791221;1982;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-027, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;327
+1284;Hoàng Bích Phương;079174574127;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-027;327
+1285;Vũ Kim Thu;079090493332;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-027;327
+1286;Võ Ngọc Mai;;2021;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-027;327
+1287;Đặng Thị Mai Hương;079063257177;2001;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-027;327
+1288;Lý Hồng Thu;079061873348;1955;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-027;327
+1289;Lê Hoàng Nghĩa;079060468341;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-028, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;328
+1290;Đặng Thùy Nhung;079197818823;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-028;328
+1291;Lý Trọng Huy;079081230808;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-028;328
+1292;Võ Xuân Nam;079082154676;1981;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-029, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;329
+1293;Hoàng Hồng Nhung;079181531684;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-029;329
+1294;Võ Bích Huyền;0790103731850;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-029;329
+1295;Huỳnh Quốc Vinh;079191210979;1988;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-030, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;330
+1296;Phan Thùy Lan;079072989238;1988;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-030;330
+1297;Ngô Thanh Chi;079091351646;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-030;330
+1298;Bùi Xuân An;079085110728;2010;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-030;330
+1299;Lê Hoàng Thịnh;079077529293;1964;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-030;330
+1300;Nguyễn Thị Mai Phương;079063721886;2005;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-030;330
+1301;Bùi Như Lan;079076430223;1987;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-031, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;331
+1302;Trần Minh Đức;079192470007;1986;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-031;331
+1303;Phan Minh Thành;079175454285;2012;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-031;331
+1304;Hoàng Đình Tuấn;079176644300;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-031;331
+1305;Nguyễn Thị Mai Oanh;079183937707;1966;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-032, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;332
+1306;Hoàng Đình Nghĩa;079161398737;1964;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-032;332
+1307;Hồ Hoàng Thịnh;079197282491;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-032;332
+1308;Nguyễn Đình Nghĩa;079164218326;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-032;332
+1309;Võ Xuân Thịnh;079091874306;2004;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-032;332
+1310;Ngô Đức Đức;079175199142;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-033, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;333
+1311;Hồ Bích My;079177960622;1975;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-033;333
+1312;Vũ Thị Mai Hương;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-033;333
+1313;Võ Thị Mai Quỳnh;079086763147;1963;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-034, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;334
+1314;Vũ Minh Long;079169180311;1965;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-034;334
+1315;Hoàng Văn Nghĩa;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-034;334
+1316;Võ Quốc Long;079092384722;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-035, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;335
+1317;Vũ Kim Linh;079092575258;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-035;335
+1318;Đặng Văn Hiếu;079171276050;2008;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-035;335
+1319;Ngô Như Bích;079073843995;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-035;335
+1320;Ngô Thị Mai Tuyết;079067755835;2003;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-035;335
+1321;Huỳnh Văn Hùng;079076778445;1981;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-036, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;336
+1322;Ngô Thùy Huyền;079191405114;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-036;336
+1323;Võ Trọng Hải;079080405800;1986;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-037, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;337
+1324;Đặng Thị Phương;0790103364334;1985;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-037;337
+1325;Đặng Đình Minh;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-037;337
+1326;Nguyễn Minh Bình;079183717361;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-038, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;338
+1327;Dương Thanh Thu;079192600002;1980;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-038;338
+1328;Võ Thanh Hải;079082934858;1971;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-039, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;339
+1329;Phạm Kim Yến;079092715080;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-039;339
+1330;Huỳnh Như Phương;079071374020;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-039;339
+1331;Dương Như Yến;079182438739;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-039;339
+1332;Nguyễn Như Hương;0790102244211;1999;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-039;339
+1333;Phạm Thanh Nam;079183575705;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-040, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;340
+1334;Võ Ngọc Thảo;079076417865;1988;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-040;340
+1335;Võ Hoàng Cường;079095968626;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-040;340
+1336;Lý Như Oanh;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-040;340
+1337;Lê Ngọc Oanh;079179861248;2009;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-040;340
+1338;Đặng Kim Nga;0791101932542;1961;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-040;340
+1339;Phan Hoàng Quân;079178955459;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-041, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;341
+1340;Vũ Kim Quỳnh;079093518747;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-041;341
+1341;Trần Phương Dung;079160568519;2006;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-041;341
+1342;Bùi Thanh Nga;079179323010;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-041;341
+1343;Phạm Đình Thắng;079185200512;1996;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-041;341
+1344;Dương Thanh My;079079211831;1942;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-041;341
+1345;Hồ Hữu Thắng;079081733944;1981;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-042, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;342
+1346;Phan Thùy My;079077197972;1983;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-042;342
+1347;Đỗ Hồng Anh;079060617288;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-042;342
+1348;Hoàng Trọng Long;079178763160;2005;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-042;342
+1349;Đặng Đức Bình;079194596289;2004;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-042;342
+1350;Lê Văn Cường;079075547026;1966;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-043, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;343
+1351;Vũ Thùy Mai;079084752300;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-043;343
+1352;Lê Hoàng Đức;079175303440;1976;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-044, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;344
+1353;Vũ Bích Nga;079162459125;1974;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-044;344
+1354;Lý Ngọc Thu;079095112916;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-044;344
+1355;Ngô Xuân Thành;079196747379;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-045, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;345
+1356;Phạm Phương Phương;079196665012;1977;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-045;345
+1357;Võ Hoàng Nghĩa;079174450604;2006;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-045;345
+1358;Huỳnh Phương Mai;079170146019;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-045;345
+1359;Nguyễn Thị Mai Hạnh;079188574479;1996;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-045;345
+1360;Bùi Hoàng Phúc;079179478646;1981;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-046, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;346
+1361;Đặng Ngọc Chi;0790100707178;1979;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-046;346
+1362;Lê Minh Cường;079078460251;1966;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-047, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;347
+1363;Dương Thị Mai Huyền;079184379466;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-047;347
+1364;Hồ Thanh Yến;0790103331794;2005;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-047;347
+1365;Lê Thị Nhung;;2019;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-047;347
+1366;Trần Thanh Bình;079092559668;1996;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-047;347
+1367;Bùi Văn An;079160246238;1960;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-048, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;348
+1368;Hoàng Kim Chi;079172410769;1958;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-048;348
+1369;Trần Ngọc Ngân;079189960181;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-048;348
+1370;Lê Đức Hùng;;2013;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-048;348
+1371;Trần Phương Bích;079083672190;2000;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-048;348
+1372;Phan Thanh Cường;0790101547011;1967;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-049, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;349
+1373;Đặng Thị Mai Lan;079082707598;1965;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-049;349
+1374;Dương Bích Linh;079170276770;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-049;349
+1375;Hoàng Thanh Hạnh;;2020;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-049;349
+1376;Lý Đình Tùng;079080131618;1942;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-049;349
+1377;Bùi Thùy Chi;079171472608;1982;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-050, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;350
+1378;Lý Hoàng Minh;079185318066;1979;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-050;350
+1379;Trần Kim Chi;;2018;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-050;350
+1380;Phan Thanh Quỳnh;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-050;350
+1381;Nguyễn Văn Nam;079166637300;1954;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-050;350
+1382;Nguyễn Thanh Phúc;079168443026;1958;MALE;Bố đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-050;350
+1383;Trần Quốc Thắng;079065683021;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-051, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;351
+1384;Võ Kim Hà;079168225367;1976;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-051;351
+1385;Lý Hồng Mai;079192461415;2010;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-051;351
+1386;Huỳnh Trọng Đức;079198836868;1978;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-052, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;352
+1387;Hoàng Như Trâm;079074834504;1978;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-052;352
+1388;Lê Ngọc Mai;079171543858;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-052;352
+1389;Hoàng Văn Quân;079164377366;2009;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-052;352
+1390;Bùi Xuân Trung;079183459116;1989;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-053, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;353
+1391;Võ Kim Hà;079182468936;1988;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-053;353
+1392;Vũ Minh Quân;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-053;353
+1393;Đặng Hoàng Quân;;2016;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-053;353
+1394;Lê Quốc Huy;079097752133;1975;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-054, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;354
+1395;Vũ Hồng Lan;0791102216331;1972;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-054;354
+1396;Đỗ Thùy Nhung;;2017;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-054;354
+1397;Nguyễn Đình Hùng;079083445310;2011;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-054;354
+1398;Đỗ Thùy Nga;079163866390;1953;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-054;354
+1399;Vũ Hồng Ngân;079097562284;1951;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-054;354
+1400;Phạm Quốc Huy;0790102229766;1985;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-055, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;355
+1401;Vũ Phương Anh;079071428449;1984;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-055;355
+1402;Vũ Kim Hoa;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-055;355
+1403;Bùi Thanh Nghĩa;;2020;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-055;355
+1404;Ngô Văn An;079093321282;2004;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-055;355
+1405;Dương Xuân Thành;079061242557;1970;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-056, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;356
+1406;Lý Bích Hạnh;079168224030;1970;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-056;356
+1407;Phan Ngọc Hoa;0790102138653;2008;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-056;356
+1408;Đặng Thanh Mai;079185104485;2009;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-056;356
+1409;Ngô Thị Mai Hoa;079061543434;1971;FEMALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-057, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;357
+1410;Đặng Xuân Nghĩa;079168345157;1973;MALE;Chồng;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-057;357
+1411;Phan Minh Quân;079188565409;2007;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-057;357
+1412;Ngô Thị Trang;0790103939479;2007;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-057;357
+1413;Vũ Xuân Vinh;079199183934;1982;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-058, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;358
+1414;Ngô Thanh Chi;079083596932;1980;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-058;358
+1415;Đặng Kim Tuyết;;2016;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-058;358
+1416;Đỗ Phương Oanh;;2013;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-058;358
+1417;Vũ Kim Thu;079180182037;1954;FEMALE;Mẹ đẻ;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-058;358
+1418;Ngô Quốc Long;079065906320;1968;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-059, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;359
+1419;Võ Hồng Thu;079084644125;1969;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-059;359
+1420;Đặng Thị Mai Linh;079180445559;2011;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-059;359
+1421;Võ Đình Quân;;2015;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-059;359
+1422;Hồ Thị My;079180361011;2004;FEMALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-059;359
+1423;Lý Minh Hải;079176253622;2004;MALE;Người thuê trọ;TEMPORARY;2026-08-15;Nhân khẩu thành viên thuộc hộ HK-TLN-059;359
+1424;Đặng Trọng Quân;079063530977;1962;MALE;Chủ hộ;PERMANENT;;Chủ hộ HK-TLN-060, thường trú tại Ấp Tiền Lân, Xã Bà Điểm;360
+1425;Đỗ Phương Oanh;079187815164;1963;FEMALE;Vợ;PERMANENT;;Vợ/Chồng cùng hộ gia đình HK-TLN-060;360
+1426;Hoàng Đình Dũng;;2017;MALE;Con trai;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-060;360
+1427;Trần Thùy Dung;;2014;FEMALE;Con gái;PERMANENT;;Nhân khẩu thành viên thuộc hộ HK-TLN-060;360

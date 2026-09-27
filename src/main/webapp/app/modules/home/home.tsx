@@ -26,8 +26,29 @@ export const Home = () => {
         <span className="hipster rounded" />
       </Col>
       <Col md="9">
-        <h1 className="display-4">Chào mừng bạn đến với Java Hipster!</h1>
-        <p className="lead">Đây là trang chủ của bạn</p>
+        <h1 className="display-4">Chào mừng bạn đến với Sunny TECH</h1>
+        <div
+          className="p-4 mb-4 rounded-3 text-white shadow-sm"
+          style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)' }}
+        >
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+              <span className="badge bg-warning text-dark mb-2 fw-bold">HỆ THỐNG AN NINH ĐỊA BÀN</span>
+              <h2 className="h3 fw-bold mb-1">Trung tâm Điều hành & Bản đồ GIS Số hóa</h2>
+              <p className="mb-0 text-light" style={{ opacity: 0.9 }}>
+                Bản đồ GIS tương tác, Heatmap an ninh trật tự, quản lý cơ sở kinh doanh có điều kiện, nhân khẩu, nhận diện OCR và tuần tra.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-warning fw-bold px-4 py-2 text-dark text-nowrap shadow"
+              onClick={() => navigate('/dashboard')}
+            >
+              Mở Bản Đồ & Dashboard ➔
+            </button>
+          </div>
+        </div>
+
         {account?.login ? (
           <div>
             <Alert variant="success">Bạn đang đăng nhập bằng tài khoản &quot;{account.login}&quot;.</Alert>

@@ -1,0 +1,9 @@
+export enum ResidenceType {
+  PERMANENT = 'PERMANENT',
+
+  TEMPORARY = 'TEMPORARY',
+
+  STAY_AWAY = 'STAY_AWAY',
+
+  UNVERIFIED = 'UNVERIFIED',
+}

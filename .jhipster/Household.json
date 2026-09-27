@@ -1,0 +1,141 @@
+{
+  "annotations": {
+    "changelogDate": "20260919110516"
+  },
+  "applications": ["Monolithic"],
+  "documentation": "Hộ gia đình / Cơ sở kinh doanh trên địa bàn",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "code",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "unique"]
+    },
+    {
+      "fieldName": "houseNumber",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "street",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "hamlet",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "neighborhoodGroup",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "alley",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "ownerName",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "ownerPhone",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "type",
+      "fieldType": "FacilityType",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "RESIDENTIAL,BUSINESS,BOARDING_HOUSE,RELIGIOUS,SPECIAL"
+    },
+    {
+      "fieldName": "businessName",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "businessCategory",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "residentsCount",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "maleCount",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "femaleCount",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "under18Count",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "above18Count",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "status",
+      "fieldType": "SecurityStatus",
+      "fieldValues": "NORMAL,WARNING,DANGER,CRITICAL"
+    },
+    {
+      "fieldName": "warningMessage",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "licenseExpiry",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "licenseType",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "latitude",
+      "fieldType": "Double"
+    },
+    {
+      "fieldName": "longitude",
+      "fieldType": "Double"
+    },
+    {
+      "fieldName": "notes",
+      "fieldType": "TextBlob"
+    },
+    {
+      "fieldName": "lastCheckedDate",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "officerInCharge",
+      "fieldType": "String"
+    }
+  ],
+  "jpaMetamodelFiltering": true,
+  "name": "Household",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityName": "resident",
+      "otherEntityRelationshipName": "household",
+      "relationshipName": "residents",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-many"
+    },
+    {
+      "otherEntityField": "name",
+      "otherEntityName": "areaZone",
+      "otherEntityRelationshipName": "households",
+      "relationshipName": "areaZone",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-one"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

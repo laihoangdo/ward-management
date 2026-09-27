@@ -151,3 +151,9 @@ Desktop.ini
 ######################
 coverage/
 .nyc_output/
+
+######################
+# Secrets & Local Config
+######################
+*firebase-applet-config.json
+!*firebase-applet-config.example.json

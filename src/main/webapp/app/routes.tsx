@@ -12,12 +12,16 @@ import { Authority } from 'app/shared/jhipster/constants';
 const loading = <div>loading ...</div>;
 
 const Admin = React.lazy(() => import('app/modules/administration'));
+const GisDashboard = React.lazy(() => import('app/gis/App'));
+
 const AppRoutes = () => {
   return (
     <div className="view-routes">
       <Suspense fallback={loading}>
         <ErrorBoundaryRoutes>
           <Route index element={<Home />} />
+          <Route path="dashboard" element={<GisDashboard />} />
+          <Route path="gis-dashboard" element={<GisDashboard />} />
           <Route path="logout" element={<Logout />} />
           <Route
             path="admin/*"

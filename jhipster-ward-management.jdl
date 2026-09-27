@@ -1,0 +1,155 @@
+/**
+ * JHipster JDL (JHipster Domain Language) Schema
+ * Tương thích 100% với repository: laihoangdo/ward-management
+ * Framework: JHipster 9.4.0 (Spring Boot 3 + PostgreSQL + PostGIS + React Vite)
+ *
+ * Cách sử dụng trên repo ward-management:
+ * 1. Lưu file này thành `app.jdl` ở thư mục gốc của ward-management.
+ * 2. Chạy lệnh: `jhipster jdl app.jdl`
+ * 3. JHipster sẽ tự động sinh:
+ *    - Java Entities & Enums
+ *    - Spring Data JPA Repositories
+ *    - Service Layer & DTOs
+ *    - Spring REST Controllers (/api/households, /api/residents, /api/areas...)
+ *    - Liquibase Migrations (PostgreSQL + PostGIS)
+ *    - Redux slices & UI components tương ứng
+ */
+
+application {
+  config {
+    baseName Monolithic
+    applicationType monolith
+    packageName com.policemanagement.com
+    authenticationType oauth2
+    databaseType sql
+    devDatabaseType postgresql
+    prodDatabaseType postgresql
+    buildTool maven
+    clientFramework react
+    nativeLanguage vi
+    languages [vi, en]
+    enableHibernateCache true
+    cacheProvider caffeine
+  }
+  entities *
+}
+
+/** Hộ gia đình / Cơ sở kinh doanh trên địa bàn */
+entity Household {
+  code String required unique
+  houseNumber String required
+  street String required
+  hamlet String required
+  neighborhoodGroup String
+  alley String
+  ownerName String required
+  ownerPhone String required
+  type FacilityType required
+  businessName String
+  businessCategory String
+  residentsCount Integer
+  maleCount Integer
+  femaleCount Integer
+  under18Count Integer
+  above18Count Integer
+  status SecurityStatus
+  warningMessage String
+  licenseExpiry String
+  licenseType String
+  latitude Double
+  longitude Double
+  notes TextBlob
+  lastCheckedDate String
+  officerInCharge String
+}
+
+/** Nhân khẩu / Cư dân cư trú */
+entity Resident {
+  fullName String required
+  idCardNumber String unique
+  birthYear Integer
+  gender Gender
+  relationship String
+  residenceType ResidenceType required
+  temporaryRegisteredAt LocalDate
+  notes TextBlob
+}
+
+/** Khu vực / Khu phố / Địa bàn quản lý */
+entity AreaZone {
+  code String required unique
+  name String required
+  hamletName String required
+  officerInCharge String
+  officerPhone String
+  populationCount Integer
+  householdCount Integer
+  boundaryGeoJson TextBlob
+}
+
+/** Hồ sơ / Biên bản kiểm tra an ninh trật tự & PCCC */
+entity DocumentRecord {
+  docName String required
+  docType String required
+  householdName String
+  address String
+  status String
+  expiryDate String
+  officer String
+  phone String
+  notes TextBlob
+  reminderSent Boolean
+}
+
+/** Cảnh báo an ninh / Vi phạm địa bàn */
+entity SecurityAlert {
+  alertType String required
+  severity AlertSeverity required
+  title String required
+  description TextBlob
+  location String
+  isResolved Boolean
+  reportedAt Instant
+  resolvedAt Instant
+}
+
+/** Nhật ký công tác / Tuần tra địa bàn */
+entity PatrolLog {
+  action String required
+  target String
+  details TextBlob
+  officerName String required
+  badgeNumber String
+  ipAddress String
+  timestamp Instant required
+}
+
+enum FacilityType {
+  RESIDENTIAL, BUSINESS, BOARDING_HOUSE, RELIGIOUS, SPECIAL
+}
+
+enum SecurityStatus {
+  NORMAL, WARNING, DANGER, CRITICAL
+}
+
+enum Gender {
+  MALE, FEMALE, OTHER
+}
+
+enum ResidenceType {
+  PERMANENT, TEMPORARY, STAY_AWAY, UNVERIFIED
+}
+
+enum AlertSeverity {
+  INFO, LOW, MEDIUM, HIGH, CRITICAL
+}
+
+relationship OneToMany {
+  Household{residents} to Resident{household(code)}
+  AreaZone{households} to Household{areaZone(name)}
+}
+
+paginate Household, Resident, DocumentRecord, SecurityAlert, PatrolLog with pagination
+dto * with mapstruct
+service all with serviceImpl
+filter Household, Resident, DocumentRecord, SecurityAlert

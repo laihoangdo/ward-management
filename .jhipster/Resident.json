@@ -1,0 +1,62 @@
+{
+  "annotations": {
+    "changelogDate": "20260919110517"
+  },
+  "applications": ["Monolithic"],
+  "documentation": "Nhân khẩu / Cư dân cư trú",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "fullName",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "idCardNumber",
+      "fieldType": "String",
+      "fieldValidateRules": ["unique"]
+    },
+    {
+      "fieldName": "birthYear",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "gender",
+      "fieldType": "Gender",
+      "fieldValues": "MALE,FEMALE,OTHER"
+    },
+    {
+      "fieldName": "relationship",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "residenceType",
+      "fieldType": "ResidenceType",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "PERMANENT,TEMPORARY,STAY_AWAY,UNVERIFIED"
+    },
+    {
+      "fieldName": "temporaryRegisteredAt",
+      "fieldType": "LocalDate"
+    },
+    {
+      "fieldName": "notes",
+      "fieldType": "TextBlob"
+    }
+  ],
+  "jpaMetamodelFiltering": true,
+  "name": "Resident",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityField": "code",
+      "otherEntityName": "household",
+      "otherEntityRelationshipName": "residents",
+      "relationshipName": "household",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-one"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

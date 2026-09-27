@@ -1,0 +1,11 @@
+id;alert_type;severity;title;description;location;is_resolved;reported_at;resolved_at
+1;meh aha;INFO;adrenalin excluding;../fake-data/blob/hipster.txt;what technician thump;true;2026-09-19T00:15:11;2026-09-18T17:11:42
+2;geez disloyal;MEDIUM;fun venom boo;../fake-data/blob/hipster.txt;convection than;false;2026-09-19T10:54:24;2026-09-19T03:18:42
+3;fine dramatize;HIGH;tectonics yuck scowl;../fake-data/blob/hipster.txt;above yum;false;2026-09-18T18:30:37;2026-09-19T06:14:11
+4;husky;MEDIUM;blank wise decryption;../fake-data/blob/hipster.txt;scared contractor;false;2026-09-18T17:55:16;2026-09-18T22:23:33
+5;eggplant;INFO;unto psst than;../fake-data/blob/hipster.txt;unwilling transplant that;true;2026-09-19T08:19:32;2026-09-19T10:55:35
+6;whereas whisper elegantly;CRITICAL;whereas malfunction;../fake-data/blob/hipster.txt;if dapper;false;2026-09-19T07:28:18;2026-09-19T08:20:16
+7;premium wavy;LOW;stage regarding stranger;../fake-data/blob/hipster.txt;instead machine;false;2026-09-19T05:40:08;2026-09-19T02:29:51
+8;fun;CRITICAL;portly;../fake-data/blob/hipster.txt;unwelcome concerning;true;2026-09-18T19:26:38;2026-09-18T20:37:54
+9;near beside;CRITICAL;verbally but;../fake-data/blob/hipster.txt;windy ribbon;true;2026-09-18T12:06:48;2026-09-19T05:09:01
+10;ah;INFO;which teammate;../fake-data/blob/hipster.txt;closed;true;2026-09-19T09:53:30;2026-09-18T11:43:17

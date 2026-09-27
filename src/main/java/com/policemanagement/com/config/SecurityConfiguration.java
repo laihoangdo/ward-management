@@ -60,6 +60,7 @@ public class SecurityConfiguration {
                 csrf
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                     .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
+                    .ignoringRequestMatchers("/api/**")
             )
             .addFilterAfter(new SpaWebFilter(), BasicAuthenticationFilter.class)
             .headers(headers ->
@@ -82,6 +83,12 @@ public class SecurityConfiguration {
                     .requestMatchers("/swagger-ui/**").permitAll()
                     .requestMatchers("/api/authenticate").permitAll()
                     .requestMatchers("/api/auth-info").permitAll()
+                    .requestMatchers("/api/households/**", "/api/households").permitAll()
+                    .requestMatchers("/api/residents/**", "/api/residents").permitAll()
+                    .requestMatchers("/api/document-records/**", "/api/document-records").permitAll()
+                    .requestMatchers("/api/patrol-logs/**", "/api/patrol-logs").permitAll()
+                    .requestMatchers("/api/security-alerts/**", "/api/security-alerts").permitAll()
+                    .requestMatchers("/api/area-zones/**", "/api/area-zones").permitAll()
                     .requestMatchers("/api/admin/**").hasAuthority(AuthoritiesConstants.ADMIN)
                     .requestMatchers("/api/**").authenticated()
                     .requestMatchers("/v3/api-docs/**").hasAuthority(AuthoritiesConstants.ADMIN)

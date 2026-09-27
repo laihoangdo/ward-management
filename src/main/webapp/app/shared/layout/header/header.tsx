@@ -8,7 +8,7 @@ import LoadingBar, { LoadingBarRef } from 'react-top-loading-bar';
 import { useAppSelector } from 'app/config/store';
 import { AccountMenu, AdminMenu, EntitiesMenu } from '../menus';
 
-import { Brand, Home } from './header-components';
+import { Brand, Home, GisDashboardNav } from './header-components';
 
 export interface IHeaderProps {
   isAuthenticated: boolean;
@@ -49,6 +49,7 @@ const Header = (props: IHeaderProps) => {
         <Navbar.Collapse id="header-tabs">
           <Nav className="ms-auto">
             <Home />
+            <GisDashboardNav />
             {props.isAuthenticated && <EntitiesMenu />}
             {props.isAuthenticated && props.isAdmin && <AdminMenu showOpenAPI={props.isOpenAPIEnabled} />}
             <AccountMenu isAuthenticated={props.isAuthenticated} />

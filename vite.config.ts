@@ -2,6 +2,7 @@ import path from 'node:path';
 import { URL, fileURLToPath } from 'node:url';
 
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, normalizePath } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
@@ -13,6 +14,7 @@ const development = process.env.NODE_ENV !== 'production';
 
 const config = defineConfig({
   plugins: [
+    tailwindcss(),
     react(),
     viteStaticCopy({
       targets: [

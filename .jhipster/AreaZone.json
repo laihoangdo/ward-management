@@ -1,0 +1,57 @@
+{
+  "annotations": {
+    "changelogDate": "20260919110518"
+  },
+  "applications": ["Monolithic"],
+  "documentation": "Khu vực / Khu phố / Địa bàn quản lý",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "code",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "unique"]
+    },
+    {
+      "fieldName": "name",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "hamletName",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "officerInCharge",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "officerPhone",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "populationCount",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "householdCount",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "boundaryGeoJson",
+      "fieldType": "TextBlob"
+    }
+  ],
+  "name": "AreaZone",
+  "relationships": [
+    {
+      "otherEntityName": "household",
+      "otherEntityRelationshipName": "areaZone",
+      "relationshipName": "households",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-many"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}
