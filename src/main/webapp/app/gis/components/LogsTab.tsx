@@ -51,9 +51,11 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
   const stats = useMemo(() => {
     const total = logs.length;
     const coordinateUpdates = logs.filter(l => l.actionType === 'coordinate_update').length;
-    const profileUpdates = logs.filter(l => l.actionType === 'profile_update' || l.actionType === 'ocr_scan').length;
+    const profileUpdates = logs.filter(l => l.actionType === 'profile_update').length;
     const reminders = logs.filter(l => l.actionType === 'reminder_sent' || l.actionType === 'document_renew').length;
-    return { total, coordinateUpdates, profileUpdates, reminders };
+    const additions = logs.filter(l => l.actionType === 'household_add').length;
+    const ocrScans = logs.filter(l => l.actionType === 'ocr_scan').length;
+    return { total, coordinateUpdates, profileUpdates, reminders, additions, ocrScans };
   }, [logs]);
 
   // Filtering
@@ -63,7 +65,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
       if (selectedActionFilter !== 'all') {
         if (selectedActionFilter === 'coordinates' && log.actionType !== 'coordinate_update') return false;
         if (selectedActionFilter === 'profile' && log.actionType !== 'profile_update') return false;
-        if (selectedActionFilter === 'reminders' && log.actionType !== 'reminder_sent') return false;
+        if (selectedActionFilter === 'reminders' && log.actionType !== 'reminder_sent' && log.actionType !== 'document_renew') return false;
         if (selectedActionFilter === 'add' && log.actionType !== 'household_add') return false;
         if (selectedActionFilter === 'renew' && log.actionType !== 'document_renew') return false;
         if (selectedActionFilter === 'ocr' && log.actionType !== 'ocr_scan') return false;
@@ -77,9 +79,13 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
       // Time Range filter
       if (selectedTimeRange !== 'all') {
         const logDate = log.timestamp.split(' ')[0]; // DD/MM/YYYY
-        if (selectedTimeRange === 'today' && !logDate.startsWith('18/09')) {
-          // In context of simulation 18/09 is today
-          return false;
+        if (selectedTimeRange === 'today') {
+          const now = new Date();
+          const pad = (n: number) => String(n).padStart(2, '0');
+          const todayPrefix = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+          if (logDate !== todayPrefix && !logDate.startsWith('28/09') && !logDate.startsWith('18/09')) {
+            return false;
+          }
         }
       }
 
@@ -422,7 +428,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>📝 Cập nhật hồ sơ</span>
+            <span>📝 Cập nhật hồ sơ ({stats.profileUpdates})</span>
           </button>
 
           <button
@@ -435,7 +441,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             }`}
           >
             <Bell className="w-3.5 h-3.5" />
-            <span>🔔 Nhắc nhở & Đôn đốc</span>
+            <span>🔔 Nhắc nhở & Đôn đốc ({stats.reminders})</span>
           </button>
 
           <button
@@ -448,7 +454,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             }`}
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>➕ Đăng ký mới</span>
+            <span>➕ Đăng ký mới ({stats.additions})</span>
           </button>
 
           <button
@@ -461,7 +467,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             }`}
           >
             <ScanLine className="w-3.5 h-3.5" />
-            <span>🔍 Quét OCR</span>
+            <span>🔍 Quét OCR ({stats.ocrScans})</span>
           </button>
         </div>
       </div>

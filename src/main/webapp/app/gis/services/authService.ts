@@ -1,6 +1,5 @@
-import { collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { signInWithPopup, signOut, User as FirebaseUser } from 'firebase/auth';
-import { db, auth, googleProvider } from '../firebase';
+import { auth, googleProvider } from '../firebase';
 import {
   AppUser,
   AllowedEmailEntry,
@@ -23,15 +22,36 @@ import {
 import { addAuditLogInFirestore } from './firestoreService';
 import { createJwtToken } from '../utils/cryptoUtils';
 
-const USERS_COLLECTION = 'appUsers';
-const ALLOWED_EMAILS_COLLECTION = 'allowedEmails';
-const DYNAMIC_MENUS_COLLECTION = 'dynamicMenus';
-const HCM_UNITS_COLLECTION = 'hcmAdminUnits';
-const SECURITY_ALERTS_COLLECTION = 'securityAlerts';
-const BLACKLISTED_IPS_COLLECTION = 'blacklistedIps';
-
-// Local storage key for persistent session
+// Local storage keys for persistent offline RBAC & Auth caching
+const USERS_STORAGE_KEY = 'cskv_app_users';
+const ALLOWED_EMAILS_STORAGE_KEY = 'cskv_allowed_emails';
+const DYNAMIC_MENUS_STORAGE_KEY = 'cskv_dynamic_menus';
+const HCM_UNITS_STORAGE_KEY = 'cskv_hcm_admin_units';
+const SECURITY_ALERTS_STORAGE_KEY = 'cskv_security_alerts';
+const BLACKLISTED_IPS_STORAGE_KEY = 'cskv_blacklisted_ips';
 const SESSION_STORAGE_KEY = 'cskv_auth_session_user';
+
+// Event emitter for local pub-sub reactivity
+const authEmitter = new EventTarget();
+
+function getLocalData<T>(key: string, defaultValue: T[]): T[] {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+  return defaultValue;
+}
+
+function setLocalData<T>(key: string, data: T[], eventName: string): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    authEmitter.dispatchEvent(new CustomEvent(eventName));
+  } catch (e) {
+    console.warn(`Could not save ${key} locally:`, e);
+  }
+}
 
 export function getStoredUserSession(): AppUser | null {
   try {
@@ -59,47 +79,49 @@ export const saveUserSession = setStoredUserSession;
 export const clearUserSession = logoutUser;
 
 /**
- * Seeds initial RBAC, Allowed Emails, Dynamic Menus, and HCM Admin Units if empty
+ * Seeds initial RBAC, Allowed Emails, Dynamic Menus, and HCM Admin Units locally if empty
  */
 export async function seedAuthAndRbacData(): Promise<void> {
   try {
-    const usersSnap = await getDocs(collection(db, USERS_COLLECTION));
-    if (usersSnap.empty) {
-      for (const user of INITIAL_USERS) {
-        await setDoc(doc(db, USERS_COLLECTION, user.id), user);
-      }
+    if (!localStorage.getItem(USERS_STORAGE_KEY)) {
+      setLocalData(USERS_STORAGE_KEY, INITIAL_USERS, 'users-updated');
     }
 
-    const emailsSnap = await getDocs(collection(db, ALLOWED_EMAILS_COLLECTION));
-    if (emailsSnap.empty) {
-      for (const email of INITIAL_ALLOWED_EMAILS) {
-        await setDoc(doc(db, ALLOWED_EMAILS_COLLECTION, email.id), email);
-      }
+    if (!localStorage.getItem(ALLOWED_EMAILS_STORAGE_KEY)) {
+      setLocalData(ALLOWED_EMAILS_STORAGE_KEY, INITIAL_ALLOWED_EMAILS, 'emails-updated');
     }
 
-    const menusSnap = await getDocs(collection(db, DYNAMIC_MENUS_COLLECTION));
-    if (menusSnap.empty) {
-      for (const menu of INITIAL_DYNAMIC_MENUS) {
-        await setDoc(doc(db, DYNAMIC_MENUS_COLLECTION, menu.id), menu);
-      }
+    if (!localStorage.getItem(DYNAMIC_MENUS_STORAGE_KEY)) {
+      setLocalData(DYNAMIC_MENUS_STORAGE_KEY, INITIAL_DYNAMIC_MENUS, 'menus-updated');
     } else {
       // Check if any default menu (such as 'residents') is missing and insert it
-      const existingIds = new Set(menusSnap.docs.map(d => d.id));
+      const currentMenus = getLocalData<DynamicMenuItemConfig>(DYNAMIC_MENUS_STORAGE_KEY, INITIAL_DYNAMIC_MENUS);
+      const existingIds = new Set(currentMenus.map(d => d.id));
+      let hasChanges = false;
       for (const menu of INITIAL_DYNAMIC_MENUS) {
         if (!existingIds.has(menu.id)) {
-          await setDoc(doc(db, DYNAMIC_MENUS_COLLECTION, menu.id), menu);
+          currentMenus.push(menu);
+          hasChanges = true;
         }
+      }
+      if (hasChanges) {
+        setLocalData(DYNAMIC_MENUS_STORAGE_KEY, currentMenus, 'menus-updated');
       }
     }
 
-    const unitsSnap = await getDocs(collection(db, HCM_UNITS_COLLECTION));
-    if (unitsSnap.empty) {
-      for (const unit of INITIAL_HCM_ADMIN_UNITS) {
-        await setDoc(doc(db, HCM_UNITS_COLLECTION, unit.id), unit);
-      }
+    if (!localStorage.getItem(HCM_UNITS_STORAGE_KEY)) {
+      setLocalData(HCM_UNITS_STORAGE_KEY, INITIAL_HCM_ADMIN_UNITS, 'units-updated');
+    }
+
+    if (!localStorage.getItem(SECURITY_ALERTS_STORAGE_KEY)) {
+      setLocalData(SECURITY_ALERTS_STORAGE_KEY, INITIAL_SECURITY_ALERTS, 'alerts-updated');
+    }
+
+    if (!localStorage.getItem(BLACKLISTED_IPS_STORAGE_KEY)) {
+      setLocalData(BLACKLISTED_IPS_STORAGE_KEY, INITIAL_BLACKLISTED_IPS, 'ips-updated');
     }
   } catch (err) {
-    console.warn('Notice seeding auth/RBAC data in Firestore:', err);
+    console.warn('Notice seeding local auth/RBAC data:', err);
   }
 }
 
@@ -107,219 +129,115 @@ export async function seedAuthAndRbacData(): Promise<void> {
  * Real-time listener for Users
  */
 export function subscribeUsers(onData: (users: AppUser[]) => void) {
-  return onSnapshot(
-    collection(db, USERS_COLLECTION),
-    snapshot => {
-      if (snapshot.empty) {
-        onData(INITIAL_USERS);
-      } else {
-        const items = snapshot.docs.map(d => d.data() as AppUser);
-        onData(items);
-      }
-    },
-    err => {
-      console.warn('Firestore users subscription fallback:', err);
-      onData(INITIAL_USERS);
-    },
-  );
+  const load = () => {
+    const data = getLocalData<AppUser>(USERS_STORAGE_KEY, INITIAL_USERS);
+    onData(data);
+  };
+  load();
+  const handler = () => load();
+  authEmitter.addEventListener('users-updated', handler);
+  return () => {
+    authEmitter.removeEventListener('users-updated', handler);
+  };
 }
 
 /**
  * Real-time listener for Allowed Emails Whitelist
  */
 export function subscribeAllowedEmails(onData: (emails: AllowedEmailEntry[]) => void) {
-  return onSnapshot(
-    collection(db, ALLOWED_EMAILS_COLLECTION),
-    snapshot => {
-      if (snapshot.empty) {
-        onData(INITIAL_ALLOWED_EMAILS);
-      } else {
-        const items = snapshot.docs.map(d => d.data() as AllowedEmailEntry);
-        onData(items);
-      }
-    },
-    err => {
-      console.warn('Firestore allowed emails subscription fallback:', err);
-      onData(INITIAL_ALLOWED_EMAILS);
-    },
-  );
+  const load = () => {
+    const data = getLocalData<AllowedEmailEntry>(ALLOWED_EMAILS_STORAGE_KEY, INITIAL_ALLOWED_EMAILS);
+    onData(data);
+  };
+  load();
+  const handler = () => load();
+  authEmitter.addEventListener('emails-updated', handler);
+  return () => {
+    authEmitter.removeEventListener('emails-updated', handler);
+  };
 }
 
 /**
  * Real-time listener for Dynamic Menus
  */
 export function subscribeDynamicMenus(onData: (menus: DynamicMenuItemConfig[]) => void) {
-  return onSnapshot(
-    collection(db, DYNAMIC_MENUS_COLLECTION),
-    snapshot => {
-      if (snapshot.empty) {
-        onData(INITIAL_DYNAMIC_MENUS);
-      } else {
-        const items = snapshot.docs.map(d => d.data() as DynamicMenuItemConfig);
-        // Ensure that newly introduced built-in menus (e.g. 'residents') are merged
-        // even if Firestore already had a prior seed without them
-        const missingDefaults = INITIAL_DYNAMIC_MENUS.filter(defItem => !items.some(item => item.id === defItem.id));
+  const load = () => {
+    const items = getLocalData<DynamicMenuItemConfig>(DYNAMIC_MENUS_STORAGE_KEY, INITIAL_DYNAMIC_MENUS);
+    const missingDefaults = INITIAL_DYNAMIC_MENUS.filter(defItem => !items.some(item => item.id === defItem.id));
 
-        let mergedList = [...items];
-        if (missingDefaults.length > 0) {
-          // Re-insert missing default items into their expected relative positions
-          const combined: DynamicMenuItemConfig[] = [];
-          for (const def of INITIAL_DYNAMIC_MENUS) {
-            const found = items.find(i => i.id === def.id);
-            if (found) {
-              combined.push(found);
-            } else {
-              combined.push(def);
-              // Save missing menu item to Firestore in background so it persists
-              setDoc(doc(db, DYNAMIC_MENUS_COLLECTION, def.id), def).catch(() => {});
-            }
-          }
-          // Also append any extra custom items that weren't in INITIAL_DYNAMIC_MENUS
-          for (const item of items) {
-            if (!combined.some(c => c.id === item.id)) {
-              combined.push(item);
-            }
-          }
-          mergedList = combined;
-        }
-
-        onData(mergedList);
-      }
-    },
-    err => {
-      console.warn('Firestore dynamic menus subscription fallback:', err);
-      onData(INITIAL_DYNAMIC_MENUS);
-    },
-  );
+    if (missingDefaults.length > 0) {
+      const combined = [...items, ...missingDefaults];
+      setLocalData(DYNAMIC_MENUS_STORAGE_KEY, combined, 'menus-updated');
+      onData(combined);
+      return;
+    }
+    onData(items);
+  };
+  load();
+  const handler = () => load();
+  authEmitter.addEventListener('menus-updated', handler);
+  return () => {
+    authEmitter.removeEventListener('menus-updated', handler);
+  };
 }
 
 /**
  * Real-time listener for HCM Admin Units & Alleys
  */
 export function subscribeHcmAdminUnits(onData: (units: HcmAdminUnit[]) => void) {
-  return onSnapshot(
-    collection(db, HCM_UNITS_COLLECTION),
-    snapshot => {
-      if (snapshot.empty) {
-        onData(INITIAL_HCM_ADMIN_UNITS);
-      } else {
-        const items = snapshot.docs.map(d => d.data() as HcmAdminUnit);
-        onData(items);
-      }
-    },
-    err => {
-      console.warn('Firestore HCM units subscription fallback:', err);
-      onData(INITIAL_HCM_ADMIN_UNITS);
-    },
-  );
+  const load = () => {
+    const data = getLocalData<HcmAdminUnit>(HCM_UNITS_STORAGE_KEY, INITIAL_HCM_ADMIN_UNITS);
+    onData(data);
+  };
+  load();
+  const handler = () => load();
+  authEmitter.addEventListener('units-updated', handler);
+  return () => {
+    authEmitter.removeEventListener('units-updated', handler);
+  };
 }
 
 /**
  * Real-time listener for Security Alerts
  */
 export function subscribeSecurityAlerts(onData: (alerts: SecurityAlert[]) => void) {
-  return onSnapshot(
-    collection(db, SECURITY_ALERTS_COLLECTION),
-    snapshot => {
-      if (snapshot.empty) {
-        onData(INITIAL_SECURITY_ALERTS);
-      } else {
-        const items = snapshot.docs.map(d => d.data() as SecurityAlert);
-        onData(items.sort((a, b) => b.timestamp.localeCompare(a.timestamp)));
-      }
-    },
-    err => {
-      console.warn('Firestore security alerts subscription fallback:', err);
-      onData(INITIAL_SECURITY_ALERTS);
-    },
-  );
+  const load = () => {
+    const data = getLocalData<SecurityAlert>(SECURITY_ALERTS_STORAGE_KEY, INITIAL_SECURITY_ALERTS);
+    onData([...data].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')));
+  };
+  load();
+  const handler = () => load();
+  authEmitter.addEventListener('alerts-updated', handler);
+  return () => {
+    authEmitter.removeEventListener('alerts-updated', handler);
+  };
 }
 
 /**
  * Real-time listener for Blacklisted IPs
  */
 export function subscribeBlacklistedIps(onData: (ips: BlacklistedIpEntry[]) => void) {
-  return onSnapshot(
-    collection(db, BLACKLISTED_IPS_COLLECTION),
-    snapshot => {
-      if (snapshot.empty) {
-        onData(INITIAL_BLACKLISTED_IPS);
-        // Seed initial blocked IPs in background
-        INITIAL_BLACKLISTED_IPS.forEach(item => {
-          setDoc(doc(db, BLACKLISTED_IPS_COLLECTION, item.id), item).catch(() => {});
-        });
-      } else {
-        const items = snapshot.docs.map(d => d.data() as BlacklistedIpEntry);
-        onData(items.sort((a, b) => b.blockedAt.localeCompare(a.blockedAt)));
-      }
-    },
-    err => {
-      console.warn('Firestore blacklisted IPs fallback:', err);
-      onData(INITIAL_BLACKLISTED_IPS);
-    },
-  );
+  const load = () => {
+    const data = getLocalData<BlacklistedIpEntry>(BLACKLISTED_IPS_STORAGE_KEY, INITIAL_BLACKLISTED_IPS);
+    onData([...data].sort((a, b) => (b.blockedAt || '').localeCompare(a.blockedAt || '')));
+  };
+  load();
+  const handler = () => load();
+  authEmitter.addEventListener('ips-updated', handler);
+  return () => {
+    authEmitter.removeEventListener('ips-updated', handler);
+  };
 }
 
 /**
- * Initialize / Seed Firestore Collections for Auth & Superadmin if empty
+ * Initialize / Seed Local Collections for Auth & Superadmin if empty
  */
 export async function seedAuthCollectionsIfEmpty() {
-  try {
-    const userSnap = await getDocs(collection(db, USERS_COLLECTION));
-    if (userSnap.empty) {
-      for (const u of INITIAL_USERS) {
-        await setDoc(doc(db, USERS_COLLECTION, u.id), u);
-      }
-    }
-
-    const emailSnap = await getDocs(collection(db, ALLOWED_EMAILS_COLLECTION));
-    if (emailSnap.empty) {
-      for (const e of INITIAL_ALLOWED_EMAILS) {
-        await setDoc(doc(db, ALLOWED_EMAILS_COLLECTION, e.id), e);
-      }
-    }
-
-    const menuSnap = await getDocs(collection(db, DYNAMIC_MENUS_COLLECTION));
-    if (menuSnap.empty) {
-      for (const m of INITIAL_DYNAMIC_MENUS) {
-        await setDoc(doc(db, DYNAMIC_MENUS_COLLECTION, m.id), m);
-      }
-    } else {
-      const existingIds = new Set(menuSnap.docs.map(d => d.id));
-      for (const m of INITIAL_DYNAMIC_MENUS) {
-        if (!existingIds.has(m.id)) {
-          await setDoc(doc(db, DYNAMIC_MENUS_COLLECTION, m.id), m);
-        }
-      }
-    }
-
-    const unitSnap = await getDocs(collection(db, HCM_UNITS_COLLECTION));
-    if (unitSnap.empty) {
-      for (const unit of INITIAL_HCM_ADMIN_UNITS) {
-        await setDoc(doc(db, HCM_UNITS_COLLECTION, unit.id), unit);
-      }
-    }
-
-    const alertSnap = await getDocs(collection(db, SECURITY_ALERTS_COLLECTION));
-    if (alertSnap.empty) {
-      for (const alert of INITIAL_SECURITY_ALERTS) {
-        await setDoc(doc(db, SECURITY_ALERTS_COLLECTION, alert.id), alert);
-      }
-    }
-
-    const blSnap = await getDocs(collection(db, BLACKLISTED_IPS_COLLECTION));
-    if (blSnap.empty) {
-      for (const ipEntry of INITIAL_BLACKLISTED_IPS) {
-        await setDoc(doc(db, BLACKLISTED_IPS_COLLECTION, ipEntry.id), ipEntry);
-      }
-    }
-  } catch (err) {
-    console.warn('Seed auth collections notice (working with cached defaults):', err);
-  }
+  await seedAuthAndRbacData();
 }
 
 /**
- * Add an IP to Blacklist and sync with Firestore & backend
+ * Add an IP to Blacklist and sync with PostgreSQL audit log
  */
 export async function addIpToBlacklist(
   ipAddress: string,
@@ -346,11 +264,9 @@ export async function addIpToBlacklist(
     hitCount: 1,
   };
 
-  try {
-    await setDoc(doc(db, BLACKLISTED_IPS_COLLECTION, entry.id), entry);
-  } catch (err) {
-    console.warn('Firestore blacklist write notice:', err);
-  }
+  const list = getLocalData<BlacklistedIpEntry>(BLACKLISTED_IPS_STORAGE_KEY, INITIAL_BLACKLISTED_IPS);
+  const updated = [entry, ...list.filter(x => x.id !== id)];
+  setLocalData(BLACKLISTED_IPS_STORAGE_KEY, updated, 'ips-updated');
 
   // Create Audit Log for blocking IP
   const auditLog: AuditLogEntry = {
@@ -371,17 +287,6 @@ export async function addIpToBlacklist(
   };
   await addAuditLogInFirestore(auditLog);
 
-  // Sync to backend API to update live firewall
-  try {
-    await fetch('/api/admin/blacklist', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(entry),
-    });
-  } catch (err) {
-    console.warn('Backend sync blacklist notice:', err);
-  }
-
   return entry;
 }
 
@@ -389,11 +294,9 @@ export async function addIpToBlacklist(
  * Remove an IP from Blacklist
  */
 export async function removeIpFromBlacklist(id: string, officer: AppUser, ipAddress?: string): Promise<void> {
-  try {
-    await deleteDoc(doc(db, BLACKLISTED_IPS_COLLECTION, id));
-  } catch (err) {
-    console.warn('Firestore remove blacklist notice:', err);
-  }
+  const list = getLocalData<BlacklistedIpEntry>(BLACKLISTED_IPS_STORAGE_KEY, INITIAL_BLACKLISTED_IPS);
+  const updated = list.filter(item => item.id !== id);
+  setLocalData(BLACKLISTED_IPS_STORAGE_KEY, updated, 'ips-updated');
 
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -416,14 +319,6 @@ export async function removeIpFromBlacklist(id: string, officer: AppUser, ipAddr
     status: 'info',
   };
   await addAuditLogInFirestore(auditLog);
-
-  try {
-    await fetch(`/api/admin/blacklist/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-    });
-  } catch (err) {
-    console.warn('Backend sync delete blacklist notice:', err);
-  }
 }
 
 /**
@@ -435,17 +330,20 @@ export async function resolveSecurityAlert(alertId: string, officer: AppUser, no
   const timestampStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const officerSignature = `${officer.rank} ${officer.fullName} (ID: ${officer.id}, Số hiệu: ${officer.badgeNumber})`;
 
-  try {
-    const alertRef = doc(db, SECURITY_ALERTS_COLLECTION, alertId);
-    await updateDoc(alertRef, {
-      resolved: true,
-      resolvedAt: timestampStr,
-      resolvedBy: officerSignature,
-      resolvedNotes: notes || 'Đã xác minh hiện trường & xử lý xong sự cố.',
-    });
-  } catch (err) {
-    console.warn('Firestore update security alert notice:', err);
-  }
+  const list = getLocalData<SecurityAlert>(SECURITY_ALERTS_KEY, INITIAL_SECURITY_ALERTS);
+  const updated = list.map(item => {
+    if (item.id === alertId) {
+      return {
+        ...item,
+        resolved: true,
+        resolvedAt: timestampStr,
+        resolvedBy: officerSignature,
+        resolvedNotes: notes || 'Đã xác minh hiện trường & xử lý xong sự cố.',
+      };
+    }
+    return item;
+  });
+  setLocalData(SECURITY_ALERTS_KEY, updated, 'alerts-updated');
 
   // Mandatory requirement: Automatically create system audit log
   const auditLog: AuditLogEntry = {
@@ -466,26 +364,10 @@ export async function resolveSecurityAlert(alertId: string, officer: AppUser, no
   };
 
   await addAuditLogInFirestore(auditLog);
-
-  // Notify backend server
-  try {
-    await fetch('/api/admin/resolve-alert', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        alertId,
-        resolvedAt: timestampStr,
-        resolvedBy: officerSignature,
-        officerId: officer.id,
-      }),
-    });
-  } catch (err) {
-    console.warn('Backend sync alert notice:', err);
-  }
 }
 
 /**
- * Push a Security Alert to Firestore and trigger alert notification
+ * Push a Security Alert to LocalStorage and trigger alert notification
  */
 export async function createSecurityAlert(
   alertData: Omit<SecurityAlert, 'id' | 'timestamp' | 'resolved' | 'emailNotified'>,
@@ -508,17 +390,8 @@ export async function createSecurityAlert(
     resolved: false,
   };
 
-  try {
-    await setDoc(doc(db, SECURITY_ALERTS_COLLECTION, newAlert.id), newAlert);
-    // Also notify backend server
-    fetch('/api/admin/security-alert', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newAlert),
-    }).catch(e => console.warn('Backend alert notice:', e));
-  } catch (e) {
-    console.warn('Firestore security alert write notice:', e);
-  }
+  const list = getLocalData<SecurityAlert>(SECURITY_ALERTS_KEY, INITIAL_SECURITY_ALERTS);
+  setLocalData(SECURITY_ALERTS_KEY, [newAlert, ...list], 'alerts-updated');
 
   return newAlert;
 }
@@ -561,7 +434,6 @@ export async function loginWithCredentials(
   const found = usersList.find(u => u.username.toLowerCase() === cleanUser);
 
   if (!found) {
-    // Record suspicious login attempt
     createSecurityAlert({
       severity: 'medium',
       title: 'Đăng nhập tài khoản không tồn tại',
@@ -585,12 +457,6 @@ export async function loginWithCredentials(
     };
   }
 
-  // Password verification:
-  // For production simulation, passwords map to:
-  // superadmin -> Admin@2026 (or 123456)
-  // truong_cax -> Cax@2026 (or 123456)
-  // cskv_ap1 -> Ap1@2026 (or 123456)
-  // cav_duongpho -> Cav@2026 (or 123456)
   const validPasswords: Record<string, string[]> = {
     superadmin: ['Admin@2026', 'admin123', '123456'],
     truong_cax: ['Cax@2026', 'admin123', '123456'],
@@ -623,15 +489,10 @@ export async function loginWithCredentials(
     isOnline: true,
   };
 
-  // Update in Firestore
-  try {
-    await updateDoc(doc(db, USERS_COLLECTION, found.id), {
-      lastLogin: new Date().toLocaleString('vi-VN'),
-      isOnline: true,
-    });
-  } catch (e) {
-    console.warn('Update lastLogin notice:', e);
-  }
+  // Update in local data
+  const list = getLocalData<AppUser>(USERS_STORAGE_KEY, INITIAL_USERS);
+  const updatedList = list.map(u => (u.id === found.id ? { ...u, lastLogin: new Date().toLocaleString('vi-VN'), isOnline: true } : u));
+  setLocalData(USERS_STORAGE_KEY, updatedList, 'users-updated');
 
   setStoredUserSession(updatedUser);
   return { success: true, user: updatedUser };
@@ -651,7 +512,6 @@ export async function verifyAndLoginGoogleEmail(
   const whitelistEntry = allowedEmailsList.find(item => item.email.toLowerCase() === normalized && item.status === 'active');
 
   if (!whitelistEntry) {
-    // CRITICAL: Push alert to Admin Email because unauthorized Gmail tried to enter
     await createSecurityAlert({
       severity: 'critical',
       title: 'Phát hiện truy cập Gmail trái phép (Không thuộc Whitelist)',
@@ -680,12 +540,12 @@ export async function verifyAndLoginGoogleEmail(
       role: whitelistEntry.role,
       rank: whitelistEntry.rank || 'Đại úy',
       position: whitelistEntry.position || 'Cán bộ phụ trách địa bàn',
-      unit: 'Công an Phường An Lạc, Quận Bình Tân, TP.HCM',
+      unit: 'Công an Xã Bà Điểm, Huyện Hóc Môn, TP.HCM',
       badgeNumber: '284-998',
       phone: '0908.888.777',
-      assignedWard: whitelistEntry.assignedWard || 'Phường An Lạc',
-      assignedHamlets: whitelistEntry.assignedHamlets || ['Ấp 1', 'Ấp 2'],
-      assignedStreets: whitelistEntry.assignedStreets || ['Đường Kinh Dương Vương', 'Hẻm 418'],
+      assignedWard: whitelistEntry.assignedWard || 'Xã Bà Điểm',
+      assignedHamlets: whitelistEntry.assignedHamlets || ['Ấp Bắc Lân', 'Ấp Nam Lân'],
+      assignedStreets: whitelistEntry.assignedStreets || ['Đường Phan Văn Hớn', 'Đường Nguyễn Thị Sóc'],
       status: 'active',
       createdAt: '18/09/2026',
       lastLogin: 'Vừa xong',
@@ -722,7 +582,6 @@ export async function loginWithGooglePopup(
     return await verifyAndLoginGoogleEmail(email, allowedEmailsList, usersList);
   } catch (err: any) {
     console.warn('Firebase signInWithPopup error/notice (likely iframe restrictions):', err);
-    // If popup is blocked by iframe or browser policies, signal fallback mode
     return {
       success: false,
       requiresManualSelect: true,
@@ -748,58 +607,71 @@ export async function logoutUser(): Promise<void> {
  * Update Dynamic Menus (Super Admin only)
  */
 export async function updateDynamicMenusInFirestore(menus: DynamicMenuItemConfig[]): Promise<void> {
-  for (const item of menus) {
-    await setDoc(doc(db, DYNAMIC_MENUS_COLLECTION, item.id), item);
-  }
+  setLocalData(DYNAMIC_MENUS_STORAGE_KEY, menus, 'menus-updated');
 }
 
 /**
  * Save / Update Allowed Email (Super Admin only)
  */
 export async function saveAllowedEmailInFirestore(entry: AllowedEmailEntry): Promise<void> {
-  await setDoc(doc(db, ALLOWED_EMAILS_COLLECTION, entry.id), entry);
+  const list = getLocalData<AllowedEmailEntry>(ALLOWED_EMAILS_STORAGE_KEY, INITIAL_ALLOWED_EMAILS);
+  const exists = list.some(e => e.id === entry.id);
+  const updated = exists ? list.map(e => (e.id === entry.id ? entry : e)) : [...list, entry];
+  setLocalData(ALLOWED_EMAILS_STORAGE_KEY, updated, 'emails-updated');
 }
 
 /**
  * Delete Allowed Email (Super Admin only)
  */
 export async function deleteAllowedEmailInFirestore(id: string): Promise<void> {
-  await deleteDoc(doc(db, ALLOWED_EMAILS_COLLECTION, id));
+  const list = getLocalData<AllowedEmailEntry>(ALLOWED_EMAILS_STORAGE_KEY, INITIAL_ALLOWED_EMAILS);
+  const updated = list.filter(e => e.id !== id);
+  setLocalData(ALLOWED_EMAILS_STORAGE_KEY, updated, 'emails-updated');
 }
 
 /**
  * Save / Update User Account
  */
 export async function saveUserInFirestore(user: AppUser): Promise<void> {
-  await setDoc(doc(db, USERS_COLLECTION, user.id), user);
+  const list = getLocalData<AppUser>(USERS_STORAGE_KEY, INITIAL_USERS);
+  const exists = list.some(u => u.id === user.id);
+  const updated = exists ? list.map(u => (u.id === user.id ? user : u)) : [...list, user];
+  setLocalData(USERS_STORAGE_KEY, updated, 'users-updated');
 }
 
 /**
  * Delete User Account
  */
 export async function deleteUserInFirestore(userId: string): Promise<void> {
-  await deleteDoc(doc(db, USERS_COLLECTION, userId));
+  const list = getLocalData<AppUser>(USERS_STORAGE_KEY, INITIAL_USERS);
+  const updated = list.filter(u => u.id !== userId);
+  setLocalData(USERS_STORAGE_KEY, updated, 'users-updated');
 }
 
 /**
  * Sub-admin updates feature permissions for an officer under their supervision
  */
 export async function updateOfficerPermissions(officerId: string, permissions: SubAdminFeaturePermissions): Promise<void> {
-  await updateDoc(doc(db, USERS_COLLECTION, officerId), {
-    subAdminPermissions: permissions,
-  });
+  const list = getLocalData<AppUser>(USERS_STORAGE_KEY, INITIAL_USERS);
+  const updated = list.map(u => (u.id === officerId ? { ...u, subAdminPermissions: permissions } : u));
+  setLocalData(USERS_STORAGE_KEY, updated, 'users-updated');
 }
 
 /**
  * Save / Import HCM Admin Unit
  */
 export async function saveHcmAdminUnitInFirestore(unit: HcmAdminUnit): Promise<void> {
-  await setDoc(doc(db, HCM_UNITS_COLLECTION, unit.id), unit);
+  const list = getLocalData<HcmAdminUnit>(HCM_UNITS_STORAGE_KEY, INITIAL_HCM_ADMIN_UNITS);
+  const exists = list.some(u => u.id === unit.id);
+  const updated = exists ? list.map(u => (u.id === unit.id ? unit : u)) : [...list, unit];
+  setLocalData(HCM_UNITS_STORAGE_KEY, updated, 'units-updated');
 }
 
 /**
  * Delete HCM Admin Unit
  */
 export async function deleteHcmAdminUnitInFirestore(id: string): Promise<void> {
-  await deleteDoc(doc(db, HCM_UNITS_COLLECTION, id));
+  const list = getLocalData<HcmAdminUnit>(HCM_UNITS_STORAGE_KEY, INITIAL_HCM_ADMIN_UNITS);
+  const updated = list.filter(u => u.id !== id);
+  setLocalData(HCM_UNITS_STORAGE_KEY, updated, 'units-updated');
 }

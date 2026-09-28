@@ -49,8 +49,8 @@ import {
   GripHorizontal,
   HelpCircle,
 } from 'lucide-react';
-import { HouseholdFacility, NavigationTab, InspectionPhoto } from '../types';
-import { updateHouseholdCoordinatesInFirestore } from '../services/firestoreService';
+import { HouseholdFacility, NavigationTab, InspectionPhoto } from './types';
+import { updateHouseholdCoordinatesInFirestore } from './services/firestoreService';
 import { MapQuickGuideModal } from './MapQuickGuideModal';
 import { InspectionCameraModal } from './InspectionCameraModal';
 

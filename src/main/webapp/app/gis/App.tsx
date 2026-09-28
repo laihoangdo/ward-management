@@ -25,6 +25,7 @@ import {
   deleteHouseholdInBackend,
   fetchAllDocumentRecords,
   fetchPatrolLogsFromBackend,
+  savePatrolLogInBackend,
   fetchSecurityAlertsFromBackend,
 } from './services/householdApiService';
 
@@ -288,7 +289,7 @@ export default function App() {
       });
 
     // 3. Tải danh sách nhật ký tuần tra thực địa từ PostgreSQL
-    fetchPatrolLogsFromBackend(100)
+    fetchPatrolLogsFromBackend(200)
       .then(logs => {
         if (Array.isArray(logs) && logs.length > 0) {
           setAuditLogs(logs);
@@ -407,15 +408,28 @@ export default function App() {
     return `SHA256: ${hex}${rand}...${hex.slice(0, 4)}`;
   };
 
-  // Record audit log helper
-  const recordAuditLog = (log: AuditLogEntry) => {
+  // Record audit log helper with PostgreSQL Backend Persistence
+  const recordAuditLog = async (log: AuditLogEntry) => {
+    // 1. Optimistic UI update
     setAuditLogs(prev => [log, ...prev]);
+
+    // 2. Lưu trực tiếp vào PostgreSQL backend (/api/patrol-logs)
+    try {
+      const saved = await savePatrolLogInBackend(log);
+      if (saved) {
+        setAuditLogs(prev => prev.map(item => (item.id === log.id ? saved : item)));
+      }
+    } catch (err) {
+      console.warn('Lỗi lưu nhật ký backend:', err);
+    }
+
+    // 3. Phụ trợ đồng bộ Firestore nếu có
     addAuditLogInFirestore(log).catch(err => {
-      console.warn('Persist audit log notice:', err);
+      console.warn('Persist audit log firestore notice:', err);
     });
   };
 
-  const handleAddManualLog = (partial: Partial<AuditLogEntry>) => {
+  const handleAddManualLog = async (partial: Partial<AuditLogEntry>) => {
     const now = new Date();
     const newLog: AuditLogEntry = {
       id: `LOG-MAN-${Date.now()}`,
@@ -423,19 +437,19 @@ export default function App() {
       createdAt: Date.now(),
       actionType: partial.actionType || 'profile_update',
       actionLabel: partial.actionLabel || 'Tuần tra thực địa',
-      officerName: officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
+      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
       targetType: partial.targetType || 'household',
       targetCode: partial.targetCode,
-      targetTitle: partial.targetTitle || 'Địa bàn P. An Lạc',
+      targetTitle: partial.targetTitle || 'Địa bàn Xã Bà Điểm',
       details: partial.details || 'Ghi nhận tuần tra thực địa',
       ipAddress: '192.168.1.45',
       deviceInfo: 'Tablet tuần tra chuyên dụng CSKV #01',
       integrityHash: generateSimpleHash(`MAN-${Date.now()}`),
       status: partial.status || 'info',
     };
-    recordAuditLog(newLog);
-    showToast('Đã lưu nhật ký tuần tra thực địa vào hệ thống kiểm toán.');
+    await recordAuditLog(newLog);
+    showToast('Đã lưu nhật ký tuần tra thực địa vào cơ sở dữ liệu PostgreSQL.');
   };
 
   // Handlers with Backend PostgreSQL Persistence & Audit Logging
@@ -809,7 +823,7 @@ export default function App() {
       const [data, docs, logs, alerts] = await Promise.all([
         fetchCompleteHouseholdsFromBackend(),
         fetchAllDocumentRecords(1000).catch(() => []),
-        fetchPatrolLogsFromBackend(100).catch(() => []),
+        fetchPatrolLogsFromBackend(200).catch(() => []),
         fetchSecurityAlertsFromBackend(100).catch(() => []),
       ]);
 

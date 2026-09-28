@@ -1,15 +1,11 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import firebaseConfig from '../firebase-applet-config.json';
 
-// Initialize Firebase App
+// Initialize Firebase App (for Auth only)
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Firestore with specific database ID from config
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || undefined);
-
-// Initialize Firebase Auth
+// Initialize Firebase Auth (Google SSO)
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -17,4 +13,3 @@ googleProvider.setCustomParameters({
 });
 
 export const FIREBASE_PROJECT_ID = firebaseConfig.projectId;
-export const FIRESTORE_DB_ID = firebaseConfig.firestoreDatabaseId;

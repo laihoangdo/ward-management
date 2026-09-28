@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { HouseholdFacility, Resident, DocumentRecord, AuditLogEntry, SecurityAlert } from '../types';
+import { HouseholdFacility, Resident, DocumentRecord, AuditLogEntry, AuditActionType, SecurityAlert } from '../types';
 import { IHousehold } from 'app/shared/model/household.model';
 import { IResident } from 'app/shared/model/resident.model';
 import { IDocumentRecord } from 'app/shared/model/document-record.model';
@@ -511,10 +511,21 @@ export async function fetchAllDocumentRecords(size: number = 1000): Promise<Docu
   return [];
 }
 
+function inferActionType(action: string): AuditActionType {
+  const a = (action || '').toLowerCase();
+  if (a.includes('tọa độ') || a.includes('gps') || a.includes('coordinate')) return 'coordinate_update';
+  if (a.includes('đăng ký') || a.includes('thêm') || a.includes('hộ dân')) return 'household_add';
+  if (a.includes('gia hạn') || a.includes('renew')) return 'document_renew';
+  if (a.includes('nhắc nhở') || a.includes('đôn đốc') || a.includes('reminder')) return 'reminder_sent';
+  if (a.includes('ocr') || a.includes('cccd') || a.includes('scan')) return 'ocr_scan';
+  if (a.includes('cán bộ') || a.includes('tài khoản')) return 'officer_update';
+  return 'profile_update';
+}
+
 /**
- * 12. Tải danh sách nhật ký tuần tra thực địa từ PostgreSQL
+ * 12. Tải danh sách nhật ký tuần tra / kiểm tra thực địa từ PostgreSQL
  */
-export async function fetchPatrolLogsFromBackend(size: number = 100): Promise<AuditLogEntry[]> {
+export async function fetchPatrolLogsFromBackend(size: number = 200): Promise<AuditLogEntry[]> {
   try {
     const res = await axios.get<any[]>(`/api/patrol-logs?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
     if (Array.isArray(res.data) && res.data.length > 0) {
@@ -523,21 +534,62 @@ export async function fetchPatrolLogsFromBackend(size: number = 100): Promise<Au
         const pad = (n: number) => String(n).padStart(2, '0');
         const formattedDate = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 
+        let detailsText = dto.details || 'Ghi nhận kiểm tra thực địa.';
+        let actionType: AuditActionType = inferActionType(dto.action);
+        let targetType: 'household' | 'document' | 'officer' | 'system' = 'household';
+        let targetCode: string | undefined = undefined;
+        let previousValue: string | undefined = undefined;
+        let newValue: string | undefined = undefined;
+        let deviceInfo: string | undefined = 'Thiết bị nghiệp vụ tuần tra CSKV';
+        let integrityHash: string | undefined = `SHA256:${String(dto.id).padStart(8, '0')}...OK`;
+        let status: 'success' | 'warning' | 'info' = 'success';
+
+        // Nếu details được lưu dưới dạng JSON metadata
+        if (dto.details && typeof dto.details === 'string' && dto.details.trim().startsWith('{')) {
+          try {
+            const meta = JSON.parse(dto.details);
+            if (meta.text !== undefined) detailsText = meta.text;
+            if (meta.actionType) actionType = meta.actionType;
+            if (meta.targetType) targetType = meta.targetType;
+            if (meta.targetCode) targetCode = meta.targetCode;
+            if (meta.previousValue) previousValue = meta.previousValue;
+            if (meta.newValue) newValue = meta.newValue;
+            if (meta.deviceInfo) deviceInfo = meta.deviceInfo;
+            if (meta.integrityHash) integrityHash = meta.integrityHash;
+            if (meta.status) status = meta.status;
+          } catch {
+            // Giữ nguyên detailsText nếu không parse được JSON
+          }
+        }
+
+        // Tách targetCode nếu có dạng "[CODE] Title"
+        let targetTitle = dto.target || 'Địa bàn Xã Bà Điểm';
+        if (targetTitle.startsWith('[') && targetTitle.includes('] ')) {
+          const closeIdx = targetTitle.indexOf('] ');
+          if (!targetCode) {
+            targetCode = targetTitle.slice(1, closeIdx);
+          }
+          targetTitle = targetTitle.slice(closeIdx + 2);
+        }
+
         return {
           id: `LOG-DB-${dto.id}`,
           timestamp: formattedDate,
           createdAt: d.getTime(),
-          actionType: 'patrol_check',
-          actionLabel: dto.action || 'Tuần tra thực địa',
+          actionType,
+          actionLabel: dto.action || 'Nhật ký công tác',
           officerName: dto.officerName || 'Cán bộ CSKV',
           officerBadge: dto.badgeNumber || 'CSKV-BADIEM',
-          targetType: 'area',
-          targetTitle: dto.target || 'Địa bàn Xã Bà Điểm',
-          details: dto.details || 'Tuần tra địa bàn an ninh trật tự.',
+          targetType,
+          targetCode,
+          targetTitle,
+          details: detailsText,
+          previousValue,
+          newValue,
           ipAddress: dto.ipAddress || '192.168.1.45',
-          deviceInfo: 'Thiết bị nghiệp vụ tuần tra CSKV',
-          integrityHash: `SHA256:${String(dto.id).padStart(8, '0')}...OK`,
-          status: 'success',
+          deviceInfo,
+          integrityHash,
+          status,
         };
       });
     }
@@ -545,6 +597,72 @@ export async function fetchPatrolLogsFromBackend(size: number = 100): Promise<Au
     console.warn('Lỗi khi tải danh sách nhật ký từ backend:', err);
   }
   return [];
+}
+
+/**
+ * 12b. Lưu nhật ký thao tác / tuần tra thực địa vào PostgreSQL
+ */
+export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promise<AuditLogEntry | null> {
+  try {
+    const rawDetails = log.details || '';
+    const metadata = {
+      text: rawDetails,
+      actionType: log.actionType || 'profile_update',
+      targetType: log.targetType || 'household',
+      targetCode: log.targetCode,
+      previousValue: log.previousValue,
+      newValue: log.newValue,
+      deviceInfo: log.deviceInfo || 'Máy trạm CSKV Bà Điểm',
+      integrityHash: log.integrityHash || `SHA256:${Date.now()}...OK`,
+      status: log.status || 'success',
+    };
+
+    let targetStr = log.targetTitle || 'Địa bàn Xã Bà Điểm';
+    if (log.targetCode && !targetStr.includes(log.targetCode)) {
+      targetStr = `[${log.targetCode}] ${targetStr}`;
+    }
+
+    const payload = {
+      action: log.actionLabel || 'Nhật ký công tác',
+      target: targetStr,
+      details: JSON.stringify(metadata),
+      officerName: log.officerName || 'Cán bộ CSKV',
+      badgeNumber: log.officerBadge || 'CSKV-BADIEM',
+      ipAddress: log.ipAddress || '192.168.1.45',
+      timestamp: new Date(log.createdAt || Date.now()).toISOString(),
+    };
+
+    const res = await axios.post<any>('/api/patrol-logs', payload);
+    if (res.data && res.data.id) {
+      const dto = res.data;
+      const d = dto.timestamp ? new Date(dto.timestamp) : new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const formattedDate = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+      return {
+        id: `LOG-DB-${dto.id}`,
+        timestamp: formattedDate,
+        createdAt: d.getTime(),
+        actionType: log.actionType || 'profile_update',
+        actionLabel: dto.action || 'Nhật ký công tác',
+        officerName: dto.officerName || 'Cán bộ CSKV',
+        officerBadge: dto.badgeNumber || 'CSKV-BADIEM',
+        targetType: log.targetType || 'household',
+        targetCode: log.targetCode,
+        targetTitle: log.targetTitle || dto.target || 'Địa bàn Xã Bà Điểm',
+        details: rawDetails,
+        previousValue: log.previousValue,
+        newValue: log.newValue,
+        ipAddress: dto.ipAddress || '192.168.1.45',
+        deviceInfo: log.deviceInfo || 'Máy trạm CSKV Bà Điểm',
+        integrityHash: log.integrityHash || `SHA256:${String(dto.id).padStart(8, '0')}...OK`,
+        status: log.status || 'success',
+      };
+    }
+  } catch (err) {
+    console.error('Lỗi khi lưu nhật ký thao tác vào PostgreSQL:', err);
+  }
+  return null;
 }
 
 /**

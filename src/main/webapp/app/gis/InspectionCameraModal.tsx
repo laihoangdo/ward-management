@@ -19,8 +19,8 @@ import {
   Zap,
   Info,
 } from 'lucide-react';
-import { HouseholdFacility, InspectionPhoto } from '../types';
-import { addInspectionPhotoToHousehold } from '../services/firestoreService';
+import { HouseholdFacility, InspectionPhoto } from './types';
+import { addInspectionPhotoToHousehold } from './services/firestoreService';
 
 interface InspectionCameraModalProps {
   isOpen: boolean;
