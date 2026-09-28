@@ -25,7 +25,7 @@ import {
   X,
   Navigation,
 } from 'lucide-react';
-import { HouseholdFacility, NavigationTab } from './types';
+import { HouseholdFacility, NavigationTab } from '../types';
 
 interface AreaMapTabProps {
   households: HouseholdFacility[];
@@ -267,8 +267,23 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
     <div
       className={
         isFullscreen
-          ? 'fixed inset-0 z-50 w-screen h-screen bg-slate-900 text-slate-100 flex flex-col p-3 sm:p-4 overflow-y-auto space-y-4'
+          ? 'fixed inset-0 z-[99999] w-screen h-screen bg-slate-900 text-slate-100 flex flex-col p-3 sm:p-4 overflow-y-auto space-y-4 m-0'
           : 'space-y-4 sm:space-y-6 max-w-7xl mx-auto'
+      }
+      style={
+        isFullscreen
+          ? {
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              zIndex: 99999,
+              margin: 0,
+            }
+          : undefined
       }
     >
       {/* Fullscreen Top Navigation Bar */}

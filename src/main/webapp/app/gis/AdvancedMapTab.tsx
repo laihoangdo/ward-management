@@ -49,8 +49,8 @@ import {
   GripHorizontal,
   HelpCircle,
 } from 'lucide-react';
-import { HouseholdFacility, NavigationTab, InspectionPhoto } from './types';
-import { updateHouseholdCoordinatesInFirestore } from './services/firestoreService';
+import { HouseholdFacility, NavigationTab, InspectionPhoto } from '../types';
+import { updateHouseholdCoordinatesInFirestore } from '../services/firestoreService';
 import { MapQuickGuideModal } from './MapQuickGuideModal';
 import { InspectionCameraModal } from './InspectionCameraModal';
 
@@ -64,27 +64,43 @@ interface AdvancedMapTabProps {
 }
 
 // Base map layer options
-type BaseLayerType = 'osm' | 'satellite' | 'positron';
+type BaseLayerType = 'osm' | 'voyager' | 'dark' | 'satellite' | 'positron';
 
-const TILE_LAYERS: Record<BaseLayerType, { name: string; url: string; attribution: string; maxZoom: number }> = {
+const TILE_LAYERS: Record<BaseLayerType, { name: string; url: string; attribution: string; maxZoom: number; subdomains?: string }> = {
   osm: {
-    name: 'Đường phố chuẩn (OSM)',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19,
+    name: 'Đường phố chuẩn (OpenStreetMap)',
+    url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 20,
+    subdomains: 'abc',
   },
+  // voyager: {
+  //   name: 'Bản đồ chi tiết (CartoDB Voyager)',
+  //   url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+  //   attribution: '&copy; CARTO &amp; OpenStreetMap',
+  //   maxZoom: 20,
+  //   subdomains: 'abcd',
+  // },
+  // dark: {
+  //   name: 'Đô thị đêm (CartoDB Dark)',
+  //   url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  //   attribution: '&copy; CARTO &amp; OpenStreetMap',
+  //   maxZoom: 20,
+  //   subdomains: 'abcd',
+  // },
   satellite: {
-    name: 'Ảnh Vệ tinh (Esri)',
+    name: 'Ảnh Vệ tinh thực địa (Esri)',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: '&copy; Esri &mdash; Earthstar Geographics',
+    attribution: '&copy; Esri, Earthstar Geographics',
     maxZoom: 18,
   },
-  positron: {
-    name: 'Đô thị sáng (CartoDB)',
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    maxZoom: 20,
-  },
+  // positron: {
+  //   name: 'Đô thị sáng (CartoDB Light)',
+  //   url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  //   attribution: '&copy; CARTO &amp; OpenStreetMap',
+  //   maxZoom: 20,
+  //   subdomains: 'abcd',
+  // },
 };
 
 export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
@@ -330,12 +346,12 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
       scrollWheelZoom: true,
     });
 
-    // Add Base Tile Layer with CORS enabled
+    // Add Base Tile Layer
     const initialConfig = TILE_LAYERS[currentLayer];
     const tileLayer = L.tileLayer(initialConfig.url, {
       attribution: initialConfig.attribution,
       maxZoom: initialConfig.maxZoom,
-      crossOrigin: true,
+      subdomains: initialConfig.subdomains || 'abc',
     }).addTo(map);
 
     activeTileLayerRef.current = tileLayer;
@@ -366,7 +382,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
     const newTileLayer = L.tileLayer(config.url, {
       attribution: config.attribution,
       maxZoom: config.maxZoom,
-      crossOrigin: true,
+      subdomains: config.subdomains || 'abc',
     }).addTo(mapInstanceRef.current);
 
     activeTileLayerRef.current = newTileLayer;
@@ -920,11 +936,27 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
 
   return (
     <div
+      id="advanced-map-wrapper"
       ref={mapWrapperRef}
       className={
         isFullscreen
-          ? 'fixed inset-0 z-50 w-screen h-screen bg-slate-950 flex flex-col p-2 sm:p-2.5 overflow-hidden'
+          ? 'fixed inset-0 z-[99999] w-screen h-screen bg-slate-950 flex flex-col p-2 sm:p-2.5 overflow-hidden m-0'
           : 'space-y-4 sm:space-y-5 max-w-7xl mx-auto'
+      }
+      style={
+        isFullscreen
+          ? {
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              zIndex: 99999,
+              margin: 0,
+            }
+          : undefined
       }
     >
       {/* Fullscreen Top Navigation Bar */}

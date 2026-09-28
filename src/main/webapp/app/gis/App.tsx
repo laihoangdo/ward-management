@@ -109,16 +109,79 @@ export default function App() {
   // Fullscreen map mode for Advanced Map
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
-  // Toggle map fullscreen safely (pure viewport mode - avoids iframe security conflicts)
+  // Toggle map fullscreen safely via pure viewport mode (no browser gesture restrictions)
   const handleToggleMapFullscreen = () => {
     setIsMapFullscreen(prev => !prev);
   };
+
+  // Hide outer JHipster Header and remove padding during map fullscreen
+  useEffect(() => {
+    const appHeader = document.getElementById('app-header');
+    const appContainer = document.querySelector('.app-container') as HTMLElement | null;
+    const viewContainer = document.querySelector('#app-view-container') as HTMLElement | null;
+    const jhCard = document.querySelector('.jh-card') as HTMLElement | null;
+
+    if (isMapFullscreen) {
+      if (appHeader) appHeader.style.display = 'none';
+      if (appContainer) {
+        appContainer.style.paddingTop = '0px';
+        appContainer.style.height = '100vh';
+      }
+      if (viewContainer) {
+        viewContainer.style.padding = '0px';
+        viewContainer.style.height = '100vh';
+        viewContainer.style.maxWidth = '100vw';
+      }
+      if (jhCard) {
+        jhCard.style.padding = '0px';
+        jhCard.style.border = 'none';
+        jhCard.style.boxShadow = 'none';
+        jhCard.style.borderRadius = '0px';
+      }
+    } else {
+      if (appHeader) appHeader.style.display = '';
+      if (appContainer) {
+        appContainer.style.paddingTop = '60px';
+        appContainer.style.height = '';
+      }
+      if (viewContainer) {
+        viewContainer.style.padding = '';
+        viewContainer.style.height = '';
+        viewContainer.style.maxWidth = '';
+      }
+      if (jhCard) {
+        jhCard.style.padding = '';
+        jhCard.style.border = '';
+        jhCard.style.boxShadow = '';
+        jhCard.style.borderRadius = '';
+      }
+    }
+
+    return () => {
+      if (appHeader) appHeader.style.display = '';
+      if (appContainer) {
+        appContainer.style.paddingTop = '60px';
+        appContainer.style.height = '';
+      }
+      if (viewContainer) {
+        viewContainer.style.padding = '';
+        viewContainer.style.height = '';
+        viewContainer.style.maxWidth = '';
+      }
+      if (jhCard) {
+        jhCard.style.padding = '';
+        jhCard.style.border = '';
+        jhCard.style.boxShadow = '';
+        jhCard.style.borderRadius = '';
+      }
+    };
+  }, [isMapFullscreen]);
 
   // Exit fullscreen on Esc key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isMapFullscreen) {
-        setIsMapFullscreen(false);
+        handleToggleMapFullscreen();
       }
     };
 

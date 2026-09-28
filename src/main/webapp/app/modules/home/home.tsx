@@ -74,43 +74,15 @@ export const Home = () => {
             </Alert>
           </div>
         )}
-        <p>Nếu bạn có bất kỳ câu hỏi nào về JHipster vui lòng truy cập:</p>
+        <p>Nếu bạn có bất kỳ câu hỏi nào về Sunny Tech vui lòng truy cập:</p>
 
         <ul>
           <li>
-            <a href="https://www.jhipster.tech/" target="_blank" rel="noopener noreferrer">
-              Trang chủ JHipster
-            </a>
-          </li>
-          <li>
-            <a href="https://stackoverflow.com/tags/jhipster/info" target="_blank" rel="noopener noreferrer">
-              JHipster trên Stack Overflow
-            </a>
-          </li>
-          <li>
-            <a href="https://github.com/jhipster/generator-jhipster/issues?state=open" target="_blank" rel="noopener noreferrer">
-              Theo dõi các lỗi JHipster
-            </a>
-          </li>
-          <li>
-            <a href="https://gitter.im/jhipster/generator-jhipster" target="_blank" rel="noopener noreferrer">
-              Phòng chat công cộng JHipster
-            </a>
-          </li>
-          <li>
-            <a href="https://twitter.com/jhipster" target="_blank" rel="noopener noreferrer">
-              Theo dõi @jhipster trên Twitter
+            <a href="https://laihoangdo.github.io/sunny-tech-site" target="_blank" rel="noopener noreferrer">
+              Trang chủ Sunny Tech
             </a>
           </li>
         </ul>
-
-        <p>
-          Nếu bạn thích JHipster, đừng quên cho chúng tôi thêm một ngôi sao trên{' '}
-          <a href="https://github.com/jhipster/generator-jhipster" target="_blank" rel="noopener noreferrer">
-            GitHub
-          </a>
-          !
-        </p>
       </Col>
     </Row>
   );
