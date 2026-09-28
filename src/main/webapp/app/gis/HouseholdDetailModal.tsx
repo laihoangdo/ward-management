@@ -27,7 +27,7 @@ import {
   EyeOff,
   RotateCcw,
 } from 'lucide-react';
-import { HouseholdFacility, InspectionPhoto } from './types';
+import { HouseholdFacility, InspectionPhoto, AppUser } from './types';
 import { getHouseholdResidenceType, RESIDENCE_TYPE_CONFIG } from './utils/residenceUtils';
 import { getEffectiveResidentsList } from './utils/residentRosterUtils';
 import { InspectionCameraModal } from './InspectionCameraModal';
@@ -54,20 +54,24 @@ const BADIEM_STREETS = [
 
 interface HouseholdDetailModalProps {
   household: HouseholdFacility | null;
+  currentUser?: AppUser | null;
   onClose: () => void;
   onUpdateNotes: (id: string, notes: string) => void;
   onPhotoAdded?: (photo: InspectionPhoto) => void;
   onHouseholdUpdated?: (updatedHousehold: HouseholdFacility) => void;
   onDeleteHousehold?: (id: string) => void;
+  onShowToast?: (msg: string) => void;
 }
 
 export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   household,
+  currentUser,
   onClose,
   onUpdateNotes,
   onPhotoAdded,
   onHouseholdUpdated,
   onDeleteHousehold,
+  onShowToast,
 }) => {
   if (!household) return null;
 
@@ -78,6 +82,36 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   const [isOcrModalOpen, setIsOcrModalOpen] = useState(false);
   const [selectedPhotoForView, setSelectedPhotoForView] = useState<InspectionPhoto | null>(null);
   const [isDeletingPhotoId, setIsDeletingPhotoId] = useState<string | null>(null);
+
+  const handleTriggerCamera = () => {
+    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canUpdateInspection === false) {
+      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
+      if (onShowToast) onShowToast(msg);
+      else alert(msg);
+      return;
+    }
+    setIsCameraModalOpen(true);
+  };
+
+  const handleTriggerEditNotes = () => {
+    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canUpdateInspection === false) {
+      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
+      if (onShowToast) onShowToast(msg);
+      else alert(msg);
+      return;
+    }
+    setIsEditingNotes(true);
+  };
+
+  const handleTriggerOcr = () => {
+    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canScanOcr === false) {
+      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền quét OCR Căn cước công dân.';
+      if (onShowToast) onShowToast(msg);
+      else alert(msg);
+      return;
+    }
+    setIsOcrModalOpen(true);
+  };
   const [decryptedCccds, setDecryptedCccds] = useState<Record<string, string>>({});
   const [showCccdMap, setShowCccdMap] = useState<Record<string, boolean>>({});
   const [isDecryptingId, setIsDecryptingId] = useState<string | null>(null);
@@ -589,7 +623,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
               <button
                 id="btn-trigger-inspection-camera"
-                onClick={() => setIsCameraModalOpen(true)}
+                onClick={handleTriggerCamera}
                 className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer min-h-[36px]"
               >
                 <Camera className="w-3.5 h-3.5" />
@@ -744,7 +778,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
               {!isEditingNotes && (
                 <button
-                  onClick={() => setIsEditingNotes(true)}
+                  onClick={handleTriggerEditNotes}
                   className="px-2.5 py-1 text-blue-600 hover:bg-blue-50 rounded-lg font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
@@ -801,7 +835,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             </a>
 
             <button
-              onClick={() => setIsCameraModalOpen(true)}
+              onClick={handleTriggerCamera}
               className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs min-h-[40px] cursor-pointer"
             >
               <Camera className="w-3.5 h-3.5" />
@@ -810,7 +844,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
             <button
               id="btn-footer-ocr-scan"
-              onClick={() => setIsOcrModalOpen(true)}
+              onClick={handleTriggerOcr}
               className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs min-h-[40px] cursor-pointer border border-emerald-200"
               title="Quét OCR CCCD"
             >

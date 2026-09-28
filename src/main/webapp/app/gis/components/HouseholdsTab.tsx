@@ -24,17 +24,26 @@ import {
   Calendar,
   Trash2,
 } from 'lucide-react';
-import { HouseholdFacility, ResidenceType } from '../types';
+import { HouseholdFacility, ResidenceType, AppUser } from '../types';
 import { getHouseholdResidenceType, RESIDENCE_TYPE_CONFIG } from '../utils/residenceUtils';
 
 interface HouseholdsTabProps {
   households: HouseholdFacility[];
+  currentUser?: AppUser | null;
   onSelectHousehold: (household: HouseholdFacility) => void;
   onOpenAddModal: () => void;
   onDeleteHousehold?: (id: string) => void;
+  onShowToast?: (msg: string) => void;
 }
 
-export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({ households, onSelectHousehold, onOpenAddModal, onDeleteHousehold }) => {
+export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
+  households,
+  currentUser,
+  onSelectHousehold,
+  onOpenAddModal,
+  onDeleteHousehold,
+  onShowToast,
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedHamlet, setSelectedHamlet] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'household' | 'business' | 'special_monitoring'>('all');
@@ -86,6 +95,13 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({ households, onSele
     searchTerm.trim() !== '' || selectedHamlet !== 'all' || selectedType !== 'all' || selectedResidenceType !== 'all';
 
   const handleExportCSV = () => {
+    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canExportReports === false) {
+      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền xuất báo cáo danh sách CSV/Excel.';
+      if (onShowToast) onShowToast(msg);
+      else alert(msg);
+      return;
+    }
+
     const headers = [
       'Mã Quản Lý',
       'Số Nhà',

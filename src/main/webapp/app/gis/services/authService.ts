@@ -85,10 +85,46 @@ export async function seedAuthAndRbacData(): Promise<void> {
   try {
     if (!localStorage.getItem(USERS_STORAGE_KEY)) {
       setLocalData(USERS_STORAGE_KEY, INITIAL_USERS, 'users-updated');
+    } else {
+      // Merge missing initial users so existing local storage receives newly added officers/sub-admins
+      const currentUsers = getLocalData<AppUser>(USERS_STORAGE_KEY, INITIAL_USERS);
+      const existingUsernames = new Set(currentUsers.map(u => u.username.toLowerCase()));
+      let hasUserChanges = false;
+      for (const u of INITIAL_USERS) {
+        if (!existingUsernames.has(u.username.toLowerCase())) {
+          currentUsers.push(u);
+          hasUserChanges = true;
+        } else {
+          // Sync updated assignedHamlets / position for default seeded users if needed
+          const idx = currentUsers.findIndex(cu => cu.username.toLowerCase() === u.username.toLowerCase());
+          if (idx !== -1 && (!currentUsers[idx].assignedHamlets || currentUsers[idx].assignedHamlets.length === 0)) {
+            currentUsers[idx].assignedHamlets = u.assignedHamlets;
+            currentUsers[idx].assignedStreets = u.assignedStreets;
+            hasUserChanges = true;
+          }
+        }
+      }
+      if (hasUserChanges) {
+        setLocalData(USERS_STORAGE_KEY, currentUsers, 'users-updated');
+      }
     }
 
     if (!localStorage.getItem(ALLOWED_EMAILS_STORAGE_KEY)) {
       setLocalData(ALLOWED_EMAILS_STORAGE_KEY, INITIAL_ALLOWED_EMAILS, 'emails-updated');
+    } else {
+      // Merge missing allowed emails
+      const currentEmails = getLocalData<AllowedEmailEntry>(ALLOWED_EMAILS_STORAGE_KEY, INITIAL_ALLOWED_EMAILS);
+      const existingEmails = new Set(currentEmails.map(e => e.email.toLowerCase()));
+      let hasEmailChanges = false;
+      for (const item of INITIAL_ALLOWED_EMAILS) {
+        if (!existingEmails.has(item.email.toLowerCase())) {
+          currentEmails.push(item);
+          hasEmailChanges = true;
+        }
+      }
+      if (hasEmailChanges) {
+        setLocalData(ALLOWED_EMAILS_STORAGE_KEY, currentEmails, 'emails-updated');
+      }
     }
 
     if (!localStorage.getItem(DYNAMIC_MENUS_STORAGE_KEY)) {
@@ -462,6 +498,12 @@ export async function loginWithCredentials(
     truong_cax: ['Cax@2026', 'admin123', '123456'],
     cskv_ap1: ['Ap1@2026', 'cskv123', '123456'],
     cav_duongpho: ['Cav@2026', 'cav123', '123456'],
+    cskv_namlan: ['Namlan@2026', 'cskv123', '123456'],
+    cav_namlan: ['CavNamlan@2026', 'Namlan@2026', 'cav123', '123456'],
+    cskv_donglan: ['Donglan@2026', 'cskv123', '123456'],
+    cav_donglan: ['CavDonglan@2026', 'Donglan@2026', 'cav123', '123456'],
+    cskv_tienlan: ['Tienlan@2026', 'cskv123', '123456'],
+    cav_tienlan: ['CavTienlan@2026', 'Tienlan@2026', 'cav123', '123456'],
   };
 
   const allowed = validPasswords[cleanUser] || ['123456', 'Admin@2026'];

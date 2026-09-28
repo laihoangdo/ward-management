@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Shield,
   ShieldCheck,
@@ -14,10 +14,12 @@ import {
   Download,
   BellRing,
   Building,
+  Building2,
   Edit3,
+  Filter,
 } from 'lucide-react';
 import { AppUser, SubAdminFeaturePermissions } from '../types';
-import { updateOfficerPermissions, saveUserInFirestore } from '../services/authService';
+import { saveUserInFirestore } from '../services/authService';
 
 interface SubAdminDelegationTabProps {
   currentUser: AppUser;
@@ -26,17 +28,50 @@ interface SubAdminDelegationTabProps {
 }
 
 export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ currentUser, usersList, onShowToast }) => {
-  // Filter officers under this sub-admin's hamlets (or all if admin/superadmin)
-  const isSuperOrAdmin = currentUser.role === 'superadmin' || currentUser.role === 'admin';
+  const isSuperAdmin = currentUser.role === 'superadmin';
+  const isAdmin = currentUser.role === 'admin';
+  const isSubAdmin = currentUser.role === 'sub-admin';
 
+  // Hamlet filter for Admin and Super Admin
+  const [hamletDelegationFilter, setHamletDelegationFilter] = useState<string>('all');
+
+  // Subordinates filtering based on RBAC hierarchy:
+  // - superadmin can manage admin, sub-admin, and officer
+  // - admin (Trưởng CAX) can manage sub-admin (Cán bộ quản lý ấp) and officer (Công an viên)
+  // - sub-admin (Cán bộ quản lý ấp) can manage officer (Công an viên) in their specific hamlet
   const subordinates = usersList.filter(u => {
     if (u.id === currentUser.id) return false;
-    if (isSuperOrAdmin) return u.role === 'sub-admin' || u.role === 'officer';
-    // Sub-admin manages officers in their assigned hamlets
-    return u.role === 'officer' && u.assignedHamlets?.some(h => currentUser.assignedHamlets?.includes(h));
+    if (isSuperAdmin) return u.role !== 'superadmin';
+    if (isAdmin) return u.role === 'sub-admin' || u.role === 'officer';
+    if (isSubAdmin) {
+      // Sub-admin of a specific hamlet exclusively manages officers within their assigned hamlet(s)
+      const matchesHamlet = u.assignedHamlets?.some(h =>
+        currentUser.assignedHamlets?.some(
+          ch =>
+            ch.toLowerCase().trim() === h.toLowerCase().trim() ||
+            h.toLowerCase().includes(ch.toLowerCase()) ||
+            ch.toLowerCase().includes(h.toLowerCase()),
+        ),
+      );
+      const isUnassigned = !u.assignedHamlets || u.assignedHamlets.length === 0;
+      return u.role === 'officer' && (matchesHamlet || isUnassigned);
+    }
+    return false;
   });
 
-  const [selectedOfficer, setSelectedOfficer] = useState<AppUser | null>(subordinates[0] || null);
+  const [roleFilter, setRoleFilter] = useState<'all' | 'sub-admin' | 'officer'>('all');
+  const displayedSubordinates = subordinates.filter(u => {
+    const roleMatch = roleFilter === 'all' || u.role === roleFilter;
+    const hamletMatch =
+      hamletDelegationFilter === 'all' ||
+      u.assignedHamlets?.some(
+        h =>
+          h.toLowerCase().includes(hamletDelegationFilter.toLowerCase()) || hamletDelegationFilter.toLowerCase().includes(h.toLowerCase()),
+      );
+    return roleMatch && hamletMatch;
+  });
+
+  const [selectedOfficer, setSelectedOfficer] = useState<AppUser | null>(displayedSubordinates[0] || null);
 
   const [permissions, setPermissions] = useState<SubAdminFeaturePermissions>(
     selectedOfficer?.subAdminPermissions || {
@@ -51,9 +86,20 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
     },
   );
 
+  const [assignedHamletsInput, setAssignedHamletsInput] = useState<string>(selectedOfficer?.assignedHamlets?.join(', ') || 'Ấp 1');
+
   const [assignedStreetsInput, setAssignedStreetsInput] = useState<string>(
     selectedOfficer?.assignedStreets?.join(', ') || 'Hẻm 418 Kinh Dương Vương, Hẻm 432',
   );
+
+  // Sync selection if subordinates change
+  useEffect(() => {
+    if (!selectedOfficer && displayedSubordinates.length > 0) {
+      handleSelectOfficer(displayedSubordinates[0]);
+    } else if (selectedOfficer && !displayedSubordinates.some(s => s.id === selectedOfficer.id) && displayedSubordinates.length > 0) {
+      handleSelectOfficer(displayedSubordinates[0]);
+    }
+  }, [displayedSubordinates.length, roleFilter]);
 
   const handleSelectOfficer = (officer: AppUser) => {
     setSelectedOfficer(officer);
@@ -69,6 +115,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
         canManageStreets: false,
       },
     );
+    setAssignedHamletsInput(officer.assignedHamlets?.join(', ') || '');
     setAssignedStreetsInput(officer.assignedStreets?.join(', ') || '');
   };
 
@@ -87,15 +134,21 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       .map(s => s.trim())
       .filter(Boolean);
 
+    const hamlets = assignedHamletsInput
+      .split(',')
+      .map(h => h.trim())
+      .filter(Boolean);
+
     const updatedOfficer: AppUser = {
       ...selectedOfficer,
       subAdminPermissions: permissions,
       assignedStreets: streets,
+      assignedHamlets: hamlets.length > 0 ? hamlets : selectedOfficer.assignedHamlets,
     };
 
     try {
       await saveUserInFirestore(updatedOfficer);
-      onShowToast(`Đã lưu phân quyền tính năng & tuyến địa bàn cho ${selectedOfficer.rank} ${selectedOfficer.fullName}.`);
+      onShowToast(`Đã lưu phân quyền & phân công địa bàn cho ${selectedOfficer.rank} ${selectedOfficer.fullName}.`);
     } catch (err: any) {
       alert('Lỗi lưu phân quyền: ' + err.message);
     }
@@ -133,8 +186,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
     },
     {
       key: 'canExportReports',
-      title: 'Xuất Báo cáo Danh sách Dữ liệu (CSV)',
-      desc: 'Tải dữ liệu danh sách hộ dân, văn bản hoặc lịch sử kiểm toán phục vụ thanh tra',
+      title: 'Xuất Báo cáo Danh sách Dữ liệu (CSV/Excel)',
+      desc: 'Tải dữ liệu danh sách hộ dân, nhân khẩu, văn bản hoặc lịch sử kiểm toán phục vụ thanh tra',
       icon: Download,
     },
     {
@@ -157,6 +210,9 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
     },
   ];
 
+  const subAdminCount = subordinates.filter(u => u.role === 'sub-admin').length;
+  const officerCount = subordinates.filter(u => u.role === 'officer').length;
+
   return (
     <div id="subadmin-delegation-tab" className="space-y-6">
       {/* Header Banner */}
@@ -166,16 +222,29 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2.5 py-0.5 rounded-md bg-blue-900/60 text-blue-300 border border-blue-700/60 text-xs font-mono font-bold flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                ỦY QUYỀN TÍNH NĂNG CẤP DƯỚI
+                {isAdmin
+                  ? 'TRƯỞNG CÔNG AN XÃ / PHƯỜNG ĐIỀU HÀNH'
+                  : isSubAdmin
+                    ? 'CÁN BỘ QUẢN LÝ ẤP ĐIỀU HÀNH'
+                    : 'QUẢN TRỊ VIÊN TỐI CAO ĐIỀU HÀNH'}
               </span>
               <span className="text-xs text-slate-400 font-mono">
                 {currentUser.position} • {currentUser.fullName}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Phân Quyền Tính Năng Cho Công An Viên Cấp Dưới</h1>
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Cán bộ quản lý ấp trực tiếp quyết định công an viên phụ trách địa bàn đường xá nào và được quyền sử dụng các tính năng nghiệp
-              vụ nào trong ca trực.
+            <h1 className="text-2xl font-bold text-white tracking-tight">
+              {isAdmin
+                ? 'Quản Lý & Phân Quyền Cán Bộ Quản Lý Ấp & Công An Viên'
+                : isSubAdmin
+                  ? 'Phân Quyền Tuyến Địa Bàn Cho Công An Viên Cấp Dưới'
+                  : 'Ủy Quyền Thẩm Quyền Nghiệp Vụ Toàn Diện Các Cấp'}
+            </h1>
+            <p className="text-xs text-slate-300 mt-1 max-w-3xl">
+              {isAdmin
+                ? 'Trưởng Công an Xã trực tiếp phân công địa bàn ấp, phân quyền nghiệp vụ cho Cán bộ Quản lý Ấp (Sub-Admin) và giám sát phân bổ quyền cho Công an viên cấp dưới.'
+                : isSubAdmin
+                  ? 'Cán bộ Quản lý Ấp trực tiếp phân công tuyến đường/hẻm và ủy quyền các tính năng nghiệp vụ cho Công an viên cấp dưới trong ca trực.'
+                  : 'Quản trị viên Tối cao phân bổ địa bàn và phân quyền nghiệp vụ cho toàn bộ cán bộ các cấp trên hệ thống.'}
             </p>
           </div>
 
@@ -183,7 +252,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
             type="button"
             id="btn-save-delegation"
             onClick={handleSaveDelegation}
-            className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-900/40 flex items-center gap-2 transition cursor-pointer"
+            className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-900/40 flex items-center gap-2 transition cursor-pointer self-start md:self-auto"
           >
             <ShieldCheck className="w-4 h-4" />
             Lưu Cấu Hình Phân Quyền
@@ -197,18 +266,78 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
         <div className="lg:col-span-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Công An Viên Cấp Dưới Thuộc Quản Lý ({subordinates.length})
+              Cán bộ cấp dưới thuộc thẩm quyền ({subordinates.length})
             </h3>
           </div>
 
-          {subordinates.length === 0 ? (
+          {/* Filter by role for Admin & Super Admin */}
+          {(isAdmin || isSuperAdmin) && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 p-1 bg-slate-900 rounded-xl border border-slate-800 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter('all')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition text-[11px] ${
+                    roleFilter === 'all' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Tất cả ({subordinates.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter('sub-admin')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition text-[11px] ${
+                    roleFilter === 'sub-admin' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  QL Ấp ({subAdminCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter('officer')}
+                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition text-[11px] ${
+                    roleFilter === 'officer' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  CA Viên ({officerCount})
+                </button>
+              </div>
+
+              {/* Filter by Hamlet */}
+              <div className="flex flex-wrap gap-1 p-1 bg-slate-900/60 rounded-xl border border-slate-800 text-[11px]">
+                {[
+                  { id: 'all', label: 'Tất cả ấp' },
+                  { id: 'Bắc Lân', label: 'Ấp Bắc Lân' },
+                  { id: 'Nam Lân', label: 'Ấp Nam Lân' },
+                  { id: 'Đông Lân', label: 'Ấp Đông Lân' },
+                  { id: 'Tiền Lân', label: 'Ấp Tiền Lân' },
+                ].map(h => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    onClick={() => setHamletDelegationFilter(h.id)}
+                    className={`px-2 py-0.5 rounded-md font-medium transition cursor-pointer ${
+                      hamletDelegationFilter === h.id
+                        ? 'bg-amber-500 text-slate-950 font-bold'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {h.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {displayedSubordinates.length === 0 ? (
             <div className="p-6 text-center rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
-              Chưa có công an viên nào được gán vào ấp của bạn.
+              Không có cán bộ nào phù hợp với bộ lọc.
             </div>
           ) : (
             <div className="space-y-2">
-              {subordinates.map(off => {
+              {displayedSubordinates.map(off => {
                 const isSelected = selectedOfficer?.id === off.id;
+                const isSubAdminRole = off.role === 'sub-admin';
                 return (
                   <button
                     key={off.id}
@@ -225,11 +354,20 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                         <span className="font-bold text-sm">
                           {off.rank} {off.fullName}
                         </span>
+                        <span
+                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase font-mono ${
+                            isSubAdminRole
+                              ? 'bg-blue-900/80 text-blue-200 border border-blue-700'
+                              : 'bg-emerald-900/80 text-emerald-200 border border-emerald-700'
+                          }`}
+                        >
+                          {isSubAdminRole ? 'CÁN BỘ QL ẤP' : 'CÔNG AN VIÊN'}
+                        </span>
                       </div>
                       <div className="text-xs text-slate-400 mt-0.5">{off.position}</div>
                       <div className="text-[11px] text-slate-400 mt-1 font-mono">
                         Số hiệu: <strong className="text-amber-400">{off.badgeNumber}</strong> • {off.assignedWard} (
-                        {off.assignedHamlets?.join(', ')})
+                        {off.assignedHamlets?.join(', ') || 'Chưa gán ấp'})
                       </div>
                       {off.assignedStreets && off.assignedStreets.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
@@ -254,8 +392,19 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
                 <div>
-                  <span className="text-[11px] font-mono text-blue-400 font-bold uppercase">ĐANG THIẾT LẬP THẨM QUYỀN CHO:</span>
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2 mt-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono text-blue-400 font-bold uppercase">ĐANG THIẾT LẬP THẨM QUYỀN CHO:</span>
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase font-mono ${
+                        selectedOfficer.role === 'sub-admin'
+                          ? 'bg-blue-900/80 text-blue-200 border border-blue-700'
+                          : 'bg-emerald-900/80 text-emerald-200 border border-emerald-700'
+                      }`}
+                    >
+                      {selectedOfficer.role === 'sub-admin' ? 'CÁN BỘ QUẢN LÝ ẤP (SUB-ADMIN)' : 'CÔNG AN VIÊN (OFFICER)'}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2 mt-1">
                     <Award className="w-5 h-5 text-amber-400" />
                     {selectedOfficer.rank} {selectedOfficer.fullName}
                     <span className="text-xs px-2 py-0.5 rounded bg-slate-950 border border-slate-700 text-slate-300 font-mono">
@@ -269,31 +418,54 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 </div>
               </div>
 
+              {/* Assignment of Hamlets (Địa bàn Ấp/Khu phố) */}
+              <div className="space-y-2 p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <label className="block text-xs font-bold text-blue-400 flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  {selectedOfficer.role === 'sub-admin'
+                    ? 'Phân Bổ Địa Bàn Ấp / Khu Phố Quản Lý Toàn Diện:'
+                    : 'Phân Bổ Ấp / Khu Phố Trực Thuộc Thực Nhiệm:'}
+                </label>
+                <p className="text-[11px] text-slate-400">
+                  {selectedOfficer.role === 'sub-admin'
+                    ? 'Chỉ định các ấp do cán bộ này trực tiếp quản lý dân cư và giám sát công an viên (ngăn cách bằng dấu phẩy):'
+                    : 'Chỉ định ấp mà công an viên này thực hiện tuần tra kiểm soát (ngăn cách bằng dấu phẩy):'}
+                </p>
+                <input
+                  type="text"
+                  value={assignedHamletsInput}
+                  onChange={e => setAssignedHamletsInput(e.target.value)}
+                  placeholder="e.g. Ấp 1, Ấp 2 hoặc Ấp Bắc Lân, Ấp Nam Lân..."
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
+                />
+              </div>
+
               {/* Assignment of Streets and Alleys */}
               <div className="space-y-2 p-4 rounded-xl bg-slate-950 border border-slate-800">
                 <label className="block text-xs font-bold text-amber-400 flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  Tuyến Đường, Đoạn Phố & Danh Mục Hẻm Phụ Trách:
+                  {selectedOfficer.role === 'sub-admin'
+                    ? 'Tuyến Đường Trọng Điểm & Mạng Lưới Hẻm Thuộc Ấp:'
+                    : 'Tuyến Đường, Đoạn Phố & Tuyến Hẻm Phụ Trách Tuần Tra Trực Tiếp:'}
                 </label>
                 <p className="text-[11px] text-slate-400">
-                  Giao cụ thể các tuyến đường hoặc hẻm thuộc ấp để công an viên này thực hiện tuần tra, giám sát an ninh trật tự (ngăn cách
-                  bằng dấu phẩy):
+                  Giao cụ thể các tuyến đường hoặc hẻm thuộc ấp để thực hiện tuần tra, giám sát an ninh trật tự (ngăn cách bằng dấu phẩy):
                 </p>
                 <input
                   type="text"
                   value={assignedStreetsInput}
                   onChange={e => setAssignedStreetsInput(e.target.value)}
-                  placeholder="e.g. Hẻm 418 Kinh Dương Vương, Hẻm 432 Kinh Dương Vương, Đoạn Hồ Học Lãm..."
+                  placeholder="e.g. Đường Kinh Dương Vương (số 380-450), Hẻm 418 Kinh Dương Vương, Hẻm 432..."
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
                 />
               </div>
 
-              {/* Toggles for Sub-Admin permissions */}
+              {/* Toggles for Feature permissions */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-blue-400" />
-                    Bảng Phân Quyền Chức Năng Nghiệp Vụ
+                    Bảng Phân Quyền Tính Năng Nghiệp Vụ
                   </h3>
                   <span className="text-[11px] text-slate-400">Bật để cấp quyền, Tắt để khóa tính năng</span>
                 </div>
@@ -347,7 +519,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
             </div>
           ) : (
             <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-xs">
-              Vui lòng chọn một công an viên ở danh sách bên trái để phân quyền.
+              Vui lòng chọn một cán bộ ở danh sách bên trái để phân quyền.
             </div>
           )}
         </div>

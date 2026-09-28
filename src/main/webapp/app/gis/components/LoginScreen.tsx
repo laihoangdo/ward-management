@@ -45,11 +45,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [googleStatus, setGoogleStatus] = useState<'idle' | 'checking' | 'rejected' | 'accepted'>('idle');
   const [googleRejectedEmail, setGoogleRejectedEmail] = useState<string | null>(null);
 
-  // Demo accounts quick select
+  // Demo accounts quick select grouped by Hamlet & Role
   const demoAccounts = [
     {
+      id: 'superadmin',
       role: 'superadmin' as UserRole,
       title: 'Super Admin (Tối cao)',
+      area: 'Toàn TP.HCM',
       user: 'superadmin',
       pass: 'Admin@2026',
       name: 'Đại tá Trần Quốc Huy',
@@ -58,36 +60,120 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       color: 'border-red-500/40 bg-red-500/5 hover:bg-red-500/10 text-red-700 dark:text-red-300',
     },
     {
+      id: 'truong_cax',
       role: 'admin' as UserRole,
       title: 'Admin (Trưởng CAX)',
+      area: 'Toàn Xã Bà Điểm',
       user: 'truong_cax',
       pass: 'Cax@2026',
       name: 'Thiếu tá Lê Quốc Tuấn',
-      pos: 'Trưởng Công an Phường/Xã An Lạc',
+      pos: 'Trưởng Công an Xã Bà Điểm',
       badge: '284-001',
       color: 'border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-300',
     },
+    // ẤP BẮC LÂN (ẤP 1)
     {
+      id: 'cskv_ap1',
       role: 'sub-admin' as UserRole,
-      title: 'Sub-admin (CA Quản lý Ấp)',
+      title: 'Sub-admin Quản lý Ấp',
+      area: 'Ấp Bắc Lân',
       user: 'cskv_ap1',
       pass: 'Ap1@2026',
       name: 'Đại úy Nguyễn Văn Bình',
-      pos: 'CSKV Phụ trách Ấp 1 & Ấp 2',
+      pos: 'CSKV Quản lý Ấp Bắc Lân',
       badge: '284-912',
       color: 'border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10 text-blue-700 dark:text-blue-300',
     },
     {
+      id: 'cav_duongpho',
       role: 'officer' as UserRole,
-      title: 'Công an viên (Quản lý Tuyến/Hẻm)',
+      title: 'Công an viên Tuyến',
+      area: 'Ấp Bắc Lân',
       user: 'cav_duongpho',
       pass: 'Cav@2026',
       name: 'Thượng úy Trần Minh Quân',
-      pos: 'CAV Phụ trách Hẻm 418 & Tuyến KDV',
+      pos: 'CAV Tuyến Bà Điểm 4 & Hẻm 143',
       badge: '284-755',
       color: 'border-emerald-500/40 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
     },
+    // ẤP NAM LÂN
+    {
+      id: 'cskv_namlan',
+      role: 'sub-admin' as UserRole,
+      title: 'Sub-admin Quản lý Ấp',
+      area: 'Ấp Nam Lân',
+      user: 'cskv_namlan',
+      pass: 'Namlan@2026',
+      name: 'Thượng úy Lê Hoàng Nam',
+      pos: 'CSKV Quản lý Ấp Nam Lân',
+      badge: '284-915',
+      color: 'border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300',
+    },
+    {
+      id: 'cav_namlan',
+      role: 'officer' as UserRole,
+      title: 'Công an viên Tuyến',
+      area: 'Ấp Nam Lân',
+      user: 'cav_namlan',
+      pass: 'CavNamlan@2026',
+      name: 'Trung úy Phạm Quốc Bảo',
+      pos: 'CAV Tuyến Hưng Lân & Hẻm 23',
+      badge: '284-758',
+      color: 'border-teal-500/40 bg-teal-500/5 hover:bg-teal-500/10 text-teal-700 dark:text-teal-300',
+    },
+    // ẤP ĐÔNG LÂN
+    {
+      id: 'cskv_donglan',
+      role: 'sub-admin' as UserRole,
+      title: 'Sub-admin Quản lý Ấp',
+      area: 'Ấp Đông Lân',
+      user: 'cskv_donglan',
+      pass: 'Donglan@2026',
+      name: 'Đại úy Phạm Minh Đức',
+      pos: 'CSKV Quản lý Ấp Đông Lân',
+      badge: '284-918',
+      color: 'border-indigo-500/40 bg-indigo-500/5 hover:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300',
+    },
+    {
+      id: 'cav_donglan',
+      role: 'officer' as UserRole,
+      title: 'Công an viên Tuyến',
+      area: 'Ấp Đông Lân',
+      user: 'cav_donglan',
+      pass: 'CavDonglan@2026',
+      name: 'Thiếu úy Hoàng Văn Nghĩa',
+      pos: 'CAV Tuyến Đông Lân - Hưng Lân',
+      badge: '284-760',
+      color: 'border-violet-500/40 bg-violet-500/5 hover:bg-violet-500/10 text-violet-700 dark:text-violet-300',
+    },
+    // ẤP TIỀN LÂN
+    {
+      id: 'cskv_tienlan',
+      role: 'sub-admin' as UserRole,
+      title: 'Sub-admin Quản lý Ấp',
+      area: 'Ấp Tiền Lân',
+      user: 'cskv_tienlan',
+      pass: 'Tienlan@2026',
+      name: 'Trung úy Đặng Hữu Thắng',
+      pos: 'CSKV Quản lý Ấp Tiền Lân',
+      badge: '284-920',
+      color: 'border-purple-500/40 bg-purple-500/5 hover:bg-purple-500/10 text-purple-700 dark:text-purple-300',
+    },
+    {
+      id: 'cav_tienlan',
+      role: 'officer' as UserRole,
+      title: 'Công an viên Tuyến',
+      area: 'Ấp Tiền Lân',
+      user: 'cav_tienlan',
+      pass: 'CavTienlan@2026',
+      name: 'Thượng sĩ Trần Văn Dũng',
+      pos: 'CAV Tuyến Quốc Lộ 22 & Hẻm 19',
+      badge: '284-762',
+      color: 'border-fuchsia-500/40 bg-fuchsia-500/5 hover:bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300',
+    },
   ];
+
+  const [selectedHamletDemoFilter, setSelectedHamletDemoFilter] = useState<string>('all');
 
   const handleSelectDemo = (acc: (typeof demoAccounts)[0]) => {
     setUsername(acc.user);
@@ -446,43 +532,87 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
           {/* Right Column: Quick Role Switcher & RBAC Guide */}
           <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400 mb-2">
-                <Sparkles className="w-4 h-4" />
-                Thử Nghiệm Nhanh Các Cấp Bậc RBAC
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 backdrop-blur-md">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                  <Sparkles className="w-4 h-4" />
+                  Thử Nghiệm Tài Khoản Theo Ấp (RBAC)
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                  {demoAccounts.length} tài khoản mẫu
+                </span>
               </div>
-              <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-                Nhấp chuột vào một trong 4 cấp bậc tài khoản bên dưới để tự động điền thông tin và trải nghiệm giao diện phân quyền tương
-                ứng:
+              <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+                Chọn tài khoản của Cán bộ CSKV Quản lý Ấp (Sub-admin) hoặc Công an viên phụ trách tuyến (Officer) để kiểm tra phân quyền dữ
+                liệu và bản đồ theo từng ấp:
               </p>
 
-              <div className="space-y-2.5">
-                {demoAccounts.map(acc => (
+              {/* Hamlet Filter Tabs */}
+              <div className="flex flex-wrap gap-1 mb-3">
+                {[
+                  { id: 'all', label: 'Tất cả' },
+                  { id: 'Ấp Bắc Lân', label: 'Ấp Bắc Lân' },
+                  { id: 'Ấp Nam Lân', label: 'Ấp Nam Lân' },
+                  { id: 'Ấp Đông Lân', label: 'Ấp Đông Lân' },
+                  { id: 'Ấp Tiền Lân', label: 'Ấp Tiền Lân' },
+                ].map(tab => (
                   <button
-                    key={acc.role}
+                    key={tab.id}
                     type="button"
-                    id={`demo-acc-${acc.role}`}
-                    onClick={() => {
-                      setActiveTab('credentials');
-                      handleSelectDemo(acc);
-                    }}
-                    className={`w-full text-left p-3 rounded-xl border transition-all flex items-start justify-between cursor-pointer ${acc.color}`}
+                    onClick={() => setSelectedHamletDemoFilter(tab.id)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition cursor-pointer ${
+                      selectedHamletDemoFilter === tab.id
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
+                        : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700'
+                    }`}
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs">{acc.title}</span>
-                      </div>
-                      <div className="text-xs font-medium mt-0.5 text-slate-200">
-                        {acc.name} ({acc.pos})
-                      </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5 font-mono">
-                        User: <strong className="text-slate-300">{acc.user}</strong> | Pass:{' '}
-                        <strong className="text-slate-300">{acc.pass}</strong>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 opacity-70 shrink-0 mt-2" />
+                    {tab.label}
                   </button>
                 ))}
+              </div>
+
+              {/* Scrollable container for demo cards */}
+              <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                {demoAccounts
+                  .filter(
+                    acc =>
+                      selectedHamletDemoFilter === 'all' ||
+                      acc.area === selectedHamletDemoFilter ||
+                      (selectedHamletDemoFilter === 'all' && (acc.role === 'superadmin' || acc.role === 'admin')),
+                  )
+                  .map(acc => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      id={`demo-acc-${acc.id}`}
+                      onClick={() => {
+                        setActiveTab('credentials');
+                        handleSelectDemo(acc);
+                      }}
+                      className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-start justify-between cursor-pointer ${acc.color}`}
+                    >
+                      <div className="min-w-0 flex-1 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-xs">{acc.title}</span>
+                          <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-slate-900/60 border border-slate-700/60 text-slate-200">
+                            📍 {acc.area}
+                          </span>
+                        </div>
+                        <div className="text-xs font-semibold mt-0.5 text-slate-100 truncate">{acc.name}</div>
+                        <div className="text-[10.5px] text-slate-400 mt-0.5 truncate">{acc.pos}</div>
+                        <div className="text-[10px] text-slate-400 mt-1 font-mono flex items-center gap-2">
+                          <span>
+                            User: <strong className="text-slate-200">{acc.user}</strong>
+                          </span>
+                          <span>•</span>
+                          <span>
+                            Pass: <strong className="text-slate-200">{acc.pass}</strong>
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 opacity-70 shrink-0 mt-3" />
+                    </button>
+                  ))}
               </div>
             </div>
 

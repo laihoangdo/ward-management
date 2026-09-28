@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './index.css';
-import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, AlertTriangle, Database, CloudCheck } from 'lucide-react';
+import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, AlertTriangle, Database, CloudCheck, MapPin } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { OverviewTab } from './components/OverviewTab';
@@ -101,6 +101,14 @@ export default function App() {
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Territory scope for sub-admin and officer ('assigned' | 'all')
+  const [territoryScope, setTerritoryScope] = useState<'assigned' | 'all'>('assigned');
+
+  // Reset territory scope to assigned area whenever logged in user changes
+  useEffect(() => {
+    setTerritoryScope('assigned');
+  }, [currentUser?.id]);
 
   // Modals
   const [selectedHousehold, setSelectedHousehold] = useState<HouseholdFacility | null>(null);
@@ -877,31 +885,60 @@ export default function App() {
     recordAuditLog(offLog);
   };
 
-  // If user searched in header and pressed or typed, filter view
-  const displayedHouseholds = searchQuery.trim()
-    ? households.filter(h => {
-        const q = searchQuery.toLowerCase();
-        return (
-          (h.code && h.code.toLowerCase().includes(q)) ||
-          (h.ownerName && h.ownerName.toLowerCase().includes(q)) ||
-          (h.houseNumber && h.houseNumber.toLowerCase().includes(q)) ||
-          (h.street && h.street.toLowerCase().includes(q)) ||
-          (h.ownerPhone && h.ownerPhone.includes(q)) ||
-          (h.businessName && h.businessName.toLowerCase().includes(q)) ||
-          (h.businessCategory && h.businessCategory.toLowerCase().includes(q)) ||
-          (h.residentsList &&
-            h.residentsList.some(
-              r =>
-                (r.fullName && r.fullName.toLowerCase().includes(q)) ||
-                (r.idCardNumber && r.idCardNumber.includes(q)) ||
-                (r.phone && r.phone.includes(q)),
-            )) ||
-          (q === 'cảnh báo' && h.status === 'warning') ||
-          (q === 'kinh doanh' && h.type === 'business') ||
-          (q === 'hộ gia đình' && h.type === 'household')
-        );
-      })
-    : households;
+  // Territory restriction determination
+  const isTerritoryRestricted = currentUser?.role === 'sub-admin' || currentUser?.role === 'officer';
+
+  const matchesHamlet = (h: HouseholdFacility, user: AppUser | null) => {
+    if (!user || !user.assignedHamlets || user.assignedHamlets.length === 0) return true;
+    if (!h.hamlet) return false;
+    return user.assignedHamlets.some(ah => {
+      const ahNorm = ah.toLowerCase().trim();
+      const hNorm = h.hamlet.toLowerCase().trim();
+      return ahNorm === hNorm || hNorm.includes(ahNorm) || ahNorm.includes(hNorm);
+    });
+  };
+
+  const assignedHouseholds = useMemo(() => {
+    if (!isTerritoryRestricted) return households;
+    return households.filter(h => matchesHamlet(h, currentUser));
+  }, [households, currentUser, isTerritoryRestricted]);
+
+  const scopedHouseholds = useMemo(() => {
+    if (!isTerritoryRestricted || territoryScope === 'all') return households;
+    return assignedHouseholds;
+  }, [households, assignedHouseholds, territoryScope, isTerritoryRestricted]);
+
+  const assignedResidentsCount = useMemo(() => {
+    return assignedHouseholds.reduce((acc, h) => acc + (h.residentsCount || 1), 0);
+  }, [assignedHouseholds]);
+
+  // If user searched in header and pressed or typed, filter scoped view
+  const displayedHouseholds = useMemo(() => {
+    if (!searchQuery.trim()) return scopedHouseholds;
+    const q = searchQuery.toLowerCase();
+    return scopedHouseholds.filter(h => {
+      return (
+        (h.code && h.code.toLowerCase().includes(q)) ||
+        (h.ownerName && h.ownerName.toLowerCase().includes(q)) ||
+        (h.houseNumber && h.houseNumber.toLowerCase().includes(q)) ||
+        (h.street && h.street.toLowerCase().includes(q)) ||
+        (h.hamlet && h.hamlet.toLowerCase().includes(q)) ||
+        (h.ownerPhone && h.ownerPhone.includes(q)) ||
+        (h.businessName && h.businessName.toLowerCase().includes(q)) ||
+        (h.businessCategory && h.businessCategory.toLowerCase().includes(q)) ||
+        (h.residentsList &&
+          h.residentsList.some(
+            r =>
+              (r.fullName && r.fullName.toLowerCase().includes(q)) ||
+              (r.idCardNumber && r.idCardNumber.includes(q)) ||
+              (r.phone && r.phone.includes(q)),
+          )) ||
+        (q === 'cảnh báo' && h.status === 'warning') ||
+        (q === 'kinh doanh' && h.type === 'business') ||
+        (q === 'hộ gia đình' && h.type === 'household')
+      );
+    });
+  }, [scopedHouseholds, searchQuery]);
 
   // If not logged in, render the secure LoginScreen with Google SSO & Whitelist checks
   if (!currentUser) {
@@ -993,6 +1030,79 @@ export default function App() {
               </button>
             </div>
           )}
+
+          {/* Territory Scope Control Bar for Sub-Admin and Officer */}
+          {isTerritoryRestricted && !isMapFullscreen && (
+            <div className="mb-4 p-3.5 sm:p-4 bg-gradient-to-r from-blue-900/30 via-slate-900/70 to-indigo-950/40 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-indigo-950/60 border border-blue-700/40 dark:border-blue-800/60 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 sm:mt-0">
+                  <MapPin className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-white text-sm">{currentUser?.assignedHamlets?.join(', ') || 'Địa bàn phân công'}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                      {currentUser?.role === 'sub-admin' ? 'Sub-Admin Quản Lý Ấp' : 'Công An Viên Tuyến'}
+                    </span>
+                    <span className="text-slate-400 text-[11px]">
+                      • {currentUser?.rank} {currentUser?.fullName}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
+                    <span>
+                      Tuyến phụ trách:{' '}
+                      <strong className="text-slate-100 font-medium">
+                        {currentUser?.assignedStreets && currentUser.assignedStreets.length > 0
+                          ? currentUser.assignedStreets.join(', ')
+                          : 'Toàn bộ địa bàn ấp'}
+                      </strong>
+                    </span>
+                    <span>•</span>
+                    <span className="text-emerald-400 font-semibold">
+                      {assignedHouseholds.length} hộ dân / {assignedResidentsCount} nhân khẩu
+                    </span>
+                    {territoryScope === 'all' && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60">
+                        Đang xem đối chiếu toàn xã (360 hộ)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Territory Switcher Buttons */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-950/90 rounded-xl border border-slate-800 shrink-0 self-start md:self-auto">
+                <button
+                  type="button"
+                  id="btn-scope-assigned"
+                  onClick={() => setTerritoryScope('assigned')}
+                  className={`px-3 py-1.5 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                    territoryScope === 'assigned'
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                  title="Chỉ hiển thị dữ liệu hộ dân và bản đồ thuộc ấp được phân công"
+                >
+                  <span>📍 Địa bàn được giao</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{assignedHouseholds.length}</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-scope-all"
+                  onClick={() => setTerritoryScope('all')}
+                  className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                    territoryScope === 'all'
+                      ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  }`}
+                  title="Xem toàn bộ hộ dân xã Bà Điểm để đối chiếu"
+                >
+                  <span>🌐 Toàn xã (Đối chiếu)</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{households.length}</span>
+                </button>
+              </div>
+            </div>
+          )}
           {activeTab === 'overview' && (
             <OverviewTab
               households={displayedHouseholds}
@@ -1033,9 +1143,17 @@ export default function App() {
           {activeTab === 'households' && (
             <HouseholdsTab
               households={displayedHouseholds}
+              currentUser={currentUser}
               onSelectHousehold={setSelectedHousehold}
-              onOpenAddModal={() => setIsAddModalOpen(true)}
+              onOpenAddModal={() => {
+                if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canAddHouseholds === false) {
+                  showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền đăng ký hộ dân mới.');
+                  return;
+                }
+                setIsAddModalOpen(true);
+              }}
               onDeleteHousehold={handleDeleteHousehold}
+              onShowToast={showToast}
             />
           )}
 
@@ -1179,10 +1297,12 @@ export default function App() {
       {/* Modals & Dialogs */}
       <HouseholdDetailModal
         household={selectedHousehold}
+        currentUser={currentUser}
         onClose={() => setSelectedHousehold(null)}
         onUpdateNotes={handleUpdateNotes}
         onHouseholdUpdated={handleUpdateHouseholdFull}
         onDeleteHousehold={handleDeleteHousehold}
+        onShowToast={showToast}
       />
 
       <AddHouseholdModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAddHousehold={handleAddHousehold} />

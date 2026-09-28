@@ -237,6 +237,13 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
 
   // Export CSV Handler
   const handleExportCSV = () => {
+    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canExportReports === false) {
+      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền xuất báo cáo danh sách CSV/Excel.';
+      if (onShowToast) onShowToast(msg);
+      else alert(msg);
+      return;
+    }
+
     const headers = [
       'STT',
       'Họ và Tên',

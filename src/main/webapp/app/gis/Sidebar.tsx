@@ -80,11 +80,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Filter menus based on dynamic configuration and user's role
   const visibleMenus = effectiveMenus.filter(item => {
-    // Special case: Always display superadmin-hub for direct access or elevation
-    if (item.id === 'superadmin-hub') {
-      return true;
-    }
-
     // Check role inclusion
     const roleAllowed = item.visibleRoles.includes(currentUser.role);
     if (!roleAllowed) return false;
