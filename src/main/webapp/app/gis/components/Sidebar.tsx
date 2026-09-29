@@ -16,7 +16,9 @@ import {
   Grid,
   RefreshCw,
   UserCheck,
+  Home,
 } from 'lucide-react';
+import { Link } from 'react-router';
 import { NavigationTab, OfficerProfile, AppUser, DynamicMenuItemConfig } from '../types';
 import { INITIAL_DYNAMIC_MENUS } from '../data/initialAuthData';
 
@@ -135,19 +137,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div className="flex flex-col h-full w-full bg-[#0f172a] text-slate-100 select-none">
       {/* Brand Header */}
       <div className="p-4 sm:p-5 border-b border-slate-800 bg-[#0a0f1d]/60 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-red-600 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0">
+        <Link
+          to="/"
+          className="flex items-center gap-3 group hover:opacity-90 transition cursor-pointer"
+          title="Quay về Trang chủ Monolithic"
+        >
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-red-600 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0 group-hover:scale-105 transition-transform">
             <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <div id="brand-name" className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-1.5">
+            <div
+              id="brand-name"
+              className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-1.5 group-hover:text-amber-400 transition-colors"
+            >
               🛡 QLĐB AN NINH
             </div>
             <div id="brand-subtitle" className="text-[10px] sm:text-[11px] font-semibold text-slate-400 tracking-wider uppercase">
               CATP. HỒ CHÍ MINH • AN LẠC
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Mobile close button */}
         {onCloseMobile && (
@@ -212,6 +221,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>Menu Điều Hành</span>
           <span className="text-[10px] text-slate-500 font-mono">{visibleMenus.length} mục</span>
         </div>
+
+        {/* Nút Về Trang Chủ Hệ Thống Monolithic */}
+        <Link
+          to="/"
+          id="sidebar-btn-home-portal"
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-all duration-150 min-h-[40px] cursor-pointer bg-slate-800/80 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/30 group mb-2 shadow-xs"
+          title="Quay về Trang chủ Cổng thông tin Monolithic"
+        >
+          <div className="flex items-center gap-2.5 truncate">
+            <Home className="w-4 h-4 text-blue-400 group-hover:text-white shrink-0" />
+            <span className="truncate">Về Trang chủ Cổng TT</span>
+          </div>
+          <span className="text-[10px] text-blue-300 group-hover:text-white font-mono bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-500/30">
+            Portal
+          </span>
+        </Link>
         {visibleMenus.map(item => {
           const Icon = iconMap[item.id] || LayoutDashboard;
           const isActive = activeTab === item.id;

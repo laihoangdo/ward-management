@@ -123,7 +123,7 @@ export default function App() {
     setIsMapFullscreen(prev => !prev);
   };
 
-  // Hide outer JHipster Header and remove padding during map fullscreen
+  // Hide outer JHipster elements and remove padding during map fullscreen if present
   useEffect(() => {
     const appHeader = document.getElementById('app-header');
     const appContainer = document.querySelector('.app-container') as HTMLElement | null;
@@ -147,43 +147,7 @@ export default function App() {
         jhCard.style.boxShadow = 'none';
         jhCard.style.borderRadius = '0px';
       }
-    } else {
-      if (appHeader) appHeader.style.display = '';
-      if (appContainer) {
-        appContainer.style.paddingTop = '60px';
-        appContainer.style.height = '';
-      }
-      if (viewContainer) {
-        viewContainer.style.padding = '';
-        viewContainer.style.height = '';
-        viewContainer.style.maxWidth = '';
-      }
-      if (jhCard) {
-        jhCard.style.padding = '';
-        jhCard.style.border = '';
-        jhCard.style.boxShadow = '';
-        jhCard.style.borderRadius = '';
-      }
     }
-
-    return () => {
-      if (appHeader) appHeader.style.display = '';
-      if (appContainer) {
-        appContainer.style.paddingTop = '60px';
-        appContainer.style.height = '';
-      }
-      if (viewContainer) {
-        viewContainer.style.padding = '';
-        viewContainer.style.height = '';
-        viewContainer.style.maxWidth = '';
-      }
-      if (jhCard) {
-        jhCard.style.padding = '';
-        jhCard.style.border = '';
-        jhCard.style.boxShadow = '';
-        jhCard.style.borderRadius = '';
-      }
-    };
   }, [isMapFullscreen]);
 
   // Exit fullscreen on Esc key
@@ -959,7 +923,7 @@ export default function App() {
   return (
     <div
       id="__page-root"
-      className={`flex h-screen w-full bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 font-sans overflow-hidden ${isMapFullscreen ? 'p-0' : ''}`}
+      className={`flex h-screen h-[100dvh] w-full bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 font-sans overflow-hidden ${isMapFullscreen ? 'p-0' : ''}`}
     >
       {/* Left Sidebar (Desktop + Mobile Drawer) */}
       {!isMapFullscreen && (

@@ -13,7 +13,9 @@ import {
   HelpCircle,
   ExternalLink,
   ChevronRight,
+  Home,
 } from 'lucide-react';
+import { Link } from 'react-router';
 import { auth } from '../firebase';
 import { AppUser, AllowedEmailEntry, UserRole } from '../types';
 import { INITIAL_USERS, INITIAL_ALLOWED_EMAILS } from '../data/initialAuthData';
@@ -283,13 +285,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-4 text-xs text-slate-400 font-mono">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              MÁY CHỦ BẢO MẬT ONLINE
-            </span>
-            <span>|</span>
-            <span>FIREBASE FIRESTORE ENCRYPTED</span>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              id="login-btn-home"
+              className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+              title="Quay về Trang chủ Monolithic"
+            >
+              <Home className="w-4 h-4 text-amber-400" />
+              <span>Trang chủ</span>
+            </Link>
+            <div className="hidden md:flex items-center gap-4 text-xs text-slate-400 font-mono">
+              <span className="flex items-center gap-1.5 text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                MÁY CHỦ BẢO MẬT ONLINE
+              </span>
+              <span>|</span>
+              <span>FIREBASE FIRESTORE ENCRYPTED</span>
+            </div>
           </div>
         </div>
       </header>

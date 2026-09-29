@@ -4,7 +4,7 @@ import 'app/config/dayjs';
 
 import React, { useEffect } from 'react';
 import { Card } from 'react-bootstrap';
-import { BrowserRouter } from 'react-router';
+import { BrowserRouter, useLocation } from 'react-router';
 
 import { ToastContainer } from 'react-toastify';
 
@@ -20,6 +20,57 @@ import { getSession } from 'app/shared/reducers/authentication';
 
 const baseHref = document.querySelector('base')!.getAttribute('href')!.replace(/\/$/, '');
 
+const AppContent = () => {
+  const location = useLocation();
+  const isAuthenticated = useAppSelector(state => state.authentication.isAuthenticated);
+  const isAdmin = useAppSelector(state => hasAnyAuthority(state.authentication.account.authorities, [Authority.ADMIN]));
+  const ribbonEnv = useAppSelector(state => state.applicationProfile.ribbonEnv);
+  const isInProduction = useAppSelector(state => state.applicationProfile.inProduction);
+  const isOpenAPIEnabled = useAppSelector(state => state.applicationProfile.isOpenAPIEnabled);
+
+  // Check if current route is GIS dashboard
+  const isGisDashboard =
+    location.pathname === '/dashboard' ||
+    location.pathname.startsWith('/dashboard/') ||
+    location.pathname === '/gis-dashboard' ||
+    location.pathname.startsWith('/gis-dashboard/');
+
+  if (isGisDashboard) {
+    return (
+      <div className="gis-viewport-wrapper w-full h-screen h-[100dvh] overflow-hidden m-0 p-0 bg-[#f8fafc] dark:bg-[#090d16]">
+        <ToastContainer position="top-left" className="toastify-container" toastClassName="toastify-toast" />
+        <ErrorBoundary>
+          <AppRoutes />
+        </ErrorBoundary>
+      </div>
+    );
+  }
+
+  const paddingTop = '60px';
+  return (
+    <div className="app-container" style={{ paddingTop }}>
+      <ToastContainer position="top-left" className="toastify-container" toastClassName="toastify-toast" />
+      <ErrorBoundary>
+        <Header
+          isAuthenticated={isAuthenticated}
+          isAdmin={isAdmin}
+          ribbonEnv={ribbonEnv}
+          isInProduction={isInProduction}
+          isOpenAPIEnabled={isOpenAPIEnabled}
+        />
+      </ErrorBoundary>
+      <div className="container-fluid view-container" id="app-view-container">
+        <Card className="jh-card">
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
+        </Card>
+        <Footer />
+      </div>
+    </div>
+  );
+};
+
 export const App = () => {
   const dispatch = useAppDispatch();
 
@@ -28,35 +79,9 @@ export const App = () => {
     dispatch(getProfile());
   }, []);
 
-  const isAuthenticated = useAppSelector(state => state.authentication.isAuthenticated);
-  const isAdmin = useAppSelector(state => hasAnyAuthority(state.authentication.account.authorities, [Authority.ADMIN]));
-  const ribbonEnv = useAppSelector(state => state.applicationProfile.ribbonEnv);
-  const isInProduction = useAppSelector(state => state.applicationProfile.inProduction);
-  const isOpenAPIEnabled = useAppSelector(state => state.applicationProfile.isOpenAPIEnabled);
-
-  const paddingTop = '60px';
   return (
     <BrowserRouter basename={baseHref}>
-      <div className="app-container" style={{ paddingTop }}>
-        <ToastContainer position="top-left" className="toastify-container" toastClassName="toastify-toast" />
-        <ErrorBoundary>
-          <Header
-            isAuthenticated={isAuthenticated}
-            isAdmin={isAdmin}
-            ribbonEnv={ribbonEnv}
-            isInProduction={isInProduction}
-            isOpenAPIEnabled={isOpenAPIEnabled}
-          />
-        </ErrorBoundary>
-        <div className="container-fluid view-container" id="app-view-container">
-          <Card className="jh-card">
-            <ErrorBoundary>
-              <AppRoutes />
-            </ErrorBoundary>
-          </Card>
-          <Footer />
-        </div>
-      </div>
+      <AppContent />
     </BrowserRouter>
   );
 };
