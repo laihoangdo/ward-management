@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   History,
   MapPin,
@@ -25,6 +25,7 @@ import {
   Info,
 } from 'lucide-react';
 import { AuditLogEntry, AuditActionType, HouseholdFacility } from '../types';
+import { Pagination } from './Pagination';
 
 interface LogsTabProps {
   logs: AuditLogEntry[];
@@ -40,6 +41,12 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
   const [selectedTimeRange, setSelectedTimeRange] = useState<string>('all');
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedActionFilter, selectedTargetType, selectedTimeRange]);
 
   // Manual Log Form State
   const [manualTitle, setManualTitle] = useState('');
@@ -106,6 +113,11 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
       return true;
     });
   }, [logs, selectedActionFilter, selectedTargetType, selectedTimeRange, searchQuery]);
+
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredLogs.slice(start, start + pageSize);
+  }, [filteredLogs, currentPage, pageSize]);
 
   // Helper to find household from log
   const findHousehold = (code?: string, title?: string) => {
@@ -496,7 +508,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             </button>
           </div>
         ) : (
-          filteredLogs.map(log => {
+          paginatedLogs.map(log => {
             const badge = getActionBadge(log.actionType);
             const Icon = badge.icon;
             const isExpanded = expandedLogId === log.id;
@@ -655,6 +667,16 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
           })
         )}
       </div>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={filteredLogs.length}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={setPageSize}
+        pageSizeOptions={[10, 15, 25, 50]}
+      />
 
       {/* Modal: Ghi nhật ký kiểm tra thực địa thủ công */}
       {isManualModalOpen && (

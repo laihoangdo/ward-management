@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   Plus,
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { HouseholdFacility, ResidenceType, AppUser } from '../types';
 import { getHouseholdResidenceType, RESIDENCE_TYPE_CONFIG } from '../utils/residenceUtils';
+import { Pagination } from './Pagination';
 
 interface HouseholdsTabProps {
   households: HouseholdFacility[];
@@ -50,6 +51,10 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
   const [selectedResidenceType, setSelectedResidenceType] = useState<'all' | ResidenceType>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
+
   const hamletList = useMemo(() => {
     return Array.from(new Set(households.map(h => h.hamlet).filter(Boolean))).sort();
   }, [households]);
@@ -62,33 +67,47 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
     'Lưu trú': households.filter(h => getHouseholdResidenceType(h) === 'Lưu trú').length,
   };
 
-  const filtered = households.filter(h => {
-    if (selectedHamlet !== 'all' && h.hamlet !== selectedHamlet) return false;
-    if (selectedType !== 'all' && h.type !== selectedType) return false;
-    if (selectedResidenceType !== 'all' && getHouseholdResidenceType(h) !== selectedResidenceType) return false;
+  const filtered = useMemo(() => {
+    return households.filter(h => {
+      if (selectedHamlet !== 'all' && h.hamlet !== selectedHamlet) return false;
+      if (selectedType !== 'all' && h.type !== selectedType) return false;
+      if (selectedResidenceType !== 'all' && getHouseholdResidenceType(h) !== selectedResidenceType) return false;
 
-    if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase();
-      const matchOwner = h.ownerName ? h.ownerName.toLowerCase().includes(q) : false;
-      const matchHouse = h.houseNumber ? h.houseNumber.toLowerCase().includes(q) : false;
-      const matchStreet = h.street ? h.street.toLowerCase().includes(q) : false;
-      const matchPhone = h.ownerPhone ? h.ownerPhone.includes(q) : false;
-      const matchBiz = h.businessName?.toLowerCase().includes(q) || false;
-      const matchCode = h.code ? h.code.toLowerCase().includes(q) : false;
-      const resType = getHouseholdResidenceType(h);
-      const matchRes = resType ? resType.toLowerCase().includes(q) : false;
-      if (!matchOwner && !matchHouse && !matchStreet && !matchPhone && !matchBiz && !matchCode && !matchRes) {
-        return false;
+      if (searchTerm.trim()) {
+        const q = searchTerm.toLowerCase();
+        const matchOwner = h.ownerName ? h.ownerName.toLowerCase().includes(q) : false;
+        const matchHouse = h.houseNumber ? h.houseNumber.toLowerCase().includes(q) : false;
+        const matchStreet = h.street ? h.street.toLowerCase().includes(q) : false;
+        const matchPhone = h.ownerPhone ? h.ownerPhone.includes(q) : false;
+        const matchBiz = h.businessName?.toLowerCase().includes(q) || false;
+        const matchCode = h.code ? h.code.toLowerCase().includes(q) : false;
+        const resType = getHouseholdResidenceType(h);
+        const matchRes = resType ? resType.toLowerCase().includes(q) : false;
+        if (!matchOwner && !matchHouse && !matchStreet && !matchPhone && !matchBiz && !matchCode && !matchRes) {
+          return false;
+        }
       }
-    }
-    return true;
-  });
+      return true;
+    });
+  }, [households, selectedHamlet, selectedType, selectedResidenceType, searchTerm]);
+
+  // Reset pagination to first page when filtering
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedHamlet, selectedType, selectedResidenceType]);
+
+  // Slice paginated items for smooth and fast rendering
+  const paginatedHouseholds = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   const handleResetFilters = () => {
     setSearchTerm('');
     setSelectedHamlet('all');
     setSelectedType('all');
     setSelectedResidenceType('all');
+    setCurrentPage(1);
   };
 
   const isAnyFilterActive =
@@ -539,7 +558,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         {/* VIEW 1: CARDS GRID (Always on Mobile, selectable on Desktop) */}
         <div className={`${viewMode === 'grid' ? 'block' : 'block md:hidden'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-            {filtered.map(item => {
+            {paginatedHouseholds.map(item => {
               const resType = getHouseholdResidenceType(item);
 
               return (
@@ -690,7 +709,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filtered.map(item => {
+                  {paginatedHouseholds.map(item => {
                     const resType = getHouseholdResidenceType(item);
 
                     return (
@@ -808,21 +827,35 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
           </div>
         )}
 
-        {/* Bottom Pagination / Count Summary */}
-        <div className="mt-4 p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span>
-              Đang hiển thị <strong className="text-slate-800 font-bold">{filtered.length}</strong> trên tổng số {households.length} hộ/cơ
-              sở
-            </span>
-            {selectedResidenceType !== 'all' && (
-              <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold border border-blue-200">
-                Lọc cư trú: {selectedResidenceType}
-              </span>
-            )}
+        {/* Bottom Pagination Control */}
+        {filtered.length > 0 && (
+          <div className="mt-4 space-y-3">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filtered.length}
+              pageSize={pageSize}
+              onPageChange={page => {
+                setCurrentPage(page);
+                const el = document.getElementById('household-content-panel');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              onPageSizeChange={size => {
+                setPageSize(size);
+                setCurrentPage(1);
+              }}
+              pageSizeOptions={[12, 24, 48, 96]}
+              itemLabel="hộ dân & cơ sở"
+            />
+            <div className="px-3 flex items-center justify-between text-xs text-slate-400">
+              <span>Phụ trách: CSKV Nguyễn Văn Bình — P. An Lạc</span>
+              {selectedResidenceType !== 'all' && (
+                <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold border border-blue-200">
+                  Lọc cư trú: {selectedResidenceType}
+                </span>
+              )}
+            </div>
           </div>
-          <span className="font-semibold text-slate-700">Phụ trách: CSKV Nguyễn Văn Bình — P. An Lạc</span>
-        </div>
+        )}
       </div>
     </div>
   );

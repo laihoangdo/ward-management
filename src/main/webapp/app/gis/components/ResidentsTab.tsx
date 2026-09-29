@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   UserCheck,
@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { HouseholdFacility, Resident, ResidenceType, AppUser } from '../types';
 import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
+import { Pagination } from './Pagination';
 
 export interface ResidentRecord extends Resident {
   householdId: string;
@@ -201,6 +202,21 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
     });
   }, [allResidents, searchTerm, residenceFilter, genderFilter, securityFilter, hamletFilter, neighborhoodFilter, ageGroupFilter]);
 
+  // Pagination State (defaults to 15 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, residenceFilter, genderFilter, securityFilter, hamletFilter, neighborhoodFilter, ageGroupFilter]);
+
+  // Paginated slice for instant rendering
+  const paginatedResidents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredResidents.slice(start, start + pageSize);
+  }, [filteredResidents, currentPage, pageSize]);
+
   // Overall Statistics
   const totalCount = allResidents.length;
   const thuongTruCount = allResidents.filter(r => r.residenceType === 'Thường trú').length;
@@ -233,6 +249,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
     setHamletFilter('all');
     setNeighborhoodFilter('all');
     setAgeGroupFilter('all');
+    setCurrentPage(1);
   };
 
   // Export CSV Handler
@@ -862,14 +879,16 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredResidents.map((r, index) => {
+                {paginatedResidents.map((r, index) => {
                   const badge = getResidenceBadge(r.residenceType);
                   const age = currentYear - r.birthYear;
                   const parentHousehold = effectiveHouseholds.find(h => h.id === r.householdId);
 
                   return (
                     <tr key={r.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                      <td className="py-3 px-3.5 text-center font-mono text-slate-400 text-[11px]">{index + 1}</td>
+                      <td className="py-3 px-3.5 text-center font-mono text-slate-400 text-[11px]">
+                        {(currentPage - 1) * pageSize + index + 1}
+                      </td>
 
                       <td className="py-3 px-3.5">
                         <div className="flex items-center gap-2.5">
@@ -1015,7 +1034,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
       ) : (
         /* Grid / Card View */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredResidents.map(r => {
+          {paginatedResidents.map(r => {
             const badge = getResidenceBadge(r.residenceType);
             const age = currentYear - r.birthYear;
             const parentHousehold = effectiveHouseholds.find(h => h.id === r.householdId);
@@ -1148,6 +1167,26 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             );
           })}
         </div>
+      )}
+
+      {/* Pagination Controls */}
+      {filteredResidents.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredResidents.length}
+          pageSize={pageSize}
+          onPageChange={page => {
+            setCurrentPage(page);
+            const el = document.getElementById('residents-management-tab');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+          onPageSizeChange={size => {
+            setPageSize(size);
+            setCurrentPage(1);
+          }}
+          pageSizeOptions={[10, 15, 25, 50, 100]}
+          itemLabel="nhân khẩu"
+        />
       )}
 
       {/* ================= MODAL: CHI TIẾT NHÂN KHẨU ================= */}
