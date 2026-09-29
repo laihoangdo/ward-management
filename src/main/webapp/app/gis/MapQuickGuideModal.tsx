@@ -167,7 +167,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
                   Cán bộ chiến sĩ mới
                 </span>
-                <span className="text-xs text-slate-400 hidden sm:inline">• Bản đồ số thực địa P. An Lạc</span>
+                <span className="text-xs text-slate-400 hidden sm:inline">• Bản đồ số thực địa quản lý địa bàn</span>
               </div>
               <h2 id="guide-title" className="text-lg sm:text-xl font-black tracking-tight text-white mt-0.5">
                 Hướng Dẫn Sử Dụng Nhanh Các Nút Bấm Trên Bản Đồ

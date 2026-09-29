@@ -449,8 +449,8 @@ export default function App() {
       createdAt: Date.now(),
       actionType: 'profile_update',
       actionLabel: 'Cập nhật hồ sơ kiểm tra',
-      officerName: officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser?.fullName || officer.officerName || 'Cán bộ CSKV',
+      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV',
       targetType: 'household',
       targetId: id,
       targetCode: target?.code,
@@ -485,8 +485,8 @@ export default function App() {
       createdAt: Date.now(),
       actionType: 'ocr_scan',
       actionLabel: 'Trích xuất OCR CCCD',
-      officerName: officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser?.fullName || officer.officerName || 'Cán bộ CSKV',
+      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV',
       targetType: 'household',
       targetId: updated.id,
       targetCode: updated.code,
@@ -743,7 +743,7 @@ export default function App() {
       previousValue: targetDoc?.expiryDate || 'Sắp hết hạn',
       newValue: '20/09/2027',
       ipAddress: '192.168.1.15',
-      deviceInfo: 'Máy trạm CAP An Lạc',
+      deviceInfo: 'Máy trạm chuyên dụng CSKV',
       integrityHash: generateSimpleHash(`REN-${Date.now()}`),
       status: 'success',
     };
@@ -772,8 +772,8 @@ export default function App() {
       createdAt: Date.now(),
       actionType: 'reminder_sent',
       actionLabel: 'Gửi nhắc nhở & đôn đốc',
-      officerName: officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser?.fullName || officer.officerName || 'Cán bộ CSKV',
+      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV',
       targetType: 'document',
       targetId: docId,
       targetCode: targetDoc?.docCode,
@@ -782,7 +782,7 @@ export default function App() {
       previousValue: 'Chưa phát hành đôn đốc',
       newValue: 'Đã gửi thông báo đôn đốc trực tiếp và qua hệ thống',
       ipAddress: '192.168.1.15',
-      deviceInfo: 'Máy trạm CAP An Lạc',
+      deviceInfo: 'Máy trạm chuyên dụng CSKV',
       integrityHash: generateSimpleHash(`REM-${Date.now()}`),
       status: 'warning',
     };
@@ -842,7 +842,7 @@ export default function App() {
       targetTitle: updated.officerName || officer.officerName,
       details: `Cập nhật thông tin hồ sơ cán bộ phụ trách địa bàn (${updated.rank || officer.rank})`,
       ipAddress: '192.168.1.15',
-      deviceInfo: 'Máy trạm CAP An Lạc',
+      deviceInfo: 'Máy trạm chuyên dụng CSKV',
       integrityHash: generateSimpleHash(`OFF-${Date.now()}`),
       status: 'info',
     };
@@ -1093,6 +1093,7 @@ export default function App() {
           {activeTab === 'advanced-map' && (
             <AdvancedMapTab
               households={displayedHouseholds}
+              currentUser={currentUser}
               onSelectHousehold={setSelectedHousehold}
               isFullscreen={isMapFullscreen}
               onToggleFullscreen={handleToggleMapFullscreen}

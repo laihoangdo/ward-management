@@ -77,7 +77,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-bold">Thêm hộ dân / Cơ sở mới</h3>
-              <p className="text-[11px] sm:text-xs text-blue-100">Bổ sung vị trí quản lý thực địa tại Ấp 1 hoặc Ấp 2, P. An Lạc</p>
+              <p className="text-[11px] sm:text-xs text-blue-100">Bổ sung vị trí quản lý thực địa trên địa bàn</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 text-blue-100 hover:text-white rounded-lg hover:bg-blue-700">

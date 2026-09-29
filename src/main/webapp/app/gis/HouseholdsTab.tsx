@@ -821,7 +821,12 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               </span>
             )}
           </div>
-          <span className="font-semibold text-slate-700">Phụ trách: CSKV Nguyễn Văn Bình — P. An Lạc</span>
+          <span className="font-semibold text-slate-700">
+            Phụ trách:{' '}
+            {currentUser
+              ? `${currentUser.position || 'CSKV'} ${currentUser.fullName}${currentUser.unit ? ` — ${currentUser.unit}` : ''}`
+              : 'Cán bộ CSKV phụ trách địa bàn'}
+          </span>
         </div>
       </div>
     </div>

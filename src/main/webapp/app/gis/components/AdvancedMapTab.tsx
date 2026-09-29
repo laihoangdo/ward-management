@@ -49,13 +49,14 @@ import {
   GripHorizontal,
   HelpCircle,
 } from 'lucide-react';
-import { HouseholdFacility, NavigationTab, InspectionPhoto } from '../types';
+import { HouseholdFacility, NavigationTab, InspectionPhoto, AppUser } from '../types';
 import { updateHouseholdCoordinatesInFirestore } from '../services/firestoreService';
 import { MapQuickGuideModal } from './MapQuickGuideModal';
 import { InspectionCameraModal } from './InspectionCameraModal';
 
 interface AdvancedMapTabProps {
   households: HouseholdFacility[];
+  currentUser?: AppUser | null;
   onSelectHousehold: (household: HouseholdFacility) => void;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
@@ -105,12 +106,33 @@ const TILE_LAYERS: Record<BaseLayerType, { name: string; url: string; attributio
 
 export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
   households,
+  currentUser,
   onSelectHousehold,
   isFullscreen: controlledFullscreen,
   onToggleFullscreen: controlledToggleFullscreen,
   onNavigateTab,
   onUpdateCoordinates,
 }) => {
+  // Dynamic administrative area name and unit
+  const wardName = useMemo(() => {
+    if (currentUser?.assignedWard) return currentUser.assignedWard;
+    const hWard = households.find(h => h.ward)?.ward;
+    if (hWard) return hWard;
+    return 'Địa bàn quản lý';
+  }, [currentUser, households]);
+
+  const unitName = useMemo(() => {
+    if (currentUser?.unit) return currentUser.unit;
+    if (currentUser?.assignedWard) return `Công an ${currentUser.assignedWard}`;
+    return 'Công an Địa bàn Phụ trách';
+  }, [currentUser]);
+
+  const hamletListStr = useMemo(() => {
+    const hamlets = Array.from(new Set(households.map(h => h.hamlet).filter(Boolean)));
+    if (hamlets.length === 0) return 'Toàn địa bàn';
+    if (hamlets.length <= 3) return hamlets.join(' & ');
+    return `${hamlets.slice(0, 2).join(' & ')} (+${hamlets.length - 2})`;
+  }, [households]);
   // DOM & Map references
   const mapWrapperRef = useRef<HTMLDivElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -542,7 +564,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
         <div style="font-family: 'DM Sans', sans-serif; min-width: 220px; padding: 4px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
             <span style="font-size: 10px; font-weight: 700; color: #2563eb; text-transform: uppercase; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">
-              ${h.hamlet} • P. An Lạc
+              ${h.hamlet}${h.ward ? ` • ${h.ward}` : ''}
             </span>
             <span style="font-size: 10px; font-weight: 700; color: ${hasMoved ? '#059669' : pinColor};">
               ${hasMoved ? '✓ Đã dời tọa độ' : h.status === 'warning' ? '⚠️ Hết hạn' : h.status === 'alert' ? '🚨 Chú ý' : h.status === 'business' ? '🏪 Cơ sở KD' : '✓ Hợp lệ'}
@@ -720,7 +742,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
         // Header Titles
         ctx.fillStyle = '#93c5fd'; // blue-300
         ctx.font = 'bold 18px sans-serif';
-        ctx.fillText('CÔNG AN QUẬN BÌNH TÂN — CÔNG AN PHƯỜNG AN LẠC', 28, 34);
+        ctx.fillText(unitName.toUpperCase(), 28, 34);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 24px sans-serif';
@@ -733,7 +755,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
         ctx.fillText('HỆ THỐNG CSKV 4.0', finalCanvas.width - 28, 44);
         ctx.fillStyle = '#94a3b8';
         ctx.font = '13px sans-serif';
-        ctx.fillText('KHU VỰC: ẤP 1 & ẤP 2', finalCanvas.width - 28, 66);
+        ctx.fillText(`KHU VỰC: ${hamletListStr.toUpperCase()}`, finalCanvas.width - 28, 66);
         ctx.textAlign = 'left';
 
         // 2. Draw captured Map Canvas
@@ -758,7 +780,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
         ctx.textAlign = 'right';
         ctx.fillStyle = '#94a3b8';
         ctx.font = 'italic 13px sans-serif';
-        ctx.fillText('Bản đồ giám sát an ninh trật tự P. An Lạc', finalCanvas.width - 28, finalCanvas.height - 16);
+        ctx.fillText(`Bản đồ giám sát an ninh trật tự ${wardName}`, finalCanvas.width - 28, finalCanvas.height - 16);
       }
 
       const dataUrl = finalCanvas.toDataURL('image/png');
@@ -814,12 +836,12 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
     try {
       const res = await fetch(screenshotUrl);
       const blob = await res.blob();
-      const file = new File([blob], `bando_anninh_anlac_${Date.now()}.png`, { type: 'image/png' });
+      const file = new File([blob], `bando_anninh_${Date.now()}.png`, { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: 'Bản đồ Giám sát An ninh Phường An Lạc',
-          text: `Trích xuất bản đồ số giám sát an ninh trật tự P. An Lạc (${filteredHouseholds.length} điểm giám sát).`,
+          title: `Bản đồ Giám sát An ninh ${wardName}`,
+          text: `Trích xuất bản đồ số giám sát an ninh trật tự ${wardName} (${filteredHouseholds.length} điểm giám sát).`,
           files: [file],
         });
         setShareFeedback('Đã chia sẻ thành công qua ứng dụng hệ thống!');
@@ -827,8 +849,8 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
         return;
       } else if (navigator.share) {
         await navigator.share({
-          title: 'Bản đồ Giám sát An ninh Phường An Lạc',
-          text: 'Bản đồ giám sát an ninh trật tự và PCCC Phường An Lạc.',
+          title: `Bản đồ Giám sát An ninh ${wardName}`,
+          text: `Bản đồ giám sát an ninh trật tự và PCCC ${wardName}.`,
           url: window.location.href,
         });
         setShareFeedback('Đã chia sẻ liên kết bản đồ!');
@@ -876,7 +898,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
   // Share via Telegram
   const handleShareTelegram = () => {
     const text = encodeURIComponent(
-      `Bản đồ Giám sát An ninh Trật tự P. An Lạc - Trích xuất ảnh báo cáo thực địa (${filteredHouseholds.length} điểm giám sát)`,
+      `Bản đồ Giám sát An ninh Trật tự ${wardName} - Trích xuất ảnh báo cáo thực địa (${filteredHouseholds.length} điểm giám sát)`,
     );
     const url = encodeURIComponent(window.location.href);
     window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank');
@@ -886,10 +908,10 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
 
   // Share via Email
   const handleShareEmail = () => {
-    const subject = encodeURIComponent('Báo cáo Bản đồ Giám sát An ninh Trật tự Phường An Lạc');
+    const subject = encodeURIComponent(`Báo cáo Bản đồ Giám sát An ninh Trật tự ${wardName}`);
     const body = encodeURIComponent(
       'Kính gửi Ban Chỉ huy / Cán bộ phụ trách,\n\n' +
-        `Tôi gửi trích xuất hình ảnh bản đồ giám sát an ninh trật tự, PCCC và hộ kinh doanh Phường An Lạc (${filteredHouseholds.length} điểm hiển thị).\n\n` +
+        `Tôi gửi trích xuất hình ảnh bản đồ giám sát an ninh trật tự, PCCC và hộ kinh doanh ${wardName} (${filteredHouseholds.length} điểm hiển thị).\n\n` +
         'Vui lòng truy cập hệ thống trực tuyến tại: ' +
         window.location.href +
         '\n\n' +
@@ -919,7 +941,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
       printWindow.document.write(`
         <html>
           <head>
-            <title>Bản đồ Giám sát An ninh P. An Lạc</title>
+            <title>Bản đồ Giám sát An ninh ${wardName}</title>
             <style>
               body { margin: 0; display: flex; justify-content: center; align-items: center; background: #fff; }
               img { max-width: 100%; height: auto; }
@@ -964,7 +986,9 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
         <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 shrink-0 text-white shadow-lg mb-2">
           <div className="flex items-center gap-2.5">
             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold text-xs sm:text-sm text-slate-100">BẢN ĐỒ GIÁM SÁT AN NINH P. AN LẠC — TOÀN MÀN HÌNH</span>
+            <span className="font-bold text-xs sm:text-sm text-slate-100">
+              BẢN ĐỒ GIÁM SÁT AN NINH {wardName.toUpperCase()} — TOÀN MÀN HÌNH
+            </span>
             <span className="hidden sm:inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
               {filteredHouseholds.length} / {households.length} vị trí
             </span>
@@ -1081,7 +1105,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
                 BẢN ĐỒ GIÁM SÁT NÂNG CAO
               </div>
               <h2 id="advanced-title" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Bản đồ số địa bàn P. An Lạc</span>
+                <span>Bản đồ số địa bàn {wardName}</span>
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                   {filteredHouseholds.length} / {households.length} vị trí
                 </span>
@@ -1594,7 +1618,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
               id="btn-center-map"
               onClick={handleResetView}
               className="w-10 h-10 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-md flex items-center justify-center text-slate-700 hover:text-blue-600 hover:bg-white transition-all cursor-pointer"
-              title="Về vị trí trung tâm P. An Lạc"
+              title={`Về vị trí trung tâm ${wardName}`}
             >
               <Compass className="w-4 h-4" />
             </button>
@@ -1768,7 +1792,11 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
                   </div>
                   <div className="text-slate-500 font-medium mt-1 flex items-center gap-1.5 text-[11px]">
                     <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    <span>{selectedHouse.hamlet}, P. An Lạc, Q. Bình Tân</span>
+                    <span>
+                      {selectedHouse.hamlet}
+                      {selectedHouse.ward ? `, ${selectedHouse.ward}` : ''}
+                      {selectedHouse.city ? `, ${selectedHouse.city}` : ''}
+                    </span>
                   </div>
                   <div className="text-[10px] font-mono text-slate-400 mt-0.5">
                     Tọa độ: {getHouseholdCoords(selectedHouse)[0].toFixed(5)}, {getHouseholdCoords(selectedHouse)[1].toFixed(5)}
@@ -1940,7 +1968,7 @@ export const AdvancedMapTab: React.FC<AdvancedMapTabProps> = ({
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm sm:text-base">Ảnh chụp trích xuất bản đồ an ninh địa bàn</h3>
-                  <p className="text-xs text-slate-500">Bản đồ P. An Lạc kèm khung tiêu đề hành chính và thông số giám sát</p>
+                  <p className="text-xs text-slate-500">Bản đồ {wardName} kèm khung tiêu đề hành chính và thông số giám sát</p>
                 </div>
               </div>
 

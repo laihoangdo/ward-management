@@ -372,7 +372,8 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                     <div className="text-slate-600 flex items-center gap-1 text-[11px] sm:text-xs">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>
-                        Số {h.houseNumber} {h.street}, {h.hamlet}, P. An Lạc
+                        Số {h.houseNumber} {h.street}, {h.hamlet}
+                        {h.ward ? `, ${h.ward}` : ''}
                       </span>
                     </div>
 

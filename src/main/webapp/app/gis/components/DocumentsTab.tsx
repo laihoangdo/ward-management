@@ -65,7 +65,10 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ documents, onRenewDo
           <div className="flex items-center gap-2">
             <span className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 rounded-xl text-xs font-bold flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span>{expiringCount} giấy phép cần xử lý trong tháng 09/2026</span>
+              <span>
+                {expiringCount} giấy phép cần xử lý trong tháng {String(new Date().getMonth() + 1).padStart(2, '0')}/
+                {new Date().getFullYear()}
+              </span>
             </span>
           </div>
         </div>

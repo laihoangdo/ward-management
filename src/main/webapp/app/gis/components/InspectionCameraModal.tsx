@@ -33,7 +33,7 @@ interface InspectionCameraModalProps {
 export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
   isOpen,
   household,
-  officerName = 'CSKV Nguyễn Văn Bình',
+  officerName = 'CSKV Phụ trách',
   onClose,
   onPhotoSaved,
 }) => {
@@ -225,7 +225,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     // Text formatting
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(`CÔNG AN PHƯỜNG AN LẠC • CSKV PHỤ TRÁCH ĐỊA BÀN [${h.hamlet}]`, 16, bannerY + 22);
+    ctx.fillText(`${h.ward ? `CÔNG AN ${h.ward.toUpperCase()}` : 'CÔNG AN ĐỊA BÀN'} • CSKV PHỤ TRÁCH [${h.hamlet}]`, 16, bannerY + 22);
 
     ctx.font = 'normal 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = '#cbd5e1';
@@ -352,7 +352,10 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                 <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/80">
                   {household.code}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">{household.hamlet} • P. An Lạc</span>
+                <span className="text-xs text-slate-400 font-medium">
+                  {household.hamlet}
+                  {household.ward ? ` • ${household.ward}` : ''}
+                </span>
               </div>
               <h3 id="camera-modal-title" className="text-sm sm:text-base font-bold text-white mt-0.5 leading-tight">
                 Chụp ảnh hiện trạng: Số {household.houseNumber} {household.street}

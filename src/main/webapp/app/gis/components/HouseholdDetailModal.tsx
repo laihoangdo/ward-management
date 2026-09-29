@@ -771,7 +771,8 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 <div>
                   <div className="font-bold text-slate-900 text-xs">Ghi chú kiểm tra thực địa</div>
                   <div className="text-[11px] text-slate-500">
-                    Cập nhật lần cuối: {household.lastCheckedDate} • CSKV: {household.officerInCharge || 'CSKV Nguyễn Văn Bình'}
+                    Cập nhật lần cuối: {household.lastCheckedDate} • CSKV:{' '}
+                    {household.officerInCharge || currentUser?.fullName || 'CSKV Phụ trách'}
                   </div>
                 </div>
               </div>
@@ -866,7 +867,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
       <InspectionCameraModal
         isOpen={isCameraModalOpen}
         household={household}
-        officerName={household.officerInCharge || 'CSKV Nguyễn Văn Bình'}
+        officerName={household.officerInCharge || currentUser?.fullName || 'CSKV Phụ trách'}
         onClose={() => setIsCameraModalOpen(false)}
         onPhotoSaved={handlePhotoSaved}
       />
@@ -875,7 +876,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
       <OcrScanModal
         isOpen={isOcrModalOpen}
         household={household}
-        officerName={household.officerInCharge || 'CSKV Nguyễn Văn Bình'}
+        officerName={household.officerInCharge || currentUser?.fullName || 'CSKV Phụ trách'}
         onClose={() => setIsOcrModalOpen(false)}
         onHouseholdUpdated={handleHouseholdOcrUpdated}
       />

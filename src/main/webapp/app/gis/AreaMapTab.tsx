@@ -875,7 +875,11 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 </div>
                 <div className="text-slate-500 font-medium mt-0.5 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span>{inspectedHousehold.hamlet}, P. An Lạc, Q. Bình Tân</span>
+                  <span>
+                    {inspectedHousehold.hamlet}
+                    {inspectedHousehold.ward ? `, ${inspectedHousehold.ward}` : ''}
+                    {inspectedHousehold.city ? `, ${inspectedHousehold.city}` : ''}
+                  </span>
                 </div>
               </div>
 

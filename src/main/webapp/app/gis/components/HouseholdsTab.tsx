@@ -847,7 +847,12 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               itemLabel="hộ dân & cơ sở"
             />
             <div className="px-3 flex items-center justify-between text-xs text-slate-400">
-              <span>Phụ trách: CSKV Nguyễn Văn Bình — P. An Lạc</span>
+              <span>
+                Phụ trách:{' '}
+                {currentUser
+                  ? `${currentUser.position || 'CSKV'} ${currentUser.fullName}${currentUser.unit ? ` — ${currentUser.unit}` : ''}`
+                  : 'Cán bộ CSKV phụ trách địa bàn'}
+              </span>
               {selectedResidenceType !== 'all' && (
                 <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold border border-blue-200">
                   Lọc cư trú: {selectedResidenceType}

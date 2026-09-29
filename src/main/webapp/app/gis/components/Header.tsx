@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'area-map':
         return 'Sơ Đồ Địa Bàn Tương Tác';
       case 'advanced-map':
-        return 'Bản Đồ Nâng Cao P. An Lạc';
+        return currentUser?.assignedWard ? `Bản Đồ Nâng Cao ${currentUser.assignedWard}` : 'Bản Đồ Nâng Cao Địa Bàn';
       case 'households':
         return 'Dữ Liệu Hộ Dân & Cơ Sở';
       case 'residents':
@@ -105,9 +105,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="min-w-0">
           <h1 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">{getTabTitle()}</h1>
           <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden xs:flex items-center gap-1.5 truncate">
-            <span className="hidden md:inline">TP.HCM • Bình Tân • An Lạc</span>
+            <span className="hidden md:inline">
+              {currentUser?.unit || (currentUser?.assignedWard ? `TP.HCM • ${currentUser.assignedWard}` : 'TP.HCM • Quản lý địa bàn')}
+            </span>
             <span className="hidden md:inline">•</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">15/09/2026</span>
+            <span className="text-blue-600 dark:text-blue-400 font-medium">{new Date().toLocaleDateString('vi-VN')}</span>
           </div>
         </div>
       </div>

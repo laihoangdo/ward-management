@@ -577,7 +577,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               </div>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
                 Cơ sở dữ liệu quản lý cư trú, kiểm tra thẻ CCCD/VNeID, phân loại thường trú, tạm trú, lưu trú và đối tượng nghiệp vụ an ninh
-                trật tự tại Phường An Lạc.
+                trật tự trên địa bàn quản lý.
               </p>
             </div>
           </div>
@@ -1201,7 +1201,10 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base font-bold">Hồ Sơ Nhân Khẩu & Cư Trú</h3>
-                  <div className="text-xs text-slate-400">Mã nhân khẩu: {selectedResident.id} • P. An Lạc</div>
+                  <div className="text-xs text-slate-400">
+                    Mã nhân khẩu: {selectedResident.id}
+                    {selectedResident.residentType ? ` • ${selectedResident.residentType}` : ''}
+                  </div>
                 </div>
               </div>
               <button
@@ -1803,7 +1806,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base font-bold">Phân Tích Cơ Cấu Dân Cư Địa Bàn</h3>
-                  <p className="text-xs text-slate-400">Tổng quan nhân khẩu học P. An Lạc, Q. Bình Tân</p>
+                  <p className="text-xs text-slate-400">Tổng quan nhân khẩu học trên địa bàn quản lý</p>
                 </div>
               </div>
               <button

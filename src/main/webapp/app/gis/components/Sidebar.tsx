@@ -152,8 +152,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               🛡 QLĐB AN NINH
             </div>
-            <div id="brand-subtitle" className="text-[10px] sm:text-[11px] font-semibold text-slate-400 tracking-wider uppercase">
-              CATP. HỒ CHÍ MINH • AN LẠC
+            <div id="brand-subtitle" className="text-[10px] sm:text-[11px] font-semibold text-slate-400 tracking-wider uppercase truncate">
+              {currentUser?.assignedWard
+                ? `CATP. HỒ CHÍ MINH • ${currentUser.assignedWard.toUpperCase()}`
+                : 'CATP. HỒ CHÍ MINH • QUẢN LÝ ĐỊA BÀN'}
             </div>
           </div>
         </Link>
@@ -292,7 +294,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </span>
           <span className="text-[10px] text-slate-400 font-mono">v2.5.0-RBAC</span>
         </div>
-        <div className="mt-1 text-[10px] text-slate-400">Công an P. An Lạc • (028) 3875 0272</div>
+        <div className="mt-1 text-[10px] text-slate-400 truncate">
+          {currentUser?.unit || (currentUser?.assignedWard ? `Công an ${currentUser.assignedWard}` : 'Công an Địa bàn')}
+          {currentUser?.phone ? ` • ${currentUser.phone}` : ''}
+        </div>
       </div>
     </div>
   );

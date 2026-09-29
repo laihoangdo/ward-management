@@ -279,7 +279,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
               </div>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
                 Lưu vết toàn bộ lịch sử chỉnh sửa tọa độ bản đồ, cập nhật hồ sơ kiểm tra thực địa, đôn đốc gia hạn giấy phép và trích xuất
-                dữ liệu của các tài khoản CSKV trên địa bàn P. An Lạc.
+                dữ liệu của các tài khoản CSKV trên địa bàn quản lý.
               </p>
             </div>
           </div>
@@ -383,7 +383,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
               className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="all">Toàn bộ thời gian</option>
-              <option value="today">Hôm nay (18/09/2026)</option>
+              <option value="today">Hôm nay ({new Date().toLocaleDateString('vi-VN')})</option>
             </select>
 
             {/* Target type filter */}
