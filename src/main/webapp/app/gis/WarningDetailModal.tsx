@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { HouseholdFacility, SecurityAlert, AppUser } from './types';
 import { resolveSecurityAlert, addIpToBlacklist } from './services/authService';
+import { Pagination } from './components/Pagination';
 
 interface WarningDetailModalProps {
   isOpen: boolean;
@@ -53,6 +54,30 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
   // Local state for alerts to give instant feedback
   const [localAlerts, setLocalAlerts] = useState<SecurityAlert[]>(securityAlerts);
+
+  // Pagination states with 10/20/50 format
+  const [licensePage, setLicensePage] = useState<number>(1);
+  const [licensePageSize, setLicensePageSize] = useState<number>(10);
+  const [alertPage, setAlertPage] = useState<number>(1);
+  const [alertPageSize, setAlertPageSize] = useState<number>(10);
+
+  React.useEffect(() => {
+    setLicensePage(1);
+  }, [warningHouseholds.length, licensePageSize]);
+
+  React.useEffect(() => {
+    setAlertPage(1);
+  }, [localAlerts.length, alertPageSize]);
+
+  const paginatedLicenses = React.useMemo(() => {
+    const start = (licensePage - 1) * licensePageSize;
+    return warningHouseholds.slice(start, start + licensePageSize);
+  }, [warningHouseholds, licensePage, licensePageSize]);
+
+  const paginatedAlerts = React.useMemo(() => {
+    const start = (alertPage - 1) * alertPageSize;
+    return localAlerts.slice(start, start + alertPageSize);
+  }, [localAlerts, alertPage, alertPageSize]);
 
   React.useEffect(() => {
     if (securityAlerts && securityAlerts.length > 0) {
@@ -229,7 +254,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
             </div>
 
             <div className="space-y-3.5">
-              {localAlerts.map(alert => (
+              {paginatedAlerts.map(alert => (
                 <div
                   key={alert.id}
                   className={`p-4 rounded-xl border-2 transition-all space-y-3 ${
@@ -343,6 +368,20 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                 </div>
               ))}
             </div>
+
+            {localAlerts.length > 0 && (
+              <div className="pt-2">
+                <Pagination
+                  currentPage={alertPage}
+                  totalItems={localAlerts.length}
+                  pageSize={alertPageSize}
+                  pageSizeOptions={[10, 20, 50]}
+                  onPageChange={setAlertPage}
+                  onPageSizeChange={setAlertPageSize}
+                  itemLabel="cảnh báo an ninh"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -355,7 +394,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
             </p>
 
             <div className="space-y-3">
-              {warningHouseholds.map(h => {
+              {paginatedLicenses.map(h => {
                 const isReminded = remindedList.includes(h.id);
                 return (
                   <div key={h.id} className="p-3.5 sm:p-4 rounded-xl border-2 border-amber-300 bg-amber-50/70 space-y-2.5">
@@ -416,6 +455,20 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                 );
               })}
             </div>
+
+            {warningHouseholds.length > 0 && (
+              <div className="pt-2">
+                <Pagination
+                  currentPage={licensePage}
+                  totalItems={warningHouseholds.length}
+                  pageSize={licensePageSize}
+                  pageSizeOptions={[10, 20, 50]}
+                  onPageChange={setLicensePage}
+                  onPageSizeChange={setLicensePageSize}
+                  itemLabel="cơ sở cảnh báo"
+                />
+              </div>
+            )}
           </div>
         )}
 

@@ -68,17 +68,17 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-14 sm:h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-2.5 sm:px-4 md:px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
+    <header className="h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
       {/* Title / Hamburger menu / Home button */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
         {/* Mobile/Tablet Hamburger Toggle Button */}
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
-            className="lg:hidden p-2 text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors relative min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
+            className="lg:hidden h-9 w-9 text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors relative flex items-center justify-center shrink-0 cursor-pointer"
             title="Mở menu điều hành"
           >
-            <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+            <Menu className="w-4 h-4 text-slate-700 dark:text-slate-200" />
             {warningCount > 0 && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900" />
             )}
@@ -90,41 +90,47 @@ export const Header: React.FC<HeaderProps> = ({
           to="/"
           id="btn-header-home"
           title="Quay về Trang chủ Cổng thông tin Monolithic"
-          className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 hover:text-blue-700 dark:text-slate-200 dark:hover:text-blue-300 font-bold text-xs transition-all shadow-xs shrink-0 min-h-[38px] cursor-pointer"
+          className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-slate-700 bg-slate-50 hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-300 font-semibold text-xs transition-colors shadow-xs shrink-0 cursor-pointer no-underline"
+          style={{ textDecoration: 'none' }}
         >
-          <Home className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+          <Home className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
           <span className="hidden sm:inline">Trang chủ</span>
         </Link>
 
         {/* Shield Icon */}
-        <div className="hidden md:flex w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 items-center justify-center border border-blue-100 dark:border-blue-900 shrink-0">
-          <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="hidden sm:flex w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 items-center justify-center border border-blue-500/20 shrink-0">
+          <Shield className="w-4 h-4" />
         </div>
 
         {/* Module Title & Breadcrumb */}
-        <div className="min-w-0">
-          <h1 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">{getTabTitle()}</h1>
-          <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden xs:flex items-center gap-1.5 truncate">
-            <span className="hidden md:inline">
+        <div className="min-w-0 pr-1">
+          <h1
+            className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight truncate m-0 p-0"
+            style={{ fontSize: '13.5px', lineHeight: '18px', margin: 0, fontWeight: 700 }}
+          >
+            {getTabTitle()}
+          </h1>
+          <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden xs:flex items-center gap-1.5 truncate leading-tight mt-0.5">
+            <span className="hidden md:inline font-medium">
               {currentUser?.unit || (currentUser?.assignedWard ? `TP.HCM • ${currentUser.assignedWard}` : 'TP.HCM • Quản lý địa bàn')}
             </span>
-            <span className="hidden md:inline">•</span>
-            <span className="text-blue-600 dark:text-blue-400 font-medium">{new Date().toLocaleDateString('vi-VN')}</span>
+            <span className="hidden md:inline text-slate-300 dark:text-slate-600">•</span>
+            <span className="text-blue-600 dark:text-blue-400 font-semibold">{new Date().toLocaleDateString('vi-VN')}</span>
           </div>
         </div>
       </div>
 
       {/* Action shortcuts & Search */}
-      <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Desktop & Tablet Quick Search with Voice Search trigger */}
-        <div className="relative hidden md:block w-40 lg:w-60 xl:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="relative hidden md:block w-36 lg:w-56 xl:w-64 shrink-0">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Tìm tên, số nhà, SĐT..."
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            className="w-full pl-9 pr-16 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-400 transition-colors"
+            className="w-full h-9 pl-8 pr-14 text-xs bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-400 transition-colors"
           />
           <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {searchQuery && (
@@ -134,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors cursor-pointer"
                 title="Xóa tìm kiếm"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             )}
             <button
@@ -144,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Tìm kiếm bằng giọng nói Tiếng Việt"
               className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-all cursor-pointer group flex items-center justify-center"
             >
-              <Mic className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-rose-600 transition-colors" />
+              <Mic className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-rose-600 transition-colors" />
             </button>
           </div>
         </div>
@@ -153,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="btn-header-voice-search-mobile"
           onClick={() => setIsVoiceModalOpen(true)}
-          className="md:hidden p-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
+          className="md:hidden h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center justify-center cursor-pointer shrink-0"
           title="Tìm kiếm bằng giọng nói Tiếng Việt"
         >
           <Mic className="w-4 h-4 text-rose-600" />
@@ -162,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Mobile Search Toggle Icon */}
         <button
           onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-          className={`md:hidden p-2 rounded-lg border transition-colors min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer ${
+          className={`md:hidden h-9 w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
             isMobileSearchOpen || searchQuery
               ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
               : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
@@ -172,12 +178,12 @@ export const Header: React.FC<HeaderProps> = ({
           <Search className="w-4 h-4" />
         </button>
 
-        {/* Database & Cloud status badge */}
-        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-[11px] font-medium">
+        {/* Database & Cloud status badge - ALWAYS single line */}
+        <div className="hidden xl:flex items-center gap-1.5 h-9 px-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-[11px] font-medium whitespace-nowrap shrink-0">
           <span
             className={`w-2 h-2 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'} shrink-0`}
           />
-          <span>
+          <span className="whitespace-nowrap">
             {backendStatus === 'online'
               ? 'Máy chủ trực tuyến'
               : backendStatus === 'offline'
@@ -191,14 +197,14 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => onTabChange('residents')}
             title="Mở nhanh module Quản lý nhân khẩu & Định danh"
-            className={`hidden sm:flex px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-bold items-center gap-1.5 transition-all shadow-xs min-h-[38px] cursor-pointer ${
+            className={`hidden sm:flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
               activeTab === 'residents'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-blue-500/20'
-                : 'bg-blue-50/80 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/40'
+                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20'
+                : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
             }`}
           >
             <UserCheck className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline">Nhân khẩu</span>
+            <span className="hidden md:inline whitespace-nowrap">Nhân khẩu</span>
           </button>
         )}
 
@@ -206,10 +212,10 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onRefresh}
           title="Làm mới dữ liệu địa bàn"
-          className="p-2 sm:px-3 sm:py-1.5 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 text-xs font-semibold min-h-[38px] cursor-pointer"
+          className="h-9 px-2 sm:px-3 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
         >
-          <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-          <span className="hidden md:inline">Cập nhật</span>
+          <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+          <span className="hidden md:inline whitespace-nowrap">Cập nhật</span>
         </button>
 
         {/* Dark/Light Mode Toggle Switch */}
@@ -218,21 +224,21 @@ export const Header: React.FC<HeaderProps> = ({
             id="btn-toggle-dark-mode"
             onClick={onToggleTheme}
             title={theme === 'dark' ? 'Chuyển sang Chế độ Sáng (Ban ngày)' : 'Chuyển sang Chế độ Tối (Ban đêm / Thiếu sáng)'}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs min-h-[38px] cursor-pointer ${
+            className={`h-9 px-2 sm:px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
               theme === 'dark'
-                ? 'bg-amber-950/40 border-amber-500/50 text-amber-300 hover:bg-amber-950/60'
-                : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-indigo-600'
+                ? 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-200 hover:text-amber-300'
+                : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-indigo-600'
             }`}
           >
             {theme === 'dark' ? (
               <>
                 <Sun className="w-4 h-4 text-amber-400 shrink-0 animate-in spin-in-180 duration-300" />
-                <span className="hidden md:inline">Chế độ Sáng</span>
+                <span className="hidden md:inline whitespace-nowrap">Chế độ Sáng</span>
               </>
             ) : (
               <>
                 <Moon className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span className="hidden md:inline">Chế độ Tối</span>
+                <span className="hidden md:inline whitespace-nowrap">Chế độ Tối</span>
               </>
             )}
           </button>
@@ -241,29 +247,34 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Urgent Warning notification button */}
         <button
           onClick={onOpenWarnings}
-          className={`px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs min-h-[38px] cursor-pointer ${
+          className={`h-9 px-2 sm:px-3 rounded-lg border text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
             warningCount > 0
-              ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
-              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-750'
+              ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-700 dark:text-amber-300'
+              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
           }`}
         >
           <AlertTriangle
             className={`w-4 h-4 shrink-0 ${warningCount > 0 ? 'text-amber-600 dark:text-amber-400 animate-bounce' : 'text-slate-400'}`}
           />
-          <span className="hidden xs:inline">Cảnh báo</span>
+          <span className="hidden xs:inline whitespace-nowrap">Cảnh báo</span>
           {warningCount > 0 && (
-            <span className="bg-amber-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold">{warningCount}</span>
+            <span className="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold leading-none">
+              {warningCount}
+            </span>
           )}
         </button>
 
         {/* Current User Quick Badge & Logout */}
         {currentUser && (
-          <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
-            <div className="text-right">
-              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
-                {currentUser.rank} {currentUser.fullName}
+          <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-xs shrink-0">
+              {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'A'}
+            </div>
+            <div className="text-right leading-tight min-w-0">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate whitespace-nowrap max-w-[120px]">
+                {currentUser.fullName || currentUser.username}
               </div>
-              <div className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-semibold uppercase">
+              <div className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-semibold uppercase truncate whitespace-nowrap">
                 {currentUser.role === 'superadmin'
                   ? 'Super Admin'
                   : currentUser.role === 'admin'
@@ -277,7 +288,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition cursor-pointer"
+                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center justify-center shrink-0 cursor-pointer"
                 title="Đăng xuất"
               >
                 <LogOut className="w-4 h-4" />

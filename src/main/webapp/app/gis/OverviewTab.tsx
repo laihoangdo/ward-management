@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Building,
   Store,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { HouseholdFacility, NavigationTab } from './types';
 import { getEffectiveResidentsList } from './utils/residentRosterUtils';
+import { Pagination } from './components/Pagination';
 
 interface OverviewTabProps {
   households: HouseholdFacility[];
@@ -63,6 +64,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
   }, [households]);
 
   const warningHouseholds = households.filter(h => h.status === 'warning');
+  const [warningCurrentPage, setWarningCurrentPage] = useState<number>(1);
+  const [warningPageSize, setWarningPageSize] = useState<number>(10);
+
+  useEffect(() => {
+    setWarningCurrentPage(1);
+  }, [warningHouseholds.length, warningPageSize]);
+
+  const paginatedWarnings = useMemo(() => {
+    const start = (warningCurrentPage - 1) * warningPageSize;
+    return warningHouseholds.slice(start, start + warningPageSize);
+  }, [warningHouseholds, warningCurrentPage, warningPageSize]);
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
@@ -247,7 +259,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
                 Cán bộ CSKV cần kiểm tra thực địa, đôn đốc cơ sở nộp hồ sơ gia hạn đúng quy định trước ngày hết hiệu lực:
               </p>
               <div className="mt-3 space-y-2">
-                {warningHouseholds.map(item => (
+                {paginatedWarnings.map(item => (
                   <div
                     key={item.id}
                     id={`warning-line-${item.id}`}
@@ -267,6 +279,22 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
                   </div>
                 ))}
               </div>
+
+              {/* Pagination controls with 10/20/50 format */}
+              {warningHouseholds.length > 0 && (
+                <div className="mt-3">
+                  <Pagination
+                    currentPage={warningCurrentPage}
+                    totalItems={warningHouseholds.length}
+                    pageSize={warningPageSize}
+                    pageSizeOptions={[10, 20, 50]}
+                    onPageChange={setWarningCurrentPage}
+                    onPageSizeChange={setWarningPageSize}
+                    itemLabel="cơ sở cảnh báo"
+                    className="!bg-white/80 dark:!bg-slate-900/80 !border-amber-300/80 dark:!border-amber-700/80 shadow-xs"
+                  />
+                </div>
+              )}
 
               <div className="mt-3.5 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <button

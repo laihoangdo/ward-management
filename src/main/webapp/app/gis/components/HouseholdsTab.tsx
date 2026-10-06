@@ -166,21 +166,21 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
   const renderStatusBadge = (item: HouseholdFacility) => {
     if (item.status === 'warning') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-2xs">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
           Hết hạn: {item.licenseExpiry}
         </span>
       );
     } else if (item.status === 'alert') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-rose-50 text-rose-900 border border-rose-300 shadow-2xs">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-300 border border-rose-300 dark:border-rose-700 shadow-2xs">
           <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
           Quản lý định kỳ
         </span>
       );
     } else if (item.status === 'business') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700 shadow-2xs">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
           GPKD hợp lệ
         </span>
@@ -188,7 +188,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
     }
 
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 shadow-2xs">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
         Hợp lệ
       </span>
@@ -212,20 +212,20 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
   return (
     <div className="space-y-4 sm:space-y-5 max-w-7xl mx-auto">
       {/* Top Banner */}
-      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
             <div
               id="household-eyebrow"
-              className="text-[11px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase mb-1 flex items-center gap-1.5"
+              className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1 flex items-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>DỮ LIỆU ĐỊA BÀN & CƯ TRÚ</span>
             </div>
-            <h2 id="household-title" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            <h2 id="household-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Danh sách hộ dân & Cơ sở
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
               Quản lý toàn bộ {households.length} hộ dân, cơ sở kinh doanh và đối tượng theo dõi thuộc Xã Bà Điểm, Hóc Môn.
             </p>
           </div>
@@ -234,9 +234,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             <button
               id="export-csv-button"
               onClick={handleExportCSV}
-              className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-all duration-150 flex items-center justify-center gap-1.5 min-h-[40px] cursor-pointer"
+              className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-all duration-150 flex items-center justify-center gap-1.5 min-h-[40px] cursor-pointer"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Xuất file (CSV)</span>
             </button>
 
@@ -253,21 +253,23 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
       </div>
 
       {/* Quick Filter Chips (Bộ lọc nhanh theo loại hình cư trú - optimized for mobile & desktop) */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+      <div className="bg-white dark:bg-slate-900 p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-3">
         {/* Header line for quick filter chips */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Bộ lọc nhanh cư trú:</span>
             </span>
-            <span className="hidden sm:inline text-[11px] text-slate-400">(Chạm để lọc nhanh theo hình thức cư trú trên địa bàn)</span>
+            <span className="hidden sm:inline text-[11px] text-slate-400 dark:text-slate-400">
+              (Chạm để lọc nhanh theo hình thức cư trú trên địa bàn)
+            </span>
           </div>
 
           {isAnyFilterActive && (
             <button
               onClick={handleResetFilters}
-              className="inline-flex items-center gap-1 text-[11px] text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 text-[11px] text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 font-bold px-2 py-1 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
               title="Đặt lại tất cả các bộ lọc"
             >
               <RotateCcw className="w-3 h-3" />
@@ -286,14 +288,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             className={`min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 cursor-pointer flex items-center gap-2 transition-all duration-200 active:scale-95 select-none ${
               selectedResidenceType === 'all'
                 ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 ring-2 ring-blue-500/30 border border-blue-600'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
             }`}
           >
             <Home className="w-3.5 h-3.5 shrink-0" />
             <span>Tất cả cư trú</span>
             <span
               className={`px-1.5 py-0.2 text-[10px] font-mono rounded-full font-bold ${
-                selectedResidenceType === 'all' ? 'bg-blue-700 text-white' : 'bg-white text-slate-600 border border-slate-200'
+                selectedResidenceType === 'all'
+                  ? 'bg-blue-700 text-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
               }`}
             >
               {residenceCounts.all}
@@ -327,7 +331,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             <span>Thường trú</span>
             <span
               className={`px-1.5 py-0.2 text-[10px] font-mono rounded-full font-bold ${
-                selectedResidenceType === 'Thường trú' ? 'bg-emerald-700 text-white' : 'bg-white text-emerald-800 border border-emerald-200'
+                selectedResidenceType === 'Thường trú'
+                  ? 'bg-emerald-700 text-white'
+                  : 'bg-white dark:bg-slate-900 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
               }`}
             >
               {residenceCounts['Thường trú']}
@@ -361,7 +367,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             <span>Tạm trú</span>
             <span
               className={`px-1.5 py-0.2 text-[10px] font-mono rounded-full font-bold ${
-                selectedResidenceType === 'Tạm trú' ? 'bg-amber-700 text-white' : 'bg-white text-amber-900 border border-amber-200'
+                selectedResidenceType === 'Tạm trú'
+                  ? 'bg-amber-700 text-white'
+                  : 'bg-white dark:bg-slate-900 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
               }`}
             >
               {residenceCounts['Tạm trú']}
@@ -395,7 +403,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             <span>Lưu trú</span>
             <span
               className={`px-1.5 py-0.2 text-[10px] font-mono rounded-full font-bold ${
-                selectedResidenceType === 'Lưu trú' ? 'bg-purple-700 text-white' : 'bg-white text-purple-900 border border-purple-200'
+                selectedResidenceType === 'Lưu trú'
+                  ? 'bg-purple-700 text-white'
+                  : 'bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
               }`}
             >
               {residenceCounts['Lưu trú']}
@@ -404,7 +414,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         </div>
 
         {/* Secondary Bar: Search & Sub-filters */}
-        <div className="pt-2 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Search input */}
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -413,18 +423,20 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               placeholder="Tìm tên chủ hộ, cơ sở, số nhà, SĐT, loại cư trú..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white text-slate-800 placeholder-slate-400 transition-colors"
+              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
             />
           </div>
 
           {/* Sub-filters & View Toggle */}
           <div className="flex items-center gap-2 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
             {/* Hamlet filter */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl shrink-0 gap-1 overflow-x-auto">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 gap-1 overflow-x-auto border border-transparent dark:border-slate-700/60">
               <button
                 onClick={() => setSelectedHamlet('all')}
                 className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer shrink-0 ${
-                  selectedHamlet === 'all' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  selectedHamlet === 'all'
+                    ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Tất cả ấp ({households.length})
@@ -436,7 +448,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                     key={hamlet}
                     onClick={() => setSelectedHamlet(hamlet)}
                     className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer shrink-0 ${
-                      selectedHamlet === hamlet ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      selectedHamlet === hamlet
+                        ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     {hamlet} ({count})
@@ -446,11 +460,13 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             </div>
 
             {/* Type filter */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl shrink-0">
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 border border-transparent dark:border-slate-700/60">
               <button
                 onClick={() => setSelectedType('all')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
-                  selectedType === 'all' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  selectedType === 'all'
+                    ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Tất cả loại
@@ -458,7 +474,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               <button
                 onClick={() => setSelectedType('household')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
-                  selectedType === 'household' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  selectedType === 'household'
+                    ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Hộ dân
@@ -466,7 +484,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               <button
                 onClick={() => setSelectedType('business')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
-                  selectedType === 'business' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  selectedType === 'business'
+                    ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Cơ sở
@@ -474,7 +494,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               <button
                 onClick={() => setSelectedType('special_monitoring')}
                 className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
-                  selectedType === 'special_monitoring' ? 'bg-white text-rose-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  selectedType === 'special_monitoring'
+                    ? 'bg-white dark:bg-rose-600 text-rose-700 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Chú ý
@@ -482,11 +504,13 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             </div>
 
             {/* Desktop View Mode Toggle (Cards vs Table) */}
-            <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-xl shrink-0 ml-1">
+            <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shrink-0 ml-1 border border-transparent dark:border-slate-700/60">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-1.5 rounded-lg text-xs font-semibold transition-all duration-150 flex items-center gap-1 cursor-pointer ${
-                  viewMode === 'grid' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  viewMode === 'grid'
+                    ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="Xem dạng thẻ (Cards)"
               >
@@ -496,7 +520,9 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               <button
                 onClick={() => setViewMode('table')}
                 className={`p-1.5 rounded-lg text-xs font-semibold transition-all duration-150 flex items-center gap-1 cursor-pointer ${
-                  viewMode === 'table' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  viewMode === 'table'
+                    ? 'bg-white dark:bg-blue-600 text-blue-700 dark:text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="Xem dạng bảng (Table)"
               >
@@ -510,44 +536,50 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         {/* Active Filter Summary Pill Bar */}
         {isAnyFilterActive && (
           <div className="pt-2 flex items-center gap-2 flex-wrap text-xs">
-            <span className="text-slate-500 text-[11px]">Đang lọc:</span>
+            <span className="text-slate-500 dark:text-slate-400 text-[11px]">Đang lọc:</span>
             {selectedResidenceType !== 'all' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-semibold">
                 Cư trú: <strong>{selectedResidenceType}</strong>
-                <button onClick={() => setSelectedResidenceType('all')} className="hover:text-blue-900 ml-0.5 cursor-pointer">
+                <button
+                  onClick={() => setSelectedResidenceType('all')}
+                  className="hover:text-blue-900 dark:hover:text-white ml-0.5 cursor-pointer"
+                >
                   ×
                 </button>
               </span>
             )}
             {selectedHamlet !== 'all' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-semibold">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold">
                 Khu vực: <strong>{selectedHamlet}</strong>
-                <button onClick={() => setSelectedHamlet('all')} className="hover:text-slate-900 ml-0.5 cursor-pointer">
+                <button
+                  onClick={() => setSelectedHamlet('all')}
+                  className="hover:text-slate-900 dark:hover:text-white ml-0.5 cursor-pointer"
+                >
                   ×
                 </button>
               </span>
             )}
             {selectedType !== 'all' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-semibold">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold">
                 Loại:{' '}
                 <strong>
                   {selectedType === 'business' ? 'Cơ sở KD' : selectedType === 'special_monitoring' ? 'Đối tượng chú ý' : 'Hộ gia đình'}
                 </strong>
-                <button onClick={() => setSelectedType('all')} className="hover:text-slate-900 ml-0.5 cursor-pointer">
+                <button onClick={() => setSelectedType('all')} className="hover:text-slate-900 dark:hover:text-white ml-0.5 cursor-pointer">
                   ×
                 </button>
               </span>
             )}
             {searchTerm.trim() && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-semibold">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold">
                 Từ khoá: &quot;{searchTerm}&quot;
-                <button onClick={() => setSearchTerm('')} className="hover:text-slate-900 ml-0.5 cursor-pointer">
+                <button onClick={() => setSearchTerm('')} className="hover:text-slate-900 dark:hover:text-white ml-0.5 cursor-pointer">
                   ×
                 </button>
               </span>
             )}
             <span className="text-slate-400 text-[11px] ml-auto">
-              Tìm thấy <strong className="text-slate-700 font-bold">{filtered.length}</strong> kết quả
+              Tìm thấy <strong className="text-slate-700 dark:text-slate-200 font-bold">{filtered.length}</strong> kết quả
             </span>
           </div>
         )}
@@ -565,16 +597,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                 <div
                   key={item.id}
                   onClick={() => onSelectHousehold(item)}
-                  className="group relative bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:border-blue-400/80 hover:bg-linear-to-b hover:from-blue-50/25 hover:to-white cursor-pointer active:scale-[0.985] flex flex-col justify-between select-none"
+                  className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:border-blue-400/80 dark:hover:border-blue-500/80 hover:bg-linear-to-b hover:from-blue-50/25 dark:hover:from-blue-950/30 hover:to-white dark:hover:to-slate-900 cursor-pointer active:scale-[0.985] flex flex-col justify-between select-none"
                 >
                   {/* Top Bar: Code + Hamlet + Badges */}
                   <div className="space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-mono text-xs font-bold text-blue-600 group-hover:text-blue-700 transition-colors">
+                        <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
                           {item.code}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-slate-600 font-semibold group-hover:bg-blue-100/60 transition-colors">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-mono text-slate-600 dark:text-slate-300 font-semibold group-hover:bg-blue-100/60 dark:group-hover:bg-blue-900/40 transition-colors">
                           {item.hamlet}
                         </span>
                         {/* Residence Type Badge */}
@@ -588,62 +620,62 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                     {/* Address Title */}
                     <div>
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors leading-snug">
+                        <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-blue-900 dark:group-hover:text-blue-300 transition-colors leading-snug">
                           Số {item.houseNumber} {item.street}
                         </h4>
-                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all duration-200 shrink-0" />
                       </div>
 
                       {/* Business or Special marker if applicable */}
                       {item.businessName && (
-                        <div className="text-xs text-blue-700 font-bold mt-0.5 flex items-center gap-1">
-                          <Store className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                        <div className="text-xs text-blue-700 dark:text-blue-400 font-bold mt-0.5 flex items-center gap-1">
+                          <Store className="w-3.5 h-3.5 shrink-0 text-blue-500 dark:text-blue-400" />
                           <span>{item.businessName}</span>
                           {item.businessCategory && (
-                            <span className="text-[10px] text-slate-400 font-normal">• {item.businessCategory}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">• {item.businessCategory}</span>
                           )}
                         </div>
                       )}
                       {item.type === 'special_monitoring' && (
-                        <div className="text-[11px] text-rose-700 font-semibold mt-0.5 flex items-center gap-1">
-                          <AlertOctagon className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                        <div className="text-[11px] text-rose-700 dark:text-rose-400 font-semibold mt-0.5 flex items-center gap-1">
+                          <AlertOctagon className="w-3.5 h-3.5 shrink-0 text-rose-500 dark:text-rose-400" />
                           <span>Diện quản lý an ninh trật tự</span>
                         </div>
                       )}
                     </div>
 
                     {/* Middle Info Box with smooth background transition */}
-                    <div className="bg-slate-50/80 group-hover:bg-blue-50/40 border border-slate-100 group-hover:border-blue-100/60 p-2.5 sm:p-3 rounded-xl text-xs space-y-1.5 transition-all duration-200">
+                    <div className="bg-slate-50/80 dark:bg-slate-800/80 group-hover:bg-blue-50/40 dark:group-hover:bg-blue-950/40 border border-slate-100 dark:border-slate-700/80 group-hover:border-blue-100/60 dark:group-hover:border-blue-900/60 p-2.5 sm:p-3 rounded-xl text-xs space-y-1.5 transition-all duration-200">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-slate-500 text-[11px]">Chủ hộ / Đại diện:</span>
-                        <span className="font-bold text-slate-800 text-right truncate">{item.ownerName}</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px]">Chủ hộ / Đại diện:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-100 text-right truncate">{item.ownerName}</span>
                       </div>
 
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-slate-500 text-[11px]">Nhân khẩu cư trú:</span>
-                        <span className="font-semibold text-slate-700">
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px]">Nhân khẩu cư trú:</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200">
                           {item.residentsCount} người ({item.maleCount} Nam, {item.femaleCount} Nữ)
                         </span>
                       </div>
 
                       {item.lastCheckedDate && (
-                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/60 text-[11px]">
-                          <span className="text-slate-400 flex items-center gap-1">
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-[11px]">
+                          <span className="text-slate-400 dark:text-slate-400 flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             Kiểm tra gần nhất:
                           </span>
-                          <span className="font-mono text-slate-600 font-medium">{item.lastCheckedDate}</span>
+                          <span className="font-mono text-slate-600 dark:text-slate-300 font-medium">{item.lastCheckedDate}</span>
                         </div>
                       )}
                     </div>
                   </div>
 
                   {/* Card Bottom Actions */}
-                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 dark:border-slate-800">
                     <a
                       href={`tel:${item.ownerPhone}`}
                       onClick={e => e.stopPropagation()}
-                      className="inline-flex items-center gap-1.5 text-xs text-blue-700 font-semibold font-mono py-1.5 px-2.5 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 active:scale-95 transition-all duration-150"
+                      className="inline-flex items-center gap-1.5 text-xs text-blue-700 dark:text-blue-300 font-semibold font-mono py-1.5 px-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800/80 hover:bg-blue-100 dark:hover:bg-blue-900/80 active:scale-95 transition-all duration-150"
                       title="Gọi điện liên hệ chủ hộ"
                     >
                       <Phone className="w-3.5 h-3.5" />
@@ -664,7 +696,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                               onDeleteHousehold(item.id);
                             }
                           }}
-                          className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-xl text-xs font-bold transition-all duration-150 inline-flex items-center gap-1 min-h-[34px] cursor-pointer"
+                          className="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 dark:hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold border border-rose-200 dark:border-rose-900/60 transition-all duration-150 inline-flex items-center gap-1 min-h-[34px] cursor-pointer"
                           title="Xóa hộ dân này"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -691,11 +723,11 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
 
         {/* VIEW 2: DESKTOP TABLE (When table mode is selected on >= md screens) */}
         {viewMode === 'table' && (
-          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase text-[11px] tracking-wider">
+                  <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px] tracking-wider">
                     <th className="py-3.5 px-4">Mã số</th>
                     <th className="py-3.5 px-4">Địa chỉ</th>
                     <th className="py-3.5 px-4">Khu vực</th>
@@ -708,7 +740,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                     <th className="py-3.5 px-4 text-right">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {paginatedHouseholds.map(item => {
                     const resType = getHouseholdResidenceType(item);
 
@@ -716,49 +748,51 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                       <tr
                         key={item.id}
                         onClick={() => onSelectHousehold(item)}
-                        className="hover:bg-blue-50/50 transition-all duration-150 cursor-pointer group"
+                        className="hover:bg-blue-50/50 dark:hover:bg-blue-950/40 transition-all duration-150 cursor-pointer group"
                       >
-                        <td className="py-3.5 px-4 font-mono font-bold text-blue-600 group-hover:text-blue-700">{item.code}</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-800">
+                        <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300">
+                          {item.code}
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-100">
                           Số {item.houseNumber} {item.street}
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold font-mono text-[11px]">
+                          <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold font-mono text-[11px] border border-slate-200 dark:border-slate-700">
                             {item.hamlet}
                           </span>
                         </td>
                         <td className="py-3.5 px-4">{renderResidenceBadge(resType)}</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">
+                        <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                           {item.businessName ? (
                             <div className="flex flex-col">
-                              <span className="text-blue-900 font-extrabold">{item.businessName}</span>
-                              <span className="text-[11px] text-slate-400 font-normal">Chủ: {item.ownerName}</span>
+                              <span className="text-blue-900 dark:text-blue-300 font-extrabold">{item.businessName}</span>
+                              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-normal">Chủ: {item.ownerName}</span>
                             </div>
                           ) : (
                             item.ownerName
                           )}
                         </td>
-                        <td className="py-3.5 px-4 font-mono text-slate-600">{item.ownerPhone}</td>
+                        <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-slate-400">{item.ownerPhone}</td>
                         <td className="py-3.5 px-4">
                           {item.type === 'business' ? (
-                            <span className="inline-flex items-center gap-1 text-blue-700 font-semibold">
+                            <span className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-400 font-semibold">
                               <Store className="w-3.5 h-3.5" />
                               Cơ sở KD
                             </span>
                           ) : item.type === 'special_monitoring' ? (
-                            <span className="inline-flex items-center gap-1 text-rose-700 font-semibold">
+                            <span className="inline-flex items-center gap-1 text-rose-700 dark:text-rose-400 font-semibold">
                               <AlertOctagon className="w-3.5 h-3.5" />
                               Chú ý
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-slate-600 font-medium">
-                              <Building className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-400 font-medium">
+                              <Building className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                               Hộ dân
                             </span>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 text-center font-bold text-slate-800">
-                          <span className="px-2 py-0.5 bg-slate-100 rounded-full font-mono">
+                        <td className="py-3.5 px-4 text-center font-bold text-slate-800 dark:text-slate-200">
+                          <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-full font-mono border border-slate-200 dark:border-slate-700">
                             {item.residentsCount} ({item.maleCount}N - {item.femaleCount}F)
                           </span>
                         </td>
@@ -778,7 +812,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                                     onDeleteHousehold(item.id);
                                   }
                                 }}
-                                className="px-2 py-1 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-lg text-[11px] font-bold transition-all duration-150 inline-flex items-center gap-1 cursor-pointer"
+                                className="px-2 py-1 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 dark:hover:bg-rose-600 hover:text-white text-rose-600 dark:text-rose-400 rounded-lg text-[11px] font-bold border border-rose-200 dark:border-rose-900/60 transition-all duration-150 inline-flex items-center gap-1 cursor-pointer"
                                 title="Xóa hộ dân này"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -791,7 +825,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                                 e.stopPropagation();
                                 onSelectHousehold(item);
                               }}
-                              className="px-2.5 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 rounded-lg text-[11px] font-bold transition-all duration-150 inline-flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-[11px] font-bold border border-slate-200 dark:border-slate-700 transition-all duration-150 inline-flex items-center gap-1 cursor-pointer"
                             >
                               <Eye className="w-3 h-3" />
                               <span>Xem chi tiết</span>
@@ -809,12 +843,12 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
 
         {/* Empty state when no households match filters */}
         {filtered.length === 0 && (
-          <div className="py-16 text-center bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+          <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-6 space-y-3">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
               <Search className="w-6 h-6" />
             </div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-800">Không tìm thấy hộ dân hoặc cơ sở phù hợp</h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
+            <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">Không tìm thấy hộ dân hoặc cơ sở phù hợp</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Không có dữ liệu nào khớp với từ khoá tìm kiếm hoặc tiêu chí lọc cư trú đang chọn. Vui lòng thử lại với tiêu chí khác.
             </p>
             <button
@@ -846,7 +880,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               pageSizeOptions={[12, 24, 48, 96]}
               itemLabel="hộ dân & cơ sở"
             />
-            <div className="px-3 flex items-center justify-between text-xs text-slate-400">
+            <div className="px-3 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
               <span>
                 Phụ trách:{' '}
                 {currentUser
@@ -854,7 +888,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                   : 'Cán bộ CSKV phụ trách địa bàn'}
               </span>
               {selectedResidenceType !== 'all' && (
-                <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold border border-blue-200">
+                <span className="text-[11px] px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-800">
                   Lọc cư trú: {selectedResidenceType}
                 </span>
               )}

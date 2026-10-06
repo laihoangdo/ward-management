@@ -1,6 +1,28 @@
 import React, { useState } from 'react';
-import { X, Plus, Building, Store, AlertOctagon, CheckCircle2 } from 'lucide-react';
+import { X, Plus, Building, Store, AlertOctagon, CheckCircle2, MapPin, Home } from 'lucide-react';
 import { HouseholdFacility, ResidenceType } from '../types';
+import { SearchableSelect } from './SearchableSelect';
+
+const BADIEM_STREETS = [
+  'Đường Phan Văn Hớn',
+  'Đường Nguyễn Ảnh Thủ',
+  'Đường Bà Điểm 4',
+  'Đường Bà Điểm 5',
+  'Đường Bà Điểm 6',
+  'Đường Bà Điểm 7',
+  'Đường Bà Điểm 8',
+  'Đường Bà Điểm 12',
+  'Đường Hưng Lân',
+  'Đường Đông Lân - Hưng Lân',
+  'Đường Quốc Lộ 1A',
+  'Đường Quốc Lộ 22',
+  'Đường Song Hành QL 22',
+  'Đường Dương Công Khi',
+  'Đường Nguyễn Thị Huê',
+  'Đường Nguyễn Thị Thử',
+];
+
+const BADIEM_HAMLETS = ['Ấp Bắc Lân', 'Ấp Nam Lân', 'Ấp Tây Lân', 'Ấp Đông Lân', 'Ấp Hậu Lân', 'Ấp Tiền Lân'];
 
 interface AddHouseholdModalProps {
   isOpen: boolean;
@@ -99,41 +121,30 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Tuyến đường</label>
-              <select
+              <SearchableSelect
+                label="Tuyến đường"
                 value={street}
-                onChange={e => setStreet(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 font-semibold"
-              >
-                <option value="Đường Phan Văn Hớn">Đường Phan Văn Hớn</option>
-                <option value="Đường Nguyễn Ảnh Thủ">Đường Nguyễn Ảnh Thủ</option>
-                <option value="Đường Bà Điểm 4">Đường Bà Điểm 4</option>
-                <option value="Đường Bà Điểm 5">Đường Bà Điểm 5</option>
-                <option value="Đường Bà Điểm 6">Đường Bà Điểm 6</option>
-                <option value="Đường Bà Điểm 7">Đường Bà Điểm 7</option>
-                <option value="Đường Bà Điểm 8">Đường Bà Điểm 8</option>
-                <option value="Đường Bà Điểm 12">Đường Bà Điểm 12</option>
-                <option value="Đường Hưng Lân">Đường Hưng Lân</option>
-                <option value="Đường Quốc Lộ 1A">Đường Quốc Lộ 1A</option>
-                <option value="Đường Quốc Lộ 22">Đường Quốc Lộ 22</option>
-              </select>
+                onChange={val => setStreet(val)}
+                options={BADIEM_STREETS}
+                placeholder="Chọn hoặc tìm tuyến đường..."
+                searchPlaceholder="Tìm kiếm tuyến đường (VD: Phan Văn Hớn, QL 22...)"
+                icon={<MapPin className="w-3.5 h-3.5 text-blue-500" />}
+                required
+                allowCustom
+              />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Khu vực ấp (Xã Bà Điểm)</label>
-              <select
+              <SearchableSelect
+                label="Khu vực ấp (Xã Bà Điểm)"
                 value={hamlet}
-                onChange={e => {
-                  setHamlet(e.target.value);
-                }}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 font-bold text-blue-700"
-              >
-                <option value="Ấp Bắc Lân">Ấp Bắc Lân</option>
-                <option value="Ấp Nam Lân">Ấp Nam Lân</option>
-                <option value="Ấp Tây Lân">Ấp Tây Lân</option>
-                <option value="Ấp Đông Lân">Ấp Đông Lân</option>
-                <option value="Ấp Hậu Lân">Ấp Hậu Lân</option>
-                <option value="Ấp Tiền Lân">Ấp Tiền Lân</option>
-              </select>
+                onChange={val => setHamlet(val)}
+                options={BADIEM_HAMLETS}
+                placeholder="Chọn hoặc tìm khu vực ấp..."
+                searchPlaceholder="Tìm kiếm ấp (VD: Bắc Lân, Nam Lân...)"
+                icon={<Home className="w-3.5 h-3.5 text-blue-500" />}
+                required
+                allowCustom
+              />
             </div>
           </div>
 

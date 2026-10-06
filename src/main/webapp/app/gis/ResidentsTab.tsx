@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { HouseholdFacility, Resident, ResidenceType, AppUser } from './types';
 import { getEffectiveResidentsList } from './utils/residentRosterUtils';
+import { HouseholdSearchSelect } from './HouseholdSearchSelect';
 
 export interface ResidentRecord extends Resident {
   householdId: string;
@@ -1341,23 +1342,16 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             </div>
 
             <form onSubmit={handleSaveAddResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-              {/* Chọn Hộ Dân */}
+              {/* Chọn Hộ Dân Tiếp Nhận với tìm kiếm tối ưu */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Chọn Hộ Dân Tiếp Nhận <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  value={formHouseholdId}
-                  onChange={e => setFormHouseholdId(e.target.value)}
+                <HouseholdSearchSelect
+                  households={effectiveHouseholds}
+                  selectedId={formHouseholdId}
+                  onSelect={id => setFormHouseholdId(id)}
+                  accentColor="blue"
+                  label="Chọn Hộ Dân Tiếp Nhận"
                   required
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                >
-                  {effectiveHouseholds.map(h => (
-                    <option key={h.id} value={h.id}>
-                      [{h.code}] {h.houseNumber} {h.street} — Chủ hộ: {h.ownerName} ({h.hamlet})
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* Họ tên & Giới tính */}
@@ -1550,22 +1544,16 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             </div>
 
             <form onSubmit={handleSaveEditResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-              {/* Chọn Hộ Dân */}
+              {/* Chọn Hộ Dân Cư Trú với tìm kiếm tối ưu */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Hộ Dân Cư Trú (Có thể chuyển sang hộ khác)
-                </label>
-                <select
-                  value={formHouseholdId}
-                  onChange={e => setFormHouseholdId(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
-                >
-                  {effectiveHouseholds.map(h => (
-                    <option key={h.id} value={h.id}>
-                      [{h.code}] {h.houseNumber} {h.street} — Chủ hộ: {h.ownerName} ({h.hamlet})
-                    </option>
-                  ))}
-                </select>
+                <HouseholdSearchSelect
+                  households={effectiveHouseholds}
+                  selectedId={formHouseholdId}
+                  onSelect={id => setFormHouseholdId(id)}
+                  accentColor="amber"
+                  label="Hộ Dân Cư Trú (Có thể chuyển sang hộ khác)"
+                  required
+                />
               </div>
 
               {/* Họ tên & Giới tính */}
