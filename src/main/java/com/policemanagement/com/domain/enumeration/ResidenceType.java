@@ -6,6 +6,7 @@ package com.policemanagement.com.domain.enumeration;
 public enum ResidenceType {
     PERMANENT,
     TEMPORARY,
+    STAY,
     STAY_AWAY,
     UNVERIFIED,
 }

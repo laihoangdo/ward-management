@@ -23,6 +23,7 @@ import {
 import { HouseholdFacility, InspectionPhoto, OcrExtractedData, Resident } from '../types';
 import { updateHouseholdDataInFirestore, addInspectionPhotoToHousehold } from '../services/firestoreService';
 import { encryptCccd, maskCccd } from '../utils/cryptoUtils';
+import { scanDocument } from '../services/ocrService';
 
 interface OcrScanModalProps {
   isOpen: boolean;
@@ -33,7 +34,10 @@ interface OcrScanModalProps {
 }
 
 export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, officerName, onClose, onHouseholdUpdated }) => {
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const cameraRequestRef = useRef(0);
+  const scanControllerRef = useRef<AbortController | null>(null);
+  const [ocrProgress, setOcrProgress] = useState(0);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -45,7 +49,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
   // OCR Processing state
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [extractedData, setExtractedData] = useState<OcrExtractedData | null>(null);
-  const [saveAsInspectionPhoto, setSaveAsInspectionPhoto] = useState<boolean>(true);
+  const [saveAsInspectionPhoto, setSaveAsInspectionPhoto] = useState<boolean>(false);
   const [applyMode, setApplyMode] = useState<'add_resident' | 'update_owner' | 'update_business'>('add_resident');
   const [relationshipWithHead, setRelationshipWithHead] = useState<string>('Thành viên cư trú');
   const [residenceType, setResidenceType] = useState<'Thường trú' | 'Tạm trú' | 'Lưu trú'>('Thường trú');
@@ -59,15 +63,15 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
 
   // Helper to stop camera stream
   const stopStream = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
+    cameraRequestRef.current++;
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
   };
 
   // Start camera
   const startCamera = async (mode: 'environment' | 'user') => {
     stopStream();
+    const requestId = cameraRequestRef.current;
     setErrorMessage(null);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -87,13 +91,18 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      setStream(mediaStream);
+      if (requestId !== cameraRequestRef.current) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      streamRef.current = mediaStream;
       setHasPermission(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
     } catch (err: any) {
+      if (requestId !== cameraRequestRef.current) return;
       console.warn('Camera access issue:', err);
       setHasPermission(false);
       setErrorMessage('Không thể mở Camera. Vui lòng cấp quyền máy ảnh trên trình duyệt hoặc tải ảnh từ thư viện.');
@@ -103,6 +112,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
   // Lifecycle
   useEffect(() => {
     if (isOpen) {
+      setIsProcessing(false);
       setSelectedImage(null);
       setExtractedData(null);
       setSaveSuccess(false);
@@ -112,6 +122,8 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
       stopStream();
     }
     return () => {
+      scanControllerRef.current?.abort();
+      scanControllerRef.current = null;
       stopStream();
     };
   }, [isOpen]);
@@ -153,6 +165,10 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setErrorMessage('Vui lòng chọn ảnh PNG, JPEG hoặc WebP dưới 10 MB.');
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = event => {
@@ -173,48 +189,38 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
     runOcrExtraction(photoUrl);
   };
 
-  // Call OCR API backend
+  // Recognize locally; closing the modal cancels the worker and discards stale results.
   const runOcrExtraction = async (imageData: string) => {
+    scanControllerRef.current?.abort();
+    const controller = new AbortController();
+    scanControllerRef.current = controller;
     setIsProcessing(true);
+    setOcrProgress(0);
     setErrorMessage(null);
-
+    const timeout = window.setTimeout(() => controller.abort(), 120000);
     try {
-      const res = await fetch('/api/ocr/scan', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: imageData,
-          documentType: docTypeMode,
-          hint: `Hộ ${household.code}, chủ hộ hiện tại: ${household.ownerName}, cơ sở: ${household.businessName || 'Hộ gia đình'}`,
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Không thể trích xuất dữ liệu từ ảnh.');
-      }
-
-      const data: OcrExtractedData = json.data;
+      const data = await scanDocument(imageData, docTypeMode, controller.signal, setOcrProgress);
+      if (controller.signal.aborted) return;
       setExtractedData(data);
-
-      // Auto set suggested apply mode
-      if (data.documentType === 'business_license' || household.type === 'business') {
-        setApplyMode('update_business');
-      } else {
-        setApplyMode('add_resident');
+      setApplyMode(data.documentType === 'business_license' ? 'update_business' : 'add_resident');
+    } catch (error) {
+      if (scanControllerRef.current === controller) {
+        setSelectedImage(null);
+        setErrorMessage(
+          controller.signal.aborted
+            ? 'Đã dừng nhận dạng. Bạn có thể thử lại với ảnh nhỏ và rõ hơn.'
+            : 'Không thể quét OCR: ' + (error instanceof Error ? error.message : 'Lỗi nhận dạng'),
+        );
       }
-    } catch (err: any) {
-      console.error('OCR Extraction error:', err);
-      setErrorMessage('Không thể hoàn tất quét OCR: ' + (err?.message || 'Lỗi kết nối'));
     } finally {
-      setIsProcessing(false);
+      window.clearTimeout(timeout);
+      if (scanControllerRef.current === controller) setIsProcessing(false);
     }
   };
 
   // Retake or reset
   const handleRetake = () => {
+    scanControllerRef.current?.abort();
     setSelectedImage(null);
     setExtractedData(null);
     setSaveSuccess(false);
@@ -225,6 +231,25 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
   // Save to Firestore and update household
   const handleConfirmAndSave = async () => {
     if (!extractedData) return;
+    if (
+      applyMode === 'add_resident' &&
+      (!extractedData.fullName?.trim() ||
+        !extractedData.birthYear ||
+        extractedData.birthYear < 1900 ||
+        extractedData.birthYear > new Date().getFullYear() ||
+        !extractedData.gender)
+    ) {
+      setErrorMessage('Vui lòng kiểm tra và nhập đủ họ tên, năm sinh hợp lệ và giới tính trước khi lưu.');
+      return;
+    }
+    if (applyMode === 'update_owner' && !extractedData.fullName?.trim()) {
+      setErrorMessage('Vui lòng nhập họ tên chủ hộ.');
+      return;
+    }
+    if (applyMode === 'update_business' && !extractedData.businessName?.trim()) {
+      setErrorMessage('Vui lòng nhập tên cơ sở kinh doanh.');
+      return;
+    }
 
     setIsSaving(true);
     setErrorMessage(null);
@@ -237,8 +262,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
 
       if (applyMode === 'add_resident') {
         // Add new resident to household
-        const birthYear =
-          extractedData.birthYear || (extractedData.dateOfBirth ? parseInt(extractedData.dateOfBirth.split('/').pop() || '1995') : 1995);
+        const birthYear = extractedData.birthYear!;
         const isMale = extractedData.gender !== 'Nữ';
         const age = now.getFullYear() - birthYear;
 
@@ -274,8 +298,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             `${household.notes || ''}\n[${timestamp}] Quét OCR thêm nhân khẩu: ${newResident.fullName} (CCCD mã hóa AES-256: ${maskCccd(rawCccd)}).`.trim(),
         };
 
-        await updateHouseholdDataInFirestore(household.id, partialUpdate);
-        updatedHousehold = { ...updatedHousehold, ...partialUpdate };
+        updatedHousehold = await updateHouseholdDataInFirestore(household.id, partialUpdate, household);
       } else if (applyMode === 'update_owner') {
         // Update Household Owner Info
         const partialUpdate: Partial<HouseholdFacility> = {
@@ -284,8 +307,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             `${household.notes || ''}\n[${timestamp}] Cập nhật chủ hộ qua quét OCR CCCD: ${extractedData.fullName} (CCCD: ${extractedData.idCardNumber || 'N/A'}).`.trim(),
         };
 
-        await updateHouseholdDataInFirestore(household.id, partialUpdate);
-        updatedHousehold = { ...updatedHousehold, ...partialUpdate };
+        updatedHousehold = await updateHouseholdDataInFirestore(household.id, partialUpdate, household);
       } else if (applyMode === 'update_business') {
         // Update Business info
         const partialUpdate: Partial<HouseholdFacility> = {
@@ -297,8 +319,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             `${household.notes || ''}\n[${timestamp}] Cập nhật giấy phép kinh doanh qua OCR: ${extractedData.businessName || ''} (MST: ${extractedData.taxCode || 'N/A'}).`.trim(),
         };
 
-        await updateHouseholdDataInFirestore(household.id, partialUpdate);
-        updatedHousehold = { ...updatedHousehold, ...partialUpdate };
+        updatedHousehold = await updateHouseholdDataInFirestore(household.id, partialUpdate, household);
       }
 
       // If user selected to also save the document image to inspection photos
@@ -325,7 +346,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
       setSaveSuccess(true);
     } catch (err: any) {
       console.error('Error saving OCR result:', err);
-      setErrorMessage('Lỗi khi lưu dữ liệu vào Firestore: ' + (err?.message || 'Thử lại sau.'));
+      setErrorMessage('Lỗi khi lưu dữ liệu vào máy chủ: ' + (err?.message || 'Thử lại sau.'));
     } finally {
       setIsSaving(false);
     }
@@ -347,7 +368,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 px-2 py-0.5 rounded">
-                  AI OCR QUÉT TỰ ĐỘNG
+                  OCR TRÊN THIẾT BỊ
                 </span>
                 <span className="text-slate-300 text-xs font-semibold">Hộ {household.code}</span>
               </div>
@@ -560,7 +581,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-800 dark:text-white">Đang phân tích hình ảnh qua AI OCR...</h4>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-white">Đang nhận dạng trên thiết bị: {ocrProgress}%</h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
                   Hệ thống đang trích xuất họ tên, số định danh, ngày cấp, địa chỉ cư trú hoặc thông tin giấy phép kinh doanh.
                 </p>
@@ -569,6 +590,13 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
           ) : extractedData ? (
             /* STEP 3: REVIEW & EDIT EXTRACTED DATA */
             <div className="space-y-4 animate-in fade-in duration-150">
+              <p className="text-xs text-slate-500">
+                Độ tin cậy OCR: {Math.round(extractedData.confidence || 0)}%. Kiểm tra từng trường trước khi lưu.
+              </p>
+              <details className="text-xs">
+                <summary>Xem văn bản nhận dạng gốc</summary>
+                <pre className="whitespace-pre-wrap p-2">{extractedData.rawText}</pre>
+              </details>
               {/* Image Preview & Document Type Detected Badge */}
               <div className="flex flex-col sm:flex-row gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="relative w-full sm:w-36 h-28 bg-slate-900 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
@@ -589,7 +617,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                         ? '📄 Giấy phép / Đăng ký kinh doanh'
                         : '🪪 Căn cước công dân (CCCD / CMND)'}
                     </span>
-                    <span className="text-[11px] text-slate-500 font-mono">Phát hiện chính xác</span>
+                    <span className="text-[11px] text-slate-500 font-mono">Cần kiểm tra lại</span>
                   </div>
 
                   <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -713,7 +741,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                         value={extractedData.dateOfBirth || ''}
                         onChange={e => {
                           const val = e.target.value;
-                          const year = parseInt(val.split('/').pop() || '1995') || 1995;
+                          const year = /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(val) ? Number(val.split('/')[2]) : undefined;
                           setExtractedData({ ...extractedData, dateOfBirth: val, birthYear: year });
                         }}
                         className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white"
@@ -723,10 +751,11 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Giới tính:</label>
                       <select
-                        value={extractedData.gender || 'Nam'}
+                        value={extractedData.gender || ''}
                         onChange={e => setExtractedData({ ...extractedData, gender: e.target.value as 'Nam' | 'Nữ' })}
                         className="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-white"
                       >
+                        <option value="">Chọn giới tính</option>
                         <option value="Nam">Nam</option>
                         <option value="Nữ">Nữ</option>
                       </select>
@@ -794,7 +823,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   <span>Đồng thời lưu ảnh chụp giấy tờ này vào mục Ảnh kiểm tra của hộ</span>
                 </label>
                 <span className="text-[10px] text-blue-700 dark:text-blue-300 font-bold bg-blue-100 dark:bg-blue-900/60 px-2 py-0.5 rounded">
-                  Minh chứng Firestore
+                  Lưu trên thiết bị
                 </span>
               </div>
             </div>
@@ -826,7 +855,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
               </button>
 
               <button
-                id="btn-save-ocr-to-firestore"
+                id="btn-save-ocr"
                 type="button"
                 onClick={handleConfirmAndSave}
                 disabled={isSaving}
@@ -835,7 +864,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                 {isSaving ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Đang lưu vào Firestore...</span>
+                    <span>Đang lưu vào máy chủ...</span>
                   </>
                 ) : (
                   <>

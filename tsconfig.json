@@ -12,7 +12,7 @@
     "rootDir": "./src/main/webapp/app",
     "outDir": "target/classes/static/app",
     "lib": ["dom", "es2024"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "allowJs": true,
     "checkJs": false,
     "paths": {
@@ -21,6 +21,5 @@
     "importHelpers": true
   },
   "include": ["src/main/webapp/app"],
-  "exclude": ["node_modules", "**/*.spec.ts", "**/*.spec.tsx", "vitest.config.ts"],
-  "references": [{ "path": "./tsconfig.vitest.json" }]
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.spec.tsx", "vitest.config.ts"]
 }

@@ -65,8 +65,8 @@ export const SuperAdminAccessGuard: React.FC<SuperAdminAccessGuardProps> = ({
             </li>
           </ul>
           <p className="text-xs text-amber-300/90 pt-1">
-            ⚠️ Để thao tác các tính năng trên, bạn cần đăng nhập với tài khoản <strong>Super Admin (Đại tá Trần Quốc Huy)</strong> hoặc
-            email quản trị viên tối cao.
+            ⚠️ Để thao tác các tính năng trên, bạn cần đăng nhập với tài khoản <strong>Super Admin</strong> hoặc email quản trị viên tối
+            cao.
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export const SuperAdminAccessGuard: React.FC<SuperAdminAccessGuardProps> = ({
             className="py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-red-900/40 flex items-center justify-center gap-2 transition cursor-pointer"
           >
             <Shield className="w-4 h-4" />
-            Chuyển Sang Super Admin (1-Click)
+            Đăng nhập bằng tài khoản quản trị
             <ArrowRight className="w-4 h-4" />
           </button>
 

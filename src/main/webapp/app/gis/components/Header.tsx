@@ -12,7 +12,7 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onToggleMobileSidebar?: () => void;
-  isFirestoreConnected?: boolean;
+  backendStatus?: 'checking' | 'online' | 'offline';
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   onTabChange?: (tab: NavigationTab) => void;
@@ -28,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   onToggleMobileSidebar,
-  isFirestoreConnected = true,
+  backendStatus = 'checking',
   theme = 'light',
   onToggleTheme,
   onTabChange,
@@ -174,8 +174,16 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Database & Cloud status badge */}
         <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-[11px] font-medium">
-          <span className={`w-2 h-2 rounded-full ${isFirestoreConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'} shrink-0`} />
-          <span>Firestore DB</span>
+          <span
+            className={`w-2 h-2 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'} shrink-0`}
+          />
+          <span>
+            {backendStatus === 'online'
+              ? 'Máy chủ trực tuyến'
+              : backendStatus === 'offline'
+                ? 'Mất kết nối máy chủ'
+                : 'Đang kiểm tra máy chủ'}
+          </span>
         </div>
 
         {/* Quick Nav: Residents Shortcut */}

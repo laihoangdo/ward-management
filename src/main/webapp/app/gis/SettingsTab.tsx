@@ -15,7 +15,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   officer,
   onUpdateOfficer,
   isFirestoreConnected = true,
-  backendStatus = 'online',
+  backendStatus = 'checking',
   theme = 'light',
   onSetTheme,
 }) => {
@@ -273,14 +273,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                     backendStatus === 'online' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                   }`}
                 >
-                  {backendStatus === 'online' ? '● Backend Online' : '○ Đang kết nối'}
+                  {backendStatus === 'online' ? '● Backend Online' : backendStatus === 'offline' ? '○ Mất kết nối' : '○ Đang kiểm tra'}
                 </span>
               </div>
               <div className="text-[11px] text-slate-600 flex justify-between">
                 <span>Hỗ trợ hệ cơ sở dữ liệu:</span>
                 <span className="font-bold text-emerald-600 flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  PostgreSQL + PostGIS (Hỗ trợ DATABASE_URL) & Firestore
+                  PostgreSQL qua API Spring Boot
                 </span>
               </div>
               <div className="text-[11px] text-slate-600 flex justify-between">

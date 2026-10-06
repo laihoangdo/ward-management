@@ -19,6 +19,25 @@ const config = defineConfig({
     viteStaticCopy({
       targets: [
         {
+          src: normalizePath(fileURLToPath(new URL('./node_modules/tesseract.js/dist/worker.min.js', import.meta.url))),
+          dest: 'ocr',
+          rename: { stripBase: true },
+        },
+        {
+          src: normalizePath(fileURLToPath(new URL('./node_modules/tesseract.js-core/tesseract-core*', import.meta.url))),
+          dest: 'ocr/core',
+          rename: { stripBase: true },
+        },
+        {
+          src: ['eng', 'vie'].map(lang =>
+            normalizePath(
+              fileURLToPath(new URL(`./node_modules/@tesseract.js-data/${lang}/4.0.0_best_int/${lang}.traineddata.gz`, import.meta.url)),
+            ),
+          ),
+          dest: 'ocr/lang',
+          rename: { stripBase: true },
+        },
+        {
           src: [
             `${normalizePath(swaggerUiPath)}/*.{js,css,html,png}`,
             `!${normalizePath(swaggerUiPath)}/**/index.html`,

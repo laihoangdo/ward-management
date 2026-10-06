@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useAppSelector } from 'app/config/store';
+import { mapAccountToGisUser, logoutBackendSession } from './services/backendSession';
 import './index.css';
 import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, AlertTriangle, Database, CloudCheck, MapPin } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
@@ -60,9 +62,6 @@ import {
   checkBackendHealth,
 } from './services/firestoreService';
 import {
-  getStoredUserSession,
-  saveUserSession,
-  clearUserSession,
   subscribeUsers,
   subscribeAllowedEmails,
   subscribeDynamicMenus,
@@ -77,8 +76,25 @@ import { SuperAdminAccessGuard } from './components/SuperAdminAccessGuard';
 import { SubAdminDelegationTab } from './components/SubAdminDelegationTab';
 
 export default function App() {
-  // Current Authenticated User (Session backed by localStorage & Firestore)
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => getStoredUserSession());
+  const { account, isAuthenticated, sessionHasBeenFetched } = useAppSelector(state => state.authentication);
+  const currentUser = useMemo(() => (isAuthenticated ? mapAccountToGisUser(account) : null), [account, isAuthenticated]);
+  if (!sessionHasBeenFetched)
+    return (
+      <div role="status" className="p-8">
+        Đang xác thực phiên đăng nhập...
+      </div>
+    );
+  if (!isAuthenticated) return <LoginScreen />;
+  if (!currentUser)
+    return (
+      <div role="alert" className="p-8">
+        Tài khoản chưa được cấp quyền truy cập GIS.
+      </div>
+    );
+  return <AuthenticatedDashboard key={currentUser.id} currentUser={currentUser} />;
+}
+
+function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const [usersList, setUsersList] = useState<AppUser[]>(INITIAL_USERS);
   const [allowedEmails, setAllowedEmails] = useState<AllowedEmailEntry[]>(INITIAL_ALLOWED_EMAILS);
   const [dynamicMenus, setDynamicMenus] = useState<DynamicMenuItemConfig[]>(INITIAL_DYNAMIC_MENUS);
@@ -93,7 +109,6 @@ export default function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Connection & Backend status
-  const [isFirestoreConnected, setIsFirestoreConnected] = useState<boolean>(true);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
   // Mobile sidebar drawer state
@@ -222,18 +237,15 @@ export default function App() {
     let unsubscribeOfficer: () => void = () => {};
     let unsubscribeAuditLogs: () => void = () => {};
 
-    // 1. Check Express backend health
-    checkBackendHealth()
-      .then(res => {
-        if (res.status === 'ok') {
-          setBackendStatus('online');
-        } else {
-          setBackendStatus('online');
-        }
-      })
-      .catch(() => {
-        setBackendStatus('online');
-      });
+    let cancelled = false;
+    const refreshHealth = async () => {
+      const result = await checkBackendHealth();
+      if (!cancelled) {
+        setBackendStatus(result.status === 'ok' ? 'online' : 'offline');
+      }
+    };
+    void refreshHealth();
+    const healthTimer = window.setInterval(refreshHealth, 30000);
 
     // 1. Tải toàn bộ dữ liệu hộ dân & nhân khẩu thực tế từ PostgreSQL
     fetchCompleteHouseholdsFromBackend()
@@ -242,7 +254,6 @@ export default function App() {
           setHouseholds(realHouseholds);
         }
         setIsLoading(false);
-        setBackendStatus('online');
       })
       .catch(err => {
         console.warn('Lỗi khi tải dữ liệu từ PostgreSQL:', err);
@@ -282,15 +293,6 @@ export default function App() {
         console.warn('Lỗi khi tải cảnh báo an ninh:', err);
       });
 
-    // 5. Khởi tạo Firestore nếu còn dùng cho phân quyền
-    seedInitialFirestoreData()
-      .then(() => {
-        setIsFirestoreConnected(true);
-      })
-      .catch(err => {
-        console.warn('Firestore initial check notice:', err);
-      });
-
     unsubscribeOfficer = subscribeOfficerProfile(data => {
       if (data) {
         setOfficer(data);
@@ -318,6 +320,8 @@ export default function App() {
     });
 
     return () => {
+      cancelled = true;
+      window.clearInterval(healthTimer);
       unsubscribeHouseholds();
       unsubscribeDocuments();
       unsubscribeOfficer();
@@ -348,16 +352,14 @@ export default function App() {
   }, [currentUser]);
 
   // Session actions
-  const handleLogout = () => {
-    clearUserSession();
-    setCurrentUser(null);
-    showToast('Đã đăng xuất an toàn khỏi hệ thống quản lý địa bàn.');
+  const handleLogout = async () => {
+    try {
+      await logoutBackendSession();
+    } catch {
+      showToast('Không thể đăng xuất trên máy chủ. Vui lòng thử lại.');
+    }
   };
-
-  const handleSwitchAccount = () => {
-    clearUserSession();
-    setCurrentUser(null);
-  };
+  const handleSwitchAccount = handleLogout;
 
   const warningCount = households.filter(h => h.status === 'warning').length;
 
@@ -904,22 +906,6 @@ export default function App() {
     });
   }, [scopedHouseholds, searchQuery]);
 
-  // If not logged in, render the secure LoginScreen with Google SSO & Whitelist checks
-  if (!currentUser) {
-    return (
-      <LoginScreen
-        usersList={usersList}
-        allowedEmailsList={allowedEmails}
-        onLoginSuccess={user => {
-          saveUserSession(user);
-          setCurrentUser(user);
-          showToast(`Đăng nhập thành công: ${user.rank} ${user.fullName}`);
-        }}
-        onShowToast={showToast}
-      />
-    );
-  }
-
   return (
     <div
       id="__page-root"
@@ -928,6 +914,7 @@ export default function App() {
       {/* Left Sidebar (Desktop + Mobile Drawer) */}
       {!isMapFullscreen && (
         <Sidebar
+          backendStatus={backendStatus}
           activeTab={activeTab}
           onTabChange={tab => {
             if (isMapFullscreen) setIsMapFullscreen(false);
@@ -957,7 +944,7 @@ export default function App() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
-            isFirestoreConnected={isFirestoreConnected}
+            backendStatus={backendStatus}
             theme={theme}
             onToggleTheme={handleToggleTheme}
             onTabChange={tab => {
@@ -1171,12 +1158,7 @@ export default function App() {
             ) : (
               <SuperAdminAccessGuard
                 currentUser={currentUser}
-                onSwitchToSuperAdmin={() => {
-                  const superAdminUser = usersList.find(u => u.role === 'superadmin') || INITIAL_USERS[0];
-                  saveUserSession(superAdminUser);
-                  setCurrentUser(superAdminUser);
-                  showToast(`Đã chuyển sang tài khoản Super Admin: ${superAdminUser.rank} ${superAdminUser.fullName}`);
-                }}
+                onSwitchToSuperAdmin={handleSwitchAccount}
                 onSwitchAccount={handleSwitchAccount}
                 onBackToOverview={() => setActiveTab('overview')}
               />
@@ -1186,7 +1168,6 @@ export default function App() {
             <SettingsTab
               officer={officer}
               onUpdateOfficer={handleUpdateOfficer}
-              isFirestoreConnected={isFirestoreConnected}
               backendStatus={backendStatus}
               theme={theme}
               onSetTheme={handleSetTheme}

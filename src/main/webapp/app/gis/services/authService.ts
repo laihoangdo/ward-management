@@ -1,5 +1,3 @@
-import { signInWithPopup, signOut, User as FirebaseUser } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
 import {
   AppUser,
   AllowedEmailEntry,
@@ -20,7 +18,6 @@ import {
   INITIAL_BLACKLISTED_IPS,
 } from '../data/initialAuthData';
 import { addAuditLogInFirestore } from './firestoreService';
-import { createJwtToken } from '../utils/cryptoUtils';
 
 // Local storage keys for persistent offline RBAC & Auth caching
 const USERS_STORAGE_KEY = 'cskv_app_users';
@@ -29,7 +26,6 @@ const DYNAMIC_MENUS_STORAGE_KEY = 'cskv_dynamic_menus';
 const HCM_UNITS_STORAGE_KEY = 'cskv_hcm_admin_units';
 const SECURITY_ALERTS_STORAGE_KEY = 'cskv_security_alerts';
 const BLACKLISTED_IPS_STORAGE_KEY = 'cskv_blacklisted_ips';
-const SESSION_STORAGE_KEY = 'cskv_auth_session_user';
 
 // Event emitter for local pub-sub reactivity
 const authEmitter = new EventTarget();
@@ -52,31 +48,6 @@ function setLocalData<T>(key: string, data: T[], eventName: string): void {
     console.warn(`Could not save ${key} locally:`, e);
   }
 }
-
-export function getStoredUserSession(): AppUser | null {
-  try {
-    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as AppUser;
-  } catch {
-    return null;
-  }
-}
-
-export function setStoredUserSession(user: AppUser | null) {
-  try {
-    if (user) {
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(SESSION_STORAGE_KEY);
-    }
-  } catch (e) {
-    console.warn('Could not update session cache:', e);
-  }
-}
-
-export const saveUserSession = setStoredUserSession;
-export const clearUserSession = logoutUser;
 
 /**
  * Seeds initial RBAC, Allowed Emails, Dynamic Menus, and HCM Admin Units locally if empty
@@ -366,7 +337,7 @@ export async function resolveSecurityAlert(alertId: string, officer: AppUser, no
   const timestampStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
   const officerSignature = `${officer.rank} ${officer.fullName} (ID: ${officer.id}, Số hiệu: ${officer.badgeNumber})`;
 
-  const list = getLocalData<SecurityAlert>(SECURITY_ALERTS_KEY, INITIAL_SECURITY_ALERTS);
+  const list = getLocalData<SecurityAlert>(SECURITY_ALERTS_STORAGE_KEY, INITIAL_SECURITY_ALERTS);
   const updated = list.map(item => {
     if (item.id === alertId) {
       return {
@@ -379,7 +350,7 @@ export async function resolveSecurityAlert(alertId: string, officer: AppUser, no
     }
     return item;
   });
-  setLocalData(SECURITY_ALERTS_KEY, updated, 'alerts-updated');
+  setLocalData(SECURITY_ALERTS_STORAGE_KEY, updated, 'alerts-updated');
 
   // Mandatory requirement: Automatically create system audit log
   const auditLog: AuditLogEntry = {
@@ -426,8 +397,8 @@ export async function createSecurityAlert(
     resolved: false,
   };
 
-  const list = getLocalData<SecurityAlert>(SECURITY_ALERTS_KEY, INITIAL_SECURITY_ALERTS);
-  setLocalData(SECURITY_ALERTS_KEY, [newAlert, ...list], 'alerts-updated');
+  const list = getLocalData<SecurityAlert>(SECURITY_ALERTS_STORAGE_KEY, INITIAL_SECURITY_ALERTS);
+  setLocalData(SECURITY_ALERTS_STORAGE_KEY, [newAlert, ...list], 'alerts-updated');
 
   return newAlert;
 }
@@ -456,193 +427,6 @@ export async function logSecurityAlert(alert: {
     targetResource: 'Database / API',
     adminEmailTarget: alert.adminEmailTarget || 'laihoangdo0506@gmail.com',
   });
-}
-
-/**
- * Login with username & password
- */
-export async function loginWithCredentials(
-  username: string,
-  pass: string,
-  usersList: AppUser[],
-): Promise<{ success: boolean; user?: AppUser; error?: string }> {
-  const cleanUser = username.trim().toLowerCase();
-  const found = usersList.find(u => u.username.toLowerCase() === cleanUser);
-
-  if (!found) {
-    createSecurityAlert({
-      severity: 'medium',
-      title: 'Đăng nhập tài khoản không tồn tại',
-      details: `Có lượt thử đăng nhập thất bại với tên người dùng không hợp lệ "${cleanUser}".`,
-      sourceIp: '192.168.1.15',
-      attemptedEmailOrUser: cleanUser,
-      targetResource: '/login/credentials',
-      adminEmailTarget: 'laihoangdo0506@gmail.com',
-    }).catch(() => {});
-
-    return {
-      success: false,
-      error: 'Tên đăng nhập không tồn tại trong hệ thống Công an Khu vực.',
-    };
-  }
-
-  if (found.status === 'locked' || found.status === 'suspended') {
-    return {
-      success: false,
-      error: 'Tài khoản này hiện đang bị tạm khóa hoặc đình chỉ công tác bởi Chỉ huy.',
-    };
-  }
-
-  const validPasswords: Record<string, string[]> = {
-    superadmin: ['Admin@2026', 'admin123', '123456'],
-    truong_cax: ['Cax@2026', 'admin123', '123456'],
-    cskv_ap1: ['Ap1@2026', 'cskv123', '123456'],
-    cav_duongpho: ['Cav@2026', 'cav123', '123456'],
-    cskv_namlan: ['Namlan@2026', 'cskv123', '123456'],
-    cav_namlan: ['CavNamlan@2026', 'Namlan@2026', 'cav123', '123456'],
-    cskv_donglan: ['Donglan@2026', 'cskv123', '123456'],
-    cav_donglan: ['CavDonglan@2026', 'Donglan@2026', 'cav123', '123456'],
-    cskv_tienlan: ['Tienlan@2026', 'cskv123', '123456'],
-    cav_tienlan: ['CavTienlan@2026', 'Tienlan@2026', 'cav123', '123456'],
-  };
-
-  const allowed = validPasswords[cleanUser] || ['123456', 'Admin@2026'];
-  if (!allowed.includes(pass) && pass !== '123456') {
-    createSecurityAlert({
-      severity: 'high',
-      title: 'Cảnh báo mật khẩu không chính xác',
-      details: `Đăng nhập không thành công vào tài khoản "${found.fullName} (${found.badgeNumber})". Sai mật khẩu.`,
-      sourceIp: '192.168.1.15',
-      attemptedEmailOrUser: cleanUser,
-      targetResource: '/login/credentials',
-      adminEmailTarget: 'laihoangdo0506@gmail.com',
-    }).catch(() => {});
-
-    return {
-      success: false,
-      error: 'Mật khẩu không chính xác. Vui lòng kiểm tra lại hoặc liên hệ Super Admin.',
-    };
-  }
-
-  // Success
-  const updatedUser: AppUser = {
-    ...found,
-    lastLogin: 'Vừa xong',
-    isOnline: true,
-  };
-
-  // Update in local data
-  const list = getLocalData<AppUser>(USERS_STORAGE_KEY, INITIAL_USERS);
-  const updatedList = list.map(u => (u.id === found.id ? { ...u, lastLogin: new Date().toLocaleString('vi-VN'), isOnline: true } : u));
-  setLocalData(USERS_STORAGE_KEY, updatedList, 'users-updated');
-
-  setStoredUserSession(updatedUser);
-  return { success: true, user: updatedUser };
-}
-
-/**
- * Login with Google & Email Whitelist Verification
- */
-export async function verifyAndLoginGoogleEmail(
-  email: string,
-  allowedEmailsList: AllowedEmailEntry[],
-  usersList: AppUser[],
-): Promise<{ success: boolean; user?: AppUser; error?: string }> {
-  const normalized = email.trim().toLowerCase();
-
-  // Check against Whitelist managed by Super Admin
-  const whitelistEntry = allowedEmailsList.find(item => item.email.toLowerCase() === normalized && item.status === 'active');
-
-  if (!whitelistEntry) {
-    await createSecurityAlert({
-      severity: 'critical',
-      title: 'Phát hiện truy cập Gmail trái phép (Không thuộc Whitelist)',
-      details: `Hộp thư "${email}" cố gắng đăng nhập vào hệ thống An Ninh Địa Bàn nhưng không có trong Danh sách cấp phép của Super Admin. Hệ thống đã chặn truy cập lập tức.`,
-      sourceIp: '113.161.72.19',
-      attemptedEmailOrUser: email,
-      targetResource: '/auth/google-sso-verification',
-      adminEmailTarget: 'laihoangdo0506@gmail.com',
-    });
-
-    return {
-      success: false,
-      error: `Hộp thư "${email}" KHÔNG NẰM TRONG DANH SÁCH ĐƯỢC CẤP PHÉP TRUY CẬP (Whitelist) bởi Super Admin. Thao tác bất thường đã được ghi nhận và gửi cảnh báo tới email Quản trị viên tối cao.`,
-    };
-  }
-
-  // Email is in whitelist! Match with user account or generate authorized profile
-  let matchedUser = usersList.find(u => (u.email && u.email.toLowerCase() === normalized) || u.role === whitelistEntry.role);
-
-  if (!matchedUser) {
-    matchedUser = {
-      id: `USR-GOOGLE-${Date.now()}`,
-      username: normalized.split('@')[0],
-      email: normalized,
-      fullName: whitelistEntry.fullName || 'Cán bộ Công an được cấp phép',
-      role: whitelistEntry.role,
-      rank: whitelistEntry.rank || 'Đại úy',
-      position: whitelistEntry.position || 'Cán bộ phụ trách địa bàn',
-      unit: 'Công an Xã Bà Điểm, Huyện Hóc Môn, TP.HCM',
-      badgeNumber: '284-998',
-      phone: '0908.888.777',
-      assignedWard: whitelistEntry.assignedWard || 'Xã Bà Điểm',
-      assignedHamlets: whitelistEntry.assignedHamlets || ['Ấp Bắc Lân', 'Ấp Nam Lân'],
-      assignedStreets: whitelistEntry.assignedStreets || ['Đường Phan Văn Hớn', 'Đường Nguyễn Thị Sóc'],
-      status: 'active',
-      createdAt: '18/09/2026',
-      lastLogin: 'Vừa xong',
-      isOnline: true,
-    };
-  } else {
-    matchedUser = {
-      ...matchedUser,
-      email: normalized,
-      fullName: whitelistEntry.fullName || matchedUser.fullName,
-      role: whitelistEntry.role || matchedUser.role,
-      lastLogin: 'Vừa xong',
-      isOnline: true,
-    };
-  }
-
-  setStoredUserSession(matchedUser);
-  return { success: true, user: matchedUser };
-}
-
-/**
- * Handle Google SSO Popup with fallback for sandboxed iframes
- */
-export async function loginWithGooglePopup(
-  allowedEmailsList: AllowedEmailEntry[],
-  usersList: AppUser[],
-): Promise<{ success: boolean; user?: AppUser; error?: string; requiresManualSelect?: boolean }> {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const email = result.user.email;
-    if (!email) {
-      return { success: false, error: 'Không lấy được thông tin email từ Google.' };
-    }
-    return await verifyAndLoginGoogleEmail(email, allowedEmailsList, usersList);
-  } catch (err: any) {
-    console.warn('Firebase signInWithPopup error/notice (likely iframe restrictions):', err);
-    return {
-      success: false,
-      requiresManualSelect: true,
-      error:
-        'Trình duyệt hoặc khung nhúng (iFrame) hạn chế mở cửa sổ Popup của Google. Bạn có thể chọn nhanh tài khoản Gmail đã xác thực trong Whitelist bên dưới để tiếp tục.',
-    };
-  }
-}
-
-/**
- * Logout
- */
-export async function logoutUser(): Promise<void> {
-  try {
-    await signOut(auth);
-  } catch (e) {
-    console.warn('Sign out notice:', e);
-  }
-  setStoredUserSession(null);
 }
 
 /**

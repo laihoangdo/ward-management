@@ -32,11 +32,11 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
     status = 'business';
   }
 
-  const residentsCount = Number(dto.residentsCount || 1);
-  const maleCount = Number(dto.maleCount || Math.ceil(residentsCount / 2));
-  const femaleCount = Number(dto.femaleCount || residentsCount - maleCount);
-  const under18Count = Number(dto.under18Count || 0);
-  const above18Count = Number(dto.above18Count || residentsCount - under18Count);
+  const residentsCount = Number(dto.residentsCount ?? 1);
+  const maleCount = Number(dto.maleCount ?? Math.ceil(residentsCount / 2));
+  const femaleCount = Number(dto.femaleCount ?? residentsCount - maleCount);
+  const under18Count = Number(dto.under18Count ?? 0);
+  const above18Count = Number(dto.above18Count ?? residentsCount - under18Count);
 
   return {
     id: idStr,
@@ -111,11 +111,11 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
     type,
     businessName: h.businessName || null,
     businessCategory: h.businessCategory || null,
-    residentsCount: Number(h.residentsCount || 1),
-    maleCount: Number(h.maleCount || 1),
-    femaleCount: Number(h.femaleCount || 0),
-    under18Count: Number(h.under18Count || 0),
-    above18Count: Number(h.above18Count || 1),
+    residentsCount: Number(h.residentsCount ?? 1),
+    maleCount: Number(h.maleCount ?? 1),
+    femaleCount: Number(h.femaleCount ?? 0),
+    under18Count: Number(h.under18Count ?? 0),
+    above18Count: Number(h.above18Count ?? 1),
     status,
     warningMessage: h.warningMessage || null,
     licenseExpiry: h.licenseExpiry || null,
@@ -294,7 +294,9 @@ export async function updateHouseholdInBackend(updatedH: HouseholdFacility): Pro
   }
 
   // 1. Cập nhật thông tin hộ dân
-  const res = await axios.put<IHousehold>(`/api/households/${dto.id}`, dto);
+  const res = await axios.patch<IHousehold>(`/api/households/${dto.id}`, dto, {
+    headers: { 'Content-Type': 'application/merge-patch+json' },
+  });
   const saved = mapDtoToHousehold(res.data);
 
   // 2. Nếu có danh sách residentsList, đồng bộ chính xác vào bảng resident trong PostgreSQL
@@ -324,7 +326,7 @@ export async function updateHouseholdInBackend(updatedH: HouseholdFacility): Pro
             finalResidentsList.push(mapResidentDtoToResident(rRes.data));
           } catch (e) {
             console.warn(`Lỗi khi cập nhật nhân khẩu ${numId}:`, e);
-            finalResidentsList.push(r);
+            throw e;
           }
         } else {
           // Thêm mới nhân khẩu chưa có trong DB
@@ -335,7 +337,7 @@ export async function updateHouseholdInBackend(updatedH: HouseholdFacility): Pro
             finalResidentsList.push(mapResidentDtoToResident(rRes.data));
           } catch (e) {
             console.warn(`Lỗi khi thêm mới nhân khẩu ${r.fullName}:`, e);
-            finalResidentsList.push(r);
+            throw e;
           }
         }
       }
@@ -357,7 +359,7 @@ export async function updateHouseholdInBackend(updatedH: HouseholdFacility): Pro
       saved.femaleCount = finalResidentsList.filter(x => x.gender === 'Nữ').length;
     } catch (syncErr) {
       console.warn('Lỗi khi đồng bộ nhân khẩu với PostgreSQL:', syncErr);
-      saved.residentsList = updatedH.residentsList;
+      throw syncErr;
     }
   } else {
     saved.residentsList = updatedH.residentsList;

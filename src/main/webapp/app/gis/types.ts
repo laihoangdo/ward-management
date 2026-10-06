@@ -225,6 +225,8 @@ export const DEFAULT_OFFICER: OfficerProfile = {
 
 export interface OcrExtractedData {
   documentType: 'cccd' | 'business_license' | 'other';
+  rawText?: string;
+  confidence?: number;
   // CCCD fields
   idCardNumber?: string;
   fullName?: string;

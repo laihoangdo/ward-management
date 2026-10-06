@@ -23,6 +23,7 @@ import { NavigationTab, OfficerProfile, AppUser, DynamicMenuItemConfig } from '.
 import { INITIAL_DYNAMIC_MENUS } from '../data/initialAuthData';
 
 interface SidebarProps {
+  backendStatus?: 'checking' | 'online' | 'offline';
   activeTab: NavigationTab;
   onTabChange: (tab: NavigationTab) => void;
   officer: OfficerProfile;
@@ -36,6 +37,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
+  backendStatus = 'checking',
   activeTab,
   onTabChange,
   officer,
@@ -288,9 +290,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar Footer Status */}
       <div className="p-3 sm:p-4 border-t border-slate-800 bg-[#0a0f1d]/80 text-xs">
         <div className="flex items-center justify-between">
-          <span id="sidebar-status" className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[10px] sm:text-[11px]">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-            Hệ thống an ninh trực tuyến
+          <span
+            id="sidebar-status"
+            className={`flex items-center gap-1.5 ${backendStatus === 'online' ? 'text-emerald-400' : 'text-amber-400'} font-semibold text-[10px] sm:text-[11px]`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full inline-block ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`}
+            ></span>
+            {backendStatus === 'online'
+              ? 'Hệ thống trực tuyến'
+              : backendStatus === 'offline'
+                ? 'Mất kết nối máy chủ'
+                : 'Đang kiểm tra máy chủ'}
           </span>
           <span className="text-[10px] text-slate-400 font-mono">v2.5.0-RBAC</span>
         </div>

@@ -1,5 +1,7 @@
 # Monolithic
 
+Project có dashboard GIS tại `/dashboard`, dùng phiên OAuth2/OIDC của backend và OCR tiếng Việt/Anh chạy cục bộ trong trình duyệt. Xem [hướng dẫn GIS, xác thực và OCR](docs/gis-auth-ocr.md) trước khi chạy hoặc cấu hình quyền truy cập.
+
 This application was generated using JHipster 9.4.0, you can find documentation and help at [https://www.jhipster.tech/documentation-archive/v9.4.0](https://www.jhipster.tech/documentation-archive/v9.4.0).
 
 ## Project Structure

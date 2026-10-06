@@ -33,7 +33,7 @@
       "fieldName": "residenceType",
       "fieldType": "ResidenceType",
       "fieldValidateRules": ["required"],
-      "fieldValues": "PERMANENT,TEMPORARY,STAY_AWAY,UNVERIFIED"
+      "fieldValues": "PERMANENT,TEMPORARY,STAY,STAY_AWAY,UNVERIFIED"
     },
     {
       "fieldName": "temporaryRegisteredAt",

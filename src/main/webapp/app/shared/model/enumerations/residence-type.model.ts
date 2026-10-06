@@ -3,6 +3,8 @@ export enum ResidenceType {
 
   TEMPORARY = 'TEMPORARY',
 
+  STAY = 'STAY',
+
   STAY_AWAY = 'STAY_AWAY',
 
   UNVERIFIED = 'UNVERIFIED',

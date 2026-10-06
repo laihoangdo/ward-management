@@ -24,7 +24,7 @@ const INSPECTION_PHOTOS_PREFIX = 'cskv_inspection_photos_';
  */
 export async function seedInitialFirestoreData(): Promise<boolean> {
   try {
-    const res = await fetch('/management/health');
+    const res = await fetch('/management/health', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
     return res.ok;
   } catch (error) {
     console.warn('Backend service status notice:', error);
@@ -206,7 +206,12 @@ export async function addInspectionPhotoToHousehold(
 /**
  * Update arbitrary household data in PostgreSQL (e.g. from OCR extraction)
  */
-export async function updateHouseholdDataInFirestore(householdId: string, updates: Partial<HouseholdFacility>): Promise<void> {
+export async function updateHouseholdDataInFirestore(
+  householdId: string,
+  updates: Partial<HouseholdFacility>,
+  currentHousehold: HouseholdFacility,
+): Promise<HouseholdFacility> {
+  if (currentHousehold.id !== householdId) throw new Error('Hộ dân không khớp với hồ sơ đang cập nhật.');
   const preparedUpdates: Partial<HouseholdFacility> = { ...updates };
   if (preparedUpdates.residentsList && preparedUpdates.residentsList.length > 0) {
     const encryptedResidents = await Promise.all(
@@ -221,14 +226,12 @@ export async function updateHouseholdDataInFirestore(householdId: string, update
     preparedUpdates.residentsList = encryptedResidents;
   }
 
-  try {
-    // If we have full object or id
-    const fullHousehold = { id: householdId, ...preparedUpdates } as HouseholdFacility;
-    await updateHouseholdInBackend(fullHousehold);
-    serviceEmitter.dispatchEvent(new CustomEvent('households-updated'));
-  } catch (err) {
-    console.warn('Could not update household data in backend:', err);
-  }
+  const fullHousehold = { ...currentHousehold, ...preparedUpdates, id: householdId };
+  // Updating an owner/business must not synchronize (or delete) the resident roster.
+  if (!preparedUpdates.residentsList) delete fullHousehold.residentsList;
+  const saved = await updateHouseholdInBackend(fullHousehold);
+  serviceEmitter.dispatchEvent(new CustomEvent('households-updated'));
+  return { ...currentHousehold, ...fullHousehold, ...saved, residentsList: saved.residentsList ?? currentHousehold.residentsList };
 }
 
 /**
@@ -300,8 +303,8 @@ export async function updateOfficerProfileInFirestore(profile: Partial<OfficerPr
  */
 export async function checkBackendHealth(): Promise<{ status: string; projectId: string; service: string }> {
   try {
-    const res = await fetch('/management/health');
-    if (res.ok) {
+    const res = await fetch('/management/health', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    if (res.ok && (await res.json()).status === 'UP') {
       return {
         status: 'ok',
         projectId: 'police-jhip-postgresql',
@@ -312,7 +315,7 @@ export async function checkBackendHealth(): Promise<{ status: string; projectId:
     console.warn('Backend health check error:', err);
   }
   return {
-    status: 'online',
+    status: 'offline',
     projectId: 'police-jhip-postgresql',
     service: 'Hệ thống Quản lý Dân cư - Công an Xã Bà Điểm',
   };
