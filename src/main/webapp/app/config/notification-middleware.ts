@@ -43,9 +43,14 @@ export default () => next => action => {
       const { response } = error;
       if (response.status === 401) {
         // Ignore, page will be redirected to login.
-      } else if (error.config?.url?.endsWith('api/account') || error.config?.url?.endsWith('api/authenticate')) {
-        // Ignore, authentication status check and authentication are treated differently.
-      } else if (response.status === 0) {
+      } else if (
+        error.config?.url?.endsWith('api/account') ||
+        error.config?.url?.endsWith('api/authenticate') ||
+        error.config?.url?.includes('management/info') ||
+        error.config?.url?.includes('management/health')
+      ) {
+        // Ignore, authentication status check and background probes are treated differently.
+      } else if (response.status === 0 || response.status === 502 || response.status === 503 || response.status === 504) {
         // connection refused, server not reachable
         addErrorAlert({
           message: 'Server not reachable',
