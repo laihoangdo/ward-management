@@ -1,31 +1,23 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
-  MapPin,
   Users,
   Phone,
   Building,
   Store,
   AlertOctagon,
   AlertTriangle,
-  Calendar,
   Edit3,
   Save,
   CheckCircle2,
   FileText,
-  UserCheck,
   Camera,
   Trash2,
-  ZoomIn,
   Image as ImageIcon,
-  Clock,
-  ShieldCheck,
-  Tag,
   ScanLine,
-  Lock,
   Eye,
   EyeOff,
-  RotateCcw,
 } from 'lucide-react';
 import { HouseholdFacility, InspectionPhoto, AppUser } from '../types';
 import { getHouseholdResidenceType, RESIDENCE_TYPE_CONFIG } from '../utils/residenceUtils';
@@ -289,7 +281,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   const photos = household.inspectionPhotos || [];
   const effectiveResidents = useMemo(() => getEffectiveResidentsList(household), [household]);
 
-  return (
+  const content = (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[92vh] flex flex-col">
         {/* Modal Header */}
@@ -948,4 +940,5 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
       )}
     </div>
   );
+  return document.fullscreenElement ? createPortal(content, document.fullscreenElement) : content;
 };

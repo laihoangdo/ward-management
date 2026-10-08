@@ -23,7 +23,7 @@ export const getSession = (): AppThunk => dispatch => {
   dispatch(getAccount());
 };
 
-export const getAccount = createAsyncThunk('authentication/get_account', async () => axios.get<any>('api/account'), {
+export const getAccount = createAsyncThunk('authentication/get_account', async () => axios.get<any>('api/account', { timeout: 12000 }), {
   serializeError: serializeAxiosError,
 });
 

@@ -13,6 +13,14 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
   // Tọa độ Bà Điểm mặc định nếu thiếu
   const lat = typeof dto.latitude === 'number' && !isNaN(dto.latitude) && dto.latitude !== 0 ? dto.latitude : 10.854;
   const lng = typeof dto.longitude === 'number' && !isNaN(dto.longitude) && dto.longitude !== 0 ? dto.longitude : 106.612;
+  const coordinatesEstimated = !(
+    typeof dto.latitude === 'number' &&
+    Number.isFinite(dto.latitude) &&
+    dto.latitude !== 0 &&
+    typeof dto.longitude === 'number' &&
+    Number.isFinite(dto.longitude) &&
+    dto.longitude !== 0
+  );
 
   // Chuyển đổi FacilityType
   let type: 'household' | 'business' | 'special_monitoring' = 'household';
@@ -61,6 +69,7 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
     licenseExpiry: dto.licenseExpiry || undefined,
     licenseType: dto.licenseType || undefined,
     coordinates: [lat, lng],
+    coordinatesEstimated,
     gridPosition: {
       row: Math.floor(index / 10),
       col: index % 10,

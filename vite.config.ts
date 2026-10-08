@@ -67,6 +67,8 @@ const config = defineConfig({
         // Split the vendor code into cacheable chunks instead of one oversized bundle.
         codeSplitting: {
           groups: [
+            { name: 'vendor-maplibre', test: /node_modules[\\/](@maplibre|maplibre-gl|gl-matrix|@mapbox)[\\/]/, priority: 50 },
+            { name: 'vendor-three', test: /node_modules[\\/](three|@types[\\/]three)[\\/]/, priority: 45 },
             { name: 'vendor-react', test: /node_modules[\\/](react|react-dom|scheduler|react-router)[\\/]/, priority: 40 },
             { name: 'vendor-redux', test: /node_modules[\\/](@reduxjs[\\/]toolkit|react-redux|redux|immer|reselect)[\\/]/, priority: 30 },
             { name: 'vendor-bootstrap', test: /node_modules[\\/](react-bootstrap|@restart|bootstrap)[\\/]/, priority: 20 },

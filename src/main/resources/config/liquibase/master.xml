@@ -23,4 +23,6 @@
     <include file="config/liquibase/changelog/20260919110517_added_entity_constraints_Resident.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
+    <include file="config/liquibase/changelog/20261008190000_gis_3d_model.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261008210000_postgis_foundation.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

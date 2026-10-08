@@ -170,6 +170,7 @@ export interface HouseholdFacility {
   licenseExpiry?: string;
   licenseType?: string;
   coordinates: [number, number]; // Latitude, Longitude in An Lac, Binh Tan
+  coordinatesEstimated?: boolean; // True when the backend had no complete coordinate pair.
   gridPosition: {
     row: number;
     col: number;

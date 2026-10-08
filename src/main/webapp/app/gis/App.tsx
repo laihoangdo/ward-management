@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useAppSelector } from 'app/config/store';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useAppDispatch, useAppSelector } from 'app/config/store';
+import { getSession } from 'app/shared/reducers/authentication';
 import { mapAccountToGisUser, logoutBackendSession } from './services/backendSession';
 import './index.css';
 import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, AlertTriangle, Database, CloudCheck, MapPin } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Header } from './components/Header';
 import { OverviewTab } from './components/OverviewTab';
 import { AreaMapTab } from './components/AreaMapTab';
 import { AdvancedMapTab } from './components/AdvancedMapTab';
+const MapLibreAreaMap = React.lazy(() => import('./components/MapLibreAreaMap'));
 import { HouseholdsTab } from './components/HouseholdsTab';
 import { ResidentsTab } from './components/ResidentsTab';
 import { DocumentsTab } from './components/DocumentsTab';
@@ -76,12 +78,23 @@ import { SuperAdminAccessGuard } from './components/SuperAdminAccessGuard';
 import { SubAdminDelegationTab } from './components/SubAdminDelegationTab';
 
 export default function App() {
-  const { account, isAuthenticated, sessionHasBeenFetched } = useAppSelector(state => state.authentication);
+  const dispatch = useAppDispatch();
+  const { account, isAuthenticated, sessionHasBeenFetched, errorMessage } = useAppSelector(state => state.authentication);
   const currentUser = useMemo(() => (isAuthenticated ? mapAccountToGisUser(account) : null), [account, isAuthenticated]);
   if (!sessionHasBeenFetched)
     return (
       <div role="status" className="p-8">
         Đang xác thực phiên đăng nhập...
+      </div>
+    );
+  if (!isAuthenticated && /timeout|network|ECONN|502|503/i.test(errorMessage || ''))
+    return (
+      <div role="alert" className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 p-6 text-center text-white">
+        <h1 className="text-xl font-bold">Không thể kết nối máy chủ</h1>
+        <p>Máy chủ chưa phản hồi yêu cầu xác thực. Vui lòng thử lại sau khi dịch vụ hoạt động.</p>
+        <button type="button" className="rounded bg-blue-600 px-5 py-2 font-semibold" onClick={() => dispatch(getSession())}>
+          Thử kết nối lại
+        </button>
       </div>
     );
   if (!isAuthenticated) return <LoginScreen />;
@@ -102,6 +115,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
 
   const [activeTab, setActiveTab] = useState<NavigationTab>('overview');
+  const [useMapLibre, setUseMapLibre] = useState(false);
   const [households, setHouseholds] = useState<HouseholdFacility[]>([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [officer, setOfficer] = useState<OfficerProfile>(DEFAULT_OFFICER);
@@ -599,7 +613,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       prev.map(h => {
         const item = updates.find(u => u.id === h.id);
         if (item) {
-          return { ...h, coordinates: item.coordinates };
+          return { ...h, coordinates: item.coordinates, coordinatesEstimated: false };
         }
         return h;
       }),
@@ -608,7 +622,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     if (selectedHousehold) {
       const item = updates.find(u => u.id === selectedHousehold.id);
       if (item) {
-        setSelectedHousehold(prev => (prev ? { ...prev, coordinates: item.coordinates } : null));
+        setSelectedHousehold(prev => (prev ? { ...prev, coordinates: item.coordinates, coordinatesEstimated: false } : null));
       }
     }
 
@@ -618,7 +632,11 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       showToast(`Đã lưu thành công tọa độ mới cho ${updates.length} điểm nhà vào PostgreSQL!`);
     } catch (err) {
       console.error('Lỗi khi lưu tọa độ PostgreSQL:', err);
-      showToast(`Đã cập nhật tọa độ thực địa cho ${updates.length} nhà thành công.`);
+      setHouseholds(prev =>
+        prev.map(h => households.find(original => original.id === h.id && updates.some(update => update.id === h.id)) ?? h),
+      );
+      showToast('Không lưu được tọa độ vào PostgreSQL. Vui lòng thử lại.');
+      throw err;
     }
 
     // Record audit log for coordinate change
@@ -1078,18 +1096,45 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           )}
 
           {activeTab === 'advanced-map' && (
-            <AdvancedMapTab
-              households={displayedHouseholds}
-              currentUser={currentUser}
-              onSelectHousehold={setSelectedHousehold}
-              isFullscreen={isMapFullscreen}
-              onToggleFullscreen={handleToggleMapFullscreen}
-              onNavigateTab={tab => {
-                if (isMapFullscreen) setIsMapFullscreen(false);
-                setActiveTab(tab);
-              }}
-              onUpdateCoordinates={handleUpdateCoordinates}
-            />
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setUseMapLibre(value => !value)}
+                  className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
+                >
+                  {useMapLibre ? 'Bản đồ hiện tại' : 'Thử bản đồ MapLibre 2D/3D'}
+                </button>
+              </div>
+              {useMapLibre ? (
+                <Suspense
+                  fallback={
+                    <div role="status" className="p-6">
+                      Đang tải bản đồ 2D/3D...
+                    </div>
+                  }
+                >
+                  <MapLibreAreaMap
+                    households={displayedHouseholds}
+                    onSelectHousehold={setSelectedHousehold}
+                    onUpdateCoordinates={handleUpdateCoordinates}
+                  />
+                </Suspense>
+              ) : (
+                <AdvancedMapTab
+                  households={displayedHouseholds}
+                  currentUser={currentUser}
+                  onSelectHousehold={setSelectedHousehold}
+                  isFullscreen={isMapFullscreen}
+                  onToggleFullscreen={handleToggleMapFullscreen}
+                  onNavigateTab={tab => {
+                    if (isMapFullscreen) setIsMapFullscreen(false);
+                    setActiveTab(tab);
+                  }}
+                  onUpdateCoordinates={handleUpdateCoordinates}
+                />
+              )}
+            </div>
           )}
 
           {activeTab === 'households' && (

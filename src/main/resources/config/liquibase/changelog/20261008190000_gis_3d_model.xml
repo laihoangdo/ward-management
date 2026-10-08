@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261008190000-1" author="codex">
+        <createTable tableName="gis_map">
+            <column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="name" type="varchar(255)"><constraints nullable="false"/></column>
+            <column name="source_map" type="varchar(255)"/>
+            <column name="status" type="varchar(32)"><constraints nullable="false"/></column>
+        </createTable>
+        <createTable tableName="gis_building_type">
+            <column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="code" type="varchar(40)"><constraints nullable="false" unique="true" uniqueConstraintName="ux_gis_building_type_code"/></column>
+            <column name="name" type="varchar(120)"><constraints nullable="false"/></column>
+            <column name="default_height_m" type="double"><constraints nullable="false"/></column>
+            <column name="color" type="varchar(9)"><constraints nullable="false"/></column>
+            <column name="floor_count" type="integer"/>
+        </createTable>
+        <createTable tableName="gis_road">
+            <column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="map_id" type="bigint"/>
+            <column name="external_id" type="varchar(120)"/>
+            <column name="name" type="varchar(255)"/>
+            <column name="road_type" type="varchar(32)"><constraints nullable="false"/></column>
+            <column name="width_m" type="double"/>
+            <column name="status" type="varchar(40)"/>
+            <column name="geometry_geojson" type="${clobType}"><constraints nullable="false"/></column>
+        </createTable>
+        <createTable tableName="gis_building">
+            <column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="map_id" type="bigint"/>
+            <column name="external_id" type="varchar(120)"/>
+            <column name="household_id" type="bigint"/>
+            <column name="area_zone_id" type="bigint"/>
+            <column name="road_id" type="bigint"/>
+            <column name="building_type_id" type="bigint"/>
+            <column name="address" type="varchar(255)"/>
+            <column name="floor_count" type="integer"/>
+            <column name="height_m" type="double"/>
+            <column name="status" type="varchar(40)"/>
+            <column name="footprint_geojson" type="${clobType}"><constraints nullable="false"/></column>
+        </createTable>
+        <createTable tableName="gis_map_layer">
+            <column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="map_id" type="bigint"/>
+            <column name="name" type="varchar(120)"><constraints nullable="false"/></column>
+            <column name="layer_type" type="varchar(40)"><constraints nullable="false"/></column>
+            <column name="visible" type="boolean"><constraints nullable="false"/></column>
+            <column name="style_json" type="${clobType}"/>
+        </createTable>
+        <createTable tableName="gis_map_source">
+            <column name="id" type="bigint" autoIncrement="true"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="map_id" type="bigint"/>
+            <column name="file_name" type="varchar(255)"><constraints nullable="false"/></column>
+            <column name="file_url" type="varchar(1000)"/>
+            <column name="opacity" type="double"/>
+            <column name="scale" type="double"/>
+            <column name="rotation" type="double"/>
+            <column name="position_json" type="${clobType}"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="gis_road" baseColumnNames="map_id" referencedTableName="gis_map" referencedColumnNames="id" constraintName="fk_gis_road_map"/>
+        <addForeignKeyConstraint baseTableName="gis_building" baseColumnNames="map_id" referencedTableName="gis_map" referencedColumnNames="id" constraintName="fk_gis_building_map"/>
+        <addForeignKeyConstraint baseTableName="gis_building" baseColumnNames="household_id" referencedTableName="household" referencedColumnNames="id" constraintName="fk_gis_building_household"/>
+        <addForeignKeyConstraint baseTableName="gis_building" baseColumnNames="area_zone_id" referencedTableName="area_zone" referencedColumnNames="id" constraintName="fk_gis_building_area"/>
+        <addForeignKeyConstraint baseTableName="gis_building" baseColumnNames="road_id" referencedTableName="gis_road" referencedColumnNames="id" constraintName="fk_gis_building_road"/>
+        <addForeignKeyConstraint baseTableName="gis_building" baseColumnNames="building_type_id" referencedTableName="gis_building_type" referencedColumnNames="id" constraintName="fk_gis_building_type"/>
+        <addForeignKeyConstraint baseTableName="gis_map_layer" baseColumnNames="map_id" referencedTableName="gis_map" referencedColumnNames="id" constraintName="fk_gis_layer_map"/>
+        <addForeignKeyConstraint baseTableName="gis_map_source" baseColumnNames="map_id" referencedTableName="gis_map" referencedColumnNames="id" constraintName="fk_gis_source_map"/>
+        <createIndex tableName="gis_building" indexName="ix_gis_building_household"><column name="household_id"/></createIndex>
+        <createIndex tableName="gis_building" indexName="ix_gis_building_area"><column name="area_zone_id"/></createIndex>
+        <createIndex tableName="gis_road" indexName="ix_gis_road_map"><column name="map_id"/></createIndex>
+    </changeSet>
+    <changeSet id="20261008190000-2" author="codex">
+        <insert tableName="gis_building_type"><column name="code" value="grade4"/><column name="name" value="Nhà cấp 4"/><column name="default_height_m" valueNumeric="3.5"/><column name="color" value="#e9c46a"/><column name="floor_count" valueNumeric="1"/></insert>
+        <insert tableName="gis_building_type"><column name="code" value="one"/><column name="name" value="Nhà 1 tầng"/><column name="default_height_m" valueNumeric="4"/><column name="color" value="#65a9db"/><column name="floor_count" valueNumeric="1"/></insert>
+        <insert tableName="gis_building_type"><column name="code" value="two"/><column name="name" value="Nhà 2 tầng"/><column name="default_height_m" valueNumeric="7"/><column name="color" value="#68b884"/><column name="floor_count" valueNumeric="2"/></insert>
+        <insert tableName="gis_building_type"><column name="code" value="three"/><column name="name" value="Nhà 3 tầng"/><column name="default_height_m" valueNumeric="10"/><column name="color" value="#eea25c"/><column name="floor_count" valueNumeric="3"/></insert>
+        <insert tableName="gis_building_type"><column name="code" value="four"/><column name="name" value="Nhà 4 tầng"/><column name="default_height_m" valueNumeric="13"/><column name="color" value="#dc7770"/><column name="floor_count" valueNumeric="4"/></insert>
+        <insert tableName="gis_building_type"><column name="code" value="fivePlus"/><column name="name" value="Nhà 5+ tầng"/><column name="default_height_m" valueNumeric="17"/><column name="color" value="#c46570"/><column name="floor_count" valueNumeric="5"/></insert>
+        <insert tableName="gis_building_type"><column name="code" value="large"/><column name="name" value="Tòa nhà lớn"/><column name="default_height_m" valueNumeric="22"/><column name="color" value="#9c82bd"/><column name="floor_count" valueNumeric="6"/></insert>
+    </changeSet>
+</databaseChangeLog>

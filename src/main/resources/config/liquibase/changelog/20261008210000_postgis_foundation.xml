@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <!-- CONTINUE keeps existing PostgreSQL installations running until the extension package is installed. -->
+    <changeSet id="20261008210000-1" author="codex" dbms="postgresql">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="1">SELECT count(*) FROM pg_available_extensions WHERE name = 'postgis'</sqlCheck>
+        </preConditions>
+        <sql>CREATE EXTENSION IF NOT EXISTS postgis</sql>
+    </changeSet>
+    <changeSet id="20261008210000-2" author="codex" dbms="postgresql">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="1">SELECT count(*) FROM pg_extension WHERE extname = 'postgis'</sqlCheck>
+        </preConditions>
+        <!-- Household latitude/longitude remain the source of truth: existing PATCH calls keep working. -->
+        <sql>
+            ALTER TABLE household ADD COLUMN location_geom geometry(Point, 4326)
+              GENERATED ALWAYS AS (
+                CASE WHEN latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180
+                       AND latitude != 0 AND longitude != 0
+                     THEN ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)
+                     ELSE NULL END
+              ) STORED;
+            CREATE INDEX ix_household_location_geom ON household USING GIST (location_geom);
+            ALTER TABLE gis_building ADD COLUMN footprint_geom geometry(MultiPolygon, 4326);
+            CREATE INDEX ix_gis_building_footprint_geom ON gis_building USING GIST (footprint_geom);
+            ALTER TABLE gis_road ADD COLUMN line_geom geometry(MultiLineString, 4326);
+            CREATE INDEX ix_gis_road_line_geom ON gis_road USING GIST (line_geom);
+        </sql>
+    </changeSet>
+</databaseChangeLog>
