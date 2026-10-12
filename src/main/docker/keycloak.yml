@@ -5,6 +5,7 @@ services:
     image: quay.io/keycloak/keycloak:26.7.4-0
     command: 'start-dev --import-realm'
     volumes:
+      - ./keycloak-themes/territory:/opt/keycloak/themes/territory:ro
       - ./realm-config:/opt/keycloak/data/import
       - ./realm-config/keycloak-health-check.sh:/opt/keycloak/health-check.sh
     environment:

@@ -1,0 +1,240 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "commune_boundary",
+        "name": "Xã Bà Điểm",
+        "district": "Huyện Hóc Môn",
+        "province": "Thành phố Hồ Chí Minh",
+        "area_sqkm": 9.68,
+        "is_outer": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.602, 10.868],
+            [106.618, 10.865],
+            [106.626, 10.858],
+            [106.623, 10.846],
+            [106.615, 10.836],
+            [106.598, 10.838],
+            [106.592, 10.848],
+            [106.595, 10.86],
+            [106.602, 10.868]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "hamlet_boundary",
+        "id": "hamlet-bac-lan",
+        "code": "AP-BL",
+        "name": "Ấp Bắc Lân",
+        "officer": "Đại úy Nguyễn Văn Bình",
+        "phone": "0908.123.456",
+        "householdCount": 520,
+        "populationCount": 1980,
+        "center": [106.605, 10.862]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.602, 10.868],
+            [106.614, 10.865],
+            [106.61, 10.858],
+            [106.598, 10.859],
+            [106.602, 10.868]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "hamlet_boundary",
+        "id": "hamlet-nam-lan",
+        "code": "AP-NL",
+        "name": "Ấp Nam Lân",
+        "officer": "Thượng úy Trần Minh Hoàng",
+        "phone": "0909.234.567",
+        "householdCount": 485,
+        "populationCount": 1740,
+        "center": [106.608, 10.841]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.602, 10.846],
+            [106.616, 10.846],
+            [106.615, 10.836],
+            [106.598, 10.838],
+            [106.602, 10.846]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "hamlet_boundary",
+        "id": "hamlet-tay-lan",
+        "code": "AP-TL",
+        "name": "Ấp Tây Lân",
+        "officer": "Đại úy Lê Hữu Tài",
+        "phone": "0913.345.678",
+        "householdCount": 430,
+        "populationCount": 1560,
+        "center": [106.596, 10.851]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.596, 10.858],
+            [106.604, 10.854],
+            [106.601, 10.845],
+            [106.592, 10.848],
+            [106.596, 10.858]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "hamlet_boundary",
+        "id": "hamlet-dong-lan",
+        "code": "AP-DL",
+        "name": "Ấp Đông Lân",
+        "officer": "Trung tá Phạm Quốc Hùng",
+        "phone": "0903.456.789",
+        "householdCount": 640,
+        "populationCount": 2350,
+        "center": [106.621, 10.856]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.616, 10.863],
+            [106.626, 10.858],
+            [106.622, 10.849],
+            [106.614, 10.851],
+            [106.616, 10.863]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "hamlet_boundary",
+        "id": "hamlet-hau-lan",
+        "code": "AP-HL",
+        "name": "Ấp Hậu Lân",
+        "officer": "Đại úy Đặng Văn Nam",
+        "phone": "0988.567.890",
+        "householdCount": 510,
+        "populationCount": 1890,
+        "center": [106.608, 10.849]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.605, 10.854],
+            [106.614, 10.854],
+            [106.613, 10.845],
+            [106.604, 10.846],
+            [106.605, 10.854]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "hamlet_boundary",
+        "id": "hamlet-tien-lan",
+        "code": "AP-TIL",
+        "name": "Ấp Tiền Lân",
+        "officer": "Thiếu tá Nguyễn Thanh Sơn",
+        "phone": "0977.678.901",
+        "householdCount": 580,
+        "populationCount": 2120,
+        "center": [106.616, 10.852]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.612, 10.856],
+            [106.622, 10.855],
+            [106.619, 10.847],
+            [106.612, 10.848],
+            [106.612, 10.856]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "hamlet_boundary",
+        "id": "hamlet-ap-1",
+        "code": "AP-01",
+        "name": "Ấp 1",
+        "officer": "Đại úy Trần Văn Khoa",
+        "phone": "0932.789.012",
+        "householdCount": 390,
+        "populationCount": 1420,
+        "center": [106.601, 10.863]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.598, 10.867],
+            [106.606, 10.866],
+            [106.604, 10.86],
+            [106.596, 10.861],
+            [106.598, 10.867]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "kind": "hamlet_boundary",
+        "id": "hamlet-ap-2",
+        "code": "AP-02",
+        "name": "Ấp 2",
+        "officer": "Thượng úy Bùi Quốc Dũng",
+        "phone": "0944.890.123",
+        "householdCount": 460,
+        "populationCount": 1680,
+        "center": [106.618, 10.843]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [106.616, 10.848],
+            [106.623, 10.846],
+            [106.62, 10.839],
+            [106.614, 10.841],
+            [106.616, 10.848]
+          ]
+        ]
+      }
+    }
+  ]
+}

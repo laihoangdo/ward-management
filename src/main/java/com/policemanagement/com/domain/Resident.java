@@ -60,7 +60,7 @@ public class Resident implements Serializable {
     private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "residentses", "areaZone" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "residentses", "administrativeHamlet" }, allowSetters = true)
     private Household household;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

@@ -8,7 +8,7 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { OverviewTab } from './components/OverviewTab';
 import { AreaMapTab } from './components/AreaMapTab';
-import { AdvancedMapTab } from './components/AdvancedMapTab';
+import { Field3DMapTab } from './components/Field3DMapTab';
 const MapLibreAreaMap = React.lazy(() => import('./components/MapLibreAreaMap'));
 import { HouseholdsTab } from './components/HouseholdsTab';
 import { ResidentsTab } from './components/ResidentsTab';
@@ -20,6 +20,7 @@ import { HouseholdDetailModal } from './components/HouseholdDetailModal';
 import { AddHouseholdModal } from './components/AddHouseholdModal';
 import { WarningDetailModal } from './components/WarningDetailModal';
 import { normalizeHousehold, normalizeHouseholdList } from './utils/householdUtils';
+import { canViewMapTab } from './utils/mapViewAccess';
 import {
   fetchCompleteHouseholdsFromBackend,
   createHouseholdInBackend,
@@ -28,6 +29,7 @@ import {
   updateHouseholdCoordinatesInBackend,
   deleteHouseholdInBackend,
   fetchAllDocumentRecords,
+  renewDocumentInBackend,
   fetchPatrolLogsFromBackend,
   savePatrolLogInBackend,
   fetchSecurityAlertsFromBackend,
@@ -52,14 +54,12 @@ import {
   seedInitialFirestoreData,
   subscribeHouseholds,
   subscribeDocuments,
-  subscribeOfficerProfile,
   subscribeAuditLogs,
   addHouseholdToFirestore,
   updateHouseholdNotesInFirestore,
   updateHouseholdCoordinatesInFirestore,
   updateHouseholdDataInFirestore,
   sendDocReminderInFirestore,
-  updateOfficerProfileInFirestore,
   addAuditLogInFirestore,
   checkBackendHealth,
 } from './services/firestoreService';
@@ -70,6 +70,8 @@ import {
   subscribeHcmAdminUnits,
   subscribeSecurityAlerts,
   seedAuthAndRbacData,
+  fetchRbacMe,
+  updateOwnAccount,
   logSecurityAlert,
 } from './services/authService';
 import { LoginScreen } from './components/LoginScreen';
@@ -80,7 +82,37 @@ import { SubAdminDelegationTab } from './components/SubAdminDelegationTab';
 export default function App() {
   const dispatch = useAppDispatch();
   const { account, isAuthenticated, sessionHasBeenFetched, errorMessage } = useAppSelector(state => state.authentication);
-  const currentUser = useMemo(() => (isAuthenticated ? mapAccountToGisUser(account) : null), [account, isAuthenticated]);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [policyError, setPolicyError] = useState('');
+  useEffect(() => {
+    let active = true;
+    if (!isAuthenticated) {
+      setCurrentUser(null);
+      return;
+    }
+    const load = async () => {
+      try {
+        const user = await fetchRbacMe();
+        if (active) {
+          setCurrentUser(user);
+          setPolicyError('');
+        }
+      } catch {
+        if (active) {
+          setCurrentUser(null);
+          setPolicyError('Không thể xác nhận quyền truy cập. Liên hệ quản trị đơn vị hoặc thử đăng nhập lại.');
+        }
+      }
+    };
+    void load();
+    const timer = window.setInterval(load, 30000);
+    window.addEventListener('rbac-changed', load);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('rbac-changed', load);
+    };
+  }, [isAuthenticated, account.login]);
   if (!sessionHasBeenFetched)
     return (
       <div role="status" className="p-8">
@@ -101,25 +133,54 @@ export default function App() {
   if (!currentUser)
     return (
       <div role="alert" className="p-8">
-        Tài khoản chưa được cấp quyền truy cập GIS.
+        {policyError || 'Đang tải quyền truy cập từ máy chủ...'}
       </div>
     );
-  return <AuthenticatedDashboard key={currentUser.id} currentUser={currentUser} />;
+  return <AuthenticatedDashboard key={`${currentUser.id}:${currentUser.version}:${currentUser.role}`} currentUser={currentUser} />;
 }
 
 function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
-  const [usersList, setUsersList] = useState<AppUser[]>(INITIAL_USERS);
-  const [allowedEmails, setAllowedEmails] = useState<AllowedEmailEntry[]>(INITIAL_ALLOWED_EMAILS);
-  const [dynamicMenus, setDynamicMenus] = useState<DynamicMenuItemConfig[]>(INITIAL_DYNAMIC_MENUS);
-  const [hcmUnits, setHcmUnits] = useState<HcmAdminUnit[]>(INITIAL_HCM_ADMIN_UNITS);
+  const [usersList, setUsersList] = useState<AppUser[]>([]);
+  const [allowedEmails, setAllowedEmails] = useState<AllowedEmailEntry[]>([]);
+  const [dynamicMenus, setDynamicMenus] = useState<DynamicMenuItemConfig[]>([]);
+
+  // Supplement default system menus when the database has not yet been synchronized.
+  const effectiveDynamicMenus = useMemo(() => {
+    const list = [...dynamicMenus];
+    INITIAL_DYNAMIC_MENUS.forEach(def => {
+      const existingIdx = list.findIndex(m => m.id === def.id);
+      if (existingIdx === -1) {
+        list.push(def);
+      }
+    });
+    return list;
+  }, [dynamicMenus]);
+
+  const canOpenMenu = (id: NavigationTab) =>
+    effectiveDynamicMenus.some(
+      menu =>
+        menu.id === id &&
+        canViewMapTab(currentUser, id) &&
+        menu.visibleRoles.includes(currentUser.role) &&
+        (currentUser.role === 'superadmin' ||
+          !menu.requiredPermission ||
+          currentUser.subAdminPermissions?.[menu.requiredPermission] === true),
+    );
+
+  useEffect(() => {
+    if (effectiveDynamicMenus.length && !canOpenMenu(activeTab)) {
+      const first = effectiveDynamicMenus.find(menu => canOpenMenu(menu.id));
+      if (first) setActiveTab(first.id);
+    }
+  }, [effectiveDynamicMenus]);
+  const [hcmUnits, setHcmUnits] = useState<HcmAdminUnit[]>([]);
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
 
   const [activeTab, setActiveTab] = useState<NavigationTab>('overview');
-  const [useMapLibre, setUseMapLibre] = useState(false);
   const [households, setHouseholds] = useState<HouseholdFacility[]>([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [officer, setOfficer] = useState<OfficerProfile>(DEFAULT_OFFICER);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Connection & Backend status
@@ -142,6 +203,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   // Modals
   const [selectedHousehold, setSelectedHousehold] = useState<HouseholdFacility | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedMapCoordinates, setSelectedMapCoordinates] = useState<[number, number] | null>(null);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
 
   // Fullscreen map mode for Advanced Map
@@ -175,6 +237,23 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         jhCard.style.border = 'none';
         jhCard.style.boxShadow = 'none';
         jhCard.style.borderRadius = '0px';
+      }
+    } else {
+      if (appHeader) appHeader.style.display = '';
+      if (appContainer) {
+        appContainer.style.paddingTop = '';
+        appContainer.style.height = '';
+      }
+      if (viewContainer) {
+        viewContainer.style.padding = '';
+        viewContainer.style.height = '';
+        viewContainer.style.maxWidth = '';
+      }
+      if (jhCard) {
+        jhCard.style.padding = '';
+        jhCard.style.border = '';
+        jhCard.style.boxShadow = '';
+        jhCard.style.borderRadius = '';
       }
     }
   }, [isMapFullscreen]);
@@ -246,6 +325,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // Initialize Firestore and Backend on app load
   useEffect(() => {
+    const onRbacError = (event: Event) => showToast((event as CustomEvent<string>).detail);
+    window.addEventListener('rbac-error', onRbacError);
     let unsubscribeHouseholds: () => void = () => {};
     let unsubscribeDocuments: () => void = () => {};
     let unsubscribeOfficer: () => void = () => {};
@@ -307,34 +388,40 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         console.warn('Lỗi khi tải cảnh báo an ninh:', err);
       });
 
-    unsubscribeOfficer = subscribeOfficerProfile(data => {
-      if (data) {
-        setOfficer(data);
-      }
-    });
-
     // 4. Seed initial RBAC, Allowed Emails, and Dynamic Menus if empty
     seedAuthAndRbacData().catch(console.warn);
 
     // 5. Attach real-time listeners for RBAC, Menus, Units, and Security Alerts
-    const unsubUsers = subscribeUsers(users => {
-      if (users && users.length > 0) setUsersList(users);
-    });
-    const unsubEmails = subscribeAllowedEmails(emails => {
-      if (emails && emails.length > 0) setAllowedEmails(emails);
-    });
+    const unsubUsers = ['superadmin', 'admin', 'sub-admin'].includes(currentUser.role)
+      ? subscribeUsers(users => {
+          setUsersList(users);
+        })
+      : () => {};
+    const unsubEmails =
+      currentUser.role === 'superadmin'
+        ? subscribeAllowedEmails(emails => {
+            setAllowedEmails(emails);
+          })
+        : () => {};
     const unsubMenus = subscribeDynamicMenus(menus => {
-      if (menus && menus.length > 0) setDynamicMenus(menus);
+      setDynamicMenus(menus);
     });
-    const unsubUnits = subscribeHcmAdminUnits(units => {
-      if (units && units.length > 0) setHcmUnits(units);
-    });
-    const unsubAlerts = subscribeSecurityAlerts(alerts => {
-      if (alerts) setSecurityAlerts(alerts);
-    });
+    const unsubUnits =
+      currentUser.role === 'superadmin'
+        ? subscribeHcmAdminUnits(units => {
+            setHcmUnits(units);
+          })
+        : () => {};
+    const unsubAlerts =
+      currentUser.role === 'superadmin'
+        ? subscribeSecurityAlerts(alerts => {
+            if (alerts) setSecurityAlerts(alerts);
+          })
+        : () => {};
 
     return () => {
       cancelled = true;
+      window.removeEventListener('rbac-error', onRbacError);
       window.clearInterval(healthTimer);
       unsubscribeHouseholds();
       unsubscribeDocuments();
@@ -355,6 +442,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         ...prev,
         officerName: currentUser.fullName,
         rank: currentUser.rank,
+        unit: currentUser.unit,
         badgeNumber: currentUser.badgeNumber,
         username: currentUser.username,
         permissions: currentUser.position,
@@ -595,7 +683,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   const handleUpdateCoordinates = async (updates: Array<{ id: string; coordinates: [number, number] }>) => {
     // RBAC Check for Officer
-    if (currentUser?.role === 'officer' && currentUser.subAdminPermissions?.canEditCoordinates === false) {
+    if (currentUser?.role !== 'superadmin' && currentUser.subAdminPermissions?.canEditCoordinates !== true) {
       showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền nắn chỉnh tọa độ.');
       logSecurityAlert({
         level: 'warning',
@@ -666,9 +754,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   const handleAddHousehold = async (newH: HouseholdFacility) => {
     // RBAC Check for Officer
-    if (currentUser?.role === 'officer' && currentUser.subAdminPermissions?.canAddHouseholds === false) {
+    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canAddHouseholds !== true) {
       showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền đăng ký hộ dân mới.');
-      return;
+      return false;
     }
 
     try {
@@ -677,9 +765,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       showToast(`Đã thêm số nhà ${created.houseNumber} (${created.hamlet}) vào PostgreSQL thành công!`);
     } catch (err) {
       console.error('Lỗi khi thêm vào PostgreSQL:', err);
-      // Fallback optimistic
-      setHouseholds(prev => [normalizeHousehold(newH), ...prev]);
-      showToast(`Đã thêm số nhà ${newH.houseNumber} (${newH.hamlet}).`);
+      showToast('Không thể lưu hộ dân vào cơ sở dữ liệu. Vui lòng kiểm tra thông tin và thử lại.');
+      return false;
     }
 
     // Record audit log for adding new household
@@ -703,110 +790,32 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       status: 'success',
     };
     recordAuditLog(addLog);
+    return true;
   };
 
-  const handleRenewDocument = (docId: string) => {
-    // RBAC Check for Officer
-    if (currentUser?.role === 'officer' && currentUser.subAdminPermissions?.canRenewDocs === false) {
-      showToast('⚠️ Thẩm quyền bị khóa: Thẩm quyền duyệt gia hạn giấy tờ thuộc Trưởng CAX hoặc Công an phụ trách Ấp.');
+  const handleRenewDocument = async (docId: string) => {
+    if (currentUser.role !== 'superadmin' && currentUser.subAdminPermissions?.canRenewDocs !== true) {
+      showToast('Chưa được cấp quyền gia hạn hồ sơ');
       return;
     }
-
-    const targetDoc = documents.find(d => d.id === docId);
-    setDocuments(prev =>
-      prev.map(doc =>
-        doc.id === docId
-          ? {
-              ...doc,
-              status: 'valid',
-              expiryDate: '20/09/2027',
-              daysRemaining: 370,
-              notes: 'Cơ sở đã hoàn tất hồ sơ gia hạn và được xác nhận trên hệ thống.',
-            }
-          : doc,
-      ),
-    );
-
-    // Also update matching household warning status dynamically
-    if (targetDoc) {
-      setHouseholds(prev =>
-        prev.map(h => {
-          const matchByName =
-            targetDoc.targetName && h.businessName ? targetDoc.targetName.toLowerCase().includes(h.businessName.toLowerCase()) : false;
-          const matchByOwner =
-            targetDoc.targetName && h.ownerName ? targetDoc.targetName.toLowerCase().includes(h.ownerName.toLowerCase()) : false;
-          const matchByAddr = targetDoc.address && h.houseNumber ? targetDoc.address.includes(h.houseNumber) : false;
-          if ((matchByName || matchByOwner || matchByAddr) && h.status === 'warning') {
-            return { ...h, status: 'business', warningMessage: undefined, licenseExpiry: '20/09/2027' };
-          }
-          return h;
-        }),
-      );
+    const expiryDate = window.prompt('Ngày hết hạn mới (YYYY-MM-DD)');
+    if (!expiryDate) return;
+    try {
+      await renewDocumentInBackend(docId, expiryDate);
+      setDocuments(await fetchAllDocumentRecords());
+      showToast('Đã lưu gia hạn hồ sơ vào cơ sở dữ liệu');
+    } catch {
+      showToast('Không thể gia hạn. Kiểm tra quyền và ngày hết hạn.');
     }
-
-    showToast('Đã cập nhật gia hạn hồ sơ thành công trên Cloud Firestore.');
-
-    // Record audit log for document renewal
-    const renewLog: AuditLogEntry = {
-      id: `LOG-REN-${Date.now()}`,
-      timestamp: formatDateTime(new Date()),
-      createdAt: Date.now(),
-      actionType: 'document_renew',
-      actionLabel: 'Gia hạn giấy phép ANTT',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
-      targetType: 'document',
-      targetId: docId,
-      targetCode: targetDoc?.docCode,
-      targetTitle: targetDoc?.targetName || 'Cơ sở',
-      details: `Xác nhận gia hạn thời hạn giấy chứng nhận đủ điều kiện ANTT/PCCC cho ${targetDoc?.targetName} đến 20/09/2027.`,
-      previousValue: targetDoc?.expiryDate || 'Sắp hết hạn',
-      newValue: '20/09/2027',
-      ipAddress: '192.168.1.15',
-      deviceInfo: 'Máy trạm chuyên dụng CSKV',
-      integrityHash: generateSimpleHash(`REN-${Date.now()}`),
-      status: 'success',
-    };
-    recordAuditLog(renewLog);
   };
 
   const handleSendReminder = async (docId: string) => {
-    // RBAC Check for Officer
-    if (currentUser?.role === 'officer' && currentUser.subAdminPermissions?.canSendReminders === false) {
-      showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được cấp quyền phát hành văn bản nhắc nhở.');
-      return;
-    }
-
-    const targetDoc = documents.find(d => d.id === docId);
     try {
       await sendDocReminderInFirestore(docId);
-      showToast('Đã gửi thông báo đôn đốc gia hạn giấy tờ và lưu vết kiểm tra vào Firestore.');
-    } catch (err) {
-      showToast('Đã gửi thông báo đôn đốc gia hạn giấy tờ tới cơ sở qua tin nhắn và văn bản.');
+      showToast('Đã lưu yêu cầu nhắc nhở; đang chờ gửi');
+    } catch {
+      showToast('Không thể lưu yêu cầu nhắc nhở');
     }
-
-    // Record audit log for sending reminder
-    const remLog: AuditLogEntry = {
-      id: `LOG-REM-${Date.now()}`,
-      timestamp: formatDateTime(new Date()),
-      createdAt: Date.now(),
-      actionType: 'reminder_sent',
-      actionLabel: 'Gửi nhắc nhở & đôn đốc',
-      officerName: currentUser?.fullName || officer.officerName || 'Cán bộ CSKV',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV',
-      targetType: 'document',
-      targetId: docId,
-      targetCode: targetDoc?.docCode,
-      targetTitle: targetDoc?.targetName || targetDoc?.title || 'Hồ sơ',
-      details: `Phát hành thông báo đôn đốc kiểm tra và gia hạn giấy tờ ANTT cho ${targetDoc?.targetName || 'cơ sở'} (${targetDoc?.docCode || docId}).`,
-      previousValue: 'Chưa phát hành đôn đốc',
-      newValue: 'Đã gửi thông báo đôn đốc trực tiếp và qua hệ thống',
-      ipAddress: '192.168.1.15',
-      deviceInfo: 'Máy trạm chuyên dụng CSKV',
-      integrityHash: generateSimpleHash(`REM-${Date.now()}`),
-      status: 'warning',
-    };
-    recordAuditLog(remLog);
   };
 
   const handleRefresh = async () => {
@@ -841,12 +850,13 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   };
 
   const handleUpdateOfficer = async (updated: Partial<OfficerProfile>) => {
-    setOfficer(prev => ({ ...prev, ...updated }));
     try {
-      await updateOfficerProfileInFirestore(updated);
-      showToast('Đã cập nhật thông tin cán bộ phụ trách lên Cloud Firestore.');
-    } catch {
-      showToast('Đã cập nhật thông tin cán bộ phụ trách.');
+      const user = await updateOwnAccount(updated.officerName ?? currentUser?.fullName ?? '', updated.rank ?? currentUser?.rank ?? '');
+      setOfficer(prev => ({ ...prev, officerName: user.fullName, rank: user.rank }));
+      showToast('Đã lưu thông tin tài khoản vào database.');
+    } catch (error) {
+      showToast('Không thể lưu thông tin tài khoản. Vui lòng thử lại.');
+      throw error;
     }
 
     // Record audit log for officer profile update
@@ -873,12 +883,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const isTerritoryRestricted = currentUser?.role === 'sub-admin' || currentUser?.role === 'officer';
 
   const matchesHamlet = (h: HouseholdFacility, user: AppUser | null) => {
-    if (!user || !user.assignedHamlets || user.assignedHamlets.length === 0) return true;
+    if (!user || !user.assignedHamlets || user.assignedHamlets.length === 0) return false;
     if (!h.hamlet) return false;
     return user.assignedHamlets.some(ah => {
       const ahNorm = ah.toLowerCase().trim();
       const hNorm = h.hamlet.toLowerCase().trim();
-      return ahNorm === hNorm || hNorm.includes(ahNorm) || ahNorm.includes(hNorm);
+      return ahNorm === hNorm;
     });
   };
 
@@ -941,7 +951,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           }}
           officer={officer}
           currentUser={currentUser}
-          dynamicMenus={dynamicMenus}
+          dynamicMenus={effectiveDynamicMenus}
           warningCount={warningCount}
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
@@ -974,139 +984,137 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           />
         )}
 
-        {/* Dynamic Tab Body with bottom padding for mobile navigation bar */}
         <main
-          className={`flex-1 ${isMapFullscreen ? 'w-full h-full p-0 overflow-hidden flex flex-col' : 'overflow-y-auto p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-6 scroll-smooth'}`}
+          className={`flex-1 ${
+            isMapFullscreen || activeTab === 'field-3d-map'
+              ? 'w-full h-full p-0 overflow-hidden flex flex-col'
+              : 'overflow-y-auto p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-6 scroll-smooth'
+          }`}
         >
-          {/* Active Search Banner when filter is engaged */}
-          {searchQuery.trim() && !isMapFullscreen && (
-            <div className="mb-4 p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
-                <span className="text-slate-600 dark:text-slate-300">Kết quả lọc tìm kiếm:</span>
-                <span className="font-bold text-blue-900 dark:text-blue-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
-                  "{searchQuery}"
-                </span>
-                <span className="text-slate-500 font-mono text-[11px] hidden sm:inline">({displayedHouseholds.length} hồ sơ phù hợp)</span>
-              </div>
-              <button
-                type="button"
-                id="btn-clear-active-search"
-                onClick={() => setSearchQuery('')}
-                className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer shadow-xs"
-              >
-                <span>Xóa bộ lọc</span>
-              </button>
-            </div>
-          )}
-
-          {/* Territory Scope Control Bar for Sub-Admin and Officer */}
-          {isTerritoryRestricted && !isMapFullscreen && (
-            <div className="mb-4 p-3.5 sm:p-4 bg-gradient-to-r from-blue-900/30 via-slate-900/70 to-indigo-950/40 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-indigo-950/60 border border-blue-700/40 dark:border-blue-800/60 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
-              <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 sm:mt-0">
-                  <MapPin className="w-5 h-5 text-amber-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-white text-sm">{currentUser?.assignedHamlets?.join(', ') || 'Địa bàn phân công'}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                      {currentUser?.role === 'sub-admin' ? 'Sub-Admin Quản Lý Ấp' : 'Công An Viên Tuyến'}
+          {canOpenMenu(activeTab) ? (
+            <>
+              {/* Active Search Banner when filter is engaged */}
+              {searchQuery.trim() && !isMapFullscreen && (
+                <div className="mb-4 p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
+                    <span className="text-slate-600 dark:text-slate-300">Kết quả lọc tìm kiếm:</span>
+                    <span className="font-bold text-blue-900 dark:text-blue-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                      "{searchQuery}"
                     </span>
-                    <span className="text-slate-400 text-[11px]">
-                      • {currentUser?.rank} {currentUser?.fullName}
+                    <span className="text-slate-500 font-mono text-[11px] hidden sm:inline">
+                      ({displayedHouseholds.length} hồ sơ phù hợp)
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
-                    <span>
-                      Tuyến phụ trách:{' '}
-                      <strong className="text-slate-100 font-medium">
-                        {currentUser?.assignedStreets && currentUser.assignedStreets.length > 0
-                          ? currentUser.assignedStreets.join(', ')
-                          : 'Toàn bộ địa bàn ấp'}
-                      </strong>
-                    </span>
-                    <span>•</span>
-                    <span className="text-emerald-400 font-semibold">
-                      {assignedHouseholds.length} hộ dân / {assignedResidentsCount} nhân khẩu
-                    </span>
-                    {territoryScope === 'all' && (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60">
-                        Đang xem đối chiếu toàn xã (360 hộ)
-                      </span>
-                    )}
+                  <button
+                    type="button"
+                    id="btn-clear-active-search"
+                    onClick={() => setSearchQuery('')}
+                    className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer shadow-xs"
+                  >
+                    <span>Xóa bộ lọc</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Territory Scope Control Bar for Sub-Admin and Officer */}
+              {isTerritoryRestricted && !isMapFullscreen && (
+                <div className="mb-4 p-3.5 sm:p-4 bg-gradient-to-r from-blue-900/30 via-slate-900/70 to-indigo-950/40 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-indigo-950/60 border border-blue-700/40 dark:border-blue-800/60 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+                  <div className="flex items-start sm:items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 sm:mt-0">
+                      <MapPin className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-white text-sm">
+                          {currentUser?.assignedHamlets?.join(', ') || 'Địa bàn phân công'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                          {currentUser?.role === 'sub-admin' ? 'Sub-Admin Quản Lý Ấp' : 'Công An Viên Tuyến'}
+                        </span>
+                        <span className="text-slate-400 text-[11px]">
+                          • {currentUser?.rank} {currentUser?.fullName}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
+                        <span>
+                          Tuyến phụ trách:{' '}
+                          <strong className="text-slate-100 font-medium">
+                            {currentUser?.assignedStreets && currentUser.assignedStreets.length > 0
+                              ? currentUser.assignedStreets.join(', ')
+                              : 'Toàn bộ địa bàn ấp'}
+                          </strong>
+                        </span>
+                        <span>•</span>
+                        <span className="text-emerald-400 font-semibold">
+                          {assignedHouseholds.length} hộ dân / {assignedResidentsCount} nhân khẩu
+                        </span>
+                        {territoryScope === 'all' && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60">
+                            Đang xem đối chiếu toàn xã (360 hộ)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Territory Switcher Buttons */}
+                  <div className="flex items-center gap-1.5 p-1 bg-slate-950/90 rounded-xl border border-slate-800 shrink-0 self-start md:self-auto">
+                    <button
+                      type="button"
+                      id="btn-scope-assigned"
+                      onClick={() => setTerritoryScope('assigned')}
+                      className={`px-3 py-1.5 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                        territoryScope === 'assigned'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      }`}
+                      title="Chỉ hiển thị dữ liệu hộ dân và bản đồ thuộc ấp được phân công"
+                    >
+                      <span>📍 Địa bàn được giao</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{assignedHouseholds.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-scope-all"
+                      onClick={() => setTerritoryScope('all')}
+                      className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                        territoryScope === 'all'
+                          ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      }`}
+                      title="Xem toàn bộ hộ dân xã Bà Điểm để đối chiếu"
+                    >
+                      <span>🌐 Toàn xã (Đối chiếu)</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{households.length}</span>
+                    </button>
                   </div>
                 </div>
-              </div>
+              )}
+              {activeTab === 'overview' && (
+                <OverviewTab
+                  households={displayedHouseholds}
+                  onNavigateTab={tab => {
+                    if (isMapFullscreen) setIsMapFullscreen(false);
+                    setActiveTab(tab);
+                  }}
+                  onSelectHousehold={setSelectedHousehold}
+                />
+              )}
 
-              {/* Territory Switcher Buttons */}
-              <div className="flex items-center gap-1.5 p-1 bg-slate-950/90 rounded-xl border border-slate-800 shrink-0 self-start md:self-auto">
-                <button
-                  type="button"
-                  id="btn-scope-assigned"
-                  onClick={() => setTerritoryScope('assigned')}
-                  className={`px-3 py-1.5 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                    territoryScope === 'assigned'
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                  }`}
-                  title="Chỉ hiển thị dữ liệu hộ dân và bản đồ thuộc ấp được phân công"
-                >
-                  <span>📍 Địa bàn được giao</span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{assignedHouseholds.length}</span>
-                </button>
-                <button
-                  type="button"
-                  id="btn-scope-all"
-                  onClick={() => setTerritoryScope('all')}
-                  className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                    territoryScope === 'all'
-                      ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                  }`}
-                  title="Xem toàn bộ hộ dân xã Bà Điểm để đối chiếu"
-                >
-                  <span>🌐 Toàn xã (Đối chiếu)</span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{households.length}</span>
-                </button>
-              </div>
-            </div>
-          )}
-          {activeTab === 'overview' && (
-            <OverviewTab
-              households={displayedHouseholds}
-              onNavigateTab={tab => {
-                if (isMapFullscreen) setIsMapFullscreen(false);
-                setActiveTab(tab);
-              }}
-              onSelectHousehold={setSelectedHousehold}
-            />
-          )}
+              {activeTab === 'area-map' && (
+                <AreaMapTab
+                  households={displayedHouseholds}
+                  onSelectHousehold={setSelectedHousehold}
+                  onRefresh={handleRefresh}
+                  onNavigateTab={tab => {
+                    if (isMapFullscreen) setIsMapFullscreen(false);
+                    setActiveTab(tab);
+                  }}
+                />
+              )}
 
-          {activeTab === 'area-map' && (
-            <AreaMapTab
-              households={displayedHouseholds}
-              onSelectHousehold={setSelectedHousehold}
-              onRefresh={handleRefresh}
-              onNavigateTab={tab => {
-                if (isMapFullscreen) setIsMapFullscreen(false);
-                setActiveTab(tab);
-              }}
-            />
-          )}
-
-          {activeTab === 'advanced-map' && (
-            <div className="space-y-3">
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setUseMapLibre(value => !value)}
-                  className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-                >
-                  {useMapLibre ? 'Bản đồ hiện tại' : 'Thử bản đồ MapLibre 2D/3D'}
-                </button>
-              </div>
-              {useMapLibre ? (
+              {activeTab === 'advanced-map' && (
                 <Suspense
                   fallback={
                     <div role="status" className="p-6">
@@ -1120,103 +1128,120 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                     onUpdateCoordinates={handleUpdateCoordinates}
                   />
                 </Suspense>
-              ) : (
-                <AdvancedMapTab
+              )}
+
+              {activeTab === 'field-3d-map' && (
+                <Field3DMapTab
                   households={displayedHouseholds}
-                  currentUser={currentUser}
+                  capturingOfficerName={[
+                    currentUser?.rank?.trim(),
+                    currentUser?.fullName?.trim() || currentUser?.username || 'Chưa xác định',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   onSelectHousehold={setSelectedHousehold}
+                  canAddHouseholds={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
+                  onAddHouseholdAtCoordinates={coordinates => {
+                    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canAddHouseholds !== true) return;
+                    setSelectedMapCoordinates(coordinates);
+                    setIsAddModalOpen(true);
+                  }}
                   isFullscreen={isMapFullscreen}
                   onToggleFullscreen={handleToggleMapFullscreen}
                   onNavigateTab={tab => {
                     if (isMapFullscreen) setIsMapFullscreen(false);
                     setActiveTab(tab);
                   }}
-                  onUpdateCoordinates={handleUpdateCoordinates}
                 />
               )}
+
+              {activeTab === 'households' && (
+                <HouseholdsTab
+                  households={displayedHouseholds}
+                  currentUser={currentUser}
+                  onSelectHousehold={setSelectedHousehold}
+                  onOpenAddModal={() => {
+                    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canAddHouseholds !== true) {
+                      showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền đăng ký hộ dân mới.');
+                      return;
+                    }
+                    setSelectedMapCoordinates(null);
+                    setIsAddModalOpen(true);
+                  }}
+                  onDeleteHousehold={handleDeleteHousehold}
+                  onShowToast={showToast}
+                />
+              )}
+
+              {activeTab === 'residents' && (
+                <ResidentsTab
+                  households={displayedHouseholds}
+                  allHouseholds={households}
+                  onSelectHousehold={setSelectedHousehold}
+                  onUpdateHousehold={handleUpdateHouseholdFull}
+                  currentUser={currentUser}
+                  onShowToast={showToast}
+                />
+              )}
+
+              {activeTab === 'documents' && (
+                <DocumentsTab documents={documents} onRenewDocument={handleRenewDocument} onSendReminder={handleSendReminder} />
+              )}
+
+              {activeTab === 'areas' && <AreasTab households={displayedHouseholds} onSelectHousehold={setSelectedHousehold} />}
+
+              {activeTab === 'logs' && (
+                <LogsTab
+                  logs={auditLogs}
+                  households={households}
+                  onSelectHousehold={setSelectedHousehold}
+                  onAddManualLog={handleAddManualLog}
+                />
+              )}
+
+              {activeTab === 'subadmin-delegation' && (
+                <SubAdminDelegationTab currentUser={currentUser} usersList={usersList} onShowToast={showToast} />
+              )}
+
+              {activeTab === 'superadmin-hub' &&
+                (currentUser.role === 'superadmin' ? (
+                  <SuperAdminHubTab
+                    currentUser={currentUser}
+                    dynamicMenus={dynamicMenus}
+                    dynamicMenusList={dynamicMenus}
+                    hcmUnits={hcmUnits}
+                    hcmUnitsList={hcmUnits}
+                    usersList={usersList}
+                    allowedEmails={allowedEmails}
+                    allowedEmailsList={allowedEmails}
+                    securityAlerts={securityAlerts}
+                    securityAlertsList={securityAlerts}
+                    onShowToast={showToast}
+                    onSwitchAccount={handleSwitchAccount}
+                  />
+                ) : (
+                  <SuperAdminAccessGuard
+                    currentUser={currentUser}
+                    onSwitchToSuperAdmin={handleSwitchAccount}
+                    onSwitchAccount={handleSwitchAccount}
+                    onBackToOverview={() => setActiveTab('overview')}
+                  />
+                ))}
+
+              {activeTab === 'settings' && (
+                <SettingsTab
+                  officer={officer}
+                  onUpdateOfficer={handleUpdateOfficer}
+                  backendStatus={backendStatus}
+                  theme={theme}
+                  onSetTheme={handleSetTheme}
+                />
+              )}
+            </>
+          ) : (
+            <div role="status" className="p-6">
+              Menu chưa được cấp phép hoặc đang tải cấu hình từ máy chủ.
             </div>
-          )}
-
-          {activeTab === 'households' && (
-            <HouseholdsTab
-              households={displayedHouseholds}
-              currentUser={currentUser}
-              onSelectHousehold={setSelectedHousehold}
-              onOpenAddModal={() => {
-                if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canAddHouseholds === false) {
-                  showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền đăng ký hộ dân mới.');
-                  return;
-                }
-                setIsAddModalOpen(true);
-              }}
-              onDeleteHousehold={handleDeleteHousehold}
-              onShowToast={showToast}
-            />
-          )}
-
-          {activeTab === 'residents' && (
-            <ResidentsTab
-              households={displayedHouseholds}
-              allHouseholds={households}
-              onSelectHousehold={setSelectedHousehold}
-              onUpdateHousehold={handleUpdateHouseholdFull}
-              currentUser={currentUser}
-              onShowToast={showToast}
-            />
-          )}
-
-          {activeTab === 'documents' && (
-            <DocumentsTab documents={documents} onRenewDocument={handleRenewDocument} onSendReminder={handleSendReminder} />
-          )}
-
-          {activeTab === 'areas' && <AreasTab households={displayedHouseholds} onSelectHousehold={setSelectedHousehold} />}
-
-          {activeTab === 'logs' && (
-            <LogsTab
-              logs={auditLogs}
-              households={households}
-              onSelectHousehold={setSelectedHousehold}
-              onAddManualLog={handleAddManualLog}
-            />
-          )}
-
-          {activeTab === 'subadmin-delegation' && (
-            <SubAdminDelegationTab currentUser={currentUser} usersList={usersList} onShowToast={showToast} />
-          )}
-
-          {activeTab === 'superadmin-hub' &&
-            (currentUser.role === 'superadmin' ? (
-              <SuperAdminHubTab
-                currentUser={currentUser}
-                dynamicMenus={dynamicMenus}
-                dynamicMenusList={dynamicMenus}
-                hcmUnits={hcmUnits}
-                hcmUnitsList={hcmUnits}
-                usersList={usersList}
-                allowedEmails={allowedEmails}
-                allowedEmailsList={allowedEmails}
-                securityAlerts={securityAlerts}
-                securityAlertsList={securityAlerts}
-                onShowToast={showToast}
-                onSwitchAccount={handleSwitchAccount}
-              />
-            ) : (
-              <SuperAdminAccessGuard
-                currentUser={currentUser}
-                onSwitchToSuperAdmin={handleSwitchAccount}
-                onSwitchAccount={handleSwitchAccount}
-                onBackToOverview={() => setActiveTab('overview')}
-              />
-            ))}
-
-          {activeTab === 'settings' && (
-            <SettingsTab
-              officer={officer}
-              onUpdateOfficer={handleUpdateOfficer}
-              backendStatus={backendStatus}
-              theme={theme}
-              onSetTheme={handleSetTheme}
-            />
           )}
         </main>
 
@@ -1225,6 +1250,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-lg">
             <button
               onClick={() => setActiveTab('overview')}
+              style={{ display: canOpenMenu('overview') ? undefined : 'none' }}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
                 activeTab === 'overview' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -1235,6 +1261,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
             <button
               onClick={() => setActiveTab('area-map')}
+              style={{ display: canOpenMenu('area-map') ? undefined : 'none' }}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
                 activeTab === 'area-map' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -1245,6 +1272,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
             <button
               onClick={() => setActiveTab('households')}
+              style={{ display: canOpenMenu('households') ? undefined : 'none' }}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
                 activeTab === 'households' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -1255,6 +1283,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
             <button
               onClick={() => setActiveTab('residents')}
+              style={{ display: canOpenMenu('residents') ? undefined : 'none' }}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
                 activeTab === 'residents' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -1265,6 +1294,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
             <button
               onClick={() => setActiveTab('documents')}
+              style={{ display: canOpenMenu('documents') ? undefined : 'none' }}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] relative ${
                 activeTab === 'documents' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
               }`}
@@ -1296,7 +1326,15 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         onShowToast={showToast}
       />
 
-      <AddHouseholdModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAddHousehold={handleAddHousehold} />
+      <AddHouseholdModal
+        isOpen={isAddModalOpen}
+        initialCoordinates={selectedMapCoordinates}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setSelectedMapCoordinates(null);
+        }}
+        onAddHousehold={handleAddHousehold}
+      />
 
       <WarningDetailModal
         isOpen={isWarningModalOpen}

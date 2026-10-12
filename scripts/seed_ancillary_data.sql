@@ -1,15 +1,4 @@
--- 1. Seed area_zone
-DELETE FROM area_zone;
-
-INSERT INTO area_zone (id, code, name, hamlet_name, officer_in_charge, officer_phone, population_count, household_count, boundary_geo_json)
-VALUES 
-(1, 'KV-BD-BL', 'Khu vực Ấp Bắc Lân', 'Ấp Bắc Lân', 'Đại úy Nguyễn Văn Bình', '0908123456', 242, 60, '{"type":"Polygon","coordinates":[[[106.605,10.852],[106.612,10.852],[106.612,10.859],[106.605,10.859],[106.605,10.852]]]}'),
-(2, 'KV-BD-NL', 'Khu vực Ấp Nam Lân', 'Ấp Nam Lân', 'Thượng úy Trần Minh Tuấn', '0908234567', 238, 60, '{"type":"Polygon","coordinates":[[[106.608,10.845],[106.615,10.845],[106.615,10.852],[106.608,10.852],[106.608,10.845]]]}'),
-(3, 'KV-BD-TL', 'Khu vực Ấp Tây Lân', 'Ấp Tây Lân', 'Đại úy Lê Hoàng Nam', '0908345678', 245, 60, '{"type":"Polygon","coordinates":[[[106.598,10.848],[106.605,10.848],[106.605,10.855],[106.598,10.855],[106.598,10.848]]]}'),
-(4, 'KV-BD-DL', 'Khu vực Ấp Đông Lân', 'Ấp Đông Lân', 'Trung úy Phạm Đình Trọng', '0908456789', 235, 60, '{"type":"Polygon","coordinates":[[[106.612,10.848],[106.619,10.848],[106.619,10.855],[106.612,10.855],[106.612,10.848]]]}'),
-(5, 'KV-BD-HL', 'Khu vực Ấp Hậu Lân', 'Ấp Hậu Lân', 'Thượng úy Võ Minh Tuấn', '0908567890', 240, 60, '{"type":"Polygon","coordinates":[[[106.602,10.855],[106.609,10.855],[106.609,10.862],[106.602,10.862],[106.602,10.855]]]}'),
-(6, 'KV-BD-TIENL', 'Khu vực Ấp Tiền Lân', 'Ấp Tiền Lân', 'Đại úy Đỗ Hữu Nghĩa', '0908678901', 256, 60, '{"type":"Polygon","coordinates":[[[106.609,10.855],[106.616,10.855],[106.616,10.862],[106.609,10.862],[106.609,10.855]]]}');
-
+-- Administrative hamlets are official DB data; legacy area_zone seed removed.
 -- 2. Seed document_record
 DELETE FROM document_record;
 

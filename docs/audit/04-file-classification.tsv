@@ -1,0 +1,607 @@
+﻿Path	Classification	Evidence/validation caveat
+Ba_Diem_3D.blend	INVESTIGATE	GIS source data; ownership and reproducibility not established
+README_BLENDER.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+data/gis_processed/ba_diem_boundary.geojson	INVESTIGATE	GIS source data; ownership and reproducibility not established
+data/gis_processed/ba_diem_buildings_processed.geojson	INVESTIGATE	GIS source data; ownership and reproducibility not established
+data/gis_processed/ba_diem_pois.geojson	INVESTIGATE	GIS source data; ownership and reproducibility not established
+data/gis_processed/ba_diem_roads_processed.geojson	INVESTIGATE	GIS source data; ownership and reproducibility not established
+docs/VIETMAP_BLENDER_INTEGRATION.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/VIETMAP_BLENDER_INTEGRATION_BASEMAP_ONLY.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/audit/00-project-baseline.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/audit/01-feature-inventory.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/audit/02-cleanup-plan.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/keycloak-cau-truc-cau-hinh-va-lo-trinh.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/keycloak-login-theme.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/keycloak-rbac-huong-dan-va-danh-gia.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/rbac-keycloak-van-hanh.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/spatial_3d_database_schema.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/testing/01-test-strategy.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/testing/02-feature-test-matrix.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/testing/03-e2e-architecture.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/testing/05-new-feature-testing-checklist.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/tong-quan-du-an-goal-va-quy-chuan.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/generate_ba_diem_3d.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/generate_hcmc_3d.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/hcmc_road_names.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/inspect_vietmap_sdk.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/prepare_hcmc_gis.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/prepare_processed_gis_data.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/prepare_vietmap_basemap.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/prepare_vietmap_vectors.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/prepare_web_glb.cjs	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/report_hcmc_results.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/setup-rbac.ps1	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/test_rbac_integration.cjs	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/validate_hcmc.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/verify_hcmc_blend.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/keycloak-theme-settings.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/keycloak-themes/territory/login/footer.ftl	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/keycloak-themes/territory/login/messages/messages_vi.properties	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/keycloak-themes/territory/login/resources/css/territory.css	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/keycloak-themes/territory/login/resources/img/shield.svg	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/keycloak-themes/territory/login/theme.properties	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/RbacWebConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/rbac/KeycloakAdminClient.java	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/java/com/policemanagement/com/service/rbac/RbacBusinessAspect.java	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/java/com/policemanagement/com/service/rbac/RbacFailureAudit.java	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/java/com/policemanagement/com/service/rbac/RbacService.java	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/java/com/policemanagement/com/web/rest/MenuCatalog.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/RbacResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/errors/RbacExceptionAdvice.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20261009190000_rbac.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/gis/components/Field3DMapTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/Spatial3DMapTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/VietMapCompareTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/baDiemBoundaryGis.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/baDiemBuildingsGis.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/baDiemPoisGis.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/baDiemRealRoads.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/baDiemRoadsGis.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/baDiemSpatialData.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/models/spatial3dTypes.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/rbacApiService.spec.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/rbacApiService.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/utils/googleMapsBasemapGenerator.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/content/models/Ba_Diem_3D.glb	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/UserServiceOidcTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/rbac/RbacServiceTest.java	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+tools/e2e/fixtures.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+tools/e2e/global-setup.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+tools/e2e/package-lock.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+tools/e2e/package.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+tools/e2e/playwright.config.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+tools/e2e/tests/anonymous.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+tools/e2e/tests/security.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.devcontainer/Dockerfile	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.devcontainer/devcontainer.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.editorconfig	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.gitattributes	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.gitignore	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.husky/pre-commit	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.jhipster/AreaZone.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.jhipster/DocumentRecord.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.jhipster/Household.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.jhipster/PatrolLog.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.jhipster/Resident.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.jhipster/SecurityAlert.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.lintstagedrc.cjs	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.mvn/jvm.config	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.mvn/wrapper/maven-wrapper.jar	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.mvn/wrapper/maven-wrapper.properties	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.prettierignore	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.prettierrc	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.vscode/settings.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+.yo-rc.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+README.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+checkstyle.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/gis-auth-ocr.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/maplibre-ap-tc2.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/maplibre-geographic-3d.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/postgis-migration.md	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+docs/tc2-dxf-blender-match-review.csv	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+eslint.config.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+jhipster-ward-management.jdl	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+mvnw	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+mvnw.cmd	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+npmw	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+npmw.cmd	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+package-lock.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+package.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+pom.xml	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+postcss.config.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/__pycache__/extract_dxf_schematic.cpython-314.pyc	SAFE_CLEANUP_CANDIDATE	Generated output; explicit removal approval and rebuild required
+scripts/export_ap_tc2_schematic.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/extract_dxf_schematic.py	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/generate_badiem_data.cjs	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/seed_ancillary_data.cjs	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/seed_ancillary_data.sql	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/test_crud.cjs	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+scripts/test_persistence_e2e.cjs	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+sonar-project.properties	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/app.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/grafana/provisioning/dashboards/JVM.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/grafana/provisioning/dashboards/dashboard.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/grafana/provisioning/datasources/datasource.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/jhipster-control-center.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/jib/entrypoint.sh	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/keycloak.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/monitoring.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/postgresql.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/prometheus/prometheus.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/realm-config/jhipster-realm.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/realm-config/keycloak-health-check.sh	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/services.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/docker/sonar.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/ApplicationWebXml.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/GeneratedByJHipster.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/MonolithicApp.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/aop/logging/LoggingAspect.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/aop/logging/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/ApplicationProperties.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/AsyncConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/CRLFLogConverter.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/CacheConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/CacheKeyGeneratorConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/Constants.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/DatabaseConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/DateTimeFormatConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/JacksonHibernateConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/LiquibaseConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/LoggingAspectConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/LoggingConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/OAuth2Configuration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/SecurityConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/StaticResourcesWebConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/WebConfigurer.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/config/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/AbstractAuditingEntity.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/AreaZone.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/Authority.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/DocumentRecord.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/Household.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/PatrolLog.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/Resident.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/SecurityAlert.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/User.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/enumeration/AlertSeverity.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/enumeration/FacilityType.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/enumeration/Gender.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/enumeration/ResidenceType.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/enumeration/SecurityStatus.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/enumeration/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/domain/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/AreaZoneRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/AuthorityRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/DocumentRecordRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/HouseholdRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/PatrolLogRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/ResidentRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/SecurityAlertRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/UserRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/repository/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/security/AuthoritiesConstants.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/security/SecurityUtils.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/security/SpringSecurityAuditorAware.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/security/oauth2/AudienceValidator.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/security/oauth2/CustomClaimConverter.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/security/oauth2/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/security/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/AreaZoneService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/DocumentRecordQueryService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/DocumentRecordService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/HouseholdQueryService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/HouseholdService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/PatrolLogService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/ResidentQueryService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/ResidentService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/SecurityAlertQueryService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/SecurityAlertService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/UserService.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/criteria/DocumentRecordCriteria.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/criteria/HouseholdCriteria.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/criteria/ResidentCriteria.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/criteria/SecurityAlertCriteria.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/criteria/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/AdminUserDTO.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/AreaZoneDTO.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/DocumentRecordDTO.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/HouseholdDTO.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/PatrolLogDTO.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/ResidentDTO.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/SecurityAlertDTO.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/UserDTO.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/dto/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/impl/AreaZoneServiceImpl.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/impl/DocumentRecordServiceImpl.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/impl/HouseholdServiceImpl.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/impl/PatrolLogServiceImpl.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/impl/ResidentServiceImpl.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/impl/SecurityAlertServiceImpl.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/impl/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/AreaZoneMapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/DocumentRecordMapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/EntityMapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/HouseholdMapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/PatrolLogMapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/ResidentMapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/SecurityAlertMapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/UserMapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/mapper/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/service/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/filter/OAuth2RefreshTokensWebFilter.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/filter/SpaWebFilter.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/filter/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/AccountResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/AreaZoneResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/AuthInfoResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/AuthorityResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/DocumentRecordResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/GisBuildingTypeResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/HouseholdResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/LogoutResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/PatrolLogResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/PublicUserResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/ResidentResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/SecurityAlertResource.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/errors/BadRequestAlertException.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/errors/ErrorConstants.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/errors/ExceptionTranslator.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/errors/FieldErrorVM.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/errors/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/java/com/policemanagement/com/web/rest/package-info.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/banner.txt	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/application-dev.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/application-prod.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/application-secret-samples.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/application-tls.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/application.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/00000000000000_initial_schema.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20260919110516_added_entity_Household.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20260919110516_added_entity_constraints_Household.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20260919110517_added_entity_Resident.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20260919110517_added_entity_constraints_Resident.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20260919110518_added_entity_AreaZone.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20260919110519_added_entity_DocumentRecord.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20260919110520_added_entity_SecurityAlert.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20260919110521_added_entity_PatrolLog.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20261008190000_gis_3d_model.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/changelog/20261008210000_postgis_foundation.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/data/authority.csv	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/fake-data/area_zone.csv	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/fake-data/blob/hipster.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/fake-data/blob/hipster.txt	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/fake-data/document_record.csv	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/fake-data/household.csv	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/fake-data/patrol_log.csv	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/fake-data/resident.csv	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/fake-data/security_alert.csv	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/liquibase/master.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/config/tls/keystore.p12	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/i18n/messages.properties	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/logback-spring.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/resources/templates/error.html	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/404.html	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/WEB-INF/web.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/_bootstrap-variables.scss	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/app.scss	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/app.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/axios-interceptor.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/axios-interceptor.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/constants.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/dayjs.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/error-middleware.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/icon-loader.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/loading-bar-middleware.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/logger-middleware.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/notification-middleware.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/notification-middleware.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/config/store.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/area-zone/area-zone-delete-dialog.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/area-zone/area-zone-detail.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/area-zone/area-zone-reducer.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/area-zone/area-zone-update.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/area-zone/area-zone.reducer.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/area-zone/area-zone.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/area-zone/index.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/document-record/document-record-delete-dialog.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/document-record/document-record-detail.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/document-record/document-record-reducer.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/document-record/document-record-update.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/document-record/document-record.reducer.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/document-record/document-record.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/document-record/index.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/household/household-delete-dialog.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/household/household-detail.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/household/household-reducer.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/household/household-update.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/household/household.reducer.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/household/household.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/household/index.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/menu.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/patrol-log/index.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/patrol-log/patrol-log-delete-dialog.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/patrol-log/patrol-log-detail.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/patrol-log/patrol-log-reducer.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/patrol-log/patrol-log-update.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/patrol-log/patrol-log.reducer.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/patrol-log/patrol-log.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/reducers.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/resident/index.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/resident/resident-delete-dialog.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/resident/resident-detail.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/resident/resident-reducer.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/resident/resident-update.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/resident/resident.reducer.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/resident/resident.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/routes.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/security-alert/index.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/security-alert/security-alert-delete-dialog.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/security-alert/security-alert-detail.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/security-alert/security-alert-reducer.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/security-alert/security-alert-update.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/security-alert/security-alert.reducer.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/entities/security-alert/security-alert.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/firebase-applet-config.example.json	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/gis/AddHouseholdModal.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/AdvancedMapTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/App.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/AreaMapTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/AreasTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/DocumentsTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/Header.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/HouseholdDetailModal.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/HouseholdSearchSelect.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/HouseholdsTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/InspectionCameraModal.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/LoginScreen.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/LogsTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/MapQuickGuideModal.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/OcrScanModal.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/OverviewTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/ResidentsTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/SearchableSelect.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/SecurityAlertsChart.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/SettingsTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/Sidebar.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/SubAdminDelegationTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/SuperAdminAccessGuard.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/SuperAdminHubTab.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/VoiceSearchModal.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/WarningDetailModal.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/components/AddHouseholdModal.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/AdvancedMapTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/AreaMapTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/AreasTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/DocumentsTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/Header.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/HouseholdDetailModal.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/HouseholdSearchSelect.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/HouseholdsTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/InspectionCameraModal.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/LoginScreen.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/LogsTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/MapLibreAreaMap.css	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/MapLibreAreaMap.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/MapQuickGuideModal.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/OcrScanModal.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/OverviewTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/Pagination.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/ResidentsTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/SearchableSelect.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/SecurityAlertsChart.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/SettingsTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/Sidebar.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/SubAdminDelegationTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/SuperAdminAccessGuard.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/SuperAdminHubTab.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/ThreeBuildingLayer.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/VoiceSearchModal.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/WarningDetailModal.tsx	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/components/mapModel.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/apTc2DxfLinework.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/apTc2Schematic.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/initialAuditLogs.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/data/initialAuthData.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/firebase-applet-config.example.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/firebase.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/index.css	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/main.tsx	LEGACY_OR_DUPLICATE	Root GIS screen or standalone entry; active App primarily imports components; full reference check pending
+src/main/webapp/app/gis/services/authService.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/backendSession.spec.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/backendSession.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/firestoreService.spec.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/firestoreService.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/householdApiService.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/ocrService.spec.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/services/ocrService.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/types.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/utils/cryptoUtils.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/utils/householdUtils.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/utils/residenceUtils.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/gis/utils/residentRosterUtils.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+src/main/webapp/app/index.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/administration.reducer.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/administration.reducer.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/configuration/configuration.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/docs/docs.scss	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/docs/docs.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/health/health-modal.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/health/health.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/index.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/logs/logs.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/administration/metrics/metrics.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/home/home.scss	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/home/home.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/login/login-redirect.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/modules/login/logout.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/routes.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/setup-tests.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/DurationFormat.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/auth/private-route.spec.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/auth/private-route.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/error/error-boundary-routes.spec.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/error/error-boundary-routes.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/error/error-boundary.spec.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/error/error-boundary.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/error/page-not-found.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/jhipster/constants.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/jhipster/data-utils.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/jhipster/error.constants.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/jhipster/headers.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/jhipster/link-header.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/jhipster/problem-details.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/footer/footer.scss	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/footer/footer.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/header/header-components.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/header/header.scss	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/header/header.spec.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/header/header.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/menus/account.spec.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/menus/account.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/menus/admin.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/menus/entities.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/menus/index.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/menus/menu-components.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/menus/menu-item.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/password/password-strength-bar.scss	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/layout/password/password-strength-bar.tsx	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/area-zone.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/document-record.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/enumerations/alert-severity.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/enumerations/facility-type.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/enumerations/gender.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/enumerations/residence-type.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/enumerations/security-status.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/household.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/patrol-log.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/resident.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/security-alert.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/model/user.model.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/application-profile.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/application-profile.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/authentication.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/authentication.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/index.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/loading-bar.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/reducer.utils.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/user-management.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/reducers/user-management.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/util/date-utils.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/util/entity-utils.spec.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/util/entity-utils.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/util/pagination.constants.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/shared/util/url-utils.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/app/typings.d.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/css/loading.css	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_0.svg	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_0_head-192.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_0_head-256.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_0_head-384.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_0_head-512.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_1.svg	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_1_head-192.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_1_head-256.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_1_head-384.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_1_head-512.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_2.svg	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_2_head-192.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_2_head-256.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_2_head-384.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_2_head-512.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_3.svg	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_3_head-192.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_3_head-256.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_3_head-384.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/jhipster_family_member_3_head-512.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/content/images/logo-jhipster.png	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/favicon.ico	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/index.html	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/manifest.webapp	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/robots.txt	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/main/webapp/swagger-ui/index.html	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/IntegrationTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/TechnicalStructureTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/aop/logging/LoggingAspectTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/AsyncSyncConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/CRLFLogConverterTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/DatabaseTestcontainer.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/GisSecurityTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/SpringBootTestClassOrderer.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/StaticResourcesWebConfigurerTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/TestSecurityConfiguration.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/WebConfigurerTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/WebConfigurerTestController.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/config/timezone/HibernateTimeZoneIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/AreaZoneAsserts.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/AreaZoneTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/AreaZoneTestSamples.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/AssertUtils.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/AuthorityAsserts.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/AuthorityTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/AuthorityTestSamples.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/DocumentRecordAsserts.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/DocumentRecordTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/DocumentRecordTestSamples.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/HouseholdAsserts.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/HouseholdTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/HouseholdTestSamples.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/PatrolLogAsserts.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/PatrolLogTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/PatrolLogTestSamples.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/ResidentAsserts.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/ResidentTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/ResidentTestSamples.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/SecurityAlertAsserts.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/SecurityAlertTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/domain/SecurityAlertTestSamples.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/repository/timezone/DateTimeWrapper.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/repository/timezone/DateTimeWrapperRepository.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/security/SecurityUtilsUnitTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/security/oauth2/AudienceValidatorTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/security/oauth2/CustomClaimConverterIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/UserServiceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/criteria/DocumentRecordCriteriaTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/criteria/HouseholdCriteriaTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/criteria/ResidentCriteriaTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/criteria/SecurityAlertCriteriaTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/dto/AreaZoneDTOTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/dto/DocumentRecordDTOTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/dto/HouseholdDTOTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/dto/PatrolLogDTOTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/dto/ResidentDTOTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/dto/SecurityAlertDTOTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/mapper/AreaZoneMapperTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/mapper/DocumentRecordMapperTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/mapper/HouseholdMapperTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/mapper/PatrolLogMapperTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/mapper/ResidentMapperTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/mapper/SecurityAlertMapperTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/service/mapper/UserMapperTest.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/test/util/OAuth2TestUtil.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/filter/SpaWebFilterIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/AccountResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/AreaZoneResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/AuthorityResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/DocumentRecordResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/HouseholdResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/LogoutResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/PatrolLogResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/PublicUserResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/ResidentResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/SecurityAlertResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/TestUtil.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/UserResourceIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/WithUnauthenticatedMockUser.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/errors/ExceptionTranslatorIT.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/java/com/policemanagement/com/web/rest/errors/ExceptionTranslatorTestController.java	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/resources/config/application-testdev.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/resources/config/application-testprod.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/resources/config/application.yml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/resources/i18n/messages_en.properties	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/resources/junit-platform.properties	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+src/test/resources/logback.xml	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+tsconfig.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+tsconfig.vitest.json	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps
+vite.config.ts	KEEP	Source/configuration/asset or generator convention; retain unless individually proven unused
+vitest.config.ts	KEEP_BUT_REVIEW	Active capability or build/test contract; audit debt or test gaps

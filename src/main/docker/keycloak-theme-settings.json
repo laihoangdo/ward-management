@@ -1,0 +1,9 @@
+{
+  "registrationAllowed": false,
+  "loginTheme": "territory",
+  "displayName": "Hệ thống quản lý địa bàn",
+  "displayNameHtml": "<span>Hệ thống quản lý địa bàn</span>",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["vi"],
+  "defaultLocale": "vi"
+}

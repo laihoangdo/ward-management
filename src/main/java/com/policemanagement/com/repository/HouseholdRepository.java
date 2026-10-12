@@ -27,14 +27,14 @@ public interface HouseholdRepository extends JpaRepository<Household, Long>, Jpa
     }
 
     @Query(
-        value = "select household from Household household left join fetch household.areaZone",
+        value = "select household from Household household left join fetch household.administrativeHamlet",
         countQuery = "select count(household) from Household household"
     )
     Page<Household> findAllWithToOneRelationships(Pageable pageable);
 
-    @Query("select household from Household household left join fetch household.areaZone")
+    @Query("select household from Household household left join fetch household.administrativeHamlet")
     List<Household> findAllWithToOneRelationships();
 
-    @Query("select household from Household household left join fetch household.areaZone where household.id =:id")
+    @Query("select household from Household household left join fetch household.administrativeHamlet where household.id =:id")
     Optional<Household> findOneWithToOneRelationships(@Param("id") Long id);
 }

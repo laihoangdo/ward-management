@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import {
   Shield,
   ShieldCheck,
@@ -42,6 +43,7 @@ import {
   BlacklistedIpEntry,
 } from '../types';
 import {
+  fetchRbacAreas,
   updateDynamicMenusInFirestore,
   saveAllowedEmailInFirestore,
   deleteAllowedEmailInFirestore,
@@ -56,6 +58,7 @@ import {
   resolveSecurityAlert,
 } from '../services/authService';
 import { SecurityAlertsChart } from './SecurityAlertsChart';
+import { fetchAccessPolicy, saveAccessPolicy } from '../services/rbacApiService';
 
 interface SuperAdminHubTabProps {
   currentUser: AppUser;
@@ -86,6 +89,26 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   onShowToast = (_msg: string) => {},
   onSwitchAccount,
 }) => {
+  const [rbacAreas, setRbacAreas] = useState<{ id: number; name: string; hamletName: string }[]>([]);
+  const [whitelistEnabled, setWhitelistEnabled] = useState(false);
+  const [serverAudit, setServerAudit] = useState<{ id: number; actor: string; action: string; target: string; occurred_at: string }[]>([]);
+  const refreshServerAudit = async () => {
+    try {
+      setServerAudit((await axios.get('/api/rbac/audit')).data);
+    } catch {
+      onShowToast('Không thể tải nhật ký phân quyền');
+    }
+  };
+  React.useEffect(() => {
+    void fetchAccessPolicy()
+      .then(p => setWhitelistEnabled(p.emailWhitelistEnabled))
+      .catch(() => onShowToast('Không thể tải chính sách truy cập'));
+  }, []);
+  React.useEffect(() => {
+    void fetchRbacAreas()
+      .then(setRbacAreas)
+      .catch(() => onShowToast('Cannot load areas'));
+  }, []);
   const effectiveMenusList = dynamicMenusList || dynamicMenus || [];
   const effectiveUnitsList = hcmUnitsList || hcmUnits || [];
   const effectiveEmailsList = allowedEmailsList || allowedEmails || [];
@@ -110,16 +133,18 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [newUserForm, setNewUserForm] = useState<Partial<AppUser>>({
     username: '',
+    temporaryPassword: '',
+    hamletIds: [],
     fullName: '',
     role: 'officer',
     rank: 'Thượng úy',
     position: 'Công an viên Phụ trách Tuyến',
-    unit: 'Công an Phường An Lạc, Quận Bình Tân, TP.HCM',
+    unit: '',
     badgeNumber: '',
     phone: '',
-    assignedWard: 'Phường An Lạc',
-    assignedHamlets: ['Ấp 1'],
-    assignedStreets: ['Đường Kinh Dương Vương', 'Hẻm 418'],
+    assignedWard: '',
+    assignedHamlets: [],
+    assignedStreets: [],
     status: 'active',
   });
 
@@ -139,9 +164,9 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     role: 'officer',
     rank: 'Thượng úy',
     position: 'Công an viên',
-    assignedWard: 'Phường An Lạc',
-    assignedHamlets: 'Ấp 1',
-    note: 'Cán bộ được cấp phép truy cập Google SSO',
+    assignedWard: 'Xã Bà Điểm',
+    assignedHamlets: 'Ấp Bắc Lân',
+    note: 'Cán bộ được cấp phép truy cập ứng dụng',
   });
   const [isAddEmailOpen, setIsAddEmailOpen] = useState(false);
 
@@ -156,12 +181,12 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     officerInChargeName: string;
     totalHouseholds: number;
   }>({
-    district: 'Quận Bình Tân',
-    ward: 'Phường An Lạc',
-    hamlet: 'Ấp 3',
-    streetsAndAlleys: 'Đường Trần Đại Nghĩa, Hẻm 12 Trần Đại Nghĩa, Hẻm 45',
-    officerInChargeName: 'Đại úy Lê Văn Tám',
-    totalHouseholds: 160,
+    district: 'TP. Hồ Chí Minh',
+    ward: 'Xã Bà Điểm',
+    hamlet: 'Ấp Bắc Lân',
+    streetsAndAlleys: 'Đường Phan Văn Hớn, Hẻm 1403 Phan Văn Hớn, Đường Bà Điểm 4',
+    officerInChargeName: 'Đại úy Nguyễn Văn Bình',
+    totalHouseholds: 520,
   });
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
@@ -169,7 +194,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
   // Security Alert State
   const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
-  const [targetAdminEmail, setTargetAdminEmail] = useState('laihoangdo0506@gmail.com');
+  const [targetAdminEmail, setTargetAdminEmail] = useState(currentUser.email || '');
 
   // Blacklist IP State
   const [blacklistedIps, setBlacklistedIps] = useState<BlacklistedIpEntry[]>([]);
@@ -219,7 +244,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   const handleQuickAddBlacklist = async (ip: string, reason: string, alertId: string) => {
     try {
       await addIpToBlacklist(ip, reason, currentUser, alertId, `Chặn khẩn cấp từ cảnh báo an ninh ${alertId}`);
-      onShowToast(`Đã chặn khẩn cấp IP ${ip} vào Tường lửa Blacklist!`);
+      onShowToast(`Đã chặn IP ${ip} tại API ứng dụng`);
     } catch (err: any) {
       alert('Lỗi chặn IP: ' + err.message);
     }
@@ -302,21 +327,17 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
         role: 'officer',
         rank: 'Thượng úy',
         position: 'Công an viên',
-        assignedWard: 'Phường An Lạc',
-        assignedHamlets: 'Ấp 1',
+        assignedWard: 'Xã Bà Điểm',
+        assignedHamlets: 'Ấp Bắc Lân',
         note: '',
       });
-      onShowToast(`Đã thêm email ${entry.email} vào Whitelist truy cập Google.`);
+      onShowToast(`Đã thêm email ${entry.email} vào danh sách cấp phép`);
     } catch (err: any) {
       alert('Lỗi khi thêm email: ' + err.message);
     }
   };
 
   const handleDeleteAllowedEmail = async (id: string, email: string) => {
-    if (email.toLowerCase() === 'laihoangdo0506@gmail.com') {
-      alert('Không thể xóa email Super Admin quản trị tối cao!');
-      return;
-    }
     if (window.confirm(`Bạn có chắc muốn xóa email [${email}] khỏi danh sách cấp phép?`)) {
       try {
         await deleteAllowedEmailInFirestore(id);
@@ -336,33 +357,39 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     }
 
     const newUser: AppUser = {
-      id: `USR-${Date.now()}`,
+      id: newUserForm.id || '',
+      temporaryPassword: newUserForm.temporaryPassword,
+      version: newUserForm.version,
+      hamletIds: newUserForm.hamletIds || [],
       username: newUserForm.username.trim().toLowerCase(),
-      email: newUserForm.email?.trim() || `${newUserForm.username}@bocongan.gov.vn`,
+      email: newUserForm.email?.trim() || '',
       fullName: newUserForm.fullName.trim(),
       role: newUserForm.role || 'officer',
       rank: newUserForm.rank || 'Thượng úy',
       position: newUserForm.position || 'Công an viên',
-      unit: newUserForm.unit || 'Công an Phường An Lạc, Quận Bình Tân, TP.HCM',
-      badgeNumber: newUserForm.badgeNumber || '284-000',
-      phone: newUserForm.phone || '0908.000.113',
-      assignedWard: newUserForm.assignedWard || 'Phường An Lạc',
-      assignedHamlets: newUserForm.assignedHamlets || ['Ấp 1'],
-      assignedStreets: newUserForm.assignedStreets || ['Đường Kinh Dương Vương'],
+      unit: newUserForm.unit || '',
+      badgeNumber: newUserForm.badgeNumber || '',
+      phone: newUserForm.phone || '',
+      assignedWard: newUserForm.assignedWard || '',
+      assignedHamlets: newUserForm.assignedHamlets || [],
+      assignedStreets: newUserForm.assignedStreets || [],
       subAdminPermissions:
-        newUserForm.role === 'officer'
+        newUserForm.subAdminPermissions ||
+        (newUserForm.role === 'officer'
           ? {
-              canEditCoordinates: true,
-              canAddHouseholds: true,
-              canScanOcr: true,
+              canViewAdvancedMap: false,
+              canViewField3DMap: false,
+              canEditCoordinates: false,
+              canAddHouseholds: false,
+              canScanOcr: false,
               canRenewDocs: false,
               canExportReports: false,
-              canSendReminders: true,
-              canUpdateInspection: true,
+              canSendReminders: false,
+              canUpdateInspection: false,
               canManageStreets: false,
             }
-          : undefined,
-      status: 'active',
+          : undefined),
+      status: newUserForm.status || 'active',
       createdAt: new Date().toLocaleDateString('vi-VN'),
       isOnline: false,
     };
@@ -370,7 +397,8 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     try {
       await saveUserInFirestore(newUser);
       setIsAddUserOpen(false);
-      onShowToast(`Đã tạo mới tài khoản cán bộ [${newUser.fullName} - ${newUser.username}].`);
+      setNewUserForm({ username: '', fullName: '', role: 'officer', hamletIds: [] });
+      onShowToast(`Đã đồng bộ tài khoản ${newUser.username} với Keycloak`);
     } catch (err: any) {
       alert('Lỗi tạo tài khoản: ' + err.message);
     }
@@ -428,9 +456,9 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
       for (const item of list) {
         const u: HcmAdminUnit = {
           id: item.id || `HCM-IMP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-          district: item.district || 'Quận Bình Tân',
-          ward: item.ward || 'Phường An Lạc',
-          hamlet: item.hamlet || 'Ấp Mới',
+          district: item.district || 'TP. Hồ Chí Minh',
+          ward: item.ward || 'Xã Bà Điểm',
+          hamlet: item.hamlet || 'Ấp Bắc Lân',
           streetsAndAlleys: Array.isArray(item.streetsAndAlleys) ? item.streetsAndAlleys : ['Đường chính'],
           officerInChargeName: item.officerInChargeName || 'Chưa phân công',
           totalHouseholds: item.totalHouseholds || 120,
@@ -460,7 +488,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
         adminEmailTarget: targetAdminEmail,
       });
 
-      onShowToast(`Đã kích hoạt cảnh báo an ninh & gửi thông báo đẩy tới email Admin: ${targetAdminEmail}!`);
+      onShowToast('Đã lưu cảnh báo kiểm thử. Chưa gửi email.');
     } catch (e: any) {
       alert('Lỗi phát tín hiệu cảnh báo: ' + e.message);
     } finally {
@@ -470,6 +498,54 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
   return (
     <div id="superadmin-hub-tab" className="space-y-6">
+      {activeSubTab === 'security' && (
+        <section className="rounded-xl border border-slate-700 p-4">
+          <button type="button" onClick={() => void refreshServerAudit()} className="text-blue-400">
+            Tải nhật ký phân quyền từ máy chủ
+          </button>
+          <div className="max-h-72 overflow-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr>
+                  <th>Thời gian</th>
+                  <th>Chủ thể Keycloak</th>
+                  <th>Thao tác</th>
+                  <th>Đối tượng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {serverAudit.map(row => (
+                  <tr key={row.id}>
+                    <td>{String(row.occurred_at)}</td>
+                    <td>{row.actor}</td>
+                    <td>{row.action}</td>
+                    <td>{row.target}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+      {activeSubTab === 'whitelist' && (
+        <label className="flex items-center gap-3 p-4 rounded-xl border border-slate-700">
+          <input
+            type="checkbox"
+            checked={whitelistEnabled}
+            onChange={async e => {
+              const enabled = e.target.checked;
+              try {
+                await saveAccessPolicy(enabled);
+                setWhitelistEnabled(enabled);
+                onShowToast('Đã lưu chính sách email');
+              } catch {
+                onShowToast('Không thể lưu chính sách email');
+              }
+            }}
+          />
+          Chỉ cho phép email đang hoạt động trong danh sách cấp phép (Super Admin luôn truy cập được)
+        </label>
+      )}
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-red-950 via-slate-900 to-slate-900 border border-red-800/40 rounded-2xl p-6 shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-80 h-full bg-red-600/5 blur-3xl pointer-events-none" />
@@ -500,7 +576,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               className="py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-lg shadow-red-900/40 flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
             >
               <BellRing className="w-4 h-4 text-amber-300" />
-              {isSendingTestAlert ? 'Đang gửi cảnh báo...' : 'Kiểm Thử Đẩy Email Cảnh Báo'}
+              {isSendingTestAlert ? 'Đang lưu...' : 'Tạo cảnh báo kiểm thử'}
             </button>
           </div>
         </div>
@@ -556,7 +632,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             }`}
           >
             <Mail className="w-3.5 h-3.5" />
-            Whitelist Email Google ({effectiveEmailsList.length})
+            Email được cấp phép ({effectiveEmailsList.length})
           </button>
 
           <button
@@ -585,11 +661,11 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 Cấu Hình Hiển Thị Menu Động Cho Từng Loại Tài Khoản
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Tích chọn các vai trò được phép nhìn thấy từng menu trên Sidebar và ứng dụng di động. Lưu ngay vào Firestore.
+                Chọn vai trò được phép nhìn thấy menu. Quyền thao tác và địa bàn được kiểm tra riêng tại máy chủ.
               </p>
             </div>
             <span className="text-xs font-mono px-3 py-1 rounded-lg bg-slate-950 border border-slate-800 text-emerald-400">
-              Đồng bộ Realtime Firestore
+              Đồng bộ dữ liệu máy chủ
             </span>
           </div>
 
@@ -703,7 +779,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 type="text"
                 value={hcmSearch}
                 onChange={e => setHcmSearch(e.target.value)}
-                placeholder="Tìm kiếm theo tên quận, phường, ấp hoặc tên đường, hẻm (e.g. 418, Kinh Dương Vương)..."
+                placeholder="Tìm kiếm theo tên đơn vị, xã, ấp hoặc tên đường, hẻm (e.g. Phan Văn Hớn, Nguyễn Ảnh Thủ, Bắc Lân)..."
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
               />
             </div>
@@ -713,10 +789,11 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               onChange={e => setSelectedDistrict(e.target.value)}
               className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-red-500"
             >
-              <option value="all">Tất cả Quận / Huyện TP.HCM</option>
-              <option value="Quận Bình Tân">Quận Bình Tân</option>
-              <option value="Huyện Bình Chánh">Huyện Bình Chánh</option>
-              <option value="Thành phố Thủ Đức">Thành phố Thủ Đức</option>
+              <option value="all">Tất cả Khu vực / Đơn vị TP.HCM</option>
+              <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
+              <option value="Cụm Bà Điểm - Phan Văn Hớn">Cụm Bà Điểm - Phan Văn Hớn</option>
+              <option value="Cụm Xuân Thới Thượng">Cụm Xuân Thới Thượng</option>
+              <option value="Cụm Trung Chánh">Cụm Trung Chánh</option>
             </select>
           </div>
 
@@ -809,7 +886,20 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
             <button
               type="button"
-              onClick={() => setIsAddUserOpen(true)}
+              onClick={() => {
+                setNewUserForm({
+                  username: '',
+                  fullName: '',
+                  email: '',
+                  role: 'officer',
+                  status: 'active',
+                  hamletIds: [],
+                  assignedHamlets: [],
+                  assignedStreets: [],
+                  temporaryPassword: '',
+                });
+                setIsAddUserOpen(true);
+              }}
               className="py-2 px-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold flex items-center gap-2 transition"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -906,6 +996,19 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                       </td>
 
                       <td className="py-3 px-4 text-right space-x-2">
+                        {u.id !== currentUser.id && (
+                          <button
+                            type="button"
+                            title="Edit account and role"
+                            onClick={() => {
+                              setNewUserForm({ ...u, temporaryPassword: '' });
+                              setIsAddUserOpen(true);
+                            }}
+                            className="p-1.5 text-blue-300"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         {u.role !== 'superadmin' && (
                           <button
                             type="button"
@@ -919,7 +1022,10 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                         {u.role !== 'superadmin' && (
                           <button
                             type="button"
-                            onClick={() => deleteUserInFirestore(u.id)}
+                            onClick={() => {
+                              if (window.confirm('Delete this Keycloak account?'))
+                                void deleteUserInFirestore(u.id).catch(() => onShowToast('Cannot delete account'));
+                            }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition"
                             title="Xóa tài khoản"
                           >
@@ -945,8 +1051,8 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 Danh Sách Email Được Cấp Phép Truy Cập (Whitelist)
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Chỉ các hộp thư Gmail trong danh sách này mới có thể đăng nhập vào ứng dụng qua cổng Google SSO. Do Super Admin độc quyền
-                quản lý.
+                Khi bật chính sách email, API chỉ chấp nhận tài khoản có email đang hoạt động trong danh sách này. Super Admin quản lý quản
+                lý.
               </p>
             </div>
 
@@ -962,12 +1068,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {effectiveEmailsList.map(item => (
-              <div
-                key={item.id}
-                className={`p-4 rounded-xl border transition flex flex-col justify-between ${
-                  item.email === 'laihoangdo0506@gmail.com' ? 'bg-red-950/20 border-red-700/50' : 'bg-slate-950 border-slate-800'
-                }`}
-              >
+              <div key={item.id} className="p-4 rounded-xl border transition flex flex-col justify-between bg-slate-950 border-slate-800">
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="truncate">
@@ -981,7 +1082,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                       <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-amber-900/40 text-amber-300 border border-amber-700/40">
                         {item.role}
                       </span>
-                      {item.email !== 'laihoangdo0506@gmail.com' && (
+                      {
                         <button
                           type="button"
                           onClick={() => handleDeleteAllowedEmail(item.id, item.email)}
@@ -990,7 +1091,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                      }
                     </div>
                   </div>
 
@@ -1096,7 +1197,8 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                           Đối tượng: <strong className="text-slate-200">{alert.attemptedEmailOrUser || 'Không rõ'}</strong>
                         </span>
                         <span className="text-emerald-400 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Đã đẩy tới {alert.adminEmailTarget}
+                          <CheckCircle2 className="w-3 h-3" />{' '}
+                          {alert.emailNotified ? `Đã gửi tới ${alert.adminEmailTarget}` : 'Chưa gửi email'}
                         </span>
                       </div>
                     </div>
@@ -1169,49 +1271,21 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               <div>
                 <h2 className="text-base font-bold text-white flex items-center gap-2">
                   <Ban className="w-5 h-5 text-rose-400" />
-                  Quản Lý Danh Sách Đen IP (IP Blacklist & Tường Lửa Realtime)
+                  Quản lý danh sách IP chặn truy cập API
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Chặn ngay lập tức quyền truy cập vào Webapp, API và Cơ sở dữ liệu Firestore đối với các IP có hành vi tấn công, quét cổng
-                  hoặc cập nhật bất thường.
+                  Chặn yêu cầu API từ địa chỉ IP bị khóa. Đây là chính sách truy cập ứng dụng hoặc cập nhật bất thường.
                 </p>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-slate-400">Trạng thái Tường lửa:</span>
+                <span className="text-xs text-slate-400">Chính sách truy cập API:</span>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-700/60 text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                   Đang Bật Bảo Vệ (Active)
                 </span>
               </div>
             </div>
-
-            {/* Quick alert banner if IP 113.161.72.19 is not blocked */}
-            {!blacklistedIps.some(b => b.ip === '113.161.72.19') && (
-              <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5 text-amber-200">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>
-                    Phát hiện IP khả nghi gần nhất: <strong className="font-mono text-amber-300">113.161.72.19</strong> (Thực hiện 5 lần cập
-                    nhật trường đặc biệt không hợp lệ trên bảng appUsers - Cảnh báo SEC-1789791931353).
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleQuickAddBlacklist(
-                      '113.161.72.19',
-                      'Cập nhật trường đặc biệt không hợp lệ trên bảng appUsers',
-                      'SEC-1789791931353',
-                    )
-                  }
-                  className="py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shrink-0 flex items-center gap-1.5 transition"
-                >
-                  <Ban className="w-3.5 h-3.5" />
-                  Chặn Ngay IP 113.161.72.19
-                </button>
-              </div>
-            )}
 
             {/* Form Add Suspicious IP */}
             <form onSubmit={handleAddBlacklistIp} className="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
@@ -1264,7 +1338,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   className="py-2 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold flex items-center gap-2 shadow-md transition"
                 >
                   <Ban className="w-3.5 h-3.5" />
-                  {isSubmittingIp ? 'Đang lưu vào Firestore & Tường lửa...' : 'Thêm Vào Blacklist & Kích Hoạt Tường Lửa'}
+                  {isSubmittingIp ? 'Đang lưu...' : 'Thêm IP vào danh sách chặn'}
                 </button>
               </div>
             </form>
@@ -1275,12 +1349,12 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                   Danh sách IP đang bị chặn ({blacklistedIps.length})
                 </h3>
-                <span className="text-[11px] text-slate-500">Tự động đồng bộ với Middleware Tường lửa & Firestore Security</span>
+                <span className="text-[11px] text-slate-500">Có hiệu lực tại API của ứng dụng</span>
               </div>
 
               {blacklistedIps.length === 0 ? (
                 <div className="p-6 text-center text-slate-500 text-xs bg-slate-950 rounded-xl border border-slate-800">
-                  Chưa có IP nào trong danh sách đen. Tường lửa đang ở chế độ giám sát tự động.
+                  Chưa có IP nào trong danh sách chặn
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1295,7 +1369,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                             <Ban className="w-4 h-4" />
                           </span>
                           <div>
-                            <div className="font-mono text-sm font-bold text-rose-300">{entry.ip}</div>
+                            <div className="font-mono text-sm font-bold text-rose-300">{entry.ipAddress}</div>
                             <span className="text-[10px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-800/40">
                               CHẶN TRUY CẬP API & WEB
                             </span>
@@ -1304,7 +1378,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
                         <button
                           type="button"
-                          onClick={() => handleRemoveBlacklistIp(entry.id, entry.ip)}
+                          onClick={() => handleRemoveBlacklistIp(entry.id, entry.ipAddress)}
                           className="py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition"
                           title="Gỡ chặn IP"
                         >
@@ -1317,9 +1391,9 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                         <strong>Lý do:</strong> {entry.reason}
                       </div>
 
-                      {entry.relatedAlertId && (
+                      {entry.sourceAlertId && (
                         <div className="text-[11px] text-slate-400 font-mono">
-                          Mã cảnh báo: <span className="text-amber-400">{entry.relatedAlertId}</span>
+                          Mã cảnh báo: <span className="text-amber-400">{entry.sourceAlertId}</span>
                         </div>
                       )}
 
@@ -1327,9 +1401,9 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
                       <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-[10px] text-slate-500">
                         <span>
-                          Chặn bởi: <strong className="text-slate-400">{entry.addedBy}</strong>
+                          Chặn bởi: <strong className="text-slate-400">{entry.blockedBy}</strong>
                         </span>
-                        <span>{entry.createdAt}</span>
+                        <span>{entry.blockedAt}</span>
                       </div>
                     </div>
                   ))}
@@ -1355,6 +1429,42 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             </div>
 
             <form onSubmit={handleSaveNewUser} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-300 mb-1">Mật khẩu tạm (ít nhất 12 ký tự; tài khoản mới phải đổi khi đăng nhập)</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={12}
+                  required={!newUserForm.id}
+                  value={newUserForm.temporaryPassword || ''}
+                  onChange={e => setNewUserForm({ ...newUserForm, temporaryPassword: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-300 mb-1">Địa bàn được phân công (giữ Ctrl để chọn nhiều)</label>
+                <select
+                  multiple
+                  value={(newUserForm.hamletIds || []).map(String)}
+                  onChange={e => setNewUserForm({ ...newUserForm, hamletIds: Array.from(e.target.selectedOptions, o => Number(o.value)) })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
+                >
+                  {rbacAreas.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.hamletName} / {a.name} (ID {a.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-slate-300 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newUserForm.email || ''}
+                  onChange={e => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 mb-1">Tên đăng nhập (username)*</label>
@@ -1371,8 +1481,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   <label className="block text-slate-300 mb-1">Số hiệu CAND*</label>
                   <input
                     type="text"
-                    required
-                    value={newUserForm.badgeNumber}
+                    value={newUserForm.badgeNumber || ''}
                     onChange={e => setNewUserForm({ ...newUserForm, badgeNumber: e.target.value })}
                     placeholder="e.g. 284-789"
                     className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
@@ -1483,7 +1592,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Mail className="w-4 h-4 text-amber-400" />
-                Thêm Email Gmail Vào Whitelist
+                Thêm email vào danh sách cấp phép
               </h3>
               <button type="button" onClick={() => setIsAddEmailOpen(false)} className="text-slate-400 hover:text-white">
                 <XCircle className="w-5 h-5" />
@@ -1498,7 +1607,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   required
                   value={newEmailForm.email}
                   onChange={e => setNewEmailForm({ ...newEmailForm, email: e.target.value })}
-                  placeholder="e.g. canbo.anlac@gmail.com"
+                  placeholder="e.g. canbo.badiem@gmail.com"
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
                 />
               </div>
@@ -1604,18 +1713,18 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     required
                     value={newUnitForm.district}
                     onChange={e => setNewUnitForm({ ...newUnitForm, district: e.target.value })}
-                    placeholder="Quận Bình Tân"
+                    placeholder="TP. Hồ Chí Minh"
                     className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 mb-1">Phường / Xã / Thị trấn*</label>
+                  <label className="block text-slate-300 mb-1">Xã / Phường phụ trách*</label>
                   <input
                     type="text"
                     required
                     value={newUnitForm.ward}
                     onChange={e => setNewUnitForm({ ...newUnitForm, ward: e.target.value })}
-                    placeholder="Phường An Lạc"
+                    placeholder="Xã Bà Điểm"
                     className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
                   />
                 </div>
@@ -1623,13 +1732,13 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 mb-1">Ấp / Khu phố / Thôn*</label>
+                  <label className="block text-slate-300 mb-1">Ấp / Khu phố phụ trách*</label>
                   <input
                     type="text"
                     required
                     value={newUnitForm.hamlet}
                     onChange={e => setNewUnitForm({ ...newUnitForm, hamlet: e.target.value })}
-                    placeholder="Ấp 3"
+                    placeholder="Ấp Bắc Lân"
                     className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
                   />
                 </div>
@@ -1650,7 +1759,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   type="text"
                   value={newUnitForm.officerInChargeName}
                   onChange={e => setNewUnitForm({ ...newUnitForm, officerInChargeName: e.target.value })}
-                  placeholder="Đại úy Lê Văn Tám"
+                  placeholder="Đại úy Nguyễn Văn Bình"
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
                 />
               </div>
@@ -1662,7 +1771,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   required
                   value={newUnitForm.streetsAndAlleys}
                   onChange={e => setNewUnitForm({ ...newUnitForm, streetsAndAlleys: e.target.value })}
-                  placeholder="Đường Kinh Dương Vương, Hẻm 418 Kinh Dương Vương, Hẻm 432, Đường Hồ Học Lãm..."
+                  placeholder="Đường Phan Văn Hớn, Hẻm 1403 Phan Văn Hớn, Đường Nguyễn Ảnh Thủ, Đường Bà Điểm 4..."
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
                 />
               </div>
@@ -1706,10 +1815,10 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               onChange={e => setImportJsonText(e.target.value)}
               placeholder={`[
   {
-    "district": "Quận Bình Tân",
-    "ward": "Phường An Lạc",
-    "hamlet": "Khu phố 6",
-    "streetsAndAlleys": ["Đường Lê Cơ", "Hẻm 45 Lê Cơ", "Hẻm 68"],
+    "district": "TP. Hồ Chí Minh",
+    "ward": "Xã Bà Điểm",
+    "hamlet": "Ấp Tiền Lân",
+    "streetsAndAlleys": ["Đường Phan Văn Hớn", "Hẻm 345 Phan Văn Hớn", "Đường Bà Điểm 4"],
     "totalHouseholds": 190
   }
 ]`}

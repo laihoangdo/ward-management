@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, RefreshCw, Shield, AlertTriangle, Menu, X, Sun, Moon, Mic, LogOut, ShieldCheck, UserCheck, Home } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, RefreshCw, Shield, AlertTriangle, Menu, X, Sun, Moon, Mic, LogOut, UserCheck, Home, Bell } from 'lucide-react';
 import { Link } from 'react-router';
 import { NavigationTab, AppUser } from '../types';
 import { VoiceSearchModal } from './VoiceSearchModal';
@@ -37,6 +37,30 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatClockTime = (date: Date) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  const formatClockDate = (date: Date) => {
+    const dayNames = ['CHỦ NHẬT', 'THỨ HAI', 'THỨ BA', 'THỨ TƯ', 'THỨ NĂM', 'THỨ SÁU', 'THỨ BẢY'];
+    const dayName = dayNames[date.getDay()];
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    return `${dayName}, ${day} THÁNG ${month}, ${year}`;
+  };
 
   const getTabTitle = () => {
     switch (activeTab) {
@@ -70,12 +94,12 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
       {/* Title / Hamburger menu / Home button */}
-      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
         {/* Mobile/Tablet Hamburger Toggle Button */}
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
-            className="lg:hidden h-9 w-9 text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors relative flex items-center justify-center shrink-0 cursor-pointer"
+            className="lg:hidden h-8 w-8 sm:h-9 sm:w-9 text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors relative flex items-center justify-center shrink-0 cursor-pointer"
             title="Mở menu điều hành"
           >
             <Menu className="w-4 h-4 text-slate-700 dark:text-slate-200" />
@@ -85,43 +109,41 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Nút Về Trang Chủ (Home Portal) */}
+        {/* Nút Về Trang Chủ (Home Portal) - Ẩn trên mobile để tối ưu diện tích cho tiêu đề và đồng hồ */}
         <Link
           to="/"
           id="btn-header-home"
           title="Quay về Trang chủ Cổng thông tin Monolithic"
-          className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-slate-700 bg-slate-50 hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-300 font-semibold text-xs transition-colors shadow-xs shrink-0 cursor-pointer no-underline"
+          className="hidden sm:flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-slate-700 bg-slate-50 hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-300 font-semibold text-xs transition-colors shadow-xs shrink-0 cursor-pointer no-underline"
           style={{ textDecoration: 'none' }}
         >
           <Home className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-          <span className="hidden sm:inline">Trang chủ</span>
+          <span>Trang chủ</span>
         </Link>
 
         {/* Shield Icon */}
-        <div className="hidden sm:flex w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 items-center justify-center border border-blue-500/20 shrink-0">
+        <div className="hidden md:flex w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 items-center justify-center border border-blue-500/20 shrink-0">
           <Shield className="w-4 h-4" />
         </div>
 
         {/* Module Title & Breadcrumb */}
-        <div className="min-w-0 pr-1">
+        <div className="min-w-0 pr-1 flex-1">
           <h1
             className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight truncate m-0 p-0"
-            style={{ fontSize: '13.5px', lineHeight: '18px', margin: 0, fontWeight: 700 }}
+            style={{ margin: 0, fontWeight: 700 }}
           >
             {getTabTitle()}
           </h1>
-          <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden xs:flex items-center gap-1.5 truncate leading-tight mt-0.5">
-            <span className="hidden md:inline font-medium">
+          <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden md:flex items-center gap-1.5 truncate leading-tight mt-0.5">
+            <span className="font-medium">
               {currentUser?.unit || (currentUser?.assignedWard ? `TP.HCM • ${currentUser.assignedWard}` : 'TP.HCM • Quản lý địa bàn')}
             </span>
-            <span className="hidden md:inline text-slate-300 dark:text-slate-600">•</span>
-            <span className="text-blue-600 dark:text-blue-400 font-semibold">{new Date().toLocaleDateString('vi-VN')}</span>
           </div>
         </div>
       </div>
 
       {/* Action shortcuts & Search */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Desktop & Tablet Quick Search with Voice Search trigger */}
         <div className="relative hidden md:block w-36 lg:w-56 xl:w-64 shrink-0">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -155,11 +177,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Mobile Dedicated Voice Search Quick Button */}
+        {/* Mobile Dedicated Voice Search Quick Button - chỉ hiện từ sm đến md, trên mobile nhỏ đã có trong dropdown search */}
         <button
           id="btn-header-voice-search-mobile"
           onClick={() => setIsVoiceModalOpen(true)}
-          className="md:hidden h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center justify-center cursor-pointer shrink-0"
+          className="hidden sm:flex md:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors items-center justify-center cursor-pointer shrink-0"
           title="Tìm kiếm bằng giọng nói Tiếng Việt"
         >
           <Mic className="w-4 h-4 text-rose-600" />
@@ -168,7 +190,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Mobile Search Toggle Icon */}
         <button
           onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-          className={`md:hidden h-9 w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
+          className={`md:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
             isMobileSearchOpen || searchQuery
               ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
               : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
@@ -197,14 +219,14 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => onTabChange('residents')}
             title="Mở nhanh module Quản lý nhân khẩu & Định danh"
-            className={`hidden sm:flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
+            className={`hidden md:flex items-center gap-1.5 h-9 px-2 sm:px-2.5 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
               activeTab === 'residents'
                 ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20'
                 : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
             }`}
           >
             <UserCheck className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline whitespace-nowrap">Nhân khẩu</span>
+            <span className="hidden xl:inline whitespace-nowrap">Nhân khẩu</span>
           </button>
         )}
 
@@ -212,54 +234,51 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onRefresh}
           title="Làm mới dữ liệu địa bàn"
-          className="h-9 px-2 sm:px-3 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
+          className="hidden sm:flex h-9 px-2 sm:px-2.5 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
         >
           <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-          <span className="hidden md:inline whitespace-nowrap">Cập nhật</span>
+          <span className="hidden xl:inline whitespace-nowrap">Cập nhật</span>
         </button>
 
-        {/* Dark/Light Mode Toggle Switch */}
+        {/* Real-time Clock Widget */}
+        <div className="flex flex-col items-end justify-center select-none shrink-0 px-0.5 sm:px-1 leading-tight text-right">
+          <div className="font-mono font-black text-[11px] xs:text-xs sm:text-sm md:text-base leading-none tracking-wider text-slate-900 dark:text-white drop-shadow-xs">
+            {formatClockTime(currentTime)}
+          </div>
+          <div className="hidden sm:block text-[9px] sm:text-[10px] md:text-[11px] font-bold text-sky-600 dark:text-cyan-400 leading-tight tracking-wider uppercase mt-0.5">
+            {formatClockDate(currentTime)}
+          </div>
+        </div>
+
+        {/* Vertical divider */}
+        <div className="h-5 sm:h-6 w-px bg-slate-300 dark:bg-slate-700/80 mx-0.5 sm:mx-1 shrink-0" />
+
+        {/* Dark/Light Mode Toggle Switch (Icon only) */}
         {onToggleTheme && (
           <button
             id="btn-toggle-dark-mode"
             onClick={onToggleTheme}
-            title={theme === 'dark' ? 'Chuyển sang Chế độ Sáng (Ban ngày)' : 'Chuyển sang Chế độ Tối (Ban đêm / Thiếu sáng)'}
-            className={`h-9 px-2 sm:px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
-              theme === 'dark'
-                ? 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-200 hover:text-amber-300'
-                : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-indigo-600'
-            }`}
+            title={theme === 'dark' ? 'Chuyển sang Chế độ Sáng (Ban ngày)' : 'Chuyển sang Chế độ Tối (Ban đêm)'}
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 hover:text-amber-500 dark:text-slate-300 dark:hover:text-amber-400 transition-colors flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
           >
             {theme === 'dark' ? (
-              <>
-                <Sun className="w-4 h-4 text-amber-400 shrink-0 animate-in spin-in-180 duration-300" />
-                <span className="hidden md:inline whitespace-nowrap">Chế độ Sáng</span>
-              </>
+              <Sun className="w-4 h-4 text-amber-400 animate-in spin-in-180 duration-300" />
             ) : (
-              <>
-                <Moon className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span className="hidden md:inline whitespace-nowrap">Chế độ Tối</span>
-              </>
+              <Moon className="w-4 h-4 text-indigo-600" />
             )}
           </button>
         )}
 
-        {/* Urgent Warning notification button */}
+        {/* Warning / Notification Bell with count badge */}
         <button
           onClick={onOpenWarnings}
-          className={`h-9 px-2 sm:px-3 rounded-lg border text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
-            warningCount > 0
-              ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-700 dark:text-amber-300'
-              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
-          }`}
+          title={`Thông báo & Cảnh báo an ninh địa bàn (${warningCount})`}
+          className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
         >
-          <AlertTriangle
-            className={`w-4 h-4 shrink-0 ${warningCount > 0 ? 'text-amber-600 dark:text-amber-400 animate-bounce' : 'text-slate-400'}`}
-          />
-          <span className="hidden xs:inline whitespace-nowrap">Cảnh báo</span>
+          <Bell className={`w-4 h-4 shrink-0 ${warningCount > 0 ? 'text-amber-500 dark:text-amber-300' : 'text-slate-400'}`} />
           {warningCount > 0 && (
-            <span className="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold leading-none">
-              {warningCount}
+            <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 bg-red-500 dark:bg-rose-600 text-white text-[9px] sm:text-[10px] font-bold font-mono rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 leading-none shadow-sm animate-pulse">
+              {warningCount > 99 ? '99+' : warningCount}
             </span>
           )}
         </button>

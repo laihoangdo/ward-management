@@ -43,8 +43,7 @@ public class CacheConfiguration {
             createCache(cm, com.policemanagement.com.domain.Household.class.getName());
             createCache(cm, com.policemanagement.com.domain.Household.class.getName() + ".residentses");
             createCache(cm, com.policemanagement.com.domain.Resident.class.getName());
-            createCache(cm, com.policemanagement.com.domain.AreaZone.class.getName());
-            createCache(cm, com.policemanagement.com.domain.AreaZone.class.getName() + ".householdses");
+            createCache(cm, com.policemanagement.com.domain.Hamlet.class.getName());
             createCache(cm, com.policemanagement.com.domain.DocumentRecord.class.getName());
             createCache(cm, com.policemanagement.com.domain.SecurityAlert.class.getName());
             createCache(cm, com.policemanagement.com.domain.PatrolLog.class.getName());

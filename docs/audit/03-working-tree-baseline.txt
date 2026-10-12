@@ -1,0 +1,81 @@
+﻿ M .gitignore
+ M .vscode/settings.json
+ D scripts/__pycache__/extract_dxf_schematic.cpython-314.pyc
+ M src/main/docker/keycloak.yml
+ M src/main/docker/realm-config/jhipster-realm.json
+ M src/main/java/com/policemanagement/com/repository/PatrolLogRepository.java
+ M src/main/java/com/policemanagement/com/service/DocumentRecordQueryService.java
+ M src/main/java/com/policemanagement/com/service/HouseholdQueryService.java
+ M src/main/java/com/policemanagement/com/service/ResidentQueryService.java
+ M src/main/java/com/policemanagement/com/service/SecurityAlertQueryService.java
+ M src/main/java/com/policemanagement/com/service/UserService.java
+ M src/main/java/com/policemanagement/com/service/impl/AreaZoneServiceImpl.java
+ M src/main/java/com/policemanagement/com/service/impl/HouseholdServiceImpl.java
+ M src/main/java/com/policemanagement/com/service/impl/PatrolLogServiceImpl.java
+ M src/main/resources/config/application-dev.yml
+ M src/main/resources/config/application.yml
+ M src/main/resources/config/liquibase/master.xml
+ M src/main/webapp/app/gis/App.tsx
+ M src/main/webapp/app/gis/Sidebar.tsx
+ M src/main/webapp/app/gis/components/AddHouseholdModal.tsx
+ M src/main/webapp/app/gis/components/HouseholdDetailModal.tsx
+ M src/main/webapp/app/gis/components/HouseholdsTab.tsx
+ M src/main/webapp/app/gis/components/ResidentsTab.tsx
+ M src/main/webapp/app/gis/components/Sidebar.tsx
+ M src/main/webapp/app/gis/components/SubAdminDelegationTab.tsx
+ M src/main/webapp/app/gis/components/SuperAdminHubTab.tsx
+ M src/main/webapp/app/gis/data/initialAuthData.ts
+ M src/main/webapp/app/gis/services/authService.ts
+ M src/main/webapp/app/gis/services/firestoreService.ts
+ M src/main/webapp/app/gis/services/householdApiService.ts
+ M src/main/webapp/app/gis/types.ts
+ M vite.config.ts
+?? Ba_Diem_3D.blend
+?? README_BLENDER.md
+?? data/
+?? docs/VIETMAP_BLENDER_INTEGRATION.md
+?? docs/VIETMAP_BLENDER_INTEGRATION_BASEMAP_ONLY.md
+?? docs/keycloak-cau-truc-cau-hinh-va-lo-trinh.md
+?? docs/keycloak-login-theme.md
+?? docs/keycloak-rbac-huong-dan-va-danh-gia.md
+?? docs/rbac-keycloak-van-hanh.md
+?? docs/spatial_3d_database_schema.md
+?? docs/tong-quan-du-an-goal-va-quy-chuan.md
+?? scripts/generate_ba_diem_3d.py
+?? scripts/generate_hcmc_3d.py
+?? scripts/hcmc_road_names.py
+?? scripts/inspect_vietmap_sdk.py
+?? scripts/prepare_hcmc_gis.py
+?? scripts/prepare_processed_gis_data.py
+?? scripts/prepare_vietmap_basemap.py
+?? scripts/prepare_vietmap_vectors.py
+?? scripts/prepare_web_glb.cjs
+?? scripts/report_hcmc_results.py
+?? scripts/setup-rbac.ps1
+?? scripts/test_rbac_integration.cjs
+?? scripts/validate_hcmc.py
+?? scripts/verify_hcmc_blend.py
+?? src/main/docker/keycloak-theme-settings.json
+?? src/main/docker/keycloak-themes/
+?? src/main/java/com/policemanagement/com/config/RbacWebConfiguration.java
+?? src/main/java/com/policemanagement/com/service/rbac/
+?? src/main/java/com/policemanagement/com/web/rest/MenuCatalog.java
+?? src/main/java/com/policemanagement/com/web/rest/RbacResource.java
+?? src/main/java/com/policemanagement/com/web/rest/errors/RbacExceptionAdvice.java
+?? src/main/resources/config/liquibase/changelog/20261009190000_rbac.xml
+?? src/main/webapp/app/gis/components/Field3DMapTab.tsx
+?? src/main/webapp/app/gis/components/Spatial3DMapTab.tsx
+?? src/main/webapp/app/gis/components/VietMapCompareTab.tsx
+?? src/main/webapp/app/gis/data/baDiemBoundaryGis.json
+?? src/main/webapp/app/gis/data/baDiemBuildingsGis.json
+?? src/main/webapp/app/gis/data/baDiemPoisGis.json
+?? src/main/webapp/app/gis/data/baDiemRealRoads.ts
+?? src/main/webapp/app/gis/data/baDiemRoadsGis.json
+?? src/main/webapp/app/gis/data/baDiemSpatialData.ts
+?? src/main/webapp/app/gis/models/
+?? src/main/webapp/app/gis/services/rbacApiService.spec.ts
+?? src/main/webapp/app/gis/services/rbacApiService.ts
+?? src/main/webapp/app/gis/utils/googleMapsBasemapGenerator.ts
+?? src/main/webapp/content/models/
+?? src/test/java/com/policemanagement/com/service/UserServiceOidcTest.java
+?? src/test/java/com/policemanagement/com/service/rbac/

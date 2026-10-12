@@ -92,17 +92,11 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
   };
 
   const handleConfirmResolve = async (alert: SecurityAlert) => {
-    const adminUser = currentUser || {
-      id: 'USR-SUPERADMIN-01',
-      username: 'superadmin',
-      fullName: 'Đại tá Trần Quốc Huy',
-      role: 'superadmin',
-      rank: 'Đại tá',
-      position: 'Trưởng Công an Quận',
-      badgeNumber: '001-999',
-      assignedDistrict: 'Quận Bình Tân',
-      status: 'active',
-    };
+    if (!currentUser) {
+      setFeedbackMsg('Không xác định được người dùng. Vui lòng đăng nhập lại.');
+      return;
+    }
+    const adminUser = currentUser;
 
     setResolvingId(alert.id);
     try {
@@ -142,17 +136,11 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
   const handleQuickBlacklist = async (alert: SecurityAlert) => {
     if (!alert.sourceIp) return;
-    const adminUser = currentUser || {
-      id: 'USR-SUPERADMIN-01',
-      username: 'superadmin',
-      fullName: 'Đại tá Trần Quốc Huy',
-      role: 'superadmin',
-      rank: 'Đại tá',
-      position: 'Trưởng Công an Quận',
-      badgeNumber: '001-999',
-      assignedDistrict: 'Quận Bình Tân',
-      status: 'active',
-    };
+    if (!currentUser) {
+      setFeedbackMsg('Không xác định được người dùng. Vui lòng đăng nhập lại.');
+      return;
+    }
+    const adminUser = currentUser;
 
     setBlockingIp(alert.sourceIp);
     try {
@@ -412,7 +400,6 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>
                         Số {h.houseNumber} {h.street}, {h.hamlet}
-                        {h.ward ? `, ${h.ward}` : ''}
                       </span>
                     </div>
 

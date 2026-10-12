@@ -54,7 +54,7 @@ const config = defineConfig({
     }),
   ],
   root: fileURLToPath(new URL('./src/main/webapp/', import.meta.url)),
-  publicDir: fileURLToPath(new URL('./target/classes/static/public', import.meta.url)),
+  publicDir: fileURLToPath(new URL('./data/hcmc_assets/web_public/', import.meta.url)),
   cacheDir: fileURLToPath(new URL('./target/.vite-cache', import.meta.url)),
   build: {
     emptyOutDir: true,

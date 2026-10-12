@@ -158,3 +158,13 @@ coverage/
 ######################
 *firebase-applet-config.json
 !*firebase-applet-config.example.json
+.rbac/
+
+# Local VietMap credentials used by GIS processing scripts
+/config/vietmap.local.json
+
+# Local database backup for direct hamlet migration (contains private application data)
+/backups/hamlet-direct-20261012/
+
+# Private local database snapshot before user-authorized TC2 household import
+/backups/tc2-import-20261013/

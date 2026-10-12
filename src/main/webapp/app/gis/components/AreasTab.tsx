@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Building2, Shield, Users, MapPin, AlertTriangle, CheckCircle2, Lock, Flame, Phone, Compass, FileText, Store } from 'lucide-react';
+import { Building2, AlertTriangle, CheckCircle2, Flame } from 'lucide-react';
 import { HouseholdFacility } from '../types';
 import { Pagination } from './Pagination';
 
@@ -82,7 +82,7 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">{hamletName.toUpperCase()}</h3>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Xã Bà Điểm, Hóc Môn</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Xã Bà Điểm, TP. Hồ Chí Minh</div>
                   </div>
                 </div>
                 <span

@@ -1,27 +1,22 @@
+import { exportRbacCsv } from '../services/rbacApiService';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   UserCheck,
   UserPlus,
   Search,
-  Filter,
   Eye,
   Edit,
   Trash2,
   Phone,
-  Shield,
   ShieldAlert,
   AlertTriangle,
-  CheckCircle2,
-  Building2,
   MapPin,
-  Calendar,
   CreditCard,
   X,
   PieChart,
   BarChart3,
   Home,
-  ArrowRight,
   RotateCcw,
   FileSpreadsheet,
   LayoutGrid,
@@ -233,6 +228,21 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   }).length;
   const elderlyCount = allResidents.filter(r => currentYear - r.birthYear > 60).length;
 
+  // Chart calculation metrics for circular charts
+  const totalRes = totalCount > 0 ? totalCount : 1;
+  const malePct = totalCount > 0 ? Math.round((maleCount / totalCount) * 100) : 0;
+  const femalePct = totalCount > 0 ? 100 - malePct : 0;
+  const thuongTruPct = totalCount > 0 ? Math.round((thuongTruCount / totalCount) * 100) : 0;
+  const tamTruPct = totalCount > 0 ? Math.round((tamTruCount / totalCount) * 100) : 0;
+  const luuTruPct = totalCount > 0 ? Math.max(0, 100 - thuongTruPct - tamTruPct) : 0;
+
+  const circ = 282.743; // Circumference for r=45
+  const maleDash = (maleCount / totalRes) * circ;
+  const femaleDash = (femaleCount / totalRes) * circ;
+  const ttDash = (thuongTruCount / totalRes) * circ;
+  const tamTruDash = (tamTruCount / totalRes) * circ;
+  const luuTruDash = (luuTruCount / totalRes) * circ;
+
   const isAnyFilterActive =
     searchTerm.trim() !== '' ||
     residenceFilter !== 'all' ||
@@ -254,66 +264,12 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   };
 
   // Export CSV Handler
-  const handleExportCSV = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canExportReports === false) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền xuất báo cáo danh sách CSV/Excel.';
-      if (onShowToast) onShowToast(msg);
-      else alert(msg);
-      return;
-    }
-
-    const headers = [
-      'STT',
-      'Họ và Tên',
-      'Năm Sinh',
-      'Tuổi',
-      'Giới Tính',
-      'Số CCCD/Định Danh',
-      'Loại Cư Trú',
-      'Quan Hệ Với Chủ Hộ',
-      'Số Nhà',
-      'Tuyến Đường',
-      'Tổ Dân Phố',
-      'Khu Vực (Ấp)',
-      'Tên Chủ Hộ',
-      'SĐT Liên Hệ',
-      'Nghề Nghiệp',
-      'Đối Tượng Theo Dõi ANTT',
-      'Ghi Chú',
-    ];
-
-    const rows = filteredResidents.map((r, index) => [
-      index + 1,
-      `"${r.fullName}"`,
-      r.birthYear,
-      currentYear - r.birthYear,
-      `"${r.gender}"`,
-      r.idCardNumber ? `"'${r.idCardNumber}"` : 'Chưa có',
-      `"${r.residenceType}"`,
-      `"${r.relationship}"`,
-      `"${r.houseNumber}"`,
-      `"${r.street}"`,
-      `"${r.neighborhoodGroup || ''}"`,
-      `"${r.hamlet}"`,
-      `"${r.ownerName}"`,
-      `"${r.phone || r.ownerPhone || ''}"`,
-      `"${r.occupation || 'Tự do'}"`,
-      r.isMonitored ? 'CẦN CHÚ Ý ANTT' : 'Bình thường',
-      `"${(r.notes || '').replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Danh_sach_nhan_khau_P_An_Lac_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    if (onShowToast) {
-      onShowToast(`Đã xuất báo cáo danh sách ${filteredResidents.length} nhân khẩu ra file Excel (CSV)!`);
+  const handleExportCSV = async () => {
+    try {
+      await exportRbacCsv('residents');
+      onShowToast?.('Exported authorized area data.');
+    } catch {
+      onShowToast?.('Export was denied or the server is unavailable.');
     }
   };
 
@@ -1204,7 +1160,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                   <h3 className="text-base font-bold">Hồ Sơ Nhân Khẩu & Cư Trú</h3>
                   <div className="text-xs text-slate-400">
                     Mã nhân khẩu: {selectedResident.id}
-                    {selectedResident.residentType ? ` • ${selectedResident.residentType}` : ''}
+                    {selectedResident.residenceType ? ` • ${selectedResident.residenceType}` : ''}
                   </div>
                 </div>
               </div>
@@ -1786,7 +1742,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
       {/* ================= MODAL: PHÂN TÍCH CƠ CẤU DÂN SỐ ================= */}
       {isDemographicModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl">
             <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
@@ -1807,97 +1763,219 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             </div>
 
             <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto text-xs">
-              {/* Ratio Bars */}
-              <div className="space-y-4">
-                {/* Gender Ratio */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
+              {/* 2 Circular Charts Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Gender Ratio Circular Donut Chart */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="font-bold text-slate-800 dark:text-white">Tỷ Lệ Giới Tính</span>
-                    <span className="text-slate-500 font-mono">
-                      Nam: {maleCount} ({totalCount > 0 ? Math.round((maleCount / totalCount) * 100) : 0}%) • Nữ: {femaleCount} (
-                      {totalCount > 0 ? Math.round((femaleCount / totalCount) * 100) : 0}%)
-                    </span>
+                    <span className="text-[11px] text-slate-500 font-mono">Nam / Nữ</span>
                   </div>
-                  <div className="w-full h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex">
-                    <div
-                      style={{ width: `${totalCount > 0 ? (maleCount / totalCount) * 100 : 50}%` }}
-                      className="bg-blue-600 h-full"
-                      title={`Nam: ${maleCount}`}
-                    />
-                    <div
-                      style={{ width: `${totalCount > 0 ? (femaleCount / totalCount) * 100 : 50}%` }}
-                      className="bg-rose-500 h-full"
-                      title={`Nữ: ${femaleCount}`}
-                    />
+
+                  <div className="flex items-center gap-3">
+                    {/* Circular Donut Chart */}
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="45"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="16"
+                          className="text-slate-200 dark:text-slate-700"
+                        />
+                        {maleCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="16"
+                            strokeDasharray={`${maleDash} ${circ}`}
+                            strokeDashoffset={0}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                        {femaleCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#f43f5e"
+                            strokeWidth="16"
+                            strokeDasharray={`${femaleDash} ${circ}`}
+                            strokeDashoffset={-maleDash}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{malePct}%</span>
+                        <span className="text-[9px] text-blue-500 dark:text-blue-400 font-semibold leading-tight mt-0.5">Nam</span>
+                      </div>
+                    </div>
+
+                    {/* Legend List */}
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Nam</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{maleCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({malePct}%)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Nữ</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{femaleCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({femalePct}%)</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Residence Breakdown */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-slate-800 dark:text-white">Phân Bổ Loại Hình Cư Trú</span>
-                    <span className="text-slate-500 font-mono">Tổng số: {totalCount} người</span>
+                {/* Residence Breakdown Circular Donut Chart */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-bold text-slate-800 dark:text-white">Phân Bổ Nơi Cư Trú</span>
+                    <span className="text-[11px] text-slate-500 font-mono">Tổng: {totalCount}</span>
                   </div>
-                  <div className="w-full h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex">
-                    <div
-                      style={{ width: `${totalCount > 0 ? (thuongTruCount / totalCount) * 100 : 0}%` }}
-                      className="bg-emerald-500 h-full"
-                      title={`Thường trú: ${thuongTruCount}`}
-                    />
-                    <div
-                      style={{ width: `${totalCount > 0 ? (tamTruCount / totalCount) * 100 : 0}%` }}
-                      className="bg-blue-500 h-full"
-                      title={`Tạm trú: ${tamTruCount}`}
-                    />
-                    <div
-                      style={{ width: `${totalCount > 0 ? (luuTruCount / totalCount) * 100 : 0}%` }}
-                      className="bg-amber-500 h-full"
-                      title={`Lưu trú: ${luuTruCount}`}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2">
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      Thường trú: {thuongTruCount} ({totalCount > 0 ? Math.round((thuongTruCount / totalCount) * 100) : 0}%)
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                      Tạm trú: {tamTruCount} ({totalCount > 0 ? Math.round((tamTruCount / totalCount) * 100) : 0}%)
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                      Lưu trú: {luuTruCount} ({totalCount > 0 ? Math.round((luuTruCount / totalCount) * 100) : 0}%)
-                    </span>
+
+                  <div className="flex items-center gap-3">
+                    {/* Circular Donut Chart */}
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="45"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="16"
+                          className="text-slate-200 dark:text-slate-700"
+                        />
+                        {thuongTruCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#10b981"
+                            strokeWidth="16"
+                            strokeDasharray={`${ttDash} ${circ}`}
+                            strokeDashoffset={0}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                        {tamTruCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="16"
+                            strokeDasharray={`${tamTruDash} ${circ}`}
+                            strokeDashoffset={-ttDash}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                        {luuTruCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#f59e0b"
+                            strokeWidth="16"
+                            strokeDasharray={`${luuTruDash} ${circ}`}
+                            strokeDashoffset={-(ttDash + tamTruDash)}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{totalCount}</span>
+                        <span className="text-[9px] text-slate-400 leading-tight mt-0.5">người</span>
+                      </div>
+                    </div>
+
+                    {/* Legend List */}
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Thường trú</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{thuongTruCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({thuongTruPct}%)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Tạm trú</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{tamTruCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({tamTruPct}%)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Lưu trú</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{luuTruCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({luuTruPct}%)</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Age Pyramid */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-slate-800 dark:text-white">Cơ Cấu Độ Tuổi</span>
-                    <span className="text-slate-500 font-mono">Trẻ em / Lao động / Người cao tuổi</span>
+              {/* Age Pyramid */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-slate-800 dark:text-white">Cơ Cấu Độ Tuổi</span>
+                  <span className="text-slate-500 font-mono">Trẻ em / Lao động / Người cao tuổi</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-center mt-3">
+                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
+                    <div className="text-[11px] text-slate-500">Dưới 18 tuổi</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-white mt-1">{under18Count}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {totalCount > 0 ? Math.round((under18Count / totalCount) * 100) : 0}%
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 text-center mt-3">
-                    <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
-                      <div className="text-[11px] text-slate-500">Dưới 18 tuổi</div>
-                      <div className="text-lg font-bold text-slate-800 dark:text-white mt-1">{under18Count}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {totalCount > 0 ? Math.round((under18Count / totalCount) * 100) : 0}%
-                      </div>
+                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
+                    <div className="text-[11px] text-slate-500">Lao động (18-60)</div>
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">{laborCount}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {totalCount > 0 ? Math.round((laborCount / totalCount) * 100) : 0}%
                     </div>
-                    <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
-                      <div className="text-[11px] text-slate-500">Lao động (18-60)</div>
-                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">{laborCount}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {totalCount > 0 ? Math.round((laborCount / totalCount) * 100) : 0}%
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
-                      <div className="text-[11px] text-slate-500">Trên 60 tuổi</div>
-                      <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">{elderlyCount}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {totalCount > 0 ? Math.round((elderlyCount / totalCount) * 100) : 0}%
-                      </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
+                    <div className="text-[11px] text-slate-500">Trên 60 tuổi</div>
+                    <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">{elderlyCount}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {totalCount > 0 ? Math.round((elderlyCount / totalCount) * 100) : 0}%
                     </div>
                   </div>
                 </div>

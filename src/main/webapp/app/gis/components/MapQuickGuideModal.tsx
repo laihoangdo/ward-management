@@ -1,19 +1,5 @@
 import React, { useState } from 'react';
-import {
-  X,
-  Move,
-  Camera,
-  PanelRight,
-  Maximize2,
-  Layers,
-  ShieldAlert,
-  Check,
-  HelpCircle,
-  Sparkles,
-  MapPin,
-  CheckCircle2,
-  ArrowRight,
-} from 'lucide-react';
+import { X, Move, Camera, PanelRight, Maximize2, Layers, ShieldAlert, Check, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface MapQuickGuideModalProps {
   isOpen: boolean;

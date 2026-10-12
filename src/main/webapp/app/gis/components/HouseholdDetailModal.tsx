@@ -26,8 +26,7 @@ import { InspectionCameraModal } from './InspectionCameraModal';
 import { OcrScanModal } from './OcrScanModal';
 import { deleteInspectionPhotoFromHousehold } from '../services/firestoreService';
 import { decryptCccd, maskCccd, isEncryptedAes } from '../utils/cryptoUtils';
-
-const BADIEM_HAMLETS = ['Ấp Bắc Lân', 'Ấp Nam Lân', 'Ấp Tây Lân', 'Ấp Đông Lân', 'Ấp Hậu Lân', 'Ấp Tiền Lân'];
+import { BADIEM_51_HAMLETS } from '../data/baDiemHamlets';
 
 const BADIEM_STREETS = [
   'Đường Phan Văn Hớn',
@@ -55,7 +54,10 @@ interface HouseholdDetailModalProps {
   onShowToast?: (msg: string) => void;
 }
 
-export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
+export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = props =>
+  props.household ? <HouseholdDetailModalContent key={props.household.id} {...props} household={props.household} /> : null;
+
+const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { household: HouseholdFacility }> = ({
   household,
   currentUser,
   onClose,
@@ -65,8 +67,6 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   onDeleteHousehold,
   onShowToast,
 }) => {
-  if (!household) return null;
-
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState(household.notes || '');
   const [savedAlert, setSavedAlert] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   const [isDeletingPhotoId, setIsDeletingPhotoId] = useState<string | null>(null);
 
   const handleTriggerCamera = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canUpdateInspection === false) {
+    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canUpdateInspection !== true) {
       const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
@@ -86,7 +86,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   };
 
   const handleTriggerEditNotes = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canUpdateInspection === false) {
+    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canUpdateInspection !== true) {
       const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
@@ -96,7 +96,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   };
 
   const handleTriggerOcr = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canScanOcr === false) {
+    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canScanOcr !== true) {
       const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền quét OCR Căn cước công dân.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
@@ -116,6 +116,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
     houseNumber: household.houseNumber || '',
     street: household.street || 'Đường Phan Văn Hớn',
     hamlet: household.hamlet || 'Ấp Bắc Lân',
+    hamletId: household.hamletId || 1,
     neighborhoodGroup: household.neighborhoodGroup || 'Tổ 1',
     alley: household.alley || 'Mặt tiền đường',
     type: household.type || 'household',
@@ -137,6 +138,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
         houseNumber: household.houseNumber || '',
         street: household.street || 'Đường Phan Văn Hớn',
         hamlet: household.hamlet || 'Ấp Bắc Lân',
+        hamletId: household.hamletId || 1,
         neighborhoodGroup: household.neighborhoodGroup || 'Tổ 1',
         alley: household.alley || 'Mặt tiền đường',
         type: household.type || 'household',
@@ -213,6 +215,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
       houseNumber: editForm.houseNumber.trim(),
       street: editForm.street,
       hamlet: editForm.hamlet,
+      hamletId: editForm.hamletId,
       neighborhoodGroup: editForm.neighborhoodGroup,
       alley: editForm.alley,
       type: editForm.type as any,
@@ -302,7 +305,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                   {household.code}
                 </span>
                 <span className="text-[11px] sm:text-xs text-slate-300 font-semibold">
-                  {household.hamlet} • {household.neighborhoodGroup || 'Tổ 1'} • Xã Bà Điểm, Hóc Môn
+                  {household.hamlet} • {household.neighborhoodGroup || 'Tổ 1'} • Xã Bà Điểm, TP. Hồ Chí Minh
                 </span>
                 {household.alley && (
                   <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700">
@@ -454,15 +457,23 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Ấp trực thuộc (Xã Bà Điểm):</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Ấp trực thuộc (51 ấp sau sáp nhập):</label>
                   <select
                     value={editForm.hamlet}
-                    onChange={e => setEditForm({ ...editForm, hamlet: e.target.value })}
+                    onChange={e => {
+                      const selectedFullName = e.target.value;
+                      const matched = BADIEM_51_HAMLETS.find(h => h.fullName === selectedFullName);
+                      setEditForm({
+                        ...editForm,
+                        hamlet: selectedFullName,
+                        hamletId: matched?.id || editForm.hamletId,
+                      });
+                    }}
                     className="w-full p-2 bg-white rounded-lg border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
                   >
-                    {BADIEM_HAMLETS.map(h => (
-                      <option key={h} value={h}>
-                        {h}
+                    {BADIEM_51_HAMLETS.map(h => (
+                      <option key={h.id} value={h.fullName}>
+                        {h.fullName} ({h.group})
                       </option>
                     ))}
                   </select>

@@ -93,6 +93,8 @@ management:
 spring:
   application:
     name: Monolithic
+  config:
+    import: optional:file:.rbac/keycloak.properties
   docker:
     compose:
       enabled: true

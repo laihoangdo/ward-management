@@ -1,19 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Filter,
   RefreshCw,
   RotateCcw,
-  AlertTriangle,
   Building,
   Store,
   AlertOctagon,
   CheckCircle2,
   Phone,
-  User,
   Users,
-  Calendar,
   MapPin,
-  Eye,
   FileText,
   Search,
   Maximize2,
@@ -110,7 +105,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
     }
   }, [households, inspectedHousehold]);
 
-  const streets = ['all', 'Lê Lợi', 'Nguyễn Văn Cừ', 'Kinh Dương Vương', 'Hồ Học Lãm'];
+  const streets = ['all', 'Phan Văn Hớn', 'Nguyễn Ảnh Thủ', 'Quốc Lộ 22', 'Bà Điểm 4', 'Nguyễn Thị Sóc'];
 
   // Danh sách Tổ dân phố kèm thống kê số hộ
   const availableGroups = useMemo(() => {
@@ -875,11 +870,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 </div>
                 <div className="text-slate-500 font-medium mt-0.5 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span>
-                    {inspectedHousehold.hamlet}
-                    {inspectedHousehold.ward ? `, ${inspectedHousehold.ward}` : ''}
-                    {inspectedHousehold.city ? `, ${inspectedHousehold.city}` : ''}
-                  </span>
+                  <span>{inspectedHousehold.hamlet}</span>
                 </div>
               </div>
 

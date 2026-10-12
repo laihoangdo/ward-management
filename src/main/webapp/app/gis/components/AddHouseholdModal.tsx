@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { X, Plus, Building, Store, AlertOctagon, CheckCircle2, MapPin, Home } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, MapPin, Building } from 'lucide-react';
 import { HouseholdFacility, ResidenceType } from '../types';
 import { SearchableSelect } from './SearchableSelect';
+import { fetchRbacAreas } from '../services/rbacApiService';
+import { isCoordinateInBaDiem3dBoundary } from '../utils/household3dEligibility';
 
 const BADIEM_STREETS = [
   'Đường Phan Văn Hớn',
@@ -22,20 +24,35 @@ const BADIEM_STREETS = [
   'Đường Nguyễn Thị Thử',
 ];
 
-const BADIEM_HAMLETS = ['Ấp Bắc Lân', 'Ấp Nam Lân', 'Ấp Tây Lân', 'Ấp Đông Lân', 'Ấp Hậu Lân', 'Ấp Tiền Lân'];
-
 interface AddHouseholdModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddHousehold: (newHousehold: HouseholdFacility) => void;
+  onAddHousehold: (newHousehold: HouseholdFacility) => Promise<boolean>;
+  initialCoordinates?: [number, number] | null;
 }
 
-export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, onClose, onAddHousehold }) => {
-  if (!isOpen) return null;
-
+export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, onClose, onAddHousehold, initialCoordinates }) => {
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [coordinateError, setCoordinateError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    setLatitude(initialCoordinates ? String(initialCoordinates[0]) : '');
+    setLongitude(initialCoordinates ? String(initialCoordinates[1]) : '');
+    setCoordinateError(null);
+  }, [isOpen, initialCoordinates]);
+  const [areas, setAreas] = useState<{ id: number; name: string; hamletName: string }[]>([]);
+  useEffect(() => {
+    if (isOpen)
+      void fetchRbacAreas()
+        .then(setAreas)
+        .catch(() => setAreas([]));
+  }, [isOpen]);
   const [houseNumber, setHouseNumber] = useState('');
   const [street, setStreet] = useState('Đường Phan Văn Hớn');
   const [hamlet, setHamlet] = useState<string>('Ấp Bắc Lân');
+  const [hamletId, setHamletId] = useState<number>(1);
   const [neighborhoodGroup, setNeighborhoodGroup] = useState('Tổ 1');
   const [alley, setAlley] = useState('Mặt tiền đường');
   const [ownerName, setOwnerName] = useState('');
@@ -51,9 +68,16 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
   const [under18Count, setUnder18Count] = useState(1);
   const [notes, setNotes] = useState('Hồ sơ quản lý nhân khẩu cư trú Xã Bà Điểm.');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!houseNumber.trim() || !ownerName.trim()) return;
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+    if (!latitude.trim() || !longitude.trim() || !isCoordinateInBaDiem3dBoundary(lat, lng)) {
+      setCoordinateError('Nhập tọa độ hợp lệ trong ranh giới Bà Điểm hoặc chọn điểm trên bản đồ 3D.');
+      return;
+    }
 
     const newId = `HH-${Date.now().toString().slice(-4)}`;
     const newCode = `HK-BD-${Date.now().toString().slice(-4)}`;
@@ -64,6 +88,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
       houseNumber: houseNumber.trim(),
       street,
       hamlet,
+      hamletId,
       neighborhoodGroup: neighborhoodGroup.trim() || 'Tổ 1',
       alley: alley.trim() || 'Mặt tiền đường',
       ownerName: ownerName.trim(),
@@ -81,13 +106,20 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
       notes: notes.trim(),
       lastCheckedDate: new Date().toLocaleDateString('vi-VN'),
       officerInCharge: 'Cán bộ CSKV Xã Bà Điểm',
-      coordinates: [10.854 + (Math.random() - 0.5) * 0.008, 106.612 + (Math.random() - 0.5) * 0.008],
+      coordinates: [lat, lng],
+      coordinatesEstimated: false,
       gridPosition: { row: 4, col: 4 },
     };
 
-    onAddHousehold(newHousehold);
-    onClose();
+    setIsSubmitting(true);
+    try {
+      if (await onAddHousehold(newHousehold)) onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
@@ -108,6 +140,52 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 text-xs overflow-y-auto flex-1">
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+            <div className="mb-2 flex items-center gap-1 font-bold text-blue-800">
+              <MapPin className="h-4 w-4" />
+              Tọa độ vị trí hộ dân *
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-slate-700">
+                Vĩ độ
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  value={latitude}
+                  readOnly={!!initialCoordinates}
+                  onChange={e => {
+                    setLatitude(e.target.value);
+                    setCoordinateError(null);
+                  }}
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 font-mono text-xs"
+                />
+              </label>
+              <label className="text-slate-700">
+                Kinh độ
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  value={longitude}
+                  readOnly={!!initialCoordinates}
+                  onChange={e => {
+                    setLongitude(e.target.value);
+                    setCoordinateError(null);
+                  }}
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 font-mono text-xs"
+                />
+              </label>
+            </div>
+            <p className="mt-1 text-[10px] text-slate-500">
+              {initialCoordinates ? 'Đã lấy trực tiếp từ điểm chọn trên bản đồ 3D.' : 'Nhập GPS thực tế; hệ thống không tự tạo tọa độ.'}
+            </p>
+            {coordinateError && (
+              <p role="alert" className="mt-1 text-[10px] text-red-600">
+                {coordinateError}
+              </p>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Số nhà *</label>
@@ -135,20 +213,26 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
             </div>
             <div>
               <SearchableSelect
-                label="Khu vực ấp (Xã Bà Điểm)"
+                label="Ấp (51 ấp sau sáp nhập) *"
                 value={hamlet}
-                onChange={val => setHamlet(val)}
-                options={BADIEM_HAMLETS}
-                placeholder="Chọn hoặc tìm khu vực ấp..."
-                searchPlaceholder="Tìm kiếm ấp (VD: Bắc Lân, Nam Lân...)"
-                icon={<Home className="w-3.5 h-3.5 text-blue-500" />}
+                onChange={val => {
+                  setHamlet(val);
+                  const matched = areas.find(h => h.hamletName === val || h.name === val);
+                  if (matched) {
+                    setHamletId(matched.id);
+                  }
+                }}
+                options={areas.map(h => h.hamletName)}
+                placeholder="Chọn ấp trực thuộc Xã Bà Điểm..."
+                searchPlaceholder="Tìm kiếm 51 ấp (VD: Bắc Lân, Xuân Thới Thượng 1...)"
+                icon={<Building className="w-3.5 h-3.5 text-blue-500" />}
                 required
-                allowCustom
+                allowCustom={false}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             <div>
               <label className="block font-bold text-slate-700 mb-1">Tổ dân phố</label>
               <select
@@ -170,11 +254,31 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
               <label className="block font-bold text-slate-700 mb-1">Hẻm / Vị trí nhà</label>
               <input
                 type="text"
-                placeholder="VD: Mặt tiền đường, Hẻm 418, Hẻm 432..."
+                placeholder="VD: Mặt tiền đường, Hẻm 418..."
                 value={alley}
                 onChange={e => setAlley(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 font-medium"
               />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-700 mb-1">Khu vực CSKV phụ trách</label>
+              <select
+                value={hamletId || ''}
+                onChange={e => {
+                  const id = Number(e.target.value);
+                  setHamletId(id);
+                  const selected = areas.find(area => area.id === id);
+                  if (selected) setHamlet(selected.hamletName);
+                }}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 text-slate-800"
+              >
+                <option value="">Chọn khu vực phân công (tùy chọn)</option>
+                {areas.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.hamletName})
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -380,9 +484,10 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
             </button>
             <button
               type="submit"
+              disabled={isSubmitting}
               className="flex-1 sm:flex-initial px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-xs min-h-[40px]"
             >
-              Lưu hồ sơ
+              {isSubmitting ? 'Đang lưu...' : 'Lưu hồ sơ'}
             </button>
           </div>
         </form>

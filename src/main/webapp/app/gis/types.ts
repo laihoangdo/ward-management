@@ -2,6 +2,7 @@ export type NavigationTab =
   | 'overview'
   | 'area-map'
   | 'advanced-map'
+  | 'field-3d-map'
   | 'households'
   | 'residents'
   | 'documents'
@@ -14,6 +15,8 @@ export type NavigationTab =
 export type UserRole = 'superadmin' | 'admin' | 'sub-admin' | 'officer';
 
 export interface SubAdminFeaturePermissions {
+  canViewAdvancedMap: boolean;
+  canViewField3DMap: boolean;
   canEditCoordinates: boolean; // Được hiệu chỉnh tọa độ nhà trên bản đồ
   canAddHouseholds: boolean; // Được đăng ký hồ sơ hộ dân mới
   canScanOcr: boolean; // Được sử dụng camera quét căn cước / OCR
@@ -25,6 +28,9 @@ export interface SubAdminFeaturePermissions {
 }
 
 export interface AppUser {
+  hamletIds?: number[];
+  version?: number;
+  temporaryPassword?: string;
   id: string;
   username: string;
   email?: string;
@@ -32,12 +38,12 @@ export interface AppUser {
   role: UserRole;
   rank: string; // Cấp bậc CAND: Đại tá, Thượng tá, Thiếu tá, Đại úy, Thượng úy, Trung úy...
   position: string; // Chức vụ: Quản trị viên tối cao, Trưởng Công an Xã, CSKV Quản lý Ấp, Công an viên Phụ trách Tuyến
-  unit: string; // Đơn vị: CATP.HCM / Công an Quận Bình Tân / Công an Xã (Phường) An Lạc
+  unit: string; // Đơn vị: CATP.HCM / Công an Xã Bà Điểm, TP.HCM
   badgeNumber: string; // Số hiệu CAND
   phone: string;
-  assignedWard: string; // Phường/Xã phụ trách (e.g. "Phường An Lạc")
-  assignedHamlets: string[]; // Các ấp phụ trách (e.g. ['Ấp 1', 'Ấp 2'])
-  assignedStreets: string[]; // Các tuyến đường, hẻm phụ trách (e.g. ['Đường Kinh Dương Vương', 'Hẻm 418', 'Đường Hồ Học Lãm'])
+  assignedWard: string; // Phường/Xã phụ trách (e.g. "Xã Bà Điểm")
+  assignedHamlets: string[]; // Các ấp phụ trách (e.g. ['Ấp Bắc Lân', 'Ấp Đông Lân'])
+  assignedStreets: string[]; // Các tuyến đường, hẻm phụ trách (e.g. ['Đường Phan Văn Hớn', 'Đường Nguyễn Ảnh Thủ', 'Đường Bà Điểm 4'])
   subAdminPermissions?: SubAdminFeaturePermissions; // Áp dụng cho cấp dưới (officer) do sub-admin phân quyền
   status: 'active' | 'suspended' | 'locked';
   createdAt: string;
@@ -74,10 +80,10 @@ export interface DynamicMenuItemConfig {
 
 export interface HcmAdminUnit {
   id: string;
-  district: string; // Quận/Huyện TP.HCM (e.g. "Quận Bình Tân", "Huyện Bình Chánh", "TP. Thủ Đức")
-  ward: string; // Phường/Xã (e.g. "Phường An Lạc", "Phường An Lạc A", "Xã Vĩnh Lộc A")
-  hamlet: string; // Ấp/Khu phố (e.g. "Ấp 1", "Ấp 2", "Khu phố 3")
-  streetsAndAlleys: string[]; // Tuyến đường & danh mục hẻm mới nhất (e.g. ["Đường Kinh Dương Vương", "Hẻm 418 KDV", "Hẻm 432", "Đường Hồ Học Lãm"])
+  district: string; // Đơn vị hành chính cấp trên (e.g. "TP. Hồ Chí Minh")
+  ward: string; // Xã/Phường phụ trách (e.g. "Xã Bà Điểm")
+  hamlet: string; // Ấp phụ trách (e.g. "Ấp Bắc Lân", "Ấp Tiền Lân", "Ấp Xuân Thới Thượng")
+  streetsAndAlleys: string[]; // Tuyến đường & danh mục hẻm mới nhất (e.g. ["Đường Phan Văn Hớn", "Đường Nguyễn Ảnh Thủ", "Đường Bà Điểm 4", "Quốc Lộ 22"])
   totalHouseholds: number;
   officerInChargeId?: string;
   officerInChargeName?: string;
@@ -148,6 +154,7 @@ export type HamletName =
   'Ấp Bắc Lân' | 'Ấp Nam Lân' | 'Ấp Tây Lân' | 'Ấp Đông Lân' | 'Ấp Hậu Lân' | 'Ấp Tiền Lân' | 'Ấp 1' | 'Ấp 2' | string;
 
 export interface HouseholdFacility {
+  hamletId?: number;
   id: string;
   code: string;
   houseNumber: string;
@@ -214,14 +221,14 @@ export interface OfficerProfile {
 
 export const DEFAULT_OFFICER: OfficerProfile = {
   officerName: 'Nguyễn Văn Bình',
-  rank: 'CSKV — P.An Lạc',
-  unit: 'Công an Phường An Lạc, Quận Bình Tân, TP.HCM',
+  rank: 'Đại úy — CSKV Xã Bà Điểm',
+  unit: 'Công an Xã Bà Điểm, TP. Hồ Chí Minh (1403 Phan Văn Hớn)',
   badgeNumber: '284-912',
   username: 'cskv_binh',
-  permissions: 'Chỉ xem và quản lý [ẤP 1 & ẤP 2] thuộc P. An Lạc',
+  permissions: 'Quản lý địa bàn Ấp Bắc Lân & Ấp Đông Lân, Xã Bà Điểm',
   isOnline: true,
   phone: '0908.123.456',
-  assignedHamlets: ['Ấp 1', 'Ấp 2'],
+  assignedHamlets: ['Ấp Bắc Lân', 'Ấp Đông Lân'],
 };
 
 export interface OcrExtractedData {

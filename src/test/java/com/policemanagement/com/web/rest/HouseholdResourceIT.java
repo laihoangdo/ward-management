@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.policemanagement.com.IntegrationTest;
-import com.policemanagement.com.domain.AreaZone;
+import com.policemanagement.com.domain.Hamlet;
 import com.policemanagement.com.domain.Household;
 import com.policemanagement.com.domain.enumeration.FacilityType;
 import com.policemanagement.com.domain.enumeration.SecurityStatus;
@@ -1953,24 +1953,25 @@ class HouseholdResourceIT {
 
     @Test
     @Transactional
-    void getAllHouseholdsByAreaZoneIsEqualToSomething() throws Exception {
-        AreaZone areaZone;
-        if (TestUtil.findAll(em, AreaZone.class).isEmpty()) {
+    void getAllHouseholdsByAdministrativeHamletIdIsEqualToSomething() throws Exception {
+        Hamlet administrativeHamlet;
+        if (TestUtil.findAll(em, Hamlet.class).isEmpty()) {
             householdRepository.saveAndFlush(household);
-            areaZone = AreaZoneResourceIT.createEntity();
+            administrativeHamlet = HamletResourceIT.createEntity();
         } else {
-            areaZone = TestUtil.findAll(em, AreaZone.class).getFirst();
+            administrativeHamlet = TestUtil.findAll(em, Hamlet.class).getFirst();
         }
-        em.persist(areaZone);
+        em.persist(administrativeHamlet);
         em.flush();
-        household.setAreaZone(areaZone);
+        household.setAdministrativeHamlet(administrativeHamlet);
+        household.setHamletId(administrativeHamlet.getId());
         householdRepository.saveAndFlush(household);
-        Long areaZoneId = areaZone.getId();
-        // Get all the householdList where areaZone equals to areaZoneId
-        defaultHouseholdShouldBeFound("areaZoneId.equals=" + areaZoneId);
+        Long administrativeHamletId = administrativeHamlet.getId();
+        // Get all the householdList where administrativeHamlet equals to administrativeHamletId
+        defaultHouseholdShouldBeFound("hamletId.equals=" + administrativeHamletId);
 
-        // Get all the householdList where areaZone equals to (areaZoneId + 1)
-        defaultHouseholdShouldNotBeFound("areaZoneId.equals=" + (areaZoneId + 1));
+        // Get all the householdList where administrativeHamlet equals to (administrativeHamletId + 1)
+        defaultHouseholdShouldNotBeFound("hamletId.equals=" + (administrativeHamletId + 1));
     }
 
     private void defaultHouseholdFiltering(String shouldBeFound, String shouldNotBeFound) throws Exception {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FileText, AlertTriangle, CheckCircle2, Clock, Send, Printer, Plus, Search, FileCheck, Building2, Calendar } from 'lucide-react';
+import { FileText, AlertTriangle, Clock, Send, Search, FileCheck } from 'lucide-react';
 import { DocumentRecord } from '../types';
 import { Pagination } from './Pagination';
 

@@ -1,6 +1,6 @@
 package com.policemanagement.com.domain;
 
-import static com.policemanagement.com.domain.AreaZoneTestSamples.*;
+import static com.policemanagement.com.domain.HamletTestSamples.*;
 import static com.policemanagement.com.domain.HouseholdTestSamples.*;
 import static com.policemanagement.com.domain.ResidentTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,14 +49,14 @@ class HouseholdTest {
     }
 
     @Test
-    void areaZoneTest() {
+    void administrativeHamletTest() {
         Household household = getHouseholdRandomSampleGenerator();
-        AreaZone areaZoneBack = getAreaZoneRandomSampleGenerator();
+        Hamlet administrativeHamletBack = getHamletRandomSampleGenerator();
 
-        household.setAreaZone(areaZoneBack);
-        assertThat(household.getAreaZone()).isEqualTo(areaZoneBack);
+        household.setAdministrativeHamlet(administrativeHamletBack);
+        assertThat(household.getAdministrativeHamlet()).isEqualTo(administrativeHamletBack);
 
-        household.areaZone(null);
-        assertThat(household.getAreaZone()).isNull();
+        household.administrativeHamlet(null);
+        assertThat(household.getAdministrativeHamlet()).isNull();
     }
 }

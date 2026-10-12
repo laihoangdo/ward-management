@@ -122,10 +122,43 @@ public class Household implements Serializable {
     private Set<Resident> residentses = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hamlet_id", insertable = false, updatable = false)
     @JsonIgnoreProperties(value = { "householdses" }, allowSetters = true)
-    private AreaZone areaZone;
+    private Hamlet administrativeHamlet;
+
+    @Column(name = "hamlet_id")
+    private Long hamletId;
+
+    @Column(name = "legacy_address")
+    private String legacyAddress;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
+
+    public Long getHamletId() {
+        return this.hamletId;
+    }
+
+    public Household hamletId(Long hamletId) {
+        this.setHamletId(hamletId);
+        return this;
+    }
+
+    public void setHamletId(Long hamletId) {
+        this.hamletId = hamletId;
+    }
+
+    public String getLegacyAddress() {
+        return this.legacyAddress;
+    }
+
+    public Household legacyAddress(String legacyAddress) {
+        this.setLegacyAddress(legacyAddress);
+        return this;
+    }
+
+    public void setLegacyAddress(String legacyAddress) {
+        this.legacyAddress = legacyAddress;
+    }
 
     public Long getId() {
         return this.id;
@@ -496,16 +529,16 @@ public class Household implements Serializable {
         return this;
     }
 
-    public AreaZone getAreaZone() {
-        return this.areaZone;
+    public Hamlet getAdministrativeHamlet() {
+        return this.administrativeHamlet;
     }
 
-    public void setAreaZone(AreaZone areaZone) {
-        this.areaZone = areaZone;
+    public void setAdministrativeHamlet(Hamlet administrativeHamlet) {
+        this.administrativeHamlet = administrativeHamlet;
     }
 
-    public Household areaZone(AreaZone areaZone) {
-        this.setAreaZone(areaZone);
+    public Household administrativeHamlet(Hamlet administrativeHamlet) {
+        this.setAdministrativeHamlet(administrativeHamlet);
         return this;
     }
 

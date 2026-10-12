@@ -1,0 +1,187 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-police-hq",
+        "name": "Trụ sở Công an Xã Bà Điểm",
+        "category": "police",
+        "address": "Đường Phan Văn Hớn, Ấp Tiền Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.6125, 10.8532]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-police-baclan",
+        "name": "Điểm CSKV Ấp Bắc Lân",
+        "category": "police",
+        "address": "Đường Nguyễn Ảnh Thủ, Ấp Bắc Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.605, 10.8635]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-police-tienlan",
+        "name": "Điểm CSKV Ấp Tiền Lân & Chợ",
+        "category": "police",
+        "address": "Ngã ba Phan Văn Hớn - Bà Điểm 4"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.615, 10.8515]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-police-donglan",
+        "name": "Điểm CSKV Ấp Đông Lân (Giáp Q12)",
+        "category": "police",
+        "address": "QL1A giao Phan Văn Hớn"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.622, 10.8565]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-ubnd",
+        "name": "UBND Xã Bà Điểm",
+        "category": "public",
+        "address": "Đường Phan Văn Hớn, Ấp Tiền Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.6115, 10.8538]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-market-badiem",
+        "name": "Chợ Bà Điểm",
+        "category": "market",
+        "address": "Đường Phan Văn Hớn, Ấp Hậu Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.6095, 10.8508]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-market-hocmon",
+        "name": "Chợ Đầu Mối Hóc Môn",
+        "category": "market",
+        "address": "Đường Nguyễn Thị Sóc - QL22"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.609, 10.8655]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-school-thcs",
+        "name": "Trường THCS Bà Điểm",
+        "category": "school",
+        "address": "Đường Bà Điểm 4, Ấp Tiền Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.614, 10.8545]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-school-primary",
+        "name": "Trường Tiểu học Tây Bắc Lân",
+        "category": "school",
+        "address": "Đường Nguyễn Ảnh Thủ, Ấp Bắc Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.603, 10.861]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-school-kinder",
+        "name": "Trường Mầm non Hướng Dương",
+        "category": "school",
+        "address": "Đường Hưng Lân, Ấp Hậu Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.606, 10.8475]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-pagoda-vp",
+        "name": "Chùa Vĩnh Phước",
+        "category": "religious",
+        "address": "Đường Phan Văn Hớn, Ấp Tiền Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.618, 10.855]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-temple-bd",
+        "name": "Đình Thần Bà Điểm",
+        "category": "religious",
+        "address": "Ấp Tây Lân, Xã Bà Điểm"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.598, 10.8495]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-church-bd",
+        "name": "Giáo xứ Bà Điểm",
+        "category": "religious",
+        "address": "Đường Phan Văn Hớn, Ấp Bắc Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.608, 10.858]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poi-health-station",
+        "name": "Trạm Y Tế Xã Bà Điểm",
+        "category": "public",
+        "address": "Đường Bà Điểm 5, Ấp Hậu Lân"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.6075, 10.8502]
+      }
+    }
+  ]
+}

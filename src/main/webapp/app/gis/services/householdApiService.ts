@@ -51,7 +51,8 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
     code: dto.code || `HK-BD-${String(dto.id || index + 1).padStart(3, '0')}`,
     houseNumber: dto.houseNumber || '1',
     street: dto.street || 'Đường Phan Văn Hớn',
-    hamlet: dto.hamlet || 'Ấp Bắc Lân',
+    hamlet: dto.hamlet || '',
+    hamletId: dto.hamletId || undefined,
     neighborhoodGroup: dto.neighborhoodGroup || 'Tổ 1',
     alley: dto.alley || 'Mặt tiền đường',
     ownerName: dto.ownerName || 'Chưa cập nhật',
@@ -112,7 +113,9 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
     code: h.code || `HK-BD-${Date.now().toString().slice(-4)}`,
     houseNumber: h.houseNumber || '1',
     street: h.street || 'Đường Phan Văn Hớn',
-    hamlet: h.hamlet || 'Ấp Bắc Lân',
+    hamlet: h.hamlet || '',
+    hamletId: h.hamletId,
+    administrativeHamlet: h.hamletId ? { id: h.hamletId } : undefined,
     neighborhoodGroup: h.neighborhoodGroup || 'Tổ 1',
     alley: h.alley || 'Mặt tiền đường',
     ownerName: h.ownerName || 'Chưa cập nhật',
@@ -184,8 +187,18 @@ export const mapResidentToDto = (r: Resident, householdId?: number | string): IR
 /**
  * 1. Tải danh sách tất cả hộ dân từ PostgreSQL
  */
+async function fetchAuthorizedPages<T>(path: string): Promise<{ data: T[] }> {
+  const data: T[] = [];
+  for (let page = 0; ; page++) {
+    const response = await axios.get<T[]>(path, { params: { page, size: 500, sort: 'id,asc' } });
+    if (!Array.isArray(response.data)) throw new Error('Dữ liệu máy chủ không hợp lệ');
+    data.push(...response.data);
+    if (response.data.length < 500) return { data };
+  }
+}
+
 export async function fetchAllHouseholds(size: number = 1000): Promise<HouseholdFacility[]> {
-  const res = await axios.get<IHousehold[]>(`/api/households?page=0&size=${size}&sort=id,asc&cacheBuster=${Date.now()}`);
+  const res = await fetchAuthorizedPages<IHousehold>('/api/households');
   if (Array.isArray(res.data)) {
     return res.data.map((dto, idx) => mapDtoToHousehold(dto, idx));
   }
@@ -197,10 +210,8 @@ export async function fetchAllHouseholds(size: number = 1000): Promise<Household
  */
 export async function fetchCompleteHouseholdsFromBackend(): Promise<HouseholdFacility[]> {
   const [householdsRes, residentsRes] = await Promise.all([
-    axios.get<IHousehold[]>(`/api/households?page=0&size=1000&sort=id,asc&cacheBuster=${Date.now()}`),
-    axios
-      .get<IResident[]>(`/api/residents?page=0&size=3000&sort=id,asc&cacheBuster=${Date.now()}`)
-      .catch(() => ({ data: [] as IResident[] })),
+    fetchAuthorizedPages<IHousehold>('/api/households'),
+    fetchAuthorizedPages<IResident>('/api/residents'),
   ]);
 
   const rawHouseholds = Array.isArray(householdsRes.data) ? householdsRes.data : [];
@@ -247,6 +258,12 @@ export async function fetchCompleteHouseholdsFromBackend(): Promise<HouseholdFac
  */
 export async function createHouseholdInBackend(newH: HouseholdFacility): Promise<HouseholdFacility> {
   const dto = mapHouseholdToDto(newH);
+  if (!dto.hamletId) {
+    const { data } = await axios.get<{ id: number; hamletName: string }[]>('/api/rbac/areas');
+    const matches = data.filter(area => area.hamletName === newH.hamlet);
+    if (matches.length !== 1) throw new Error('Chọn địa bàn thật, không trùng tên, trước khi thêm hộ dân.');
+    dto.hamletId = matches[0].id;
+  }
   delete dto.id; // Để database tự sinh ID
   const res = await axios.post<IHousehold>('/api/households', dto);
   const created = mapDtoToHousehold(res.data);
@@ -472,7 +489,7 @@ export async function deleteResidentInBackend(residentId: string | number): Prom
  */
 export async function fetchAllResidents(size: number = 3000): Promise<IResident[]> {
   try {
-    const res = await axios.get<IResident[]>(`/api/residents?page=0&size=${size}&cacheBuster=${Date.now()}`);
+    const res = await fetchAuthorizedPages<IResident>('/api/residents');
     return Array.isArray(res.data) ? res.data : [];
   } catch (e) {
     console.warn('Lỗi khi tải danh sách nhân khẩu từ backend:', e);
@@ -483,9 +500,19 @@ export async function fetchAllResidents(size: number = 3000): Promise<IResident[
 /**
  * 11. Tải danh sách hồ sơ giấy tờ từ PostgreSQL
  */
+export async function renewDocumentInBackend(id: string, expiryDate: string): Promise<void> {
+  if (!/^\d+$/.test(id) || !/^\d{4}-\d{2}-\d{2}$/.test(expiryDate) || Date.parse(expiryDate) <= Date.now())
+    throw new Error('Ngày hết hạn phải là ngày tương lai, định dạng YYYY-MM-DD.');
+  await axios.patch(
+    `/api/document-records/${id}`,
+    { id: Number(id), expiryDate, status: 'VALID' },
+    { headers: { 'Content-Type': 'application/merge-patch+json' } },
+  );
+}
+
 export async function fetchAllDocumentRecords(size: number = 1000): Promise<DocumentRecord[]> {
   try {
-    const res = await axios.get<IDocumentRecord[]>(`/api/document-records?page=0&size=${size}&cacheBuster=${Date.now()}`);
+    const res = await fetchAuthorizedPages<IDocumentRecord>('/api/document-records');
     if (Array.isArray(res.data)) {
       return res.data.map(dto => {
         const idStr = String(dto.id || `doc-${Date.now()}`);
@@ -504,7 +531,7 @@ export async function fetchAllDocumentRecords(size: number = 1000): Promise<Docu
           docCode: `HS-BD-${String(dto.id || 1).padStart(3, '0')}`,
           title: dto.docName || 'Hồ sơ kiểm tra ANTT & PCCC',
           targetName: dto.householdName || 'Cơ sở quản lý',
-          address: dto.address || 'Xã Bà Điểm, Hóc Môn',
+          address: dto.address || 'Xã Bà Điểm, TP. Hồ Chí Minh',
           hamlet: hamletName,
           category: 'license_security',
           categoryLabel: dto.docType || 'Giấy phép ANTT',

@@ -25,4 +25,9 @@
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
     <include file="config/liquibase/changelog/20261008190000_gis_3d_model.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261008210000_postgis_foundation.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261009190000_rbac.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261012000000_administrative_units.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261013000000_hamlet_assignment_bridge.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261014000000_direct_hamlet.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261014010000_map_view_roles.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

@@ -1,8 +1,8 @@
 package com.policemanagement.com.service.mapper;
 
-import com.policemanagement.com.domain.AreaZone;
+import com.policemanagement.com.domain.Hamlet;
 import com.policemanagement.com.domain.Household;
-import com.policemanagement.com.service.dto.AreaZoneDTO;
+import com.policemanagement.com.service.dto.HamletDTO;
 import com.policemanagement.com.service.dto.HouseholdDTO;
 import org.mapstruct.*;
 
@@ -11,12 +11,19 @@ import org.mapstruct.*;
  */
 @Mapper(componentModel = "spring")
 public interface HouseholdMapper extends EntityMapper<HouseholdDTO, Household> {
-    @Mapping(target = "areaZone", source = "areaZone", qualifiedByName = "areaZoneName")
+    @Mapping(target = "administrativeHamlet", source = "administrativeHamlet", qualifiedByName = "administrativeHamletName")
     HouseholdDTO toDto(Household s);
 
-    @Named("areaZoneName")
+    @Mapping(target = "administrativeHamlet", ignore = true)
+    Household toEntity(HouseholdDTO dto);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "administrativeHamlet", ignore = true)
+    void partialUpdate(@MappingTarget Household entity, HouseholdDTO dto);
+
+    @Named("administrativeHamletName")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
     @Mapping(target = "name", source = "name")
-    AreaZoneDTO toDtoAreaZoneName(AreaZone areaZone);
+    HamletDTO toDtoHamletName(Hamlet administrativeHamlet);
 }

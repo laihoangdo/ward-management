@@ -26,14 +26,15 @@ interface VoiceSearchModalProps {
   onAutoNavigateHouseholds?: () => void;
 }
 
-// Tactical suggested voice keywords for field officers in P. An Lạc
+// Tactical suggested voice keywords for field officers in Xã Bà Điểm
 const QUICK_TACTICAL_KEYWORDS = [
-  { label: 'Kinh Dương Vương', icon: MapPin, type: 'street' },
-  { label: 'Hồ Học Lãm', icon: MapPin, type: 'street' },
+  { label: 'Phan Văn Hớn', icon: MapPin, type: 'street' },
+  { label: 'Nguyễn Ảnh Thủ', icon: MapPin, type: 'street' },
+  { label: 'Ấp Bắc Lân', icon: MapPin, type: 'hamlet' },
+  { label: 'Ấp Tiền Lân', icon: MapPin, type: 'hamlet' },
   { label: 'Nguyễn Văn Bình', icon: UserCheck, type: 'resident' },
   { label: 'Karaoke', icon: Building, type: 'business' },
   { label: 'Nhà trọ', icon: Building, type: 'business' },
-  { label: 'Khách sạn', icon: Building, type: 'business' },
   { label: 'Cảnh báo', icon: AlertTriangle, type: 'warning' },
   { label: 'Hộ 079', icon: Search, type: 'code' },
 ];

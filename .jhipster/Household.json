@@ -129,9 +129,9 @@
     },
     {
       "otherEntityField": "name",
-      "otherEntityName": "areaZone",
+      "otherEntityName": "hamlet",
       "otherEntityRelationshipName": "households",
-      "relationshipName": "areaZone",
+      "relationshipName": "administrativeHamlet",
       "relationshipSide": "right",
       "relationshipType": "many-to-one"
     }

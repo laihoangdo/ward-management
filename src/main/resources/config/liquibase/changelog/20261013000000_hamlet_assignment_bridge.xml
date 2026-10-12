@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+  <changeSet id="20261013000000-1" author="codex">
+    <!-- Historical applied checksum verified against the existing bridge schema and mapping. -->
+    <validCheckSum>9:2d7c74fefbbc42217d934297aafd6def</validCheckSum>
+    <addColumn tableName="area_zone"><column name="hamlet_id" type="bigint"><constraints foreignKeyName="fk_area_zone_hamlet" references="hamlet(id)"/></column></addColumn>
+    <createIndex tableName="area_zone" indexName="ix_area_zone_hamlet"><column name="hamlet_id"/></createIndex>
+    <sql splitStatements="false"><![CDATA[
+      -- Only exact, unambiguous active names may link legacy records.
+      UPDATE area_zone a SET hamlet_id = h.id
+      FROM hamlet h
+      WHERE h.valid_to IS NULL AND a.hamlet_id IS NULL
+        AND lower(trim(a.hamlet_name)) IN (lower(trim(h.full_name)), lower(trim(h.name)))
+        AND (SELECT count(*) FROM hamlet candidate WHERE candidate.valid_to IS NULL
+          AND lower(trim(a.hamlet_name)) IN (lower(trim(candidate.full_name)), lower(trim(candidate.name)))) = 1;
+      INSERT INTO area_zone(id, code, name, hamlet_name, hamlet_id)
+      SELECT nextval('sequence_generator'), 'ADMIN-HAMLET-' || h.id, h.full_name, h.full_name, h.id
+      FROM hamlet h WHERE h.valid_to IS NULL
+        AND NOT EXISTS (SELECT 1 FROM area_zone a WHERE a.hamlet_id = h.id);
+      UPDATE area_zone a SET name=h.full_name, hamlet_name=h.full_name
+      FROM hamlet h WHERE a.hamlet_id=h.id AND h.valid_to IS NULL;
+      UPDATE household house SET area_zone_id = (
+        SELECT min(a.id) FROM area_zone a WHERE a.hamlet_id = house.hamlet_id
+      )
+      FROM hamlet h WHERE house.hamlet_id=h.id AND h.valid_to IS NULL
+        AND lower(trim(house.hamlet)) IN (lower(trim(h.full_name)), lower(trim(h.name)))
+        AND EXISTS (SELECT 1 FROM area_zone a WHERE a.hamlet_id=h.id);
+      -- Keep legacy area IDs/assignments and ambiguous households. Never rewrite hamlet IDs by guesswork.
+    ]]></sql>
+  </changeSet>
+</databaseChangeLog>

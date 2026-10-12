@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, ShieldAlert, ArrowRight, RefreshCw, KeyRound, LogIn, Lock } from 'lucide-react';
+import { Shield, ArrowRight, LogIn, Lock } from 'lucide-react';
 import { AppUser } from '../types';
 
 interface SuperAdminAccessGuardProps {

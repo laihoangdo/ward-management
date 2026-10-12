@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { HouseholdFacility, DocumentRecord, OfficerProfile, DEFAULT_OFFICER, InspectionPhoto, AuditLogEntry } from '../types';
 import { INITIAL_AUDIT_LOGS } from '../data/initialAuditLogs';
 import { encryptCccd } from '../utils/cryptoUtils';
@@ -267,20 +268,9 @@ export async function updateHouseholdCoordinatesInFirestore(updates: Array<{ id:
  * Send inspection reminder / update document
  */
 export async function sendDocReminderInFirestore(docId: string): Promise<void> {
-  const now = new Date();
-  const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
-  try {
-    const raw = localStorage.getItem(DOCUMENTS_KEY);
-    const docs: DocumentRecord[] = raw ? JSON.parse(raw) : [];
-    const idx = docs.findIndex(d => d.id === docId);
-    if (idx >= 0) {
-      docs[idx].notes = `Đã gửi thông báo đôn đốc trực tiếp vào ngày ${dateStr} qua hệ thống CSKV.`;
-      localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(docs));
-      serviceEmitter.dispatchEvent(new CustomEvent('documents-updated'));
-    }
-  } catch (err) {
-    console.warn('Could not update doc reminder locally:', err);
-  }
+  const id = docId;
+  if (!/^\d+$/.test(id)) throw new Error('Invalid server document ID');
+  await axios.post(`/api/rbac/documents/${id}/reminder`);
 }
 
 /**

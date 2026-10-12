@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Shield,
   ShieldCheck,
@@ -11,6 +12,8 @@ import {
   FileText,
   Camera,
   Map,
+  Grid3X3,
+  Boxes,
   Download,
   BellRing,
   Building,
@@ -19,7 +22,8 @@ import {
   Filter,
 } from 'lucide-react';
 import { AppUser, SubAdminFeaturePermissions } from '../types';
-import { saveUserInFirestore } from '../services/authService';
+import { saveDelegation, fetchRbacAreas, fetchDelegationRoads } from '../services/authService';
+import { AdministrativeDirectory } from './AdministrativeDirectory';
 
 interface SubAdminDelegationTabProps {
   currentUser: AppUser;
@@ -28,6 +32,33 @@ interface SubAdminDelegationTabProps {
 }
 
 export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ currentUser, usersList, onShowToast }) => {
+  const [areas, setAreas] = useState<{ id: number; hamletId: number; communeId: number; name: string; hamletName: string }[]>([]);
+  const [selectedHamletIds, setSelectedHamletIds] = useState<number[]>([]);
+  const [selectedCommuneId, setSelectedCommuneId] = useState<number | null>(null);
+  const [roads, setRoads] = useState<{ hamletId: number; name: string }[]>([]);
+  const [roadsLoading, setRoadsLoading] = useState(true);
+  const [roadsError, setRoadsError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void fetchDelegationRoads()
+      .then(data => {
+        if (active) setRoads(data);
+      })
+      .catch(() => {
+        if (active) setRoadsError(true);
+      })
+      .finally(() => {
+        if (active) setRoadsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    void fetchRbacAreas()
+      .then(setAreas)
+      .catch(() => onShowToast('Không thể tải danh mục địa bàn.'));
+  }, []);
   const isSuperAdmin = currentUser.role === 'superadmin';
   const isAdmin = currentUser.role === 'admin';
   const isSubAdmin = currentUser.role === 'sub-admin';
@@ -39,58 +70,41 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
   // - superadmin can manage admin, sub-admin, and officer
   // - admin (Trưởng CAX) can manage sub-admin (Cán bộ quản lý ấp) and officer (Công an viên)
   // - sub-admin (Cán bộ quản lý ấp) can manage officer (Công an viên) in their specific hamlet
-  const subordinates = usersList.filter(u => {
-    if (u.id === currentUser.id) return false;
-    if (isSuperAdmin) return u.role !== 'superadmin';
-    if (isAdmin) return u.role === 'sub-admin' || u.role === 'officer';
-    if (isSubAdmin) {
-      // Sub-admin of a specific hamlet exclusively manages officers within their assigned hamlet(s)
-      const matchesHamlet = u.assignedHamlets?.some(h =>
-        currentUser.assignedHamlets?.some(
-          ch =>
-            ch.toLowerCase().trim() === h.toLowerCase().trim() ||
-            h.toLowerCase().includes(ch.toLowerCase()) ||
-            ch.toLowerCase().includes(h.toLowerCase()),
-        ),
-      );
-      const isUnassigned = !u.assignedHamlets || u.assignedHamlets.length === 0;
-      return u.role === 'officer' && (matchesHamlet || isUnassigned);
-    }
-    return false;
-  });
+  const subordinates = usersList.filter(u => u.id !== currentUser.id && u.role !== 'superadmin');
 
   const [roleFilter, setRoleFilter] = useState<'all' | 'sub-admin' | 'officer'>('all');
   const displayedSubordinates = subordinates.filter(u => {
     const roleMatch = roleFilter === 'all' || u.role === roleFilter;
-    const hamletMatch =
-      hamletDelegationFilter === 'all' ||
-      u.assignedHamlets?.some(
-        h =>
-          h.toLowerCase().includes(hamletDelegationFilter.toLowerCase()) || hamletDelegationFilter.toLowerCase().includes(h.toLowerCase()),
-      );
+    const hamletMatch = hamletDelegationFilter === 'all' || u.assignedHamlets?.some(h => h === hamletDelegationFilter);
     return roleMatch && hamletMatch;
   });
 
-  const [selectedOfficer, setSelectedOfficer] = useState<AppUser | null>(displayedSubordinates[0] || null);
+  const [selectedOfficer, setSelectedOfficer] = useState<AppUser | null>(null);
 
   const [permissions, setPermissions] = useState<SubAdminFeaturePermissions>(
     selectedOfficer?.subAdminPermissions || {
-      canEditCoordinates: true,
-      canAddHouseholds: true,
-      canScanOcr: true,
+      canViewAdvancedMap: false,
+      canViewField3DMap: false,
+      canEditCoordinates: false,
+      canAddHouseholds: false,
+      canScanOcr: false,
       canRenewDocs: false,
       canExportReports: false,
-      canSendReminders: true,
-      canUpdateInspection: true,
+      canSendReminders: false,
+      canUpdateInspection: false,
       canManageStreets: false,
     },
   );
 
-  const [assignedHamletsInput, setAssignedHamletsInput] = useState<string>(selectedOfficer?.assignedHamlets?.join(', ') || 'Ấp 1');
+  const [assignedHamletsInput, setAssignedHamletsInput] = useState<string>('');
 
-  const [assignedStreetsInput, setAssignedStreetsInput] = useState<string>(
-    selectedOfficer?.assignedStreets?.join(', ') || 'Hẻm 418 Kinh Dương Vương, Hẻm 432',
-  );
+  const [assignedStreetsInput, setAssignedStreetsInput] = useState<string>('');
+  const assignedRoads = assignedStreetsInput
+    .split(',')
+    .map(name => name.trim())
+    .filter(Boolean);
+  const availableRoads = Array.from(new Set(roads.filter(road => selectedHamletIds.includes(road.hamletId)).map(road => road.name)));
+  const roadOptions = Array.from(new Set([...availableRoads, ...assignedRoads]));
 
   // Sync selection if subordinates change
   useEffect(() => {
@@ -102,16 +116,19 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
   }, [displayedSubordinates.length, roleFilter]);
 
   const handleSelectOfficer = (officer: AppUser) => {
+    setSelectedHamletIds(officer.hamletIds || []);
     setSelectedOfficer(officer);
     setPermissions(
       officer.subAdminPermissions || {
-        canEditCoordinates: true,
-        canAddHouseholds: true,
-        canScanOcr: true,
+        canViewAdvancedMap: false,
+        canViewField3DMap: false,
+        canEditCoordinates: false,
+        canAddHouseholds: false,
+        canScanOcr: false,
         canRenewDocs: false,
         canExportReports: false,
-        canSendReminders: true,
-        canUpdateInspection: true,
+        canSendReminders: false,
+        canUpdateInspection: false,
         canManageStreets: false,
       },
     );
@@ -128,6 +145,10 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
 
   const handleSaveDelegation = async () => {
     if (!selectedOfficer) return;
+    if (selectedHamletIds.some(id => !areas.some(area => area.id === id))) {
+      onShowToast('Phân công cũ chưa liên kết với ấp mới. Hãy chọn lại các ấp hành chính trước khi lưu.');
+      return;
+    }
 
     const streets = assignedStreetsInput
       .split(',')
@@ -141,16 +162,19 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
 
     const updatedOfficer: AppUser = {
       ...selectedOfficer,
+      hamletIds: selectedHamletIds,
       subAdminPermissions: permissions,
       assignedStreets: streets,
       assignedHamlets: hamlets.length > 0 ? hamlets : selectedOfficer.assignedHamlets,
     };
 
     try {
-      await saveUserInFirestore(updatedOfficer);
+      const saved = await saveDelegation(updatedOfficer);
+      setSelectedOfficer(saved);
       onShowToast(`Đã lưu phân quyền & phân công địa bàn cho ${selectedOfficer.rank} ${selectedOfficer.fullName}.`);
-    } catch (err: any) {
-      alert('Lỗi lưu phân quyền: ' + err.message);
+    } catch (err: unknown) {
+      const detail = axios.isAxiosError(err) ? err.response?.data?.detail : undefined;
+      alert('Lỗi lưu phân quyền: ' + (typeof detail === 'string' ? detail : err instanceof Error ? err.message : 'Không xác định'));
     }
   };
 
@@ -161,8 +185,20 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
     icon: any;
   }[] = [
     {
+      key: 'canViewAdvancedMap',
+      title: 'Xem bản đồ lưới chuyên sâu',
+      desc: 'Cho phép mở bản đồ địa bàn MapLibre 2D/3D và xem các lớp thông tin.',
+      icon: Grid3X3,
+    },
+    {
+      key: 'canViewField3DMap',
+      title: 'Xem bản đồ không gian 3D',
+      desc: 'Cho phép mở bản đồ thực địa 3D và xem mô hình nhà, đường, khu vực.',
+      icon: Boxes,
+    },
+    {
       key: 'canEditCoordinates',
-      title: 'Hiệu chỉnh tọa độ nhà trên Bản đồ Leaflet',
+      title: 'Hiệu chỉnh tọa độ nhà trên bản đồ địa bàn',
       desc: 'Cho phép nắn chỉnh vị trí số nhà thực tế và lưu tọa độ GPS mới vào hệ thống',
       icon: Map,
     },
@@ -306,11 +342,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
               {/* Filter by Hamlet */}
               <div className="flex flex-wrap gap-1 p-1 bg-slate-900/60 rounded-xl border border-slate-800 text-[11px]">
                 {[
-                  { id: 'all', label: 'Tất cả ấp' },
-                  { id: 'Bắc Lân', label: 'Ấp Bắc Lân' },
-                  { id: 'Nam Lân', label: 'Ấp Nam Lân' },
-                  { id: 'Đông Lân', label: 'Ấp Đông Lân' },
-                  { id: 'Tiền Lân', label: 'Ấp Tiền Lân' },
+                  { id: 'all', label: 'All' },
+                  ...Array.from(new Set(areas.map(a => a.hamletName).filter(Boolean))).map(name => ({ id: name, label: name })),
                 ].map(h => (
                   <button
                     key={h.id}
@@ -431,13 +464,21 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                     ? 'Chỉ định các ấp do cán bộ này trực tiếp quản lý dân cư và giám sát công an viên (ngăn cách bằng dấu phẩy):'
                     : 'Chỉ định ấp mà công an viên này thực hiện tuần tra kiểm soát (ngăn cách bằng dấu phẩy):'}
                 </p>
-                <input
-                  type="text"
-                  value={assignedHamletsInput}
-                  onChange={e => setAssignedHamletsInput(e.target.value)}
-                  placeholder="e.g. Ấp 1, Ấp 2 hoặc Ấp Bắc Lân, Ấp Nam Lân..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
-                />
+                <select
+                  multiple
+                  value={selectedHamletIds.map(String)}
+                  onChange={e => setSelectedHamletIds(Array.from(e.target.selectedOptions, option => Number(option.value)))}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
+                  aria-label="Area assignments"
+                >
+                  {areas
+                    .filter(area => selectedCommuneId === null || area.communeId === selectedCommuneId)
+                    .map(area => (
+                      <option key={area.id} value={area.id}>
+                        {area.hamletName} (ID ?p {area.hamletId})
+                      </option>
+                    ))}
+                </select>
               </div>
 
               {/* Assignment of Streets and Alleys */}
@@ -451,14 +492,30 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <p className="text-[11px] text-slate-400">
                   Giao cụ thể các tuyến đường hoặc hẻm thuộc ấp để thực hiện tuần tra, giám sát an ninh trật tự (ngăn cách bằng dấu phẩy):
                 </p>
-                <input
-                  type="text"
-                  value={assignedStreetsInput}
-                  onChange={e => setAssignedStreetsInput(e.target.value)}
-                  placeholder="e.g. Đường Kinh Dương Vương (số 380-450), Hẻm 418 Kinh Dương Vương, Hẻm 432..."
+                <select
+                  multiple
+                  aria-label="Road assignments from database"
+                  disabled={roadsLoading || roadsError}
+                  value={assignedRoads}
+                  onChange={e => setAssignedStreetsInput(Array.from(e.target.selectedOptions, option => option.value).join(', '))}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
-                />
+                >
+                  {roadOptions.map(name => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-400" role="status">
+                  {roadsLoading
+                    ? 'Đang tải tuyến đường từ DB...'
+                    : roadsError
+                      ? 'Không thể tải tuyến đường. Phân công hiện tại được giữ nguyên.'
+                      : `${availableRoads.length} tuyến đường/hẻm có trong hồ sơ hộ dân của các địa bàn đã chọn.`}
+                </p>
               </div>
+
+              <AdministrativeDirectory onCommuneChange={setSelectedCommuneId} />
 
               {/* Toggles for Feature permissions */}
               <div className="space-y-3">

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { User, Shield, Key, Bell, Moon, Sun, Monitor, Database, CheckCircle, Save, Lock, BadgeCheck, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Bell, Moon, Sun, Monitor, Database, CheckCircle, Save, BadgeCheck, RefreshCw } from 'lucide-react';
 import { OfficerProfile } from '../types';
 
 interface SettingsTabProps {
   officer: OfficerProfile;
-  onUpdateOfficer: (updated: Partial<OfficerProfile>) => void;
+  onUpdateOfficer: (updated: Partial<OfficerProfile>) => Promise<void>;
   isFirestoreConnected?: boolean;
   backendStatus?: 'checking' | 'online' | 'offline';
   theme?: 'light' | 'dark';
@@ -24,15 +24,31 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [soundAlerts, setSoundAlerts] = useState(true);
   const [autoRefreshInterval, setAutoRefreshInterval] = useState('60');
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  useEffect(() => {
+    setOfficerName(officer.officerName);
+    setRank(officer.rank);
+  }, [officer.username, officer.officerName, officer.rank]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateOfficer({
-      officerName,
-      rank,
-    });
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    if (saving) return;
+    setSaving(true);
+    setSavedSuccess(false);
+    setSaveError('');
+    try {
+      await onUpdateOfficer({
+        officerName,
+        rank,
+      });
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch {
+      setSaveError('Không thể lưu vào database. Vui lòng thử lại.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -55,10 +71,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       {savedSuccess && (
         <div className="p-3.5 sm:p-4 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
           <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Thông tin tài khoản đã được lưu thành công vào phiên làm việc!</span>
+          <span>Thông tin tài khoản đã được lưu thành công vào database!</span>
         </div>
       )}
 
+      {saveError && (
+        <p role="alert" className="text-sm text-red-500">
+          {saveError}
+        </p>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Account Card */}
         <div id="account-card" className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
@@ -135,10 +156,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <div className="pt-2">
               <button
                 type="submit"
+                disabled={saving}
                 className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-xs min-h-[42px]"
               >
                 <Save className="w-4 h-4" />
-                <span>Cập nhật thông tin cán bộ</span>
+                <span>{saving ? 'Đang lưu...' : 'Cập nhật thông tin cán bộ'}</span>
               </button>
             </div>
           </form>

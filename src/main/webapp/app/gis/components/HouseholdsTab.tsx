@@ -1,3 +1,4 @@
+import { exportRbacCsv } from '../services/rbacApiService';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
@@ -113,53 +114,13 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
   const isAnyFilterActive =
     searchTerm.trim() !== '' || selectedHamlet !== 'all' || selectedType !== 'all' || selectedResidenceType !== 'all';
 
-  const handleExportCSV = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canExportReports === false) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền xuất báo cáo danh sách CSV/Excel.';
-      if (onShowToast) onShowToast(msg);
-      else alert(msg);
-      return;
+  const handleExportCSV = async () => {
+    try {
+      await exportRbacCsv('households');
+      onShowToast?.('Exported authorized area data.');
+    } catch {
+      onShowToast?.('Export was denied or the server is unavailable.');
     }
-
-    const headers = [
-      'Mã Quản Lý',
-      'Số Nhà',
-      'Đường',
-      'Khu Vực',
-      'Chủ Hộ / Cơ Sở',
-      'SĐT',
-      'Phân Loại',
-      'Loại Hình Cư Trú',
-      'Tổng Nhân Khẩu',
-      'Nam',
-      'Nữ',
-      'Trạng Thái',
-      'Ghi Chú',
-    ];
-    const rows = filtered.map(h => [
-      h.code,
-      h.houseNumber,
-      h.street,
-      h.hamlet,
-      h.businessName || h.ownerName,
-      h.ownerPhone,
-      h.type === 'business' ? 'Cơ sở kinh doanh' : h.type === 'special_monitoring' ? 'Đối tượng chú ý' : 'Hộ dân',
-      getHouseholdResidenceType(h),
-      h.residentsCount,
-      h.maleCount,
-      h.femaleCount,
-      h.status,
-      `"${(h.notes || '').replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `danh_sach_dia_ban_P_An_Lac_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   // Helper renderer for status badge
@@ -226,7 +187,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               Danh sách hộ dân & Cơ sở
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-              Quản lý toàn bộ {households.length} hộ dân, cơ sở kinh doanh và đối tượng theo dõi thuộc Xã Bà Điểm, Hóc Môn.
+              Quản lý toàn bộ {households.length} hộ dân, cơ sở kinh doanh và đối tượng theo dõi thuộc Xã Bà Điểm, TP. Hồ Chí Minh.
             </p>
           </div>
 

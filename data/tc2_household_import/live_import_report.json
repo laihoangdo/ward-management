@@ -1,0 +1,29 @@
+{
+  "executed_date_client_timezone": "2026-10-13",
+  "database": "Monolithic",
+  "hamlet_id": 28,
+  "source_labels": 903,
+  "imported_records": 896,
+  "held_for_boundary_review": 7,
+  "original_other_households_preserved": 362,
+  "source_owner_names_are_synthetic": true,
+  "house_coordinates_are_estimates": true,
+  "fit_rmse_m": 10.513,
+  "independent_house_gps_measurements": 0,
+  "street_names_unverified": 896,
+  "existing_tc2_staff_assignments_preserved": 1,
+  "permissions_modified": false,
+  "database_backup": "backups/tc2-import-20261013/Monolithic-before.sql",
+  "transaction_committed": true,
+  "rehearsal_idempotence_check_passed": true,
+  "application_health": "UP",
+  "rollback_script": "rollback_import.sql",
+  "limitations": [
+    "Provisional commune reference boundary; seven labels held rather than assigned invented GPS or clipped to the edge.",
+    "House-number labels may not equal distinct occupied household units; these are source-derived draft records requested by the user.",
+    "No population, phone numbers or resident identity records were fabricated.",
+    "Zero demographic counts and unverified dates/groups are placeholders, not a verified population census.",
+    "No authenticated browser acceptance performed.",
+    "Existing project road vectors are reference only and are not independently verified against the supplied GPS controls; the geographic preview is diagnostic, not survey evidence."
+  ]
+}

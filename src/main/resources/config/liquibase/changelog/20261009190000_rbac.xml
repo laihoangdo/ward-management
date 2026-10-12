@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+  <changeSet id="20261009190000-1" author="codex">
+    <sql>
+      CREATE TABLE rbac_profile (subject varchar(255) PRIMARY KEY, data text NOT NULL, version bigint NOT NULL DEFAULT 1);
+      CREATE TABLE rbac_assignment (subject varchar(255) NOT NULL REFERENCES rbac_profile(subject) ON DELETE CASCADE, area_zone_id bigint NOT NULL REFERENCES area_zone(id), PRIMARY KEY(subject, area_zone_id));
+      CREATE TABLE rbac_setting (kind varchar(40) NOT NULL, id varchar(255) NOT NULL, data text NOT NULL, PRIMARY KEY(kind,id));
+      CREATE TABLE rbac_audit (id bigserial PRIMARY KEY, actor varchar(255) NOT NULL, action varchar(100) NOT NULL, target varchar(255) NOT NULL, details text NOT NULL, occurred_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP);
+      CREATE TABLE rbac_record_scope (kind varchar(40) NOT NULL, record_id bigint NOT NULL, subject varchar(255) NOT NULL, PRIMARY KEY(kind,record_id));
+      CREATE INDEX ix_rbac_scope_subject ON rbac_record_scope(subject,kind);
+    </sql>
+  </changeSet>
+</databaseChangeLog>

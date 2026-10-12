@@ -54,6 +54,7 @@ export const AreaZoneUpdate = () => {
     const entity = {
       ...areaZoneEntity,
       ...values,
+      fullName: values.hamletName,
     };
 
     if (isNew) {

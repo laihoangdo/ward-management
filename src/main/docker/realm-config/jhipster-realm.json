@@ -1,8 +1,9 @@
 {
   "id": "jhipster",
   "realm": "jhipster",
-  "displayName": "JHipster",
-  "displayNameHtml": "<div class=\"kc-logo-text\"><span>JHipster</span></div>",
+  "displayName": "Hệ thống quản lý địa bàn",
+  "displayNameHtml": "<span>Hệ thống quản lý địa bàn</span>",
+  "loginTheme": "territory",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
@@ -29,7 +30,7 @@
   "oauth2DevicePollingInterval": 5,
   "enabled": true,
   "sslRequired": "external",
-  "registrationAllowed": true,
+  "registrationAllowed": false,
   "registrationEmailAsUsername": false,
   "rememberMe": false,
   "verifyEmail": false,
@@ -1534,8 +1535,9 @@
       }
     ]
   },
-  "internationalizationEnabled": false,
-  "supportedLocales": [],
+  "internationalizationEnabled": true,
+  "supportedLocales": ["vi"],
+  "defaultLocale": "vi",
   "authenticationFlows": [
     {
       "id": "491fbbc9-b70b-45bd-8243-2039ae3f115d",

@@ -97,7 +97,7 @@ class HouseholdCriteriaTest {
         householdCriteria.lastCheckedDate();
         householdCriteria.officerInCharge();
         householdCriteria.residentsId();
-        householdCriteria.areaZoneId();
+        householdCriteria.hamletId();
         householdCriteria.distinct();
     }
 
@@ -130,7 +130,7 @@ class HouseholdCriteriaTest {
                 condition.apply(criteria.getLastCheckedDate()) &&
                 condition.apply(criteria.getOfficerInCharge()) &&
                 condition.apply(criteria.getResidentsId()) &&
-                condition.apply(criteria.getAreaZoneId()) &&
+                condition.apply(criteria.getHamletId()) &&
                 condition.apply(criteria.getDistinct()),
             "every filter matches"
         );
@@ -165,7 +165,7 @@ class HouseholdCriteriaTest {
                 condition.apply(criteria.getLastCheckedDate(), copy.getLastCheckedDate()) &&
                 condition.apply(criteria.getOfficerInCharge(), copy.getOfficerInCharge()) &&
                 condition.apply(criteria.getResidentsId(), copy.getResidentsId()) &&
-                condition.apply(criteria.getAreaZoneId(), copy.getAreaZoneId()) &&
+                condition.apply(criteria.getHamletId(), copy.getHamletId()) &&
                 condition.apply(criteria.getDistinct(), copy.getDistinct()),
             "every filter matches"
         );

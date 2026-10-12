@@ -29,7 +29,9 @@ export interface IHousehold {
   notes?: string | null;
   lastCheckedDate?: string | null;
   officerInCharge?: string | null;
-  areaZone?: IAreaZone | null;
+  administrativeHamlet?: IAreaZone | null;
+  hamletId?: number | null;
+  legacyAddress?: string | null;
 }
 
 export const defaultValue: Readonly<IHousehold> = {};

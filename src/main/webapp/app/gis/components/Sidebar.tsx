@@ -17,10 +17,14 @@ import {
   RefreshCw,
   UserCheck,
   Home,
+  Box,
+  Boxes,
+  Compass,
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { NavigationTab, OfficerProfile, AppUser, DynamicMenuItemConfig } from '../types';
 import { INITIAL_DYNAMIC_MENUS } from '../data/initialAuthData';
+import { canViewMapTab } from '../utils/mapViewAccess';
 
 interface SidebarProps {
   backendStatus?: 'checking' | 'online' | 'offline';
@@ -54,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     overview: LayoutDashboard,
     'area-map': Map,
     'advanced-map': Grid,
+    'field-3d-map': Boxes,
     households: Users,
     residents: UserCheck,
     documents: FileText,
@@ -64,19 +69,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     settings: Settings,
   };
 
-  // Ensure default menus like 'residents' are present even if dynamicMenus from older Firestore cache was missing it
   const effectiveMenus = React.useMemo(() => {
-    const list = [...dynamicMenus];
-    if (!list.some(m => m.id === 'residents')) {
-      const defResidents = INITIAL_DYNAMIC_MENUS.find(m => m.id === 'residents');
-      if (defResidents) {
-        // Insert right after households (or at index 4)
-        const hhIdx = list.findIndex(m => m.id === 'households');
-        if (hhIdx >= 0) {
-          list.splice(hhIdx + 1, 0, defResidents);
-        } else {
-          list.push(defResidents);
-        }
+    const list = dynamicMenus.filter(menu => !['spatial-3d-map', 'vietmap-compare'].includes(String(menu.id)));
+    if (!list.some(m => m.id === 'field-3d-map')) {
+      const defF3D = INITIAL_DYNAMIC_MENUS.find(m => m.id === 'field-3d-map');
+      if (defF3D) {
+        const idxVm = list.findIndex(m => m.id === 'advanced-map');
+        if (idxVm >= 0) list.splice(idxVm + 1, 0, defF3D);
+        else list.push(defF3D);
       }
     }
     return list;
@@ -84,13 +84,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Filter menus based on dynamic configuration and user's role
   const visibleMenus = effectiveMenus.filter(item => {
+    if (!canViewMapTab(currentUser, item.id)) return false;
     // Check role inclusion
     const roleAllowed = item.visibleRoles.includes(currentUser.role);
     if (!roleAllowed) return false;
 
     // If officer, check if subordinate feature permission is required
-    if (currentUser.role === 'officer' && item.requiredPermission && currentUser.subAdminPermissions) {
-      return currentUser.subAdminPermissions[item.requiredPermission] !== false;
+    if (currentUser.role !== 'superadmin' && item.requiredPermission) {
+      return currentUser.subAdminPermissions?.[item.requiredPermission] === true;
     }
     return true;
   });

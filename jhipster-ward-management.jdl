@@ -34,6 +34,68 @@ application {
   entities *
 }
 
+/** Đơn vị hành chính cấp Tỉnh / Thành phố trực thuộc Trung ương */
+entity AdminProvince {
+  code String required unique
+  name String required
+  unitType String required
+  fullName String required
+  shortName String
+  validFrom LocalDate
+  validTo LocalDate
+}
+
+/** Đơn vị hành chính cấp Xã / Phường (Đơn vị hành chính cấp cơ sở) */
+entity AdminCommune {
+  code String required
+  name String required
+  unitType String required
+  fullName String required
+  areaKm2 Double
+  population Integer
+  populationAsOf LocalDate
+  hamletCount Integer
+  hqAddress String
+  policeHqAddress String
+  website String
+  validFrom LocalDate
+  validTo LocalDate
+}
+
+/** Đơn vị dưới xã: Ấp / Khu phố (51 ấp sau sáp nhập) */
+entity Hamlet {
+  code String required unique
+  name String required
+  unitType String required
+  fullName String required
+  sortOrder Integer
+  officerInCharge String
+  officerPhone String
+  populationCount Integer
+  householdCount Integer
+  boundaryGeoJson TextBlob
+  nameNormalized String required
+  validFrom LocalDate
+  validTo LocalDate
+}
+
+/** Tổ dân cư / Tổ tự quản */
+entity ResidentialGroup {
+  name String required
+  leaderName String
+  leaderPhone String
+}
+
+/** Lịch sử kế thừa / Sáp nhập đơn vị hành chính */
+entity AdminUnitLineage {
+  level String required
+  predecessorName String required
+  successorId Long required
+  changeType String required
+  effectiveDate LocalDate required
+  note String
+}
+
 /** Hộ gia đình / Cơ sở kinh doanh trên địa bàn */
 entity Household {
   code String required unique
@@ -61,6 +123,7 @@ entity Household {
   notes TextBlob
   lastCheckedDate String
   officerInCharge String
+  legacyAddress String
 }
 
 /** Nhân khẩu / Cư dân cư trú */
@@ -75,17 +138,8 @@ entity Resident {
   notes TextBlob
 }
 
-/** Khu vực / Khu phố / Địa bàn quản lý */
-entity AreaZone {
-  code String required unique
-  name String required
-  hamletName String required
-  officerInCharge String
-  officerPhone String
-  populationCount Integer
-  householdCount Integer
-  boundaryGeoJson TextBlob
-}
+/** Khu vực / Khu phố / Địa bàn quản lý CSKV */
+// Legacy AreaZone storage retired; business fields belong to Hamlet.
 
 /** Hồ sơ / Biên bản kiểm tra an ninh trật tự & PCCC */
 entity DocumentRecord {
@@ -145,11 +199,15 @@ enum AlertSeverity {
 }
 
 relationship OneToMany {
+  AdminProvince{communes} to AdminCommune{province(fullName)}
+  AdminCommune{hamlets} to Hamlet{commune(fullName)}
+  Hamlet{residentialGroups} to ResidentialGroup{hamlet(fullName)}
+  Hamlet{households} to Household{hamletEntity(fullName)}
   Household{residents} to Resident{household(code)}
-  AreaZone{households} to Household{areaZone(name)}
+  Hamlet{households} to Household{administrativeHamlet(name)}
 }
 
-paginate Household, Resident, DocumentRecord, SecurityAlert, PatrolLog with pagination
+paginate Household, Resident, DocumentRecord, SecurityAlert, PatrolLog, Hamlet, AdminCommune with pagination
 dto * with mapstruct
 service all with serviceImpl
-filter Household, Resident, DocumentRecord, SecurityAlert
+filter Household, Resident, DocumentRecord, SecurityAlert, Hamlet, AdminCommune

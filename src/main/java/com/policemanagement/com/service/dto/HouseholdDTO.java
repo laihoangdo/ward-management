@@ -75,7 +75,27 @@ public class HouseholdDTO implements Serializable {
 
     private String officerInCharge;
 
-    private AreaZoneDTO areaZone;
+    private HamletDTO administrativeHamlet;
+
+    private Long hamletId;
+
+    private String legacyAddress;
+
+    public Long getHamletId() {
+        return hamletId;
+    }
+
+    public void setHamletId(Long hamletId) {
+        this.hamletId = hamletId;
+    }
+
+    public String getLegacyAddress() {
+        return legacyAddress;
+    }
+
+    public void setLegacyAddress(String legacyAddress) {
+        this.legacyAddress = legacyAddress;
+    }
 
     public Long getId() {
         return id;
@@ -285,12 +305,12 @@ public class HouseholdDTO implements Serializable {
         this.officerInCharge = officerInCharge;
     }
 
-    public AreaZoneDTO getAreaZone() {
-        return areaZone;
+    public HamletDTO getAdministrativeHamlet() {
+        return administrativeHamlet;
     }
 
-    public void setAreaZone(AreaZoneDTO areaZone) {
-        this.areaZone = areaZone;
+    public void setAdministrativeHamlet(HamletDTO administrativeHamlet) {
+        this.administrativeHamlet = administrativeHamlet;
     }
 
     @Override
@@ -344,7 +364,7 @@ public class HouseholdDTO implements Serializable {
             ", notes='" + getNotes() + "'" +
             ", lastCheckedDate='" + getLastCheckedDate() + "'" +
             ", officerInCharge='" + getOfficerInCharge() + "'" +
-            ", areaZone=" + getAreaZone() +
+            ", administrativeHamlet=" + getHamlet() +
             "}";
     }
 }

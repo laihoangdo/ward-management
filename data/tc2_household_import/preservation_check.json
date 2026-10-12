@@ -1,0 +1,38 @@
+[
+  {
+    "table": "household",
+    "existingDataPreserved": true
+  },
+  {
+    "table": "resident",
+    "existingDataPreserved": true
+  },
+  {
+    "table": "hamlet",
+    "existingDataPreserved": true
+  },
+  {
+    "table": "rbac_assignment",
+    "existingDataPreserved": true
+  },
+  {
+    "table": "rbac_profile",
+    "existingDataPreserved": true
+  },
+  {
+    "table": "document_record",
+    "existingDataPreserved": true
+  },
+  {
+    "table": "security_alert",
+    "existingDataPreserved": true
+  },
+  {
+    "table": "patrol_log",
+    "existingDataPreserved": true
+  },
+  {
+    "table": "gis_building",
+    "existingDataPreserved": true
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "target_administrative_name": "Xã Bà Điểm, Thành phố Hồ Chí Minh (sau sáp nhập 2025)",
+  "legal_composition": ["Bà Điểm", "Trung Chánh", "Xuân Thới Thượng"],
+  "legal_source": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2025/6/1685-nq.signed.pdf",
+  "boundary_file": "data/gis_processed/ba_diem_post_merger_boundary_provisional.geojson",
+  "boundary_source_file": "data/boundary_sources/hoc_mon_three_legacy_communes_arcgis_2025.geojson",
+  "boundary_status": "provisional_non_official_geometry",
+  "boundary_source_version": "ArcGIS 3rd_Level_Administrative_Boundaries_Vietnam, edit 2025-05-15",
+  "effective_date": "2025-07-01",
+  "coordinate_reference_system": "EPSG:4326",
+  "model_coordinate_reference_system": "EPSG:32648",
+  "coverage_status": "boundary_geometry_available; vector_feature_coverage_unverified",
+  "google_maps_reference": "https://maps.app.goo.gl/56QWgSR1ZwiU1iVu7",
+  "source_default_zoom": 15,
+  "detail_zoom_increment": 5,
+  "source_native_max_zoom": 15,
+  "effective_source_zoom": 15
+}

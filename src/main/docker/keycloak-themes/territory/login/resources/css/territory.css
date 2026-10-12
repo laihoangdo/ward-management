@@ -1,0 +1,178 @@
+:root {
+  color-scheme: dark;
+  --territory-text: #f1f5f9;
+  --territory-muted: #cbd5e1;
+}
+
+.login-pf body {
+  background: radial-gradient(ellipse at 50% 0, #172b49 0, #020617 65%);
+  color: var(--territory-text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  min-height: 100vh;
+}
+
+.login-pf-page {
+  padding: 64px 24px 32px;
+}
+
+#kc-header {
+  color: var(--territory-text);
+  margin-bottom: 28px;
+}
+
+#kc-header-wrapper {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.4;
+  padding: 0;
+  text-transform: none;
+}
+
+#kc-header-wrapper::before {
+  background: url('../img/shield.svg') center / contain no-repeat;
+  content: '';
+  display: block;
+  height: 56px;
+  margin: 0 auto 18px;
+  width: 56px;
+}
+
+.login-pf-page .card-pf {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px #0006;
+  max-width: 460px;
+  padding: 32px;
+}
+
+.login-pf-page .login-pf-header {
+  margin-bottom: 28px;
+}
+
+#kc-page-title {
+  color: var(--territory-text);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-top: 0;
+}
+
+.login-pf-page .form-group {
+  margin-bottom: 22px;
+}
+
+.login-pf-page label {
+  color: var(--territory-muted);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.login-pf-page .pf-c-form-control {
+  background: #020617;
+  border: 1px solid #475569;
+  border-radius: 10px;
+  color: var(--territory-text);
+  font-size: 16px;
+  height: 48px;
+  padding: 10px 12px;
+}
+
+.login-pf-page .pf-c-form-control:focus {
+  border-color: #60a5fa;
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+.login-pf-page .pf-c-input-group {
+  gap: 6px;
+}
+
+.login-pf-page .pf-c-button.pf-m-control {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 10px;
+  color: var(--territory-muted);
+  min-width: 48px;
+}
+
+.login-pf-page .pf-c-button::after {
+  border: none;
+}
+
+#kc-login {
+  background: #2563eb;
+  border: 0;
+  border-radius: 10px;
+  color: white;
+  font-size: 16px;
+  font-weight: 650;
+  min-height: 48px;
+  width: 100%;
+}
+
+#kc-login:hover {
+  background: #3b82f6;
+}
+
+#kc-login:focus-visible,
+.login-pf-page button:focus-visible,
+.login-pf-page a:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 3px;
+}
+
+.login-pf-page a {
+  color: #93c5fd;
+}
+
+.territory-footer {
+  border-top: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 24px;
+  padding-top: 20px;
+  text-align: center;
+}
+
+.territory-footer p {
+  margin: 0;
+}
+
+.login-pf-page .pf-c-alert {
+  border-radius: 10px;
+}
+
+#kc-info-wrapper {
+  background: transparent;
+  color: var(--territory-muted);
+}
+
+@media (max-width: 600px) {
+  .login-pf-page {
+    padding: 32px 16px;
+  }
+
+  #kc-header,
+  #kc-header-wrapper {
+    float: none;
+    text-align: center;
+    width: auto;
+  }
+
+  #kc-header-wrapper {
+    font-size: 22px;
+  }
+
+  .login-pf-page .card-pf {
+    margin: 0 auto;
+    padding: 24px;
+  }
+}

@@ -197,16 +197,15 @@ public class UserService {
         if (details.get("family_name") != null) {
             user.setLastName((String) details.get("family_name"));
         }
-        if (details.get("email_verified") != null) {
-            activated = (Boolean) details.get("email_verified");
-        }
+        // Authentication has already been accepted by the IdP. Email verification
+        // is a separate policy enforced by Keycloak, not the account enabled flag.
         if (details.get("email") != null) {
             user.setEmail(((String) details.get("email")).toLowerCase());
         } else if (sub.contains("|") && username != null && username.contains("@")) {
             // special handling for Auth0
             user.setEmail(username);
         } else {
-            user.setEmail(sub);
+            user.setEmail(null);
         }
         if (details.get("langKey") != null) {
             user.setLangKey((String) details.get("langKey"));

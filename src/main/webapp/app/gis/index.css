@@ -1,6 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
-@import 'leaflet/dist/leaflet.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -11,7 +10,7 @@ input,
 select,
 textarea {
   font-family:
-    'Inter',
+    'Be Vietnam Pro',
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
@@ -119,11 +118,11 @@ html.dark .text-slate-600 {
 }
 
 html.dark .text-slate-500 {
-  color: #94a3b8 !important;
+  color: #a8b7ca !important;
 }
 
 html.dark .text-slate-400 {
-  color: #64748b !important;
+  color: #a8b7ca !important;
 }
 
 /* Input fields in dark mode */
@@ -232,45 +231,4 @@ html.dark .text-purple-800,
 html.dark .text-purple-700,
 html.dark .text-purple-600 {
   color: #c084fc !important;
-}
-
-/* Map tiles slight dark mode treatment for nighttime patrol */
-html.dark .leaflet-tile-pane {
-  filter: brightness(0.85) contrast(1.1) invert(0.05);
-}
-
-/* Dark mode overrides for Leaflet popups */
-.dark .leaflet-popup-content-wrapper {
-  background-color: #1e293b;
-  color: #f1f5f9;
-  box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.5),
-    0 8px 10px -6px rgba(0, 0, 0, 0.4);
-}
-
-.dark .leaflet-popup-tip {
-  background-color: #1e293b;
-}
-
-/* Leaflet custom styling */
-.leaflet-popup-content-wrapper {
-  border-radius: 14px;
-  box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.15),
-    0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  padding: 4px;
-}
-
-.leaflet-popup-content {
-  margin: 10px 12px;
-  line-height: 1.4;
-}
-
-.custom-map-marker-detailed:hover {
-  z-index: 9999 !important;
-}
-
-.custom-map-marker-detailed div:hover {
-  transform: translate(-50%, -50%) scale(1.08) !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
 }

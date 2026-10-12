@@ -1,19 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  Building,
-  Store,
-  AlertOctagon,
-  CalendarClock,
-  AlertTriangle,
-  Users,
-  ArrowRight,
-  FileCheck,
-  PhoneCall,
-  Clock,
-  CheckCircle,
-  MapPin,
-  UserCheck,
-} from 'lucide-react';
+import { Building, Store, AlertTriangle, Users, ArrowRight, FileCheck, CheckCircle, UserCheck } from 'lucide-react';
 import { HouseholdFacility, NavigationTab } from '../types';
 import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
 import { Pagination } from './Pagination';

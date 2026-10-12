@@ -1,0 +1,33 @@
+{
+  "labels": 903,
+  "ready": 896,
+  "outside_reference": 7,
+  "method": "Affine least squares; local east/north metre approximation around G1",
+  "reference_lon_lat": [
+    106.60714413637943,
+    10.855687108611988
+  ],
+  "coefficients_east_north": [
+    [
+      -9.111574329655458,
+      -12.576974766827973,
+      519.7605018671426
+    ],
+    [
+      12.74683710750875,
+      -4.809444354152098,
+      -112.83325359419321
+    ]
+  ],
+  "control_residuals_m": [
+    7.516,
+    13.983,
+    12.431,
+    5.964
+  ],
+  "fit_rmse_m": 10.513,
+  "independent_check_points": 0,
+  "coordinates_are_estimated": true,
+  "streets_unverified": 896,
+  "commune_boundary_is_provisional": true
+}

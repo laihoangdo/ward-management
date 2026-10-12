@@ -1,0 +1,62 @@
+{
+  "source": "ban-do-ve-tay\\vector.DXF",
+  "source_sha256": "bdb259de9476d82a1df700317f619148656702ab3783242d58f282562f524f8b",
+  "address_labels": 903,
+  "unique_house_numbers": 792,
+  "repeated_house_numbers": 89,
+  "labels_with_repeated_house_numbers": 200,
+  "gps_verified": 0,
+  "ready_for_database_import": 0,
+  "coordinate_reference_system": "Unknown local drawing units; NOT WGS84",
+  "owner_names": "Deterministic random synthetic names, explicitly marked",
+  "database_writes": 0,
+  "geographic_search_hint_from_user": "Dọc Quốc lộ 22 và đường Song Hành từ Nguyễn Ảnh Thủ",
+  "limitations": [
+    "A house-number label is not a complete address or proof of a separate occupied household.",
+    "Repeated house numbers are retained as separate drawing labels pending road/alley review.",
+    "The DXF-to-Blender transform is local-to-local, not a GPS transformation.",
+    "No individual street is inferred from proximity alone.",
+    "No population, phone number, identity document, or verified building footprint is invented.",
+    "The requested officer name does not independently verify the Keycloak account identity."
+  ],
+  "source_files": [
+    {
+      "file": "SO DO AP TC2 chinh lai.dsf",
+      "bytes": 158208,
+      "sha256": "a1a7bc27df9b5f354d2d4a6aee96ac91ceebaad7e8d255b8999b982e1f08c507",
+      "signature_hex": "d0cf11e0a1b11ae1"
+    },
+    {
+      "file": "SO DO AP TC2 chinh lai.htm",
+      "bytes": 1104,
+      "sha256": "995befac1584b106df1e2fa21bcbc630f16a8db38bf78f77c4725abf50cb422a",
+      "signature_hex": "3c48544d4c3e0d0a"
+    },
+    {
+      "file": "SO DO AP TC2 chinh lai.qsf",
+      "bytes": 469504,
+      "sha256": "8363ff5142e69e889dbdee3ad371b37e57e245e0485876679e8ce2911fb71d5e",
+      "signature_hex": "d0cf11e0a1b11ae1"
+    },
+    {
+      "file": "vector.DXF",
+      "bytes": 1491085,
+      "sha256": "bdb259de9476d82a1df700317f619148656702ab3783242d58f282562f524f8b",
+      "signature_hex": "2020300d0a534543"
+    }
+  ],
+  "database_inspection": {
+    "hamlet_id": 28,
+    "hamlet_name": "Ấp Trung Chánh 2",
+    "commune_name": "Xã Bà Điểm",
+    "existing_households": 0,
+    "existing_staff_assignments": 1,
+    "hamlet_boundary_available": false
+  },
+  "corridor_reference": {
+    "file": "current_map_corridor.geojson",
+    "features": 11,
+    "source": "Existing project baDiemRoadsGis.json; geographic reference only, not house GPS evidence"
+  },
+  "subsequent_georeference_and_import_report": "live_import_report.json"
+}

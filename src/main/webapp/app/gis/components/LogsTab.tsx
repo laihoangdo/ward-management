@@ -6,23 +6,15 @@ import {
   Bell,
   UserCheck,
   PlusCircle,
-  CheckCircle2,
-  AlertTriangle,
   Search,
   Download,
-  Filter,
   ShieldCheck,
-  Layers,
   Smartphone,
   ScanLine,
   Clock,
-  ArrowRight,
   ExternalLink,
-  FileSpreadsheet,
   Plus,
   X,
-  RefreshCw,
-  Info,
 } from 'lucide-react';
 import { AuditLogEntry, AuditActionType, HouseholdFacility } from '../types';
 import { Pagination } from './Pagination';
@@ -159,7 +151,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `Nhat_ky_kiem_tra_dia_ban_P_AnLac_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `Nhat_ky_kiem_tra_dia_ban_Xa_BaDiem_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -717,7 +709,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Số 12 Kinh Dương Vương hoặc Tuyến đường Hồ Học Lãm"
+                  placeholder="Ví dụ: Số 1403 Phan Văn Hớn hoặc Tuyến đường Bà Điểm 4"
                   value={manualTitle}
                   onChange={e => setManualTitle(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
@@ -728,7 +720,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Mã hồ sơ (nếu có)</label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: HD-AP1-001 hoặc PCCC-ANLAC"
+                  placeholder="Ví dụ: HD-BL-001 hoặc PCCC-BADIEM"
                   value={manualTargetCode}
                   onChange={e => setManualTargetCode(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-mono"

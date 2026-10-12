@@ -19,6 +19,9 @@ logging:
     tech.jhipster: DEBUG
     org.hibernate.SQL: DEBUG
     com.policemanagement.com: DEBUG
+    org.springframework.web.client: INFO
+    org.springframework.web.servlet.mvc.method.annotation: INFO
+    sun.net.www.protocol.http.HttpURLConnection: INFO
 
 spring:
   devtools:
