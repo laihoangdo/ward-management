@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { mapDtoToHousehold, mapHouseholdToDto } from './householdApiService';
 
+it('does not manufacture telephone, territory or demographic values for unknown input', () => {
+  const dto = mapHouseholdToDto({ ownerName: 'Owner', houseNumber: '1', street: 'Main', hamlet: 'Area' });
+  expect(dto.ownerPhone).toBe('');
+  expect(dto.neighborhoodGroup).toBe('');
+  expect(dto.alley).toBe('');
+  expect(dto.residentsCount).toBeNull();
+  expect(dto.maleCount).toBeNull();
+});
+
 it('preserves the native hamlet ID when GIS households are read and saved', () => {
   const household = mapDtoToHousehold({ id: 123, hamletId: 37, hamlet: 'Official hamlet' });
   expect(household.hamletId).toBe(37);

@@ -2,13 +2,11 @@ import React from 'react';
 import {
   LayoutDashboard,
   Map,
-  Satellite,
   Users,
   FileText,
   Building2,
   Settings,
   ShieldCheck,
-  MapPin,
   History,
   LogOut,
   ShieldAlert,
@@ -17,9 +15,7 @@ import {
   RefreshCw,
   UserCheck,
   Home,
-  Box,
   Boxes,
-  Compass,
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { NavigationTab, OfficerProfile, AppUser, DynamicMenuItemConfig } from '../types';
@@ -44,7 +40,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   backendStatus = 'checking',
   activeTab,
   onTabChange,
-  officer,
   currentUser,
   dynamicMenus,
   warningCount,
@@ -95,6 +90,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
     return true;
   });
+
+  const menuGroup = (id: NavigationTab) => {
+    if (['overview', 'households', 'residents', 'documents'].includes(id)) return 'Công việc hằng ngày';
+    if (['area-map', 'advanced-map', 'field-3d-map', 'areas'].includes(id)) return 'Địa bàn và bản đồ';
+    if (id === 'logs') return 'Lịch sử kiểm tra';
+    if (id === 'settings') return 'Tài khoản của tôi';
+    return 'Quản trị và phân quyền';
+  };
+  const groups = ['Công việc hằng ngày', 'Địa bàn và bản đồ', 'Lịch sử kiểm tra', 'Quản trị và phân quyền', 'Tài khoản của tôi'];
+  const groupedMenus = groups.flatMap(group => visibleMenus.filter(menu => menuGroup(menu.id) === group));
 
   const handleSelect = (id: NavigationTab) => {
     onTabChange(id);
@@ -242,48 +247,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Portal
           </span>
         </Link>
-        {visibleMenus.map(item => {
+        {groupedMenus.map((item, index) => {
           const Icon = iconMap[item.id] || LayoutDashboard;
           const isActive = activeTab === item.id;
           const isSpecial = item.id === 'superadmin-hub' || item.id === 'subadmin-delegation';
           const badgeVal = item.id === 'overview' || item.id === 'documents' ? warningCount : undefined;
 
           return (
-            <button
-              key={item.id}
-              id={`nav-${item.id}`}
-              onClick={() => handleSelect(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 min-h-[42px] cursor-pointer ${
-                isActive
-                  ? item.id === 'superadmin-hub'
-                    ? 'bg-red-700 text-white shadow-md shadow-red-700/30'
-                    : item.id === 'subadmin-delegation'
-                      ? 'bg-blue-700 text-white shadow-md shadow-blue-700/30'
-                      : 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                  : isSpecial
-                    ? 'text-amber-300 hover:bg-slate-800/80 bg-slate-900/40 border border-slate-800/60'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 truncate">
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : isSpecial ? 'text-amber-400' : 'text-slate-400'}`} />
-                <span className="truncate">{item.label}</span>
-              </div>
-              {item.id === 'superadmin-hub' && (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-red-900/60 text-red-300 border border-red-700/60 shrink-0">
-                  SUPER
-                </span>
+            <React.Fragment key={item.id}>
+              {(index === 0 || menuGroup(groupedMenus[index - 1].id) !== menuGroup(item.id)) && (
+                <div className="px-3 pt-4 pb-1 text-xs font-semibold text-slate-400">{menuGroup(item.id)}</div>
               )}
-              {badgeVal !== undefined && badgeVal > 0 && (
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                    isActive ? 'bg-amber-400 text-amber-950' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                  }`}
-                >
-                  {badgeVal}
-                </span>
-              )}
-            </button>
+              <button
+                aria-current={isActive ? 'page' : undefined}
+                id={`nav-${item.id}`}
+                onClick={() => handleSelect(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 min-h-[42px] cursor-pointer ${
+                  isActive
+                    ? item.id === 'superadmin-hub'
+                      ? 'bg-red-700 text-white shadow-md shadow-red-700/30'
+                      : item.id === 'subadmin-delegation'
+                        ? 'bg-blue-700 text-white shadow-md shadow-blue-700/30'
+                        : 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                    : isSpecial
+                      ? 'text-amber-300 hover:bg-slate-800/80 bg-slate-900/40 border border-slate-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : isSpecial ? 'text-amber-400' : 'text-slate-400'}`} />
+                  <span className="truncate">{item.label}</span>
+                </div>
+                {item.id === 'superadmin-hub' && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-red-900/60 text-red-300 border border-red-700/60 shrink-0">
+                    SUPER
+                  </span>
+                )}
+                {badgeVal !== undefined && badgeVal > 0 && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                      isActive ? 'bg-amber-400 text-amber-950' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}
+                  >
+                    {badgeVal}
+                  </span>
+                )}
+              </button>
+            </React.Fragment>
           );
         })}
       </nav>

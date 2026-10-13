@@ -62,7 +62,9 @@ export const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <div
-      className={`p-3 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300 select-none ${className}`}
+      role="navigation"
+      aria-label="Phân trang danh sách"
+      className={`gis-pagination p-3 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300 select-none ${className}`}
     >
       {/* Left: Summary and Page Size Selector */}
       <div className="flex items-center justify-between sm:justify-start gap-3 flex-wrap">
@@ -145,6 +147,8 @@ export const Pagination: React.FC<PaginationProps> = ({
             return (
               <button
                 key={pageNum}
+                aria-label={`Trang ${pageNum}`}
+                aria-current={isActive ? 'page' : undefined}
                 type="button"
                 onClick={() => handlePageClick(pageNum)}
                 className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${

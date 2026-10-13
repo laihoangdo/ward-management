@@ -1,3 +1,4 @@
+import { normalizeSearch } from '../utils/householdSearch';
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileText, AlertTriangle, Clock, Send, Search, FileCheck } from 'lucide-react';
 import { DocumentRecord } from '../types';
@@ -5,12 +6,26 @@ import { Pagination } from './Pagination';
 
 interface DocumentsTabProps {
   documents: DocumentRecord[];
+  canRenew?: boolean;
+  canRemind?: boolean;
+  filterStatus?: 'all' | 'expiring_soon' | 'valid';
+  onFilterStatusChange?: (status: 'all' | 'expiring_soon' | 'valid') => void;
   onRenewDocument: (id: string) => void;
   onSendReminder: (id: string) => void;
 }
 
-export const DocumentsTab: React.FC<DocumentsTabProps> = ({ documents, onRenewDocument, onSendReminder }) => {
-  const [filterStatus, setFilterStatus] = useState<'all' | 'expiring_soon' | 'valid'>('all');
+export const DocumentsTab: React.FC<DocumentsTabProps> = ({
+  documents,
+  canRenew = true,
+  canRemind = true,
+  onRenewDocument,
+  onSendReminder,
+  filterStatus: externalFilter,
+  onFilterStatusChange,
+}) => {
+  const [localFilter, setLocalFilter] = useState<'all' | 'expiring_soon' | 'valid'>('all');
+  const filterStatus = externalFilter ?? localFilter;
+  const setFilterStatus = onFilterStatusChange ?? setLocalFilter;
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -23,20 +38,25 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ documents, onRenewDo
     return documents.filter(doc => {
       if (filterStatus !== 'all' && doc.status !== filterStatus) return false;
       if (search.trim()) {
-        const q = search.toLowerCase();
+        const q = normalizeSearch(search);
         return (
-          doc.title.toLowerCase().includes(q) ||
-          doc.targetName.toLowerCase().includes(q) ||
-          doc.docCode.toLowerCase().includes(q) ||
-          doc.address.toLowerCase().includes(q)
+          normalizeSearch(doc.title).includes(q) ||
+          normalizeSearch(doc.targetName).includes(q) ||
+          normalizeSearch(doc.docCode).includes(q) ||
+          normalizeSearch(doc.address).includes(q)
         );
       }
       return true;
     });
   }, [documents, filterStatus, search]);
 
+  useEffect(() => {
+    setCurrentPage(page => Math.min(page, Math.max(1, Math.ceil(filteredDocs.length / pageSize))));
+  }, [filteredDocs.length, pageSize]);
+
   const paginatedDocs = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
+    const safePage = Math.min(currentPage, Math.max(1, Math.ceil(filteredDocs.length / pageSize)));
+    const start = (safePage - 1) * pageSize;
     return filteredDocs.slice(start, start + pageSize);
   }, [filteredDocs, currentPage, pageSize]);
 
@@ -79,7 +99,8 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ documents, onRenewDo
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            type="text"
+            type="search"
+            aria-label="Tìm hồ sơ theo số hiệu, cơ sở hoặc người đại diện"
             placeholder="Tìm số hiệu, cơ sở, người đại diện..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -117,11 +138,17 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ documents, onRenewDo
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            Hợp lệ ({documents.length - expiringCount})
+            Hợp lệ ({documents.filter(document => document.status === 'valid').length})
           </button>
         </div>
       </div>
 
+      {(!canRenew || !canRemind) && (
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          {!canRenew ? 'Bạn chưa được cấp quyền gia hạn hồ sơ. ' : ''}
+          {!canRemind ? 'Bạn chưa được cấp quyền gửi yêu cầu đôn đốc.' : ''}
+        </p>
+      )}
       {/* Document List */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -187,6 +214,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ documents, onRenewDo
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => onSendReminder(doc.id)}
+                          disabled={!canRemind}
                           className={`flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[38px] ${
                             isExpiring
                               ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'
@@ -199,6 +227,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({ documents, onRenewDo
 
                         <button
                           onClick={() => onRenewDocument(doc.id)}
+                          disabled={!canRenew}
                           className="flex-1 sm:flex-initial px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs min-h-[38px]"
                         >
                           <FileCheck className="w-3 h-3" />

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { matchesHouseholdSearch } from '../utils/householdSearch';
 import axios from 'axios';
 import html2canvas from 'html2canvas-pro';
 import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
@@ -330,11 +331,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
   const searchMatches = useMemo(() => {
     const query = normalizeSearch(appliedSearch);
     if (!query) return [];
-    return households.filter(h =>
-      [h.houseNumber, h.street, h.code, h.ownerName, h.ownerPhone, h.businessName, h.hamlet, h.alley, h.notes].some(value =>
-        normalizeSearch(String(value ?? '')).includes(query),
-      ),
-    );
+    return households.filter(household => matchesHouseholdSearch(household, query));
   }, [households, appliedSearch]);
   const visibleHouseholds = appliedSearch ? searchMatches : households;
 
@@ -1706,7 +1703,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       )}
       <div className={`tc2-map-content${selectedHouse && mapMode === 'geographic' ? ' tc2-map-content--selected' : ''}`}>
         <div className="tc2-map-shell" ref={captureRef}>
-          <div ref={containerRef} className="h-[65vh] min-h-[430px] w-full rounded-lg bg-slate-100" aria-label="Bản đồ địa bàn 2D và 3D" />
+          <div ref={containerRef} className="gis-operational-map w-full rounded-lg bg-slate-100" aria-label="Bản đồ địa bàn 2D và 3D" />
           <div className="tc2-map-tools" aria-label="Điều khiển bản đồ">
             {mapMode === 'geographic' && (
               <label className="tc2-map-basemap">

@@ -207,6 +207,13 @@ export interface DocumentRecord {
   daysRemaining?: number;
 }
 
+/** Unknown demographic totals can be omitted when creating a record. */
+export type HouseholdCreateInput = Omit<
+  HouseholdFacility,
+  'residentsCount' | 'maleCount' | 'femaleCount' | 'under18Count' | 'above18Count'
+> &
+  Partial<Pick<HouseholdFacility, 'residentsCount' | 'maleCount' | 'femaleCount' | 'under18Count' | 'above18Count'>>;
+
 export interface OfficerProfile {
   officerName: string;
   rank: string;

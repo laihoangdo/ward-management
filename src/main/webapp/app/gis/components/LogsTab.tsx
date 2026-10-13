@@ -23,10 +23,12 @@ interface LogsTabProps {
   logs: AuditLogEntry[];
   households: HouseholdFacility[];
   onSelectHousehold?: (household: HouseholdFacility) => void;
-  onAddManualLog?: (log: Partial<AuditLogEntry>) => void;
+  onAddManualLog?: (log: Partial<AuditLogEntry>) => Promise<boolean>;
 }
 
 export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHousehold, onAddManualLog }) => {
+  const [savingManualLog, setSavingManualLog] = useState(false);
+  const [manualSaveError, setManualSaveError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedActionFilter, setSelectedActionFilter] = useState<string>('all');
   const [selectedTargetType, setSelectedTargetType] = useState<string>('all');
@@ -158,12 +160,14 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
   };
 
   // Submit manual log entry
-  const handleSubmitManualLog = (e: React.FormEvent) => {
+  const handleSubmitManualLog = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingManualLog || !onAddManualLog) return;
     if (!manualTitle.trim() || !manualDetails.trim()) return;
-
-    if (onAddManualLog) {
-      onAddManualLog({
+    setSavingManualLog(true);
+    setManualSaveError('');
+    try {
+      const saved = await onAddManualLog({
         actionType: manualActionType,
         actionLabel: getActionLabel(manualActionType),
         targetTitle: manualTitle.trim(),
@@ -172,12 +176,19 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
         targetType: 'household',
         status: 'info',
       });
+      if (!saved) {
+        setManualSaveError('Không thể lưu nhật ký. Nội dung nhập được giữ lại để thử lại.');
+        return;
+      }
+      setManualTitle('');
+      setManualDetails('');
+      setManualTargetCode('');
+      setIsManualModalOpen(false);
+    } catch {
+      setManualSaveError('Không thể lưu nhật ký. Vui lòng thử lại.');
+    } finally {
+      setSavingManualLog(false);
     }
-
-    setManualTitle('');
-    setManualDetails('');
-    setManualTargetCode('');
-    setIsManualModalOpen(false);
   };
 
   const getActionLabel = (type: AuditActionType): string => {
@@ -688,6 +699,12 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             </div>
 
             <form onSubmit={handleSubmitManualLog} className="space-y-4">
+              {manualSaveError && (
+                <p role="alert" className="text-sm text-red-700">
+                  {manualSaveError}
+                </p>
+              )}
+              {savingManualLog && <p role="status">Đang lưu nhật ký…</p>}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Loại hình nghiệp vụ</label>
                 <select
@@ -751,6 +768,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                 </button>
                 <button
                   type="submit"
+                  disabled={savingManualLog}
                   className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-colors shadow-sm"
                 >
                   Lưu vào nhật ký hệ thống

@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X, RefreshCw, Upload, Check, AlertCircle, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react';
 import { HouseholdFacility, InspectionPhoto } from '../types';
@@ -303,13 +304,24 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     }
   };
 
+  const dialogRef = useDialogFocus(
+    isOpen && Boolean(household),
+    () => {
+      if (!isSaving) handleClose();
+    },
+    isSaving,
+  );
   if (!isOpen || !household) return null;
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       id="modal-inspection-camera-overlay"
       className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={handleClose}
+      onClick={() => {
+        if (!isSaving) handleClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="camera-modal-title"
@@ -343,7 +355,10 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
 
           <button
             id="btn-close-camera-modal"
-            onClick={handleClose}
+            disabled={isSaving}
+            onClick={() => {
+              if (!isSaving) handleClose();
+            }}
             className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             title="Đóng Camera"
             aria-label="Đóng"
@@ -520,7 +535,9 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={handleClose}
+                    onClick={() => {
+                      if (!isSaving) handleClose();
+                    }}
                     disabled={isSaving}
                     className="px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white rounded-xl transition-colors cursor-pointer"
                   >

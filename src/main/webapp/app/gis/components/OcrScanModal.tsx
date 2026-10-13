@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Camera,
@@ -30,7 +31,7 @@ interface OcrScanModalProps {
   household: HouseholdFacility;
   officerName: string;
   onClose: () => void;
-  onHouseholdUpdated: (updatedHousehold: HouseholdFacility) => void;
+  onHouseholdUpdated: (updatedHousehold: HouseholdFacility) => Promise<void>;
 }
 
 export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, officerName, onClose, onHouseholdUpdated }) => {
@@ -342,7 +343,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
         updatedHousehold.inspectionPhotos = [newPhoto, ...(updatedHousehold.inspectionPhotos || [])];
       }
 
-      onHouseholdUpdated(updatedHousehold);
+      await onHouseholdUpdated(updatedHousehold);
       setSaveSuccess(true);
     } catch (err: any) {
       console.error('Error saving OCR result:', err);
@@ -352,12 +353,25 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
     }
   };
 
+  const requestClose = () => {
+    if (isSaving) return;
+    stopStream();
+    onClose();
+  };
+  const dialogRef = useDialogFocus(isOpen, requestClose, isSaving);
   if (!isOpen) return null;
 
   const existingPhotos = household.inspectionPhotos || [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="OCR"
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto"
+    >
       <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[94vh] flex flex-col">
         {/* Header */}
         <div className="p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between shrink-0">
@@ -379,10 +393,8 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
           </div>
 
           <button
-            onClick={() => {
-              stopStream();
-              onClose();
-            }}
+            disabled={isSaving}
+            onClick={requestClose}
             className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -415,10 +427,8 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
               <div className="pt-3">
                 <button
                   id="btn-ocr-success-finish"
-                  onClick={() => {
-                    stopStream();
-                    onClose();
-                  }}
+                  disabled={isSaving}
+                  onClick={requestClose}
                   className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
                 >
                   <Check className="w-4 h-4" />
@@ -834,10 +844,8 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
         <div className="p-3.5 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => {
-              stopStream();
-              onClose();
-            }}
+            disabled={isSaving}
+            onClick={requestClose}
             className="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold rounded-xl text-xs transition-colors cursor-pointer min-h-[38px]"
           >
             Đóng

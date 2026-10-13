@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useId } from 'react';
 import { Search, Check, ChevronDown, X, Plus } from 'lucide-react';
 
 export interface SearchableSelectProps {
@@ -40,6 +40,9 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   hint,
   className = '',
 }) => {
+  const controlId = useId();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,19 +87,36 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     });
   };
 
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [searchTerm, isOpen]);
+  useEffect(() => {
+    if (isOpen) document.getElementById(`${controlId}-option-${activeIndex}`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [controlId, activeIndex, isOpen]);
   const handleSelect = (val: string) => {
     onChange(val);
     setIsOpen(false);
     setSearchTerm('');
+    triggerRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
       setIsOpen(false);
+      triggerRef.current?.focus();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(index => Math.max(0, Math.min(filteredOptions.length - 1, index + (e.key === 'ArrowDown' ? 1 : -1))));
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      setIsOpen(false);
+      triggerRef.current?.focus();
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredOptions.length > 0) {
-        handleSelect(filteredOptions[0]);
+        handleSelect(filteredOptions[Math.min(activeIndex, filteredOptions.length - 1)]);
       } else if (allowCustom && searchTerm.trim()) {
         handleSelect(searchTerm.trim());
       }
@@ -116,7 +136,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     <div ref={containerRef} className={`relative w-full ${className}`}>
       {label && (
         <div className="flex items-center justify-between mb-1">
-          <label className="block font-bold text-slate-700 text-xs">
+          <label id={`${controlId}-label`} className="block font-bold text-slate-700 text-xs">
             {label} {required && <span className="text-rose-500">*</span>}
           </label>
           {hint && <span className="text-[10px] text-slate-400">{hint}</span>}
@@ -125,13 +145,28 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
       {/* Trigger Button */}
       <div
+        ref={triggerRef}
+        role="combobox"
+        tabIndex={0}
+        aria-label={label || placeholder}
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? controlId + '-list' : undefined}
+        aria-haspopup="listbox"
+        aria-required={required}
+        onKeyDown={event => {
+          if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(event.key)) {
+            event.preventDefault();
+            if (!isOpen) handleToggle();
+            else searchInputRef.current?.focus();
+          }
+        }}
         onClick={handleToggle}
         className={`w-full px-3 py-2 bg-slate-50 border rounded-xl cursor-pointer transition flex items-center justify-between text-xs select-none ${
           isOpen ? borderFocusClass : 'border-slate-300 hover:border-slate-400 bg-slate-50'
         }`}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          {icon && <span className="text-slate-400 shrink-0">{icon}</span>}
+          {Boolean(icon) && <span className="text-slate-400 shrink-0">{icon}</span>}
           {value ? (
             <span className="font-bold text-slate-900 truncate">{value}</span>
           ) : (
@@ -145,7 +180,19 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       </div>
 
       {/* Hidden input for HTML form validation */}
-      <input type="text" value={value} onChange={() => {}} required={required} className="sr-only" tabIndex={-1} />
+      <input
+        type="text"
+        value={value}
+        onChange={() => {}}
+        aria-label={label || placeholder}
+        onInvalid={() => {
+          triggerRef.current?.focus();
+          if (!isOpen) handleToggle();
+        }}
+        required={required}
+        className="sr-only"
+        tabIndex={-1}
+      />
 
       {/* Dropdown Popup */}
       {isOpen && (
@@ -156,6 +203,14 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
               <input
                 ref={searchInputRef}
+                role="combobox"
+                aria-label={searchPlaceholder}
+                aria-expanded={isOpen}
+                aria-controls={controlId + '-list'}
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  filteredOptions.length ? controlId + '-option-' + Math.min(activeIndex, filteredOptions.length - 1) : undefined
+                }
                 type="text"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
@@ -166,6 +221,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
               {searchTerm && (
                 <button
                   type="button"
+                  aria-label="Xóa từ khóa"
                   onClick={() => setSearchTerm('')}
                   className="absolute right-2 p-0.5 text-slate-400 hover:text-slate-600 rounded"
                 >
@@ -187,10 +243,24 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           </div>
 
           {/* Options List */}
-          <div className="overflow-y-auto flex-1 divide-y divide-slate-100 max-h-48">
+          <div
+            id={controlId + '-list'}
+            role="listbox"
+            aria-label={label || placeholder}
+            className="overflow-y-auto flex-1 divide-y divide-slate-100 max-h-48"
+          >
             {/* Custom option when no exact match and allowCustom is true */}
             {allowCustom && searchTerm.trim() && !isExactMatch && (
               <div
+                role="option"
+                aria-selected={false}
+                tabIndex={0}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    handleSelect(searchTerm.trim());
+                  }
+                }}
                 onClick={() => handleSelect(searchTerm.trim())}
                 className="p-2.5 px-3 flex items-center gap-2 cursor-pointer bg-blue-50/60 hover:bg-blue-100/70 text-blue-800 font-semibold transition"
               >
@@ -207,11 +277,16 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 <p>Không tìm thấy mục nào khớp</p>
               </div>
             ) : (
-              filteredOptions.map(opt => {
+              filteredOptions.map((opt, index) => {
                 const isSelected = opt === value;
                 return (
                   <div
                     key={opt}
+                    id={controlId + '-option-' + index}
+                    role="option"
+                    aria-selected={isSelected}
+                    data-active={index === activeIndex}
+                    onMouseEnter={() => setActiveIndex(index)}
                     onClick={() => handleSelect(opt)}
                     className={`p-2.5 px-3 flex items-center justify-between gap-2 cursor-pointer transition ${
                       isSelected ? 'bg-blue-50 text-blue-900 font-bold' : 'hover:bg-slate-50 text-slate-700'

@@ -3,6 +3,9 @@ import { useAppDispatch, useAppSelector } from 'app/config/store';
 import { getSession } from 'app/shared/reducers/authentication';
 import { mapAccountToGisUser, logoutBackendSession } from './services/backendSession';
 import './index.css';
+import { RenewDocumentDialog } from './components/RenewDocumentDialog';
+import { matchesHouseholdSearch } from './utils/householdSearch';
+import { loadOperationalData, OPERATIONAL_DATA_LABELS } from './utils/operationalData';
 import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, AlertTriangle, Database, CloudCheck, MapPin } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -22,7 +25,6 @@ import { WarningDetailModal } from './components/WarningDetailModal';
 import { normalizeHousehold, normalizeHouseholdList } from './utils/householdUtils';
 import { canViewMapTab } from './utils/mapViewAccess';
 import {
-  fetchCompleteHouseholdsFromBackend,
   createHouseholdInBackend,
   updateHouseholdInBackend,
   updateHouseholdNotesInBackend,
@@ -30,14 +32,13 @@ import {
   deleteHouseholdInBackend,
   fetchAllDocumentRecords,
   renewDocumentInBackend,
-  fetchPatrolLogsFromBackend,
   savePatrolLogInBackend,
-  fetchSecurityAlertsFromBackend,
 } from './services/householdApiService';
 
 import {
   NavigationTab,
   HouseholdFacility,
+  HouseholdCreateInput,
   DocumentRecord,
   OfficerProfile,
   DEFAULT_OFFICER,
@@ -181,6 +182,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [officer, setOfficer] = useState<OfficerProfile>(DEFAULT_OFFICER);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [renewingDocument, setRenewingDocument] = useState<DocumentRecord | null>(null);
+  const [dataErrors, setDataErrors] = useState<string[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [documentFilter, setDocumentFilter] = useState<'all' | 'expiring_soon' | 'valid'>('all');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Connection & Backend status
@@ -342,51 +347,11 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     void refreshHealth();
     const healthTimer = window.setInterval(refreshHealth, 30000);
 
-    // 1. Tải toàn bộ dữ liệu hộ dân & nhân khẩu thực tế từ PostgreSQL
-    fetchCompleteHouseholdsFromBackend()
-      .then(realHouseholds => {
-        if (realHouseholds && realHouseholds.length > 0) {
-          setHouseholds(realHouseholds);
-        }
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.warn('Lỗi khi tải dữ liệu từ PostgreSQL:', err);
-        setIsLoading(false);
-      });
-
-    // 2. Tải danh sách hồ sơ giấy tờ thực tế từ PostgreSQL
-    fetchAllDocumentRecords(1000)
-      .then(docs => {
-        if (Array.isArray(docs) && docs.length > 0) {
-          setDocuments(docs);
-        }
-      })
-      .catch(err => {
-        console.warn('Lỗi khi tải danh sách hồ sơ giấy tờ:', err);
-      });
-
-    // 3. Tải danh sách nhật ký tuần tra thực địa từ PostgreSQL
-    fetchPatrolLogsFromBackend(200)
-      .then(logs => {
-        if (Array.isArray(logs) && logs.length > 0) {
-          setAuditLogs(logs);
-        }
-      })
-      .catch(err => {
-        console.warn('Lỗi khi tải nhật ký tuần tra:', err);
-      });
-
-    // 4. Tải danh sách cảnh báo an ninh từ PostgreSQL
-    fetchSecurityAlertsFromBackend(100)
-      .then(alerts => {
-        if (Array.isArray(alerts) && alerts.length > 0) {
-          setSecurityAlerts(alerts);
-        }
-      })
-      .catch(err => {
-        console.warn('Lỗi khi tải cảnh báo an ninh:', err);
-      });
+    void loadOperationalData().then(results => {
+      if (cancelled) return;
+      applyOperationalData(results);
+      setIsLoading(false);
+    });
 
     // 4. Seed initial RBAC, Allowed Emails, and Dynamic Menus if empty
     seedAuthAndRbacData().catch(console.warn);
@@ -486,23 +451,26 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // Record audit log helper with PostgreSQL Backend Persistence
   const recordAuditLog = async (log: AuditLogEntry) => {
-    // 1. Optimistic UI update
-    setAuditLogs(prev => [log, ...prev]);
-
     // 2. Lưu trực tiếp vào PostgreSQL backend (/api/patrol-logs)
     try {
       const saved = await savePatrolLogInBackend(log);
       if (saved) {
-        setAuditLogs(prev => prev.map(item => (item.id === log.id ? saved : item)));
+        setAuditLogs(prev => [saved, ...prev]);
+      } else {
+        showToast('Máy chủ chưa xác nhận lưu nhật ký. Vui lòng kiểm tra lại.');
+        return false;
       }
     } catch (err) {
       console.warn('Lỗi lưu nhật ký backend:', err);
+      showToast('Không thể lưu nhật ký kiểm tra. Vui lòng thử lại.');
+      return false;
     }
 
     // 3. Phụ trợ đồng bộ Firestore nếu có
     addAuditLogInFirestore(log).catch(err => {
       console.warn('Persist audit log firestore notice:', err);
     });
+    return true;
   };
 
   const handleAddManualLog = async (partial: Partial<AuditLogEntry>) => {
@@ -524,26 +492,24 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       integrityHash: generateSimpleHash(`MAN-${Date.now()}`),
       status: partial.status || 'info',
     };
-    await recordAuditLog(newLog);
-    showToast('Đã lưu nhật ký tuần tra thực địa vào cơ sở dữ liệu PostgreSQL.');
+    const saved = await recordAuditLog(newLog);
+    if (saved) showToast('Đã lưu nhật ký tuần tra thực địa vào cơ sở dữ liệu PostgreSQL.');
+    return saved;
   };
 
   // Handlers with Backend PostgreSQL Persistence & Audit Logging
   const handleUpdateNotes = async (id: string, notes: string) => {
     const target = households.find(h => h.id === id);
     const today = new Date().toLocaleDateString('vi-VN');
-    // Optimistic UI update
-    setHouseholds(prev => prev.map(h => (h.id === id ? { ...h, notes, lastCheckedDate: today } : h)));
-    if (selectedHousehold && selectedHousehold.id === id) {
-      setSelectedHousehold(prev => (prev ? { ...prev, notes, lastCheckedDate: today } : null));
-    }
-
     try {
       await updateHouseholdNotesInBackend(id, notes);
+      setHouseholds(prev => prev.map(h => (h.id === id ? { ...h, notes, lastCheckedDate: today } : h)));
+      setSelectedHousehold(prev => (prev?.id === id ? { ...prev, notes, lastCheckedDate: today } : prev));
       showToast('Đã lưu ghi chú kiểm tra vào cơ sở dữ liệu PostgreSQL.');
     } catch (err) {
       console.error('Lỗi khi lưu ghi chú backend:', err);
-      showToast('Đã lưu ghi chú kiểm tra thực địa thành công.');
+      showToast('Không thể lưu ghi chú. Nội dung nhập được giữ lại để thử lại.');
+      throw err;
     }
 
     // Record audit log for profile / inspection update
@@ -606,16 +572,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   };
 
   const handleUpdateHouseholdFull = async (updated: HouseholdFacility) => {
-    setHouseholds(prev => prev.map(h => (h.id === updated.id ? updated : h)));
-    if (selectedHousehold && selectedHousehold.id === updated.id) {
-      setSelectedHousehold(updated);
-    }
     try {
-      await updateHouseholdInBackend(updated);
+      const persisted = await updateHouseholdInBackend(updated);
+      // These presentation/capture fields are held outside the household API.
+      const saved = { ...persisted, gridPosition: updated.gridPosition, inspectionPhotos: updated.inspectionPhotos };
+      setHouseholds(prev => prev.map(h => (h.id === saved.id ? saved : h)));
+      setSelectedHousehold(prev => (prev?.id === saved.id ? saved : prev));
       showToast(`Đã cập nhật hộ ${updated.code} vào PostgreSQL thành công!`);
     } catch (err) {
       console.error('Lỗi khi lưu cập nhật vào PostgreSQL:', err);
-      showToast('Lỗi khi lưu thông tin vào cơ sở dữ liệu.');
+      showToast('Chưa lưu đầy đủ hồ sơ. Kiểm tra lại dữ liệu trước khi thử lại.');
+      throw err;
     }
 
     // Audit log
@@ -752,7 +719,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     recordAuditLog(geoLog);
   };
 
-  const handleAddHousehold = async (newH: HouseholdFacility) => {
+  const handleAddHousehold = async (newH: HouseholdCreateInput) => {
     // RBAC Check for Officer
     if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canAddHouseholds !== true) {
       showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền đăng ký hộ dân mới.');
@@ -793,20 +760,24 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     return true;
   };
 
-  const handleRenewDocument = async (docId: string) => {
+  const handleRenewDocument = (docId: string) => {
     if (currentUser.role !== 'superadmin' && currentUser.subAdminPermissions?.canRenewDocs !== true) {
       showToast('Chưa được cấp quyền gia hạn hồ sơ');
       return;
     }
-    const expiryDate = window.prompt('Ngày hết hạn mới (YYYY-MM-DD)');
-    if (!expiryDate) return;
+    const record = documents.find(document => document.id === docId);
+    if (record) setRenewingDocument(record);
+  };
+  const saveDocumentRenewal = async (date: string) => {
+    if (!renewingDocument) return;
+    await renewDocumentInBackend(renewingDocument.id, date);
     try {
-      await renewDocumentInBackend(docId, expiryDate);
       setDocuments(await fetchAllDocumentRecords());
-      showToast('Đã lưu gia hạn hồ sơ vào cơ sở dữ liệu');
     } catch {
-      showToast('Không thể gia hạn. Kiểm tra quyền và ngày hết hạn.');
+      showToast('Đã lưu gia hạn, nhưng chưa tải lại được danh sách. Vui lòng cập nhật dữ liệu.');
+      return;
     }
+    showToast('Đã lưu gia hạn hồ sơ.');
   };
 
   const handleSendReminder = async (docId: string) => {
@@ -818,32 +789,24 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     }
   };
 
-  const handleRefresh = async () => {
-    try {
-      setIsLoading(true);
-      const [data, docs, logs, alerts] = await Promise.all([
-        fetchCompleteHouseholdsFromBackend(),
-        fetchAllDocumentRecords(1000).catch(() => []),
-        fetchPatrolLogsFromBackend(200).catch(() => []),
-        fetchSecurityAlertsFromBackend(100).catch(() => []),
-      ]);
+  const applyOperationalData = (results: Awaited<ReturnType<typeof loadOperationalData>>) => {
+    const [householdResult, documentResult, logResult, alertResult] = results;
+    if (householdResult.status === 'fulfilled') setHouseholds(householdResult.value);
+    if (documentResult.status === 'fulfilled') setDocuments(documentResult.value);
+    if (logResult.status === 'fulfilled') setAuditLogs(logResult.value);
+    if (alertResult.status === 'fulfilled') setSecurityAlerts(alertResult.value);
+    const failed = results.flatMap((result, index) => (result.status === 'rejected' ? [OPERATIONAL_DATA_LABELS[index]] : []));
+    setDataErrors(failed);
+    if (!failed.length) setLastUpdated(new Date());
+    return failed;
+  };
 
-      if (data && data.length > 0) {
-        setHouseholds(data);
-      }
-      if (docs && docs.length > 0) {
-        setDocuments(docs);
-      }
-      if (logs && logs.length > 0) {
-        setAuditLogs(logs);
-      }
-      if (alerts && alerts.length > 0) {
-        setSecurityAlerts(alerts);
-      }
-      showToast(`Đã đồng bộ cơ sở dữ liệu PostgreSQL (${data.length} hộ dân, ${docs.length} hồ sơ, ${logs.length} nhật ký).`);
-    } catch (err) {
-      console.warn('Lỗi khi làm mới dữ liệu từ PostgreSQL:', err);
-      showToast('Đã làm mới dữ liệu từ hệ thống.');
+  const handleRefresh = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const failed = applyOperationalData(await loadOperationalData());
+      showToast(failed.length ? 'Một số dữ liệu chưa cập nhật. Xem thông báo để thử lại.' : 'Đã cập nhật đầy đủ dữ liệu địa bàn.');
     } finally {
       setIsLoading(false);
     }
@@ -909,29 +872,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   // If user searched in header and pressed or typed, filter scoped view
   const displayedHouseholds = useMemo(() => {
     if (!searchQuery.trim()) return scopedHouseholds;
-    const q = searchQuery.toLowerCase();
-    return scopedHouseholds.filter(h => {
-      return (
-        (h.code && h.code.toLowerCase().includes(q)) ||
-        (h.ownerName && h.ownerName.toLowerCase().includes(q)) ||
-        (h.houseNumber && h.houseNumber.toLowerCase().includes(q)) ||
-        (h.street && h.street.toLowerCase().includes(q)) ||
-        (h.hamlet && h.hamlet.toLowerCase().includes(q)) ||
-        (h.ownerPhone && h.ownerPhone.includes(q)) ||
-        (h.businessName && h.businessName.toLowerCase().includes(q)) ||
-        (h.businessCategory && h.businessCategory.toLowerCase().includes(q)) ||
-        (h.residentsList &&
-          h.residentsList.some(
-            r =>
-              (r.fullName && r.fullName.toLowerCase().includes(q)) ||
-              (r.idCardNumber && r.idCardNumber.includes(q)) ||
-              (r.phone && r.phone.includes(q)),
-          )) ||
-        (q === 'cảnh báo' && h.status === 'warning') ||
-        (q === 'kinh doanh' && h.type === 'business') ||
-        (q === 'hộ gia đình' && h.type === 'household')
-      );
-    });
+    return scopedHouseholds.filter(household => matchesHouseholdSearch(household, searchQuery));
   }, [scopedHouseholds, searchQuery]);
 
   return (
@@ -969,6 +910,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
             warningCount={warningCount}
             onOpenWarnings={() => setIsWarningModalOpen(true)}
             onRefresh={handleRefresh}
+            isRefreshing={isLoading}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
@@ -985,12 +927,45 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         )}
 
         <main
-          className={`flex-1 ${
+          id="gis-main-content"
+          tabIndex={-1}
+          className={`flex-1 min-w-0 min-h-0 ${
             isMapFullscreen || activeTab === 'field-3d-map'
               ? 'w-full h-full p-0 overflow-hidden flex flex-col'
               : 'overflow-y-auto p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-6 scroll-smooth'
           }`}
         >
+          {!isMapFullscreen && (
+            <div className="mb-4 space-y-2">
+              {isLoading && (
+                <p role="status" className="text-sm text-slate-600 dark:text-slate-300">
+                  Đang tải dữ liệu địa bàn…
+                </p>
+              )}
+              {dataErrors.length > 0 && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <strong>Chưa tải được: {dataErrors.join(', ')}.</strong>
+                    <p className="mb-0 mt-1">
+                      Dữ liệu đã tải trước đó được giữ lại và có thể chưa cập nhật. Kiểm tra kết nối hoặc quyền truy cập.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => void handleRefresh()}
+                    className="rounded-lg border border-amber-400 px-3 py-2 font-semibold"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              )}
+              {lastUpdated && <p className="mb-0 text-xs text-slate-500">Lần cập nhật đầy đủ: {lastUpdated.toLocaleString('vi-VN')}</p>}
+            </div>
+          )}
           {canOpenMenu(activeTab) ? (
             <>
               {/* Active Search Banner when filter is engaged */}
@@ -1094,6 +1069,11 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               {activeTab === 'overview' && (
                 <OverviewTab
                   households={displayedHouseholds}
+                  canNavigate={canOpenMenu}
+                  onOpenExpiringDocuments={() => {
+                    setDocumentFilter('expiring_soon');
+                    setActiveTab('documents');
+                  }}
                   onNavigateTab={tab => {
                     if (isMapFullscreen) setIsMapFullscreen(false);
                     setActiveTab(tab);
@@ -1157,7 +1137,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
               {activeTab === 'households' && (
                 <HouseholdsTab
-                  households={displayedHouseholds}
+                  households={scopedHouseholds}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  isLoading={isLoading}
                   currentUser={currentUser}
                   onSelectHousehold={setSelectedHousehold}
                   onOpenAddModal={() => {
@@ -1185,7 +1168,15 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               )}
 
               {activeTab === 'documents' && (
-                <DocumentsTab documents={documents} onRenewDocument={handleRenewDocument} onSendReminder={handleSendReminder} />
+                <DocumentsTab
+                  canRenew={currentUser.role === 'superadmin' || currentUser.subAdminPermissions?.canRenewDocs === true}
+                  canRemind={currentUser.role === 'superadmin' || currentUser.subAdminPermissions?.canSendReminders === true}
+                  filterStatus={documentFilter}
+                  onFilterStatusChange={setDocumentFilter}
+                  documents={documents}
+                  onRenewDocument={handleRenewDocument}
+                  onSendReminder={handleSendReminder}
+                />
               )}
 
               {activeTab === 'areas' && <AreasTab households={displayedHouseholds} onSelectHousehold={setSelectedHousehold} />}
@@ -1316,7 +1307,11 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       </div>
 
       {/* Modals & Dialogs */}
+      {renewingDocument && (
+        <RenewDocumentDialog document={renewingDocument} onClose={() => setRenewingDocument(null)} onSave={saveDocumentRenewal} />
+      )}
       <HouseholdDetailModal
+        presentation={['area-map', 'advanced-map', 'field-3d-map'].includes(activeTab) ? 'drawer' : 'dialog'}
         household={selectedHousehold}
         currentUser={currentUser}
         onClose={() => setSelectedHousehold(null)}

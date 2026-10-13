@@ -14,7 +14,6 @@ interface SettingsTabProps {
 export const SettingsTab: React.FC<SettingsTabProps> = ({
   officer,
   onUpdateOfficer,
-  isFirestoreConnected = true,
   backendStatus = 'checking',
   theme = 'light',
   onSetTheme,
@@ -178,6 +177,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
           <div className="space-y-3.5 sm:space-y-4 text-xs">
             {/* Sound alert notification */}
+            <p id="settings-preference-note" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              Âm thanh cảnh báo và chu kỳ tự cập nhật chưa được kết nối với dữ liệu vận hành. Các tùy chọn này hiện chưa khả dụng.
+            </p>
             <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200">
               <div className="flex items-center gap-2.5">
                 <Bell className="w-4 h-4 text-amber-600" />
@@ -188,6 +190,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               </div>
               <input
                 type="checkbox"
+                disabled
+                aria-describedby="settings-preference-note"
                 checked={soundAlerts}
                 onChange={e => setSoundAlerts(e.target.checked)}
                 className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
@@ -204,6 +208,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <span className="font-mono font-bold text-blue-600">{autoRefreshInterval} giây</span>
               </div>
               <select
+                disabled
+                aria-describedby="settings-preference-note"
                 value={autoRefreshInterval}
                 onChange={e => setAutoRefreshInterval(e.target.value)}
                 className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 font-semibold"

@@ -1,3 +1,4 @@
+import { normalizeSearch } from '../utils/householdSearch';
 import { exportRbacCsv } from '../services/rbacApiService';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
@@ -46,7 +47,7 @@ interface ResidentsTabProps {
   households: HouseholdFacility[];
   allHouseholds?: HouseholdFacility[];
   onSelectHousehold: (household: HouseholdFacility) => void;
-  onUpdateHousehold: (updated: HouseholdFacility) => void;
+  onUpdateHousehold: (updated: HouseholdFacility) => Promise<void>;
   currentUser?: AppUser | null;
   onShowToast?: (msg: string) => void;
 }
@@ -56,9 +57,10 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   allHouseholds,
   onSelectHousehold,
   onUpdateHousehold,
-  currentUser,
   onShowToast,
 }) => {
+  const [isSavingResident, setIsSavingResident] = useState(false);
+  const [residentSaveError, setResidentSaveError] = useState('');
   // Filters & State
   const [searchTerm, setSearchTerm] = useState('');
   const [residenceFilter, setResidenceFilter] = useState<'all' | ResidenceType>('all');
@@ -166,17 +168,17 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
 
       // Search term
       if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase().trim();
-        const matchName = r.fullName ? r.fullName.toLowerCase().includes(q) : false;
-        const matchId = r.idCardNumber ? r.idCardNumber.toLowerCase().includes(q) : false;
+        const q = normalizeSearch(searchTerm);
+        const matchName = r.fullName ? normalizeSearch(r.fullName).includes(q) : false;
+        const matchId = r.idCardNumber ? normalizeSearch(r.idCardNumber).includes(q) : false;
         const matchPhone = r.phone ? r.phone.includes(q) : false;
         const matchOwnerPhone = r.ownerPhone ? r.ownerPhone.includes(q) : false;
-        const matchHouse = r.houseNumber ? r.houseNumber.toLowerCase().includes(q) : false;
-        const matchStreet = r.street ? r.street.toLowerCase().includes(q) : false;
-        const matchOwner = r.ownerName ? r.ownerName.toLowerCase().includes(q) : false;
-        const matchRel = r.relationship ? r.relationship.toLowerCase().includes(q) : false;
-        const matchJob = r.occupation ? r.occupation.toLowerCase().includes(q) : false;
-        const matchCode = r.householdCode ? r.householdCode.toLowerCase().includes(q) : false;
+        const matchHouse = r.houseNumber ? normalizeSearch(r.houseNumber).includes(q) : false;
+        const matchStreet = r.street ? normalizeSearch(r.street).includes(q) : false;
+        const matchOwner = r.ownerName ? normalizeSearch(r.ownerName).includes(q) : false;
+        const matchRel = r.relationship ? normalizeSearch(r.relationship).includes(q) : false;
+        const matchJob = r.occupation ? normalizeSearch(r.occupation).includes(q) : false;
+        const matchCode = r.householdCode ? normalizeSearch(r.householdCode).includes(q) : false;
 
         if (
           !matchName &&
@@ -295,61 +297,70 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   };
 
   // Submit Add Resident
-  const handleSaveAddResident = (e: React.FormEvent) => {
+  const handleSaveAddResident = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formFullName.trim()) {
-      alert('Vui lòng nhập họ và tên nhân khẩu.');
-      return;
-    }
-    if (!formHouseholdId) {
-      alert('Vui lòng chọn hộ dân tiếp nhận.');
-      return;
-    }
+    if (isSavingResident) return;
+    setIsSavingResident(true);
+    setResidentSaveError('');
+    try {
+      if (!formFullName.trim()) {
+        alert('Vui lòng nhập họ và tên nhân khẩu.');
+        return;
+      }
+      if (!formHouseholdId) {
+        alert('Vui lòng chọn hộ dân tiếp nhận.');
+        return;
+      }
 
-    const targetH = effectiveHouseholds.find(h => h.id === formHouseholdId);
-    if (!targetH) {
-      alert('Không tìm thấy hộ dân đã chọn.');
-      return;
-    }
+      const targetH = effectiveHouseholds.find(h => h.id === formHouseholdId);
+      if (!targetH) {
+        alert('Không tìm thấy hộ dân đã chọn.');
+        return;
+      }
 
-    const newResident: Resident = {
-      id: `res-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      fullName: formFullName.trim(),
-      birthYear: Number(formBirthYear) || 1995,
-      gender: formGender,
-      relationship: formRelationship.trim() || 'Thành viên',
-      idCardNumber: formIdCardNumber.trim() || undefined,
-      residenceType: formResidenceType,
-      isMonitored: formIsMonitored,
-      phone: formPhone.trim() || undefined,
-      occupation: formOccupation.trim() || undefined,
-      ethnicity: formEthnicity.trim() || 'Kinh',
-      notes: formNotes.trim() || undefined,
-      startDate: new Date().toLocaleDateString('vi-VN'),
-    };
+      const newResident: Resident = {
+        id: `res-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        fullName: formFullName.trim(),
+        birthYear: Number(formBirthYear) || 1995,
+        gender: formGender,
+        relationship: formRelationship.trim() || 'Thành viên',
+        idCardNumber: formIdCardNumber.trim() || undefined,
+        residenceType: formResidenceType,
+        isMonitored: formIsMonitored,
+        phone: formPhone.trim() || undefined,
+        occupation: formOccupation.trim() || undefined,
+        ethnicity: formEthnicity.trim() || 'Kinh',
+        notes: formNotes.trim() || undefined,
+        startDate: new Date().toLocaleDateString('vi-VN'),
+      };
 
-    // Calculate updated household residents and demographics
-    const existingList = targetH.residentsList || [];
-    const updatedResidentsList = [...existingList, newResident];
+      // Calculate updated household residents and demographics
+      const existingList = targetH.residentsList || [];
+      const updatedResidentsList = [...existingList, newResident];
 
-    const age = currentYear - newResident.birthYear;
-    const isUnder18 = age < 18;
+      const age = currentYear - newResident.birthYear;
+      const isUnder18 = age < 18;
 
-    const updatedHousehold: HouseholdFacility = {
-      ...targetH,
-      residentsList: updatedResidentsList,
-      residentsCount: (targetH.residentsCount || existingList.length) + 1,
-      maleCount: (targetH.maleCount || 0) + (newResident.gender === 'Nam' ? 1 : 0),
-      femaleCount: (targetH.femaleCount || 0) + (newResident.gender === 'Nữ' ? 1 : 0),
-      under18Count: (targetH.under18Count || 0) + (isUnder18 ? 1 : 0),
-      above18Count: (targetH.above18Count || 0) + (isUnder18 ? 0 : 1),
-    };
+      const updatedHousehold: HouseholdFacility = {
+        ...targetH,
+        residentsList: updatedResidentsList,
+        residentsCount: (targetH.residentsCount || existingList.length) + 1,
+        maleCount: (targetH.maleCount || 0) + (newResident.gender === 'Nam' ? 1 : 0),
+        femaleCount: (targetH.femaleCount || 0) + (newResident.gender === 'Nữ' ? 1 : 0),
+        under18Count: (targetH.under18Count || 0) + (isUnder18 ? 1 : 0),
+        above18Count: (targetH.above18Count || 0) + (isUnder18 ? 0 : 1),
+      };
 
-    onUpdateHousehold(updatedHousehold);
-    setIsAddModalOpen(false);
+      await onUpdateHousehold(updatedHousehold);
+      setIsAddModalOpen(false);
 
-    if (onShowToast) {
-      onShowToast(`Đã đăng ký thêm nhân khẩu ${newResident.fullName} vào hộ ${targetH.code} (${targetH.houseNumber} ${targetH.street})`);
+      if (onShowToast) {
+        onShowToast(`Đã đăng ký thêm nhân khẩu ${newResident.fullName} vào hộ ${targetH.code} (${targetH.houseNumber} ${targetH.street})`);
+      }
+    } catch {
+      setResidentSaveError('Chưa lưu đầy đủ nhân khẩu. Nội dung nhập được giữ lại. Kiểm tra dữ liệu trước khi thử lại.');
+    } finally {
+      setIsSavingResident(false);
     }
   };
 
@@ -372,119 +383,137 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   };
 
   // Submit Edit Resident
-  const handleSaveEditResident = (e: React.FormEvent) => {
+  const handleSaveEditResident = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!residentToEdit) return;
-    if (!formFullName.trim()) {
-      alert('Vui lòng nhập họ và tên.');
-      return;
-    }
+    if (isSavingResident) return;
+    setIsSavingResident(true);
+    setResidentSaveError('');
+    try {
+      if (!residentToEdit) return;
+      if (!formFullName.trim()) {
+        alert('Vui lòng nhập họ và tên.');
+        return;
+      }
 
-    const currentH = effectiveHouseholds.find(h => h.id === residentToEdit.householdId);
-    if (!currentH) return;
+      const currentH = effectiveHouseholds.find(h => h.id === residentToEdit.householdId);
+      if (!currentH) return;
 
-    const updatedResidentData: Resident = {
-      ...residentToEdit,
-      fullName: formFullName.trim(),
-      birthYear: Number(formBirthYear) || 1995,
-      gender: formGender,
-      relationship: formRelationship.trim(),
-      idCardNumber: formIdCardNumber.trim() || undefined,
-      residenceType: formResidenceType,
-      isMonitored: formIsMonitored,
-      phone: formPhone.trim() || undefined,
-      occupation: formOccupation.trim() || undefined,
-      ethnicity: formEthnicity.trim() || 'Kinh',
-      notes: formNotes.trim() || undefined,
-    };
-
-    // If staying in same household
-    if (formHouseholdId === residentToEdit.householdId) {
-      const list = currentH.residentsList || [];
-      const updatedList = list.some(item => item.id === residentToEdit.id)
-        ? list.map(item => (item.id === residentToEdit.id ? updatedResidentData : item))
-        : [...list, updatedResidentData];
-
-      // Recalculate demographic counts
-      const maleC = updatedList.filter(x => x.gender === 'Nam').length;
-      const femaleC = updatedList.filter(x => x.gender === 'Nữ').length;
-      const under18C = updatedList.filter(x => currentYear - x.birthYear < 18).length;
-      const above18C = updatedList.length - under18C;
-
-      const updatedHousehold: HouseholdFacility = {
-        ...currentH,
-        residentsList: updatedList,
-        residentsCount: updatedList.length,
-        maleCount: maleC,
-        femaleCount: femaleC,
-        under18Count: under18C,
-        above18Count: above18C,
+      const updatedResidentData: Resident = {
+        ...residentToEdit,
+        fullName: formFullName.trim(),
+        birthYear: Number(formBirthYear) || 1995,
+        gender: formGender,
+        relationship: formRelationship.trim(),
+        idCardNumber: formIdCardNumber.trim() || undefined,
+        residenceType: formResidenceType,
+        isMonitored: formIsMonitored,
+        phone: formPhone.trim() || undefined,
+        occupation: formOccupation.trim() || undefined,
+        ethnicity: formEthnicity.trim() || 'Kinh',
+        notes: formNotes.trim() || undefined,
       };
 
-      onUpdateHousehold(updatedHousehold);
-    } else {
-      // Moved to different household
-      const targetH = effectiveHouseholds.find(h => h.id === formHouseholdId);
-      if (targetH) {
-        // Remove from current household
-        const oldList = (currentH.residentsList || []).filter(x => x.id !== residentToEdit.id);
-        const oldH: HouseholdFacility = {
+      // If staying in same household
+      if (formHouseholdId === residentToEdit.householdId) {
+        const list = currentH.residentsList || [];
+        const updatedList = list.some(item => item.id === residentToEdit.id)
+          ? list.map(item => (item.id === residentToEdit.id ? updatedResidentData : item))
+          : [...list, updatedResidentData];
+
+        // Recalculate demographic counts
+        const maleC = updatedList.filter(x => x.gender === 'Nam').length;
+        const femaleC = updatedList.filter(x => x.gender === 'Nữ').length;
+        const under18C = updatedList.filter(x => currentYear - x.birthYear < 18).length;
+        const above18C = updatedList.length - under18C;
+
+        const updatedHousehold: HouseholdFacility = {
           ...currentH,
-          residentsList: oldList,
-          residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
-          maleCount: oldList.filter(x => x.gender === 'Nam').length,
-          femaleCount: oldList.filter(x => x.gender === 'Nữ').length,
-          under18Count: oldList.filter(x => currentYear - x.birthYear < 18).length,
-          above18Count: oldList.filter(x => currentYear - x.birthYear >= 18).length,
+          residentsList: updatedList,
+          residentsCount: updatedList.length,
+          maleCount: maleC,
+          femaleCount: femaleC,
+          under18Count: under18C,
+          above18Count: above18C,
         };
-        onUpdateHousehold(oldH);
 
-        // Add to new household
-        const newList = [...(targetH.residentsList || []), updatedResidentData];
-        const newH: HouseholdFacility = {
-          ...targetH,
-          residentsList: newList,
-          residentsCount: (targetH.residentsCount || 0) + 1,
-          maleCount: newList.filter(x => x.gender === 'Nam').length,
-          femaleCount: newList.filter(x => x.gender === 'Nữ').length,
-          under18Count: newList.filter(x => currentYear - x.birthYear < 18).length,
-          above18Count: newList.filter(x => currentYear - x.birthYear >= 18).length,
-        };
-        onUpdateHousehold(newH);
+        await onUpdateHousehold(updatedHousehold);
+      } else {
+        // Moved to different household
+        const targetH = effectiveHouseholds.find(h => h.id === formHouseholdId);
+        if (targetH) {
+          // Remove from current household
+          const oldList = (currentH.residentsList || []).filter(x => x.id !== residentToEdit.id);
+          const oldH: HouseholdFacility = {
+            ...currentH,
+            residentsList: oldList,
+            residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
+            maleCount: oldList.filter(x => x.gender === 'Nam').length,
+            femaleCount: oldList.filter(x => x.gender === 'Nữ').length,
+            under18Count: oldList.filter(x => currentYear - x.birthYear < 18).length,
+            above18Count: oldList.filter(x => currentYear - x.birthYear >= 18).length,
+          };
+          await onUpdateHousehold(oldH);
+
+          // Add to new household
+          const newList = [...(targetH.residentsList || []), updatedResidentData];
+          const newH: HouseholdFacility = {
+            ...targetH,
+            residentsList: newList,
+            residentsCount: (targetH.residentsCount || 0) + 1,
+            maleCount: newList.filter(x => x.gender === 'Nam').length,
+            femaleCount: newList.filter(x => x.gender === 'Nữ').length,
+            under18Count: newList.filter(x => currentYear - x.birthYear < 18).length,
+            above18Count: newList.filter(x => currentYear - x.birthYear >= 18).length,
+          };
+          await onUpdateHousehold(newH);
+        }
       }
-    }
 
-    setIsEditModalOpen(false);
-    setResidentToEdit(null);
-    if (onShowToast) {
-      onShowToast(`Đã cập nhật hồ sơ nhân khẩu ${updatedResidentData.fullName}!`);
+      setIsEditModalOpen(false);
+      setResidentToEdit(null);
+      if (onShowToast) {
+        onShowToast(`Đã cập nhật hồ sơ nhân khẩu ${updatedResidentData.fullName}!`);
+      }
+    } catch {
+      setResidentSaveError('Chưa lưu đầy đủ nhân khẩu. Nội dung nhập được giữ lại. Kiểm tra dữ liệu trước khi thử lại.');
+    } finally {
+      setIsSavingResident(false);
     }
   };
 
   // Delete Resident
-  const handleConfirmDelete = () => {
-    if (!residentToDelete) return;
-    const currentH = effectiveHouseholds.find(h => h.id === residentToDelete.householdId);
-    if (!currentH) {
+  const handleConfirmDelete = async () => {
+    if (isSavingResident) return;
+    setIsSavingResident(true);
+    setResidentSaveError('');
+    try {
+      if (!residentToDelete) return;
+      const currentH = effectiveHouseholds.find(h => h.id === residentToDelete.householdId);
+      if (!currentH) {
+        setResidentToDelete(null);
+        return;
+      }
+
+      const updatedList = (currentH.residentsList || []).filter(r => r.id !== residentToDelete.id);
+      const updatedH: HouseholdFacility = {
+        ...currentH,
+        residentsList: updatedList,
+        residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
+        maleCount: updatedList.filter(x => x.gender === 'Nam').length,
+        femaleCount: updatedList.filter(x => x.gender === 'Nữ').length,
+        under18Count: updatedList.filter(x => currentYear - x.birthYear < 18).length,
+        above18Count: updatedList.filter(x => currentYear - x.birthYear >= 18).length,
+      };
+
+      await onUpdateHousehold(updatedH);
       setResidentToDelete(null);
-      return;
-    }
-
-    const updatedList = (currentH.residentsList || []).filter(r => r.id !== residentToDelete.id);
-    const updatedH: HouseholdFacility = {
-      ...currentH,
-      residentsList: updatedList,
-      residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
-      maleCount: updatedList.filter(x => x.gender === 'Nam').length,
-      femaleCount: updatedList.filter(x => x.gender === 'Nữ').length,
-      under18Count: updatedList.filter(x => currentYear - x.birthYear < 18).length,
-      above18Count: updatedList.filter(x => currentYear - x.birthYear >= 18).length,
-    };
-
-    onUpdateHousehold(updatedH);
-    setResidentToDelete(null);
-    if (onShowToast) {
-      onShowToast(`Đã xóa nhân khẩu ${residentToDelete.fullName} khỏi hộ ${currentH.code}.`);
+      if (onShowToast) {
+        onShowToast(`Đã xóa nhân khẩu ${residentToDelete.fullName} khỏi hộ ${currentH.code}.`);
+      }
+    } catch {
+      setResidentSaveError('Không thể hoàn tất xóa nhân khẩu. Kiểm tra lại hồ sơ trước khi thử lại.');
+    } finally {
+      setIsSavingResident(false);
     }
   };
 
@@ -516,6 +545,11 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
 
   return (
     <div id="residents-management-tab" className="space-y-5">
+      {residentSaveError && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          {residentSaveError}
+        </p>
+      )}
       {/* Top Banner / Title */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -1336,7 +1370,13 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveAddResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form aria-busy={isSavingResident} onSubmit={handleSaveAddResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {residentSaveError && (
+                <p role="alert" className="text-sm text-red-700">
+                  {residentSaveError}
+                </p>
+              )}
+              {isSavingResident && <p role="status">Đang lưu nhân khẩu…</p>}
               {/* Chọn Hộ Dân Tiếp Nhận với tìm kiếm tối ưu */}
               <div>
                 <HouseholdSearchSelect
@@ -1503,6 +1543,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSavingResident}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md transition"
                 >
                   Xác Nhận Đăng Ký
@@ -1538,7 +1579,13 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form aria-busy={isSavingResident} onSubmit={handleSaveEditResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {residentSaveError && (
+                <p role="alert" className="text-sm text-red-700">
+                  {residentSaveError}
+                </p>
+              )}
+              {isSavingResident && <p role="status">Đang lưu nhân khẩu…</p>}
               {/* Chọn Hộ Dân Cư Trú với tìm kiếm tối ưu */}
               <div>
                 <HouseholdSearchSelect
@@ -1691,6 +1738,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSavingResident}
                   className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-md transition"
                 >
                   Lưu Thay Đổi
@@ -1730,6 +1778,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               <button
                 type="button"
                 onClick={handleConfirmDelete}
+                disabled={isSavingResident}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition shadow-md"
               >
                 Xác Nhận Xóa

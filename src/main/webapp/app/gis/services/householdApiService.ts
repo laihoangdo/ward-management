@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { HouseholdFacility, Resident, DocumentRecord, AuditLogEntry, AuditActionType, SecurityAlert } from '../types';
+import { HouseholdFacility, HouseholdCreateInput, Resident, DocumentRecord, AuditLogEntry, AuditActionType, SecurityAlert } from '../types';
 import { IHousehold } from 'app/shared/model/household.model';
 import { IResident } from 'app/shared/model/resident.model';
 import { IDocumentRecord } from 'app/shared/model/document-record.model';
@@ -116,18 +116,18 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
     hamlet: h.hamlet || '',
     hamletId: h.hamletId,
     administrativeHamlet: h.hamletId ? { id: h.hamletId } : undefined,
-    neighborhoodGroup: h.neighborhoodGroup || 'Tổ 1',
-    alley: h.alley || 'Mặt tiền đường',
+    neighborhoodGroup: h.neighborhoodGroup ?? '',
+    alley: h.alley ?? '',
     ownerName: h.ownerName || 'Chưa cập nhật',
-    ownerPhone: h.ownerPhone || '0901234567',
+    ownerPhone: h.ownerPhone ?? '',
     type,
     businessName: h.businessName || null,
     businessCategory: h.businessCategory || null,
-    residentsCount: Number(h.residentsCount ?? 1),
-    maleCount: Number(h.maleCount ?? 1),
-    femaleCount: Number(h.femaleCount ?? 0),
-    under18Count: Number(h.under18Count ?? 0),
-    above18Count: Number(h.above18Count ?? 1),
+    residentsCount: h.residentsCount ?? null,
+    maleCount: h.maleCount ?? null,
+    femaleCount: h.femaleCount ?? null,
+    under18Count: h.under18Count ?? null,
+    above18Count: h.above18Count ?? null,
     status,
     warningMessage: h.warningMessage || null,
     licenseExpiry: h.licenseExpiry || null,
@@ -256,7 +256,7 @@ export async function fetchCompleteHouseholdsFromBackend(): Promise<HouseholdFac
 /**
  * 2. Thêm mới một hộ dân vào PostgreSQL
  */
-export async function createHouseholdInBackend(newH: HouseholdFacility): Promise<HouseholdFacility> {
+export async function createHouseholdInBackend(newH: HouseholdCreateInput): Promise<HouseholdFacility> {
   const dto = mapHouseholdToDto(newH);
   if (!dto.hamletId) {
     const { data } = await axios.get<{ id: number; hamletName: string }[]>('/api/rbac/areas');

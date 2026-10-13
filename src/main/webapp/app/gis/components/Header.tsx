@@ -18,6 +18,7 @@ interface HeaderProps {
   onTabChange?: (tab: NavigationTab) => void;
   currentUser?: AppUser;
   onLogout?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -34,6 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
   currentUser,
   onLogout,
+  isRefreshing = false,
 }) => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
@@ -92,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
+    <header className="gis-header h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
       {/* Title / Hamburger menu / Home button */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
         {/* Mobile/Tablet Hamburger Toggle Button */}
@@ -148,7 +150,8 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="relative hidden md:block w-36 lg:w-56 xl:w-64 shrink-0">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            type="text"
+            type="search"
+            aria-label="Tìm hộ dân, số nhà hoặc số điện thoại"
             placeholder="Tìm tên, số nhà, SĐT..."
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
@@ -189,6 +192,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Search Toggle Icon */}
         <button
+          aria-expanded={isMobileSearchOpen}
+          aria-controls="gis-mobile-search"
           onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
           className={`md:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
             isMobileSearchOpen || searchQuery
@@ -233,15 +238,17 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Refresh button */}
         <button
           onClick={onRefresh}
+          disabled={isRefreshing}
+          aria-label="Cập nhật dữ liệu"
           title="Làm mới dữ liệu địa bàn"
-          className="hidden sm:flex h-9 px-2 sm:px-2.5 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
+          className="flex h-9 px-2 sm:px-2.5 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
         >
           <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
           <span className="hidden xl:inline whitespace-nowrap">Cập nhật</span>
         </button>
 
         {/* Real-time Clock Widget */}
-        <div className="flex flex-col items-end justify-center select-none shrink-0 px-0.5 sm:px-1 leading-tight text-right">
+        <div className="gis-clock flex flex-col items-end justify-center select-none shrink-0 px-0.5 sm:px-1 leading-tight text-right">
           <div className="font-mono font-black text-[11px] xs:text-xs sm:text-sm md:text-base leading-none tracking-wider text-slate-900 dark:text-white drop-shadow-xs">
             {formatClockTime(currentTime)}
           </div>
@@ -319,11 +326,15 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Mobile Expandable Search Dropdown */}
       {isMobileSearchOpen && (
-        <div className="absolute top-14 sm:top-16 left-0 right-0 bg-white dark:bg-slate-900 p-3 border-b border-slate-200 dark:border-slate-800 shadow-md md:hidden z-30 animate-in slide-in-from-top-2 duration-150">
+        <div
+          id="gis-mobile-search"
+          className="absolute top-full left-0 right-0 bg-white dark:bg-slate-900 p-3 border-b border-slate-200 dark:border-slate-800 shadow-md md:hidden z-30 animate-in slide-in-from-top-2 duration-150"
+        >
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
+              type="search"
+              aria-label="Tìm hộ dân, số nhà hoặc số điện thoại"
               autoFocus
               placeholder="Tìm theo tên chủ hộ, số nhà, SĐT..."
               value={searchQuery}

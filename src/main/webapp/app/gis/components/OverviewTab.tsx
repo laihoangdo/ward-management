@@ -7,13 +7,20 @@ import { Pagination } from './Pagination';
 interface OverviewTabProps {
   households: HouseholdFacility[];
   onNavigateTab: (tab: NavigationTab) => void;
+  canNavigate?: (tab: NavigationTab) => boolean;
+  onOpenExpiringDocuments?: () => void;
   onSelectHousehold: (household: HouseholdFacility) => void;
 }
 
-export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigateTab, onSelectHousehold }) => {
+export const OverviewTab: React.FC<OverviewTabProps> = ({
+  households,
+  onNavigateTab,
+  onSelectHousehold,
+  canNavigate = () => true,
+  onOpenExpiringDocuments,
+}) => {
   const totalCount = households.length;
   const businessCount = households.filter(h => h.type === 'business').length;
-  const alertCount = households.filter(h => h.type === 'special_monitoring').length;
   const warningCount = households.filter(h => h.status === 'warning').length;
 
   // Demographics calculation grounded in real resident records
@@ -35,7 +42,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
 
   const totalUnder18 =
     allResidents.length > 0
-      ? allResidents.filter(r => 2026 - (r.birthYear || 2000) < 18).length
+      ? allResidents.filter(r => r.birthYear != null && new Date().getFullYear() - r.birthYear < 18).length
       : households.reduce((sum, h) => sum + (h.under18Count || 0), 0);
 
   const totalAbove18 = Math.max(0, totalResidents - totalUnder18);
@@ -99,12 +106,65 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
         </div>
       </div>
 
+      <section aria-labelledby="work-queue-title" className="rounded-xl border border-slate-200 bg-white dark:bg-slate-900 p-4 sm:p-5">
+        <h3 id="work-queue-title" className="text-base font-bold text-slate-900 dark:text-white">
+          Cần chú ý
+        </h3>
+        <p className="text-sm text-slate-500">Kiểm tra các hộ có cảnh báo và hồ sơ sắp hết hạn trong phạm vi đang xem.</p>
+        {warningHouseholds.length === 0 ? (
+          <p className="text-sm text-slate-600">Chưa có hộ dân mang trạng thái cảnh báo trong dữ liệu đã tải.</p>
+        ) : (
+          <ul className="m-0 p-0 list-none divide-y divide-slate-100">
+            {warningHouseholds.slice(0, 5).map(household => (
+              <li key={household.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelectHousehold(household)}
+                  className="w-full py-3 text-left flex items-center gap-3 hover:bg-slate-50 rounded-lg"
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                  <span className="flex-1 min-w-0">
+                    <strong className="block text-sm">
+                      {household.ownerName || household.businessName} · {household.code}
+                    </strong>
+                    <span className="text-xs text-slate-500">
+                      {household.houseNumber} {household.street} · {household.hamlet}
+                    </span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {canNavigate('documents') && (
+          <button
+            type="button"
+            onClick={onOpenExpiringDocuments || (() => onNavigateTab('documents'))}
+            className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
+          >
+            Xem hồ sơ sắp hết hạn
+          </button>
+        )}
+      </section>
+
       {/* Top 4 Key Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total card */}
         <div
           id="stat-total-card"
-          onClick={() => onNavigateTab('households')}
+          role="button"
+          tabIndex={canNavigate('households') ? 0 : -1}
+          aria-disabled={!canNavigate('households')}
+          onKeyDown={event => {
+            if (canNavigate('households') && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onNavigateTab('households');
+            }
+          }}
+          onClick={() => {
+            if (canNavigate('households')) onNavigateTab('households');
+          }}
           className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
@@ -126,14 +186,25 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
           </div>
           <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-            <span className="truncate">100% đã thu thập hồ sơ</span>
+            <span className="truncate">Hồ sơ trong phạm vi truy cập</span>
           </div>
         </div>
 
         {/* Business card */}
         <div
           id="stat-business-card"
-          onClick={() => onNavigateTab('households')}
+          role="button"
+          tabIndex={canNavigate('households') ? 0 : -1}
+          aria-disabled={!canNavigate('households')}
+          onKeyDown={event => {
+            if (canNavigate('households') && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onNavigateTab('households');
+            }
+          }}
+          onClick={() => {
+            if (canNavigate('households')) onNavigateTab('households');
+          }}
           className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-700 transition-all cursor-pointer group flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
@@ -162,7 +233,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
         {/* Warning card */}
         <div
           id="stat-warning-card"
-          onClick={() => onNavigateTab('documents')}
+          role="button"
+          tabIndex={canNavigate('documents') ? 0 : -1}
+          aria-disabled={!canNavigate('documents')}
+          onKeyDown={event => {
+            if (canNavigate('documents') && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onNavigateTab('documents');
+            }
+          }}
+          onClick={() => {
+            if (canNavigate('documents')) onNavigateTab('documents');
+          }}
           className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-amber-300 dark:border-amber-700/80 shadow-xs hover:border-amber-400 transition-all cursor-pointer group flex flex-col justify-between bg-amber-50/20 dark:bg-amber-950/20"
         >
           <div className="flex items-center justify-between">
@@ -194,7 +276,18 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
         {/* Population card */}
         <div
           id="stat-population-card"
-          onClick={() => onNavigateTab('residents')}
+          role="button"
+          tabIndex={canNavigate('residents') ? 0 : -1}
+          aria-disabled={!canNavigate('residents')}
+          onKeyDown={event => {
+            if (canNavigate('residents') && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onNavigateTab('residents');
+            }
+          }}
+          onClick={() => {
+            if (canNavigate('residents')) onNavigateTab('residents');
+          }}
           className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-all group flex flex-col justify-between cursor-pointer hover:shadow-sm"
           title="Bấm để mở danh sách Quản lý nhân khẩu & Định danh"
         >
@@ -285,6 +378,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
               <div className="mt-3.5 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => onNavigateTab('documents')}
+                  disabled={!canNavigate('documents')}
                   className="px-3.5 py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 min-h-[40px]"
                 >
                   <FileCheck className="w-3.5 h-3.5" />

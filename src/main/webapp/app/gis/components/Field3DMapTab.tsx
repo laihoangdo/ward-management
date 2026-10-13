@@ -1151,14 +1151,14 @@ export const Field3DMapTab: React.FC<Field3DMapTabProps> = ({
           const buildingTarget = nearbyBuildings.length
             ? nearbyBuildings.reduce((sum, point) => sum.add(point), new THREE.Vector3()).divideScalar(nearbyBuildings.length)
             : center;
-          const buildingPreset: CameraPreset = {
-            id: 'buildings',
-            name: 'Cận cảnh khối công trình VietMap',
-            badge: 'Công trình',
-            description: `${buildingBodies.length} dấu chân công trình; chọn một khối để zoom gần hơn`,
-            position: [buildingTarget.x + 180, buildingTarget.y + 135, buildingTarget.z + 205],
-            target: [buildingTarget.x, buildingTarget.y, buildingTarget.z],
-          };
+          // const buildingPreset: CameraPreset = {
+          //   id: 'buildings',
+          //   name: 'Cận cảnh khối công trình VietMap',
+          //   badge: 'Công trình',
+          //   description: `${buildingBodies.length} dấu chân công trình; chọn một khối để zoom gần hơn`,
+          //   position: [buildingTarget.x + 180, buildingTarget.y + 135, buildingTarget.z + 205],
+          //   target: [buildingTarget.x, buildingTarget.y, buildingTarget.z],
+          // };
           const overview: CameraPreset = {
             id: 'overview',
             name: 'Toàn cảnh xã Bà Điểm mới',
@@ -1172,24 +1172,23 @@ export const Field3DMapTab: React.FC<Field3DMapTabProps> = ({
             ...(collectionMeshMap.current.get('localRoads') || []),
           ].find(mesh => mesh.userData.isRoadPaint);
           const paintCenter = painted ? new THREE.Box3().setFromObject(painted).getCenter(new THREE.Vector3()) : center;
-          const closeup: CameraPreset = {
-            id: 'major_road_closeup',
-            name: 'Tên đường sơn trên mặt đường',
-            badge: 'Cận cảnh',
-            description: 'Chữ tối gắn trực tiếp vào hình học mặt đường VietMap',
-            position: [paintCenter.x + 50, paintCenter.y + 65, paintCenter.z + 70],
-            target: [paintCenter.x, paintCenter.y, paintCenter.z],
-          };
+          // const closeup: CameraPreset = {
+          //   id: 'major_road_closeup',
+          //   name: 'Tên đường sơn trên mặt đường',
+          //   badge: 'Cận cảnh',
+          //   description: 'Chữ tối gắn trực tiếp vào hình học mặt đường VietMap',
+          //   position: [paintCenter.x + 50, paintCenter.y + 65, paintCenter.z + 70],
+          //   target: [paintCenter.x, paintCenter.y, paintCenter.z],
+          // };
           setCameraPresets([
             overview,
-            buildingPreset,
+            // buildingPreset,
             { ...overview, id: 'topdown', name: 'Nhìn từ trên xuống', position: [center.x, span * 1.3, center.z + 1] },
-            closeup,
           ]);
-          camera.position.set(...buildingPreset.position);
-          controls.target.set(...buildingPreset.target);
+          // camera.position.set(...buildingPreset.position);
+          // controls.target.set(...buildingPreset.target);
           controls.update();
-          setActivePreset(buildingPreset.id);
+          // setActivePreset(buildingPreset.id);
         }
 
         // Apply initial high-contrast dark theme
@@ -2486,6 +2485,9 @@ export const Field3DMapTab: React.FC<Field3DMapTabProps> = ({
             {/* 9 Lớp 3D Button (Opens Bottom Sheet on Mobile / Left Panel on Desktop) */}
             <button
               onClick={() => setIsSidebarOpen(prev => !prev)}
+              aria-expanded={isSidebarOpen}
+              aria-controls="field3d-controls"
+              aria-label="Điều khiển không gian 3D"
               title="Mở bảng điều khiển lớp 3D và góc quay"
               className={`p-1 sm:p-1.5 px-2 sm:px-2.5 rounded-xl text-xs font-medium flex items-center gap-1 border transition-colors ${
                 isSidebarOpen
@@ -2494,7 +2496,7 @@ export const Field3DMapTab: React.FC<Field3DMapTabProps> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>{collections.length} Lớp</span>
+              <span>Điều khiển 3D</span>
             </button>
           </div>
         </div>
@@ -2610,13 +2612,16 @@ export const Field3DMapTab: React.FC<Field3DMapTabProps> = ({
         <>
           {/* Mobile Dark Backdrop */}
           <div
-            className="sm:hidden fixed inset-0 bg-black/60 z-40 backdrop-blur-xs animate-in fade-in duration-150"
+            className="lg:hidden absolute inset-0 bg-black/60 z-40 backdrop-blur-xs animate-in fade-in duration-150"
             onClick={() => setIsSidebarOpen(false)}
           />
 
-          <div className="field3d-sidebar fixed inset-x-0 bottom-0 z-50 flex max-h-[75dvh] flex-col overflow-hidden rounded-t-3xl border-t border-slate-700 bg-slate-900/98 text-white shadow-2xl backdrop-blur-xl sm:inset-auto sm:bottom-4 sm:left-4 sm:top-[4.5rem] sm:w-[min(380px,calc(100vw-32px))] sm:max-h-[calc(100dvh-88px)] sm:rounded-2xl sm:border">
+          <div
+            id="field3d-controls"
+            className="field3d-sidebar absolute inset-x-0 bottom-0 z-50 flex max-h-[75%] flex-col overflow-hidden rounded-t-3xl border-t border-slate-700 bg-slate-900/98 text-white shadow-2xl backdrop-blur-xl lg:inset-x-auto lg:bottom-4 lg:left-4 lg:top-3 lg:w-[380px] lg:max-h-none lg:rounded-2xl lg:border"
+          >
             {/* Mobile Drag Indicator Bar */}
-            <div className="w-12 h-1 bg-slate-500 rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
+            <div className="w-12 h-1 bg-slate-500 rounded-full mx-auto my-2.5 lg:hidden shrink-0" />
 
             {/* Clean Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-slate-700/80 bg-slate-900/90 px-4 py-3.5">
@@ -2624,7 +2629,11 @@ export const Field3DMapTab: React.FC<Field3DMapTabProps> = ({
                 <Sliders className="w-4 h-4 text-blue-400" />
                 <div className="text-xs font-bold uppercase tracking-wide text-slate-100">Điều Khiển Không Gian 3D</div>
               </div>
-              <button onClick={() => setIsSidebarOpen(false)} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+              <button
+                aria-label="Đóng điều khiển 3D"
+                onClick={() => setIsSidebarOpen(false)}
+                className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -3079,7 +3088,7 @@ export const Field3DMapTab: React.FC<Field3DMapTabProps> = ({
                       : 'Bình thường'}
               </p>
               <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-2 text-[11px] text-amber-200">
-                Điểm này chưa được xác nhận thuộc khối nhà VietMap nào.
+                Điểm này chưa được xác nhận thuộc khối nhà nào.
               </p>
             </div>
             <div className="flex gap-2 border-t border-slate-700 p-3">
