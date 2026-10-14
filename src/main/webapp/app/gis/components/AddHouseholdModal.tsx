@@ -1,7 +1,7 @@
 import { DiscardChangesDialog } from './DiscardChangesDialog';
 import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Plus, MapPin, Building } from 'lucide-react';
+import { X, Plus, MapPin, Building, Home, Store, ShieldAlert } from 'lucide-react';
 import { HouseholdCreateInput, ResidenceType } from '../types';
 import { SearchableSelect } from './SearchableSelect';
 import { fetchRbacAreas } from '../services/rbacApiService';
@@ -296,7 +296,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
                     type === 'household' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-700 border-slate-200'
                   }`}
                 >
-                  🏠 Hộ gia đình
+                  <Home aria-hidden="true" className="inline-block w-4 h-4 mr-1" /> Hộ gia đình
                 </button>
                 <button
                   type="button"
@@ -306,7 +306,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
                     type === 'business' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-700 border-slate-200'
                   }`}
                 >
-                  🏪 Cơ sở KD
+                  <Store aria-hidden="true" className="inline-block w-4 h-4 mr-1" /> Cơ sở KD
                 </button>
                 <button
                   type="button"
@@ -316,7 +316,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
                     type === 'special_monitoring' ? 'bg-rose-600 text-white border-rose-600' : 'bg-slate-50 text-slate-700 border-slate-200'
                   }`}
                 >
-                  🚨 Đối tượng chú ý
+                  <ShieldAlert aria-hidden="true" className="inline-block w-4 h-4 mr-1" /> Đối tượng chú ý
                 </button>
               </div>
             </div>

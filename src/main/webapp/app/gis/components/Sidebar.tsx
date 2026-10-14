@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     switch (currentUser.role) {
       case 'superadmin':
         return {
-          label: 'SUPER ADMIN (TỐI CAO)',
+          label: 'QUẢN TRỊ HỆ THỐNG',
           bg: 'bg-red-950/80 text-red-300 border-red-700/60',
           indicator: 'bg-red-500',
         };
@@ -142,7 +142,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const roleInfo = getRoleBadge();
 
   const sidebarContent = (
-    <div className="flex flex-col h-full w-full bg-[#0f172a] text-slate-100 select-none">
+    <div className="gis-sidebar flex flex-col h-full w-full bg-[#0f172a] text-slate-100 select-none">
       {/* Brand Header */}
       <div className="p-4 sm:p-5 border-b border-slate-800 bg-[#0a0f1d]/60 flex items-center justify-between">
         <Link
@@ -150,7 +150,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className="flex items-center gap-3 group hover:opacity-90 transition cursor-pointer"
           title="Quay về Trang chủ Monolithic"
         >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-red-600 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-red-600/30 shrink-0 group-hover:scale-105 transition-transform">
+          <div
+            aria-label="Biểu tượng ứng dụng"
+            className="gis-brand-icon w-9 h-9 sm:w-10 sm:h-10 rounded-md flex items-center justify-center text-white shrink-0"
+          >
             <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
@@ -158,12 +161,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               id="brand-name"
               className="text-sm sm:text-base font-bold text-white tracking-wide flex items-center gap-1.5 group-hover:text-amber-400 transition-colors"
             >
-              🛡 QLĐB AN NINH
+              QLĐB AN NINH
             </div>
             <div id="brand-subtitle" className="text-[10px] sm:text-[11px] font-semibold text-slate-400 tracking-wider uppercase truncate">
-              {currentUser?.assignedWard
-                ? `CATP. HỒ CHÍ MINH • ${currentUser.assignedWard.toUpperCase()}`
-                : 'CATP. HỒ CHÍ MINH • QUẢN LÝ ĐỊA BÀN'}
+              {currentUser.unit || currentUser.assignedWard || 'QUẢN LÝ ĐỊA BÀN'}
             </div>
           </div>
         </Link>
@@ -264,11 +265,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => handleSelect(item.id)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 min-h-[42px] cursor-pointer ${
                   isActive
-                    ? item.id === 'superadmin-hub'
-                      ? 'bg-red-700 text-white shadow-md shadow-red-700/30'
-                      : item.id === 'subadmin-delegation'
-                        ? 'bg-blue-700 text-white shadow-md shadow-blue-700/30'
-                        : 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
+                    ? 'bg-blue-600 text-white'
                     : isSpecial
                       ? 'text-amber-300 hover:bg-slate-800/80 bg-slate-900/40 border border-slate-800/60'
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -314,7 +311,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 ? 'Mất kết nối máy chủ'
                 : 'Đang kiểm tra máy chủ'}
           </span>
-          <span className="text-[10px] text-slate-400 font-mono">v2.5.0-RBAC</span>
+          <span className="text-xs text-slate-400">Vai trò phần mềm</span>
         </div>
         <div className="mt-1 text-[10px] text-slate-400 truncate">
           {currentUser?.unit || (currentUser?.assignedWard ? `Công an ${currentUser.assignedWard}` : 'Công an Địa bàn')}

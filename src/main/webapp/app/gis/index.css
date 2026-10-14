@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -10,12 +9,13 @@ input,
 select,
 textarea {
   font-family:
-    'Be Vietnam Pro',
+    Roboto,
+    Inter,
+    Arial,
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
-    Roboto,
     sans-serif !important;
 }
 
@@ -254,7 +254,7 @@ html.dark .text-purple-600 {
   display: none;
 }
 .gis-records > div {
-  border-radius: 12px;
+  border-radius: 6px;
 }
 .gis-records input {
   min-height: 44px;
@@ -359,6 +359,78 @@ html.dark .text-purple-600 {
 .gis-operational-map {
   height: 65vh;
   min-height: 360px;
+}
+
+/* Project conventions, not a claim of official identity or certification.
+   Geometry/branding changes do not recolor geographic symbols or semantic states. */
+#__page-root {
+  --gis-primary: #1c4e3a;
+  --gis-primary-hover: #153c2c;
+  --gis-brand-red: #c82333;
+  --gis-gold: #d4af37;
+  --gis-info: #0d47a1;
+  --gis-success: #237347;
+  --gis-warning: #855600;
+  --gis-error: #b42318;
+  --gis-incomplete: #635b73;
+  --gis-selected: #e8f1ec;
+  --gis-surface: #ffffff;
+  --gis-background: #f8f9fa;
+  --gis-border: #cbd2d9;
+  --gis-muted: #526170;
+  font-size: 14px;
+  line-height: 1.5;
+}
+#__page-root .gis-brand-icon {
+  background: var(--gis-primary);
+}
+#__page-root :is(button, a).bg-blue-600 {
+  background-color: var(--gis-primary) !important;
+  border-color: var(--gis-primary) !important;
+}
+#__page-root :is(button, a).bg-blue-600:hover {
+  background-color: var(--gis-primary-hover) !important;
+}
+#__page-root :is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-radius: 6px;
+}
+#__page-root .gis-sidebar button {
+  font-size: 14px;
+}
+#__page-root .gis-sidebar [class~='text-[10px]'],
+#__page-root .gis-header [class~='text-[10px]'] {
+  font-size: 12px;
+}
+#__page-root :is(.gis-header, .gis-records, [role='dialog']) .text-xs {
+  font-size: 14px;
+}
+#__page-root .gis-records table {
+  font-size: 14px;
+  line-height: 1.5;
+}
+#__page-root .gis-records table :is(th, td) {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+#__page-root [role='dialog'] label {
+  font-size: 14px;
+  line-height: 1.5;
+}
+#__page-root [role='dialog'] :is(input, select, textarea) {
+  font-size: 14px;
+  min-height: 40px;
+  border-radius: 6px;
+}
+#__page-root :is(.shadow-xl, .shadow-2xl) {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 16%);
+}
+#__page-root :is(.animate-bounce, .animate-ping) {
+  animation: none;
+}
+@media (max-width: 767px) {
+  #__page-root [role='dialog'] :is(input, select, textarea) {
+    font-size: 16px;
+  }
 }
 @media (max-width: 767px) {
   .gis-operational-map {

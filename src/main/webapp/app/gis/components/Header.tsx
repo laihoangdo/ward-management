@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, RefreshCw, Shield, AlertTriangle, Menu, X, Sun, Moon, Mic, LogOut, UserCheck, Home, Bell } from 'lucide-react';
+import { Search, RefreshCw, Shield, Menu, X, Sun, Moon, Mic, LogOut, UserCheck, Home, Bell } from 'lucide-react';
 import { Link } from 'react-router';
 import { NavigationTab, AppUser } from '../types';
 import { VoiceSearchModal } from './VoiceSearchModal';
@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(() => new Date());
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -137,9 +137,7 @@ export const Header: React.FC<HeaderProps> = ({
             {getTabTitle()}
           </h1>
           <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden md:flex items-center gap-1.5 truncate leading-tight mt-0.5">
-            <span className="font-medium">
-              {currentUser?.unit || (currentUser?.assignedWard ? `TP.HCM • ${currentUser.assignedWard}` : 'TP.HCM • Quản lý địa bàn')}
-            </span>
+            <span className="font-medium">{currentUser?.unit || currentUser?.assignedWard || 'Quản lý địa bàn'}</span>
           </div>
         </div>
       </div>
@@ -302,7 +300,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <div className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-semibold uppercase truncate whitespace-nowrap">
                 {currentUser.role === 'superadmin'
-                  ? 'Super Admin'
+                  ? 'Quản trị hệ thống'
                   : currentUser.role === 'admin'
                     ? 'Trưởng CAX'
                     : currentUser.role === 'sub-admin'
