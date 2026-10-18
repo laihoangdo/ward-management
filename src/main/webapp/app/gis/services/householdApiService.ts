@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { fetchAuthorizedPages } from './authorizedPages';
 import { HouseholdFacility, HouseholdCreateInput, Resident, DocumentRecord, AuditLogEntry, AuditActionType, SecurityAlert } from '../types';
 import { IHousehold } from 'app/shared/model/household.model';
 import { IResident } from 'app/shared/model/resident.model';
@@ -187,15 +188,6 @@ export const mapResidentToDto = (r: Resident, householdId?: number | string): IR
 /**
  * 1. Tải danh sách tất cả hộ dân từ PostgreSQL
  */
-async function fetchAuthorizedPages<T>(path: string): Promise<{ data: T[] }> {
-  const data: T[] = [];
-  for (let page = 0; ; page++) {
-    const response = await axios.get<T[]>(path, { params: { page, size: 500, sort: 'id,asc' } });
-    if (!Array.isArray(response.data)) throw new Error('Dữ liệu máy chủ không hợp lệ');
-    data.push(...response.data);
-    if (response.data.length < 500) return { data };
-  }
-}
 
 export async function fetchAllHouseholds(size: number = 1000): Promise<HouseholdFacility[]> {
   const res = await fetchAuthorizedPages<IHousehold>('/api/households');
@@ -411,7 +403,7 @@ export async function updateHouseholdNotesInBackend(id: string | number, notes: 
  * 5. Cập nhật tọa độ GPS kéo thả trong PostgreSQL
  */
 export async function updateHouseholdCoordinatesInBackend(
-  updates: Array<{ id: string | number; coordinates: [number, number] }>,
+  updates: { id: string | number; coordinates: [number, number] }[],
 ): Promise<void> {
   for (const u of updates) {
     const numericId = Number(u.id);
@@ -488,13 +480,8 @@ export async function deleteResidentInBackend(residentId: string | number): Prom
  * 10. Tải danh sách tất cả nhân khẩu từ PostgreSQL
  */
 export async function fetchAllResidents(size: number = 3000): Promise<IResident[]> {
-  try {
-    const res = await fetchAuthorizedPages<IResident>('/api/residents');
-    return Array.isArray(res.data) ? res.data : [];
-  } catch (e) {
-    console.warn('Lỗi khi tải danh sách nhân khẩu từ backend:', e);
-    return [];
-  }
+  const res = await fetchAuthorizedPages<IResident>('/api/residents');
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 /**
@@ -511,40 +498,36 @@ export async function renewDocumentInBackend(id: string, expiryDate: string): Pr
 }
 
 export async function fetchAllDocumentRecords(size: number = 1000): Promise<DocumentRecord[]> {
-  try {
-    const res = await fetchAuthorizedPages<IDocumentRecord>('/api/document-records');
-    if (Array.isArray(res.data)) {
-      return res.data.map(dto => {
-        const idStr = String(dto.id || `doc-${Date.now()}`);
-        const statusVal = dto.status === 'EXPIRED' ? 'expired' : dto.status === 'EXPIRING_SOON' ? 'expiring_soon' : 'valid';
-        const urgencyVal = statusVal === 'expired' ? 'high' : statusVal === 'expiring_soon' ? 'medium' : 'normal';
+  const res = await fetchAuthorizedPages<IDocumentRecord>('/api/document-records');
+  if (Array.isArray(res.data)) {
+    return res.data.map(dto => {
+      const idStr = String(dto.id || `doc-${Date.now()}`);
+      const statusVal = dto.status === 'EXPIRED' ? 'expired' : dto.status === 'EXPIRING_SOON' ? 'expiring_soon' : 'valid';
+      const urgencyVal = statusVal === 'expired' ? 'high' : statusVal === 'expiring_soon' ? 'medium' : 'normal';
 
-        let hamletName: any = 'Ấp Bắc Lân';
-        if (dto.address?.includes('Nam Lân')) hamletName = 'Ấp Nam Lân';
-        else if (dto.address?.includes('Tây Lân')) hamletName = 'Ấp Tây Lân';
-        else if (dto.address?.includes('Đông Lân')) hamletName = 'Ấp Đông Lân';
-        else if (dto.address?.includes('Hậu Lân')) hamletName = 'Ấp Hậu Lân';
-        else if (dto.address?.includes('Tiền Lân')) hamletName = 'Ấp Tiền Lân';
+      let hamletName: any = 'Ấp Bắc Lân';
+      if (dto.address?.includes('Nam Lân')) hamletName = 'Ấp Nam Lân';
+      else if (dto.address?.includes('Tây Lân')) hamletName = 'Ấp Tây Lân';
+      else if (dto.address?.includes('Đông Lân')) hamletName = 'Ấp Đông Lân';
+      else if (dto.address?.includes('Hậu Lân')) hamletName = 'Ấp Hậu Lân';
+      else if (dto.address?.includes('Tiền Lân')) hamletName = 'Ấp Tiền Lân';
 
-        return {
-          id: idStr,
-          docCode: `HS-BD-${String(dto.id || 1).padStart(3, '0')}`,
-          title: dto.docName || 'Hồ sơ kiểm tra ANTT & PCCC',
-          targetName: dto.householdName || 'Cơ sở quản lý',
-          address: dto.address || 'Xã Bà Điểm, TP. Hồ Chí Minh',
-          hamlet: hamletName,
-          category: 'license_security',
-          categoryLabel: dto.docType || 'Giấy phép ANTT',
-          issueDate: '2026-01-01',
-          expiryDate: dto.expiryDate || '2027-01-01',
-          status: statusVal,
-          urgency: urgencyVal,
-          notes: dto.notes || 'Hồ sơ an ninh trật tự',
-        };
-      });
-    }
-  } catch (err) {
-    console.warn('Lỗi khi tải danh sách hồ sơ tài liệu từ backend:', err);
+      return {
+        id: idStr,
+        docCode: `HS-BD-${String(dto.id || 1).padStart(3, '0')}`,
+        title: dto.docName || 'Hồ sơ kiểm tra ANTT & PCCC',
+        targetName: dto.householdName || 'Cơ sở quản lý',
+        address: dto.address || 'Xã Bà Điểm, TP. Hồ Chí Minh',
+        hamlet: hamletName,
+        category: 'license_security',
+        categoryLabel: dto.docType || 'Giấy phép ANTT',
+        issueDate: '2026-01-01',
+        expiryDate: dto.expiryDate || '2027-01-01',
+        status: statusVal,
+        urgency: urgencyVal,
+        notes: dto.notes || 'Hồ sơ an ninh trật tự',
+      };
+    });
   }
   return [];
 }
@@ -564,75 +547,72 @@ function inferActionType(action: string): AuditActionType {
  * 12. Tải danh sách nhật ký tuần tra / kiểm tra thực địa từ PostgreSQL
  */
 export async function fetchPatrolLogsFromBackend(size: number = 200): Promise<AuditLogEntry[]> {
-  try {
-    const res = await axios.get<any[]>(`/api/patrol-logs?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
-    if (Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map(dto => {
-        const d = dto.timestamp ? new Date(dto.timestamp) : new Date();
-        const pad = (n: number) => String(n).padStart(2, '0');
-        const formattedDate = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const res = await axios.get<any[]>(`/api/patrol-logs?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
+  if (!Array.isArray(res.data)) throw new Error('Dữ liệu nhật ký từ máy chủ không hợp lệ.');
+  if (Array.isArray(res.data) && res.data.length > 0) {
+    return res.data.map(dto => {
+      const d = dto.timestamp ? new Date(dto.timestamp) : new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const formattedDate = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 
-        let detailsText = dto.details || 'Ghi nhận kiểm tra thực địa.';
-        let actionType: AuditActionType = inferActionType(dto.action);
-        let targetType: 'household' | 'document' | 'officer' | 'system' = 'household';
-        let targetCode: string | undefined = undefined;
-        let previousValue: string | undefined = undefined;
-        let newValue: string | undefined = undefined;
-        let deviceInfo: string | undefined = 'Thiết bị nghiệp vụ tuần tra CSKV';
-        let integrityHash: string | undefined = `SHA256:${String(dto.id).padStart(8, '0')}...OK`;
-        let status: 'success' | 'warning' | 'info' = 'success';
+      let detailsText = dto.details || 'Ghi nhận kiểm tra thực địa.';
+      let actionType: AuditActionType = inferActionType(dto.action);
+      let targetType: 'household' | 'document' | 'officer' | 'system' = 'household';
+      let targetCode: string | undefined = undefined;
+      let previousValue: string | undefined = undefined;
+      let newValue: string | undefined = undefined;
+      let deviceInfo: string | undefined = 'Thiết bị nghiệp vụ tuần tra CSKV';
+      let integrityHash: string | undefined = `SHA256:${String(dto.id).padStart(8, '0')}...OK`;
+      let status: 'success' | 'warning' | 'info' = 'success';
 
-        // Nếu details được lưu dưới dạng JSON metadata
-        if (dto.details && typeof dto.details === 'string' && dto.details.trim().startsWith('{')) {
-          try {
-            const meta = JSON.parse(dto.details);
-            if (meta.text !== undefined) detailsText = meta.text;
-            if (meta.actionType) actionType = meta.actionType;
-            if (meta.targetType) targetType = meta.targetType;
-            if (meta.targetCode) targetCode = meta.targetCode;
-            if (meta.previousValue) previousValue = meta.previousValue;
-            if (meta.newValue) newValue = meta.newValue;
-            if (meta.deviceInfo) deviceInfo = meta.deviceInfo;
-            if (meta.integrityHash) integrityHash = meta.integrityHash;
-            if (meta.status) status = meta.status;
-          } catch {
-            // Giữ nguyên detailsText nếu không parse được JSON
-          }
+      // Nếu details được lưu dưới dạng JSON metadata
+      if (dto.details && typeof dto.details === 'string' && dto.details.trim().startsWith('{')) {
+        try {
+          const meta = JSON.parse(dto.details);
+          if (meta.text !== undefined) detailsText = meta.text;
+          if (meta.actionType) actionType = meta.actionType;
+          if (meta.targetType) targetType = meta.targetType;
+          if (meta.targetCode) targetCode = meta.targetCode;
+          if (meta.previousValue) previousValue = meta.previousValue;
+          if (meta.newValue) newValue = meta.newValue;
+          if (meta.deviceInfo) deviceInfo = meta.deviceInfo;
+          if (meta.integrityHash) integrityHash = meta.integrityHash;
+          if (meta.status) status = meta.status;
+        } catch {
+          // Giữ nguyên detailsText nếu không parse được JSON
         }
+      }
 
-        // Tách targetCode nếu có dạng "[CODE] Title"
-        let targetTitle = dto.target || 'Địa bàn Xã Bà Điểm';
-        if (targetTitle.startsWith('[') && targetTitle.includes('] ')) {
-          const closeIdx = targetTitle.indexOf('] ');
-          if (!targetCode) {
-            targetCode = targetTitle.slice(1, closeIdx);
-          }
-          targetTitle = targetTitle.slice(closeIdx + 2);
+      // Tách targetCode nếu có dạng "[CODE] Title"
+      let targetTitle = dto.target || 'Địa bàn Xã Bà Điểm';
+      if (targetTitle.startsWith('[') && targetTitle.includes('] ')) {
+        const closeIdx = targetTitle.indexOf('] ');
+        if (!targetCode) {
+          targetCode = targetTitle.slice(1, closeIdx);
         }
+        targetTitle = targetTitle.slice(closeIdx + 2);
+      }
 
-        return {
-          id: `LOG-DB-${dto.id}`,
-          timestamp: formattedDate,
-          createdAt: d.getTime(),
-          actionType,
-          actionLabel: dto.action || 'Nhật ký công tác',
-          officerName: dto.officerName || 'Cán bộ CSKV',
-          officerBadge: dto.badgeNumber || 'CSKV-BADIEM',
-          targetType,
-          targetCode,
-          targetTitle,
-          details: detailsText,
-          previousValue,
-          newValue,
-          ipAddress: dto.ipAddress || 'Không ghi nhận',
-          deviceInfo,
-          integrityHash,
-          status,
-        };
-      });
-    }
-  } catch (err) {
-    console.warn('Lỗi khi tải danh sách nhật ký từ backend:', err);
+      return {
+        id: `LOG-DB-${dto.id}`,
+        timestamp: formattedDate,
+        createdAt: d.getTime(),
+        actionType,
+        actionLabel: dto.action || 'Nhật ký công tác',
+        officerName: dto.officerName || 'Cán bộ CSKV',
+        officerBadge: dto.badgeNumber || 'CSKV-BADIEM',
+        targetType,
+        targetCode,
+        targetTitle,
+        details: detailsText,
+        previousValue,
+        newValue,
+        ipAddress: dto.ipAddress || 'Không ghi nhận',
+        deviceInfo,
+        integrityHash,
+        status,
+      };
+    });
   }
   return [];
 }
@@ -707,35 +687,32 @@ export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promi
  * 13. Tải danh sách cảnh báo an ninh từ PostgreSQL
  */
 export async function fetchSecurityAlertsFromBackend(size: number = 100): Promise<SecurityAlert[]> {
-  try {
-    const res = await axios.get<any[]>(`/api/security-alerts?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
-    if (Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map(dto => {
-        const sevMap: Record<string, any> = {
-          CRITICAL: 'critical',
-          HIGH: 'high',
-          MEDIUM: 'medium',
-          LOW: 'low',
-          INFO: 'info',
-        };
+  const res = await axios.get<any[]>(`/api/security-alerts?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
+  if (!Array.isArray(res.data)) throw new Error('Dữ liệu cảnh báo từ máy chủ không hợp lệ.');
+  if (Array.isArray(res.data) && res.data.length > 0) {
+    return res.data.map(dto => {
+      const sevMap: Record<string, any> = {
+        CRITICAL: 'critical',
+        HIGH: 'high',
+        MEDIUM: 'medium',
+        LOW: 'low',
+        INFO: 'info',
+      };
 
-        return {
-          id: `ALERT-DB-${dto.id}`,
-          timestamp: dto.reportedAt ? new Date(dto.reportedAt).toLocaleDateString('vi-VN') : '27/09/2026',
-          severity: sevMap[dto.severity] || 'medium',
-          title: dto.title || 'Cảnh báo an ninh trật tự',
-          details: dto.description || '',
-          sourceIp: dto.location || 'Xã Bà Điểm',
-          targetResource: '/api/security-alerts',
-          emailNotified: false,
-          adminEmailTarget: 'cong-an-ba-diem@tphcm.gov.vn',
-          resolved: !!dto.isResolved,
-          resolvedAt: dto.resolvedAt ? new Date(dto.resolvedAt).toLocaleDateString('vi-VN') : undefined,
-        };
-      });
-    }
-  } catch (err) {
-    console.warn('Lỗi khi tải danh sách cảnh báo từ backend:', err);
+      return {
+        id: `ALERT-DB-${dto.id}`,
+        timestamp: dto.reportedAt ? new Date(dto.reportedAt).toLocaleDateString('vi-VN') : '27/09/2026',
+        severity: sevMap[dto.severity] || 'medium',
+        title: dto.title || 'Cảnh báo an ninh trật tự',
+        details: dto.description || '',
+        sourceIp: dto.location || 'Xã Bà Điểm',
+        targetResource: '/api/security-alerts',
+        emailNotified: false,
+        adminEmailTarget: 'cong-an-ba-diem@tphcm.gov.vn',
+        resolved: !!dto.isResolved,
+        resolvedAt: dto.resolvedAt ? new Date(dto.resolvedAt).toLocaleDateString('vi-VN') : undefined,
+      };
+    });
   }
   return [];
 }

@@ -21,7 +21,7 @@ class RbacMenuRemovalTest {
         when(rbac.settings("menus")).thenReturn(
             List.of(retained.get(0), Map.of("id", "spatial-3d-map"), Map.of("id", "vietmap-compare"), retained.get(1), retained.get(2))
         );
-        var resource = new RbacResource(rbac, null, null, null);
+        var resource = new RbacResource(rbac, null, null, null, mock(com.policemanagement.com.service.rbac.RbacEventHub.class));
         assertEquals(retained, resource.settings("menus"));
         verify(rbac).current();
         verify(rbac).settings("menus");

@@ -38,15 +38,7 @@ function extractMBTiles(mbtilesPath, outputDir, defaultExt = 'png') {
 }
 
 const baseDir = path.resolve(__dirname, '../src/main/webapp/content/assets');
-const mapFormat = extractMBTiles(
-  path.join(baseDir, 'badiem_map.mbtiles'),
-  path.join(baseDir, 'badiem_map'),
-  'png'
-);
-const satFormat = extractMBTiles(
-  path.join(baseDir, 'badiem_satellite.mbtiles'),
-  path.join(baseDir, 'badiem_satellite'),
-  'jpg'
-);
+const mapFormat = extractMBTiles(path.join(baseDir, 'badiem_map.mbtiles'), path.join(baseDir, 'badiem_map'), 'png');
+const satFormat = extractMBTiles(path.join(baseDir, 'badiem_satellite.mbtiles'), path.join(baseDir, 'badiem_satellite'), 'jpg');
 
 console.log(`Done! Map format: .${mapFormat}, Satellite format: .${satFormat}`);

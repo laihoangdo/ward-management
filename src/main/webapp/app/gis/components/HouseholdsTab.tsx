@@ -1,6 +1,7 @@
 import { matchesHouseholdSearch } from '../utils/householdSearch';
 import { exportRbacCsv } from '../services/rbacApiService';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { browseHouseholds, loadHouseholdDetail, HouseholdBrowsePage } from '../services/householdBrowse';
 import {
   Users,
   Plus,
@@ -31,6 +32,8 @@ import { getHouseholdResidenceType, RESIDENCE_TYPE_CONFIG } from '../utils/resid
 import { Pagination } from './Pagination';
 
 interface HouseholdsTabProps {
+  serverPaging?: boolean;
+  refreshKey?: number;
   households: HouseholdFacility[];
   currentUser?: AppUser | null;
   searchQuery?: string;
@@ -43,11 +46,13 @@ interface HouseholdsTabProps {
 }
 
 export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
-  households,
+  households: initialHouseholds,
+  serverPaging = false,
+  refreshKey = 0,
   currentUser,
   searchQuery,
   onSearchChange,
-  isLoading = false,
+  isLoading: externalLoading = false,
   onSelectHousehold,
   onOpenAddModal,
   onDeleteHousehold,
@@ -64,20 +69,104 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
+  const [serverPage, setServerPage] = useState<HouseholdBrowsePage | null>(null);
+  const [pageLoading, setPageLoading] = useState(serverPaging);
+  const [pageError, setPageError] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const detailRequestRef = useRef<AbortController | null>(null);
+  const households = serverPaging ? (serverPage?.items ?? []) : initialHouseholds;
+  const isLoading = serverPaging ? pageLoading : externalLoading;
+  const totalItems = serverPaging ? (serverPage?.total ?? 0) : undefined;
+  const scopeTotal = serverPaging ? (serverPage?.scopeTotal ?? 0) : households.length;
+  useEffect(() => {
+    if (!serverPaging) return;
+    const controller = new AbortController();
+    setPageLoading(true);
+    const timer = setTimeout(() => {
+      void browseHouseholds(
+        {
+          page: currentPage - 1,
+          size: pageSize,
+          search: searchTerm,
+          hamlet: selectedHamlet,
+          type: selectedType,
+          residence: selectedResidenceType,
+        },
+        controller.signal,
+      )
+        .then(data => {
+          if (!controller.signal.aborted) {
+            setServerPage(data);
+            setCurrentPage(data.page + 1);
+            setPageError('');
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setPageError('Chưa tải được trang hộ dân. Dữ liệu đang hiển thị là lần tải trước.');
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setPageLoading(false);
+        });
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    serverPaging,
+    currentPage,
+    pageSize,
+    searchTerm,
+    selectedHamlet,
+    selectedType,
+    selectedResidenceType,
+    initialHouseholds,
+    retry,
+    refreshKey,
+  ]);
+  useEffect(() => () => detailRequestRef.current?.abort(), []);
+  const selectHousehold = (household: HouseholdFacility) => {
+    if (!serverPaging) {
+      onSelectHousehold(household);
+      return;
+    }
+    detailRequestRef.current?.abort();
+    const controller = new AbortController();
+    detailRequestRef.current = controller;
+    setDetailLoading(true);
+    void loadHouseholdDetail(household.id, controller.signal)
+      .then(data => {
+        if (!controller.signal.aborted) onSelectHousehold(data);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setPageError('Không tải được hồ sơ đầy đủ. Hãy thử lại trước khi chỉnh sửa.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDetailLoading(false);
+      });
+  };
 
   const hamletList = useMemo(() => {
+    if (serverPaging) return Object.keys(serverPage?.hamlets ?? {}).sort();
     return Array.from(new Set(households.map(h => h.hamlet).filter(Boolean))).sort();
-  }, [households]);
+  }, [households, serverPaging, serverPage]);
 
   // Calculate dynamic counts for residence type quick chips
   const residenceCounts = {
-    all: households.length,
+    all: scopeTotal,
     'Thường trú': households.filter(h => getHouseholdResidenceType(h) === 'Thường trú').length,
     'Tạm trú': households.filter(h => getHouseholdResidenceType(h) === 'Tạm trú').length,
     'Lưu trú': households.filter(h => getHouseholdResidenceType(h) === 'Lưu trú').length,
   };
+  if (serverPaging) {
+    residenceCounts['Thường trú'] = serverPage?.residenceCounts.permanent ?? 0;
+    residenceCounts['Tạm trú'] = serverPage?.residenceCounts.temporary ?? 0;
+    residenceCounts['Lưu trú'] = serverPage?.residenceCounts.stay ?? 0;
+  }
 
   const filtered = useMemo(() => {
+    if (serverPaging) return households;
     return households.filter(h => {
       if (selectedHamlet !== 'all' && h.hamlet !== selectedHamlet) return false;
       if (selectedType !== 'all' && h.type !== selectedType) return false;
@@ -86,7 +175,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
       if (!matchesHouseholdSearch(h, searchTerm)) return false;
       return true;
     });
-  }, [households, selectedHamlet, selectedType, selectedResidenceType, searchTerm]);
+  }, [households, selectedHamlet, selectedType, selectedResidenceType, searchTerm, serverPaging]);
 
   // Reset pagination to first page when filtering
   useEffect(() => {
@@ -95,14 +184,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
 
   // Slice paginated items for smooth and fast rendering
   const paginatedHouseholds = useMemo(() => {
+    if (serverPaging) return filtered;
     const safePage = Math.min(currentPage, Math.max(1, Math.ceil(filtered.length / pageSize)));
     const start = (safePage - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
-  }, [filtered, currentPage, pageSize]);
+  }, [filtered, currentPage, pageSize, serverPaging]);
 
   useEffect(() => {
+    if (serverPaging) return;
     setCurrentPage(page => Math.min(page, Math.max(1, Math.ceil(filtered.length / pageSize))));
-  }, [filtered.length, pageSize]);
+  }, [filtered.length, pageSize, serverPaging]);
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -173,6 +264,15 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
 
   return (
     <div className="gis-records space-y-4 sm:space-y-5 max-w-7xl mx-auto" aria-busy={isLoading}>
+      {detailLoading && <p role="status">Đang tải hồ sơ và nhân khẩu đầy đủ…</p>}
+      {pageError && (
+        <div role="alert" className="rounded-lg bg-red-50 text-red-800 p-3">
+          {pageError}{' '}
+          <button type="button" onClick={() => setRetry(value => value + 1)}>
+            Thử lại
+          </button>
+        </div>
+      )}
       {/* Top Banner */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
@@ -188,7 +288,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               Danh sách hộ dân & Cơ sở
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-              Quản lý {households.length} hộ dân và cơ sở trong phạm vi truy cập
+              Quản lý {scopeTotal} hộ dân và cơ sở trong phạm vi truy cập
               {currentUser?.assignedWard ? ` • ${currentUser.assignedWard}` : '.'}
             </p>
           </div>
@@ -403,10 +503,10 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Tất cả ấp ({households.length})
+                Tất cả ấp ({scopeTotal})
               </button>
               {hamletList.map(hamlet => {
-                const count = households.filter(h => h.hamlet === hamlet).length;
+                const count = serverPaging ? (serverPage?.hamlets[hamlet] ?? 0) : households.filter(h => h.hamlet === hamlet).length;
                 return (
                   <button
                     key={hamlet}
@@ -543,7 +643,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               </span>
             )}
             <span className="text-slate-400 text-[11px] ml-auto">
-              Tìm thấy <strong className="text-slate-700 dark:text-slate-200 font-bold">{filtered.length}</strong> kết quả
+              Tìm thấy <strong className="text-slate-700 dark:text-slate-200 font-bold">{totalItems ?? filtered.length}</strong> kết quả
             </span>
           </div>
         )}
@@ -565,10 +665,10 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                   onKeyDown={event => {
                     if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
                       event.preventDefault();
-                      onSelectHousehold(item);
+                      selectHousehold(item);
                     }
                   }}
-                  onClick={() => onSelectHousehold(item)}
+                  onClick={() => selectHousehold(item)}
                   className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:border-blue-400/80 dark:hover:border-blue-500/80 hover:bg-linear-to-b hover:from-blue-50/25 dark:hover:from-blue-950/30 hover:to-white dark:hover:to-slate-900 cursor-pointer active:scale-[0.985] flex flex-col justify-between select-none"
                 >
                   {/* Top Bar: Code + Hamlet + Badges */}
@@ -678,7 +778,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                         type="button"
                         onClick={e => {
                           e.stopPropagation();
-                          onSelectHousehold(item);
+                          selectHousehold(item);
                         }}
                         className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all duration-200 shadow-xs hover:shadow-md inline-flex items-center gap-1.5 min-h-[34px] cursor-pointer"
                       >
@@ -719,7 +819,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                     return (
                       <tr
                         key={item.id}
-                        onClick={() => onSelectHousehold(item)}
+                        onClick={() => selectHousehold(item)}
                         className="hover:bg-blue-50/50 dark:hover:bg-blue-950/40 transition-all duration-150 cursor-pointer group"
                       >
                         <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300">
@@ -795,7 +895,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                               type="button"
                               onClick={e => {
                                 e.stopPropagation();
-                                onSelectHousehold(item);
+                                selectHousehold(item);
                               }}
                               className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-[11px] font-bold border border-slate-200 dark:border-slate-700 transition-all duration-150 inline-flex items-center gap-1 cursor-pointer"
                             >
@@ -819,7 +919,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             Đang cập nhật dữ liệu hộ dân…
           </p>
         )}
-        {!isLoading && filtered.length === 0 && (
+        {!isLoading && !pageError && (totalItems ?? filtered.length) === 0 && (
           <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-6 space-y-3">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
               <Search className="w-6 h-6" />
@@ -839,16 +939,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         )}
 
         {/* Bottom Pagination Control */}
-        {filtered.length > 0 && (
+        {(totalItems ?? filtered.length) > 0 && (
           <div className="mt-4 space-y-3">
             <Pagination
               currentPage={currentPage}
-              totalItems={filtered.length}
+              totalItems={totalItems ?? filtered.length}
               pageSize={pageSize}
               onPageChange={page => {
                 setCurrentPage(page);
                 const el = document.getElementById('household-content-panel');
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
               }}
               onPageSizeChange={size => {
                 setPageSize(size);

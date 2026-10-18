@@ -6,7 +6,7 @@ async function seedAncillaryData() {
     port: 5432,
     user: 'Monolithic',
     password: '',
-    database: 'Monolithic'
+    database: 'Monolithic',
   });
 
   await client.connect();
@@ -30,7 +30,7 @@ async function seedAncillaryData() {
         officer: 'Đại úy Nguyễn Văn Bình',
         phone: '0989024671',
         notes: 'Cơ sở kinh doanh lưu trú chấp hành tốt quy định khai báo khách cư trú.',
-        reminder_sent: false
+        reminder_sent: false,
       },
       {
         doc_name: 'Biên bản kiểm tra an toàn PCCC & Cứu nạn',
@@ -42,7 +42,7 @@ async function seedAncillaryData() {
         officer: 'Thượng úy Trần Minh Tuấn',
         phone: '0903112233',
         notes: 'Hồ sơ thẩm duyệt PCCC định kỳ cần gia hạn trước ngày 10/10/2026.',
-        reminder_sent: true
+        reminder_sent: true,
       },
       {
         doc_name: 'Bản cam kết không phát sinh tệ nạn xã hội',
@@ -54,7 +54,7 @@ async function seedAncillaryData() {
         officer: 'Đại úy Lê Hoàng Nam',
         phone: '0918445566',
         notes: 'Dãy trọ gồm 18 phòng, có camera an ninh kết nối CSKV.',
-        reminder_sent: false
+        reminder_sent: false,
       },
       {
         doc_name: 'Giấy phép đủ điều kiện kinh doanh Gas/Khí đốt',
@@ -66,7 +66,7 @@ async function seedAncillaryData() {
         officer: 'Đại úy Đỗ Hữu Nghĩa',
         phone: '0987654321',
         notes: 'Kho chứa gas tuân thủ khoảng cách an toàn chống cháy nổ.',
-        reminder_sent: false
+        reminder_sent: false,
       },
       {
         doc_name: 'Hồ sơ thẩm định an ninh cơ sở Game/Internet',
@@ -78,7 +78,7 @@ async function seedAncillaryData() {
         officer: 'Trung úy Phạm Đình Trọng',
         phone: '0933778899',
         notes: 'Đã hết hạn giấy chứng nhận, đã lập biên bản yêu cầu làm thủ tục cấp mới.',
-        reminder_sent: true
+        reminder_sent: true,
       },
       {
         doc_name: 'Sổ quản lý lưu trú & người nước ngoài',
@@ -90,7 +90,7 @@ async function seedAncillaryData() {
         officer: 'Thượng úy Võ Minh Tuấn',
         phone: '0944556677',
         notes: 'Đã tích hợp phần mềm ASM khai báo lưu trú tự động qua VNeID.',
-        reminder_sent: false
+        reminder_sent: false,
       },
       {
         doc_name: 'Biên bản kiểm tra điều kiện an ninh cơ sở massage',
@@ -102,7 +102,7 @@ async function seedAncillaryData() {
         officer: 'Đại úy Nguyễn Văn Bình',
         phone: '0977223344',
         notes: 'Nhân viên có chứng chỉ hành nghề và hợp đồng lao động đầy đủ.',
-        reminder_sent: false
+        reminder_sent: false,
       },
       {
         doc_name: 'Hồ sơ phòng ngừa tội phạm khu dân cư',
@@ -114,16 +114,19 @@ async function seedAncillaryData() {
         officer: 'Đại úy Đỗ Hữu Nghĩa',
         phone: '0908678901',
         notes: 'Tuyến đường có mô hình Tổ nhân dân tự quản kiểu mẫu về ANTT.',
-        reminder_sent: false
-      }
+        reminder_sent: false,
+      },
     ];
 
     for (let i = 0; i < documents.length; i++) {
       const d = documents[i];
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO document_record (id, doc_name, doc_type, household_name, address, status, expiry_date, officer, phone, notes, reminder_sent)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      `, [i + 1, d.doc_name, d.doc_type, d.household_name, d.address, d.status, d.expiry_date, d.officer, d.phone, d.notes, d.reminder_sent]);
+      `,
+        [i + 1, d.doc_name, d.doc_type, d.household_name, d.address, d.status, d.expiry_date, d.officer, d.phone, d.notes, d.reminder_sent],
+      );
     }
     console.log(`Seeded ${documents.length} document records.`);
 
@@ -135,56 +138,64 @@ async function seedAncillaryData() {
       {
         action: 'Tuần tra an ninh trật tự ca đêm',
         target: 'Tuyến đường Phan Văn Hớn & Nguyễn Ảnh Thủ, Xã Bà Điểm',
-        details: 'Phối hợp lực lượng bảo vệ an ninh trật tự cơ sở tuần tra khép kín địa bàn. Nhắc nhở 4 hộ dân để xe máy hớ hênh trước cửa nhà.',
+        details:
+          'Phối hợp lực lượng bảo vệ an ninh trật tự cơ sở tuần tra khép kín địa bàn. Nhắc nhở 4 hộ dân để xe máy hớ hênh trước cửa nhà.',
         officer_name: 'Đại úy Nguyễn Văn Bình',
         badge_number: 'CSKV-0912',
         ip_address: '192.168.1.45',
-        timestamp: '2026-09-27 22:30:00'
+        timestamp: '2026-09-27 22:30:00',
       },
       {
         action: 'Kiểm tra hành chính cơ sở lưu trú',
         target: 'Nhà nghỉ Mai Vàng & Nhà trọ Hưng Lân, Ấp Bắc Lân',
-        details: 'Kiểm tra việc đăng ký lưu trú trên phần mềm ASM. 100% khách lưu trú đã được quét CCCD gắn chip đối soát cơ sở dữ liệu quốc gia.',
+        details:
+          'Kiểm tra việc đăng ký lưu trú trên phần mềm ASM. 100% khách lưu trú đã được quét CCCD gắn chip đối soát cơ sở dữ liệu quốc gia.',
         officer_name: 'Đại úy Nguyễn Văn Bình',
         badge_number: 'CSKV-0912',
         ip_address: '192.168.1.45',
-        timestamp: '2026-09-27 15:45:00'
+        timestamp: '2026-09-27 15:45:00',
       },
       {
         action: 'Giải tỏa trật tự lòng lề đường',
         target: 'Khu vực Chợ Bà Điểm, Đường Phan Văn Hớn, Ấp Tiền Lân',
-        details: 'Tuyên truyền, vận động các hộ tiểu thương không lấn chiếm lòng lề đường làm nơi buôn bán, đảm bảo trật tự an toàn giao thông.',
+        details:
+          'Tuyên truyền, vận động các hộ tiểu thương không lấn chiếm lòng lề đường làm nơi buôn bán, đảm bảo trật tự an toàn giao thông.',
         officer_name: 'Đại úy Đỗ Hữu Nghĩa',
         badge_number: 'CSKV-1045',
         ip_address: '192.168.1.50',
-        timestamp: '2026-09-27 07:15:00'
+        timestamp: '2026-09-27 07:15:00',
       },
       {
         action: 'Kiểm tra an toàn PCCC dãy nhà trọ',
         target: 'Khu nhà trọ 24 phòng, Hẻm 418, Ấp Nam Lân',
-        details: 'Kiểm tra lối thoát hiểm thứ 2, kiểm tra hoạt động của 6 bình chữa cháy bột MFZ4. Nhắc nhở người thuê trọ sạc xe điện đúng khu vực quy định.',
+        details:
+          'Kiểm tra lối thoát hiểm thứ 2, kiểm tra hoạt động của 6 bình chữa cháy bột MFZ4. Nhắc nhở người thuê trọ sạc xe điện đúng khu vực quy định.',
         officer_name: 'Thượng úy Trần Minh Tuấn',
         badge_number: 'CSKV-0887',
         ip_address: '192.168.1.48',
-        timestamp: '2026-09-26 16:20:00'
+        timestamp: '2026-09-26 16:20:00',
       },
       {
         action: 'Tuyên truyền cảnh giác lừa đảo trên mạng',
         target: 'Hội trường Nhà Văn hóa Ấp Tây Lân, Xã Bà Điểm',
-        details: 'Tổ chức buổi sinh hoạt chuyên đề phòng chống tội phạm công nghệ cao và hướng dẫn kích hoạt tài khoản định danh điện tử VNeID mức 2.',
+        details:
+          'Tổ chức buổi sinh hoạt chuyên đề phòng chống tội phạm công nghệ cao và hướng dẫn kích hoạt tài khoản định danh điện tử VNeID mức 2.',
         officer_name: 'Đại úy Lê Hoàng Nam',
         badge_number: 'CSKV-0734',
         ip_address: '192.168.1.52',
-        timestamp: '2026-09-25 19:30:00'
-      }
+        timestamp: '2026-09-25 19:30:00',
+      },
     ];
 
     for (let i = 0; i < patrolLogs.length; i++) {
       const p = patrolLogs[i];
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO patrol_log (id, action, target, details, officer_name, badge_number, ip_address, timestamp)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `, [i + 1, p.action, p.target, p.details, p.officer_name, p.badge_number, p.ip_address, p.timestamp]);
+      `,
+        [i + 1, p.action, p.target, p.details, p.officer_name, p.badge_number, p.ip_address, p.timestamp],
+      );
     }
     console.log(`Seeded ${patrolLogs.length} patrol logs.`);
 
@@ -197,50 +208,57 @@ async function seedAncillaryData() {
         alert_type: 'CANH_BAO_AN_NINH',
         severity: 'WARNING',
         title: 'Tụ tập nhóm thanh thiếu niên đêm khuya',
-        description: 'Phát hiện nhóm 6 thanh thiếu niên điều khiển xe máy tụ tập nẹt pô tại đầu hẻm Đường Bà Điểm 4. Lực lượng tuần tra đã có mặt giải tán kịp thời.',
+        description:
+          'Phát hiện nhóm 6 thanh thiếu niên điều khiển xe máy tụ tập nẹt pô tại đầu hẻm Đường Bà Điểm 4. Lực lượng tuần tra đã có mặt giải tán kịp thời.',
         location: 'Hẻm Đường Bà Điểm 4, Ấp Tây Lân, Xã Bà Điểm',
         is_resolved: true,
         reported_at: '2026-09-27 01:15:00',
-        resolved_at: '2026-09-27 01:40:00'
+        resolved_at: '2026-09-27 01:40:00',
       },
       {
         alert_type: 'NHAC_NHO_CU_TRU',
         severity: 'INFO',
         title: 'Cơ sở lưu trú chưa cập nhật thông tin khách nước ngoài',
-        description: 'Nhà nghỉ Mai Vàng tiếp nhận 1 chuyên gia nước ngoài thuê phòng lúc 18h nhưng chưa đẩy dữ liệu lên hệ thống khai báo xuất nhập cảnh.',
+        description:
+          'Nhà nghỉ Mai Vàng tiếp nhận 1 chuyên gia nước ngoài thuê phòng lúc 18h nhưng chưa đẩy dữ liệu lên hệ thống khai báo xuất nhập cảnh.',
         location: 'Số 45 Đường Phan Văn Hớn, Ấp Bắc Lân, Xã Bà Điểm',
         is_resolved: false,
         reported_at: '2026-09-27 19:00:00',
-        resolved_at: null
+        resolved_at: null,
       },
       {
         alert_type: 'CANH_BAO_PCCC',
         severity: 'CRITICAL',
         title: 'Vật cản che chắn lối thoát hiểm nhà xưởng',
-        description: 'Phát hiện cơ sở may gia công tập kết thùng hàng bít lối cửa thoát nạn phía sau xưởng. Đã lập biên bản đình chỉ và yêu cầu di dời ngay.',
+        description:
+          'Phát hiện cơ sở may gia công tập kết thùng hàng bít lối cửa thoát nạn phía sau xưởng. Đã lập biên bản đình chỉ và yêu cầu di dời ngay.',
         location: 'Số 188 Đường Hưng Lân, Ấp Hậu Lân, Xã Bà Điểm',
         is_resolved: true,
         reported_at: '2026-09-26 14:30:00',
-        resolved_at: '2026-09-26 16:00:00'
+        resolved_at: '2026-09-26 16:00:00',
       },
       {
         alert_type: 'CANH_BAO_TRAT_TU',
         severity: 'WARNING',
         title: 'Hát karaoke loa kéo quá giờ quy định',
-        description: 'Người dân phản ánh số nhà 92 Đường Bà Điểm 8 mở loa kéo âm lượng lớn sau 22h ảnh hưởng các hộ dân xung quanh. CSKV đã nhắc nhở và cam kết không tái phạm.',
+        description:
+          'Người dân phản ánh số nhà 92 Đường Bà Điểm 8 mở loa kéo âm lượng lớn sau 22h ảnh hưởng các hộ dân xung quanh. CSKV đã nhắc nhở và cam kết không tái phạm.',
         location: 'Số 92 Đường Bà Điểm 8, Ấp Đông Lân, Xã Bà Điểm',
         is_resolved: true,
         reported_at: '2026-09-25 22:45:00',
-        resolved_at: '2026-09-25 23:10:00'
-      }
+        resolved_at: '2026-09-25 23:10:00',
+      },
     ];
 
     for (let i = 0; i < securityAlerts.length; i++) {
       const a = securityAlerts[i];
-      await client.query(`
+      await client.query(
+        `
         INSERT INTO security_alert (id, alert_type, severity, title, description, location, is_resolved, reported_at, resolved_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `, [i + 1, a.alert_type, a.severity, a.title, a.description, a.location, a.is_resolved, a.reported_at, a.resolved_at]);
+      `,
+        [i + 1, a.alert_type, a.severity, a.title, a.description, a.location, a.is_resolved, a.reported_at, a.resolved_at],
+      );
     }
     console.log(`Seeded ${securityAlerts.length} security alerts.`);
 

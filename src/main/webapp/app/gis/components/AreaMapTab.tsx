@@ -84,6 +84,8 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [inspectedHousehold, setInspectedHousehold] = useState<HouseholdFacility | null>(households[0] || null);
 
+  const [pagination, setPagination] = useState({ key: '', page: 1 });
+
   const hamletList = useMemo(() => {
     return Array.from(new Set(households.map(h => h.hamlet).filter(Boolean))).sort();
   }, [households]);
@@ -197,7 +199,17 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
   }, [households, onlyWarnings, selectedHamlet, activeStreet, selectedGroup, selectedAlley, searchQuery]);
 
   // Xóa toàn bộ bộ lọc về mặc định
+  const pageSize = 48;
+  const filterKey = JSON.stringify([onlyWarnings, selectedHamlet, activeStreet, selectedGroup, selectedAlley, searchQuery]);
+  const pageCount = Math.max(1, Math.ceil(filteredHouseholds.length / pageSize));
+  const currentPage = pagination.key === filterKey ? Math.min(pagination.page, pageCount) : 1;
+  const pageHouseholds = filteredHouseholds.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  useEffect(() => {
+    setPagination(previous => (previous.key === filterKey ? previous : { key: filterKey, page: 1 }));
+  }, [filterKey]);
+
   const handleReset = () => {
+    setPagination({ key: '', page: 1 });
     setOnlyWarnings(false);
     setSelectedHamlet('all');
     setActiveStreet('all');
@@ -751,7 +763,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
           {/* House Matrix Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3">
-            {filteredHouseholds.map(item => {
+            {pageHouseholds.map(item => {
               const status = getStatusDetails(item.status);
               const isSelected = inspectedHousehold?.id === item.id;
               const group = getHouseholdNeighborhoodGroup(item);
@@ -828,6 +840,36 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               );
             })}
           </div>
+
+          {filteredHouseholds.length > 0 && (
+            <nav aria-label="Phân trang sơ đồ hộ dân" className="flex flex-wrap items-center justify-between gap-3 mt-4 text-sm">
+              <span role="status">
+                {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredHouseholds.length)} /{' '}
+                {filteredHouseholds.length} hộ
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setPagination({ key: filterKey, page: currentPage - 1 })}
+                  className="px-3 py-2 border rounded-lg disabled:opacity-40"
+                >
+                  Trang trước
+                </button>
+                <span>
+                  Trang {currentPage} / {pageCount}
+                </span>
+                <button
+                  type="button"
+                  disabled={currentPage === pageCount}
+                  onClick={() => setPagination({ key: filterKey, page: currentPage + 1 })}
+                  className="px-3 py-2 border rounded-lg disabled:opacity-40"
+                >
+                  Trang sau
+                </button>
+              </div>
+            </nav>
+          )}
 
           {filteredHouseholds.length === 0 && (
             <div className="text-center py-12 text-slate-500 text-xs space-y-3">

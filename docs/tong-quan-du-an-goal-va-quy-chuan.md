@@ -90,6 +90,8 @@ Các schema `gis_building` và `gis_field_building` có mục đích/đường l
 - Sau khi liên kết đã lưu, point hộ được ẩn và thông tin xem qua khối nhà. Quyền frontend hỗ trợ trải nghiệm; backend vẫn quyết định thao tác được phép.
 - Ranh giới chỉ super-admin được sửa theo chính sách hiện tại. Bản sao cũ và phiên bản nhập được giữ trong `hamlet_boundary_revision`; migration không ghi đè bản chỉnh sửa sau đó.
 
+Cập nhật đồng bộ quyền 18/10/2026: `me` và các subscription RBAC chuyển từ polling 30 giây sang SSE dùng chung một kết nối/tab. Server chỉ gửi tín hiệu tải lại sau commit đến subject/nhóm dữ liệu liên quan; frontend bỏ snapshot cũ khi quyền/scope bị vô hiệu hóa và đối chiếu khi reconnect/focus. API nghiệp vụ vẫn kiểm tra quyền như trước; health giữ lịch riêng. Hiện hỗ trợ hub trong một backend instance, chưa có bus giữa nhiều instance. Xem [luồng và giới hạn triển khai](RBAC_REALTIME.md).
+
 ### 3.5. Số liệu và chất lượng nguồn đã đối chiếu
 
 **Snapshot DB local ngày 18/10/2026**, chỉ truy vấn tổng hợp, không phải số liệu dân cư đã nghiệm thu:
@@ -113,9 +115,9 @@ Các số này thay đổi khi sử dụng; 389 không phải tổng footprint n
 
 ### 3.6. Bằng chứng kiểm thử và phạm vi chưa kiểm chứng
 
-Các test hiện có bao phủ RBAC, ghi/đọc công trình, geometry có lỗ/lõm và hợp vùng, dataset 51 ấp, liên kết tự động, popup/mobile, vòng đời MapLibre và xuất ảnh. Trong phiên làm việc gần nhất, nhóm mutation-only đạt **18 test backend**, **17 test frontend**, TypeScript đạt; targeted lint không có error, còn warning. Đây là các nhóm mục tiêu, **không phải toàn bộ test của repository** và không cộng dồn những lần chạy chồng nhau.
+Đợt đối chiếu bổ sung ngày 18/10/2026 đã chạy toàn bộ nhóm test GIS hiện có: **26 file, 85 test đạt**; nhóm backend bảo mật/RBAC/geometry/công trình/nhật ký đạt **61 test**. TypeScript và production build đạt. Đây không phải toàn bộ test frontend/backend của repository; không cộng dồn với các lần chạy mục tiêu trước đó.
 
-Tham chiếu log local: `target/map-history-mutation-only-backend.log`, `target/map-history-mutation-only-ui.log`, `target/map-history-mutation-only-types.log`, `target/map-history-mutation-only-lint.log`. Có log production build thành công ở các đợt gần đây; chưa chạy lại toàn bộ build/test trong lần sửa tài liệu này. Các log trong `target` có thể bị ghi đè/xóa, không thay cho bằng chứng CI của một release.
+Tham chiếu log local mới: `target/project-review-gis-tests.log`, `target/project-review-backend-tests.log`, `target/project-review-types.log`, `target/project-review-build.log`, `target/project-review-gis-lint.json`. ESLint nhóm GIS kiểm tra 119 file, báo **148 error và 27 warning** trên checkout trước khi sửa tài liệu; chưa sửa code hoặc chạy auto-fix trong đợt đối chiếu. Targeted lint trước đó không có error không đồng nghĩa toàn bộ GIS sạch lint. Các log trong `target` có thể bị ghi đè/xóa, không thay cho bằng chứng CI của một release.
 
 Chưa có xác nhận nghiệm thu trình duyệt có đăng nhập trên toàn bộ vai trò/luồng; chưa đo FPS mobile, p95 tải thực tế, bảo mật đầy đủ hoặc phục hồi backup độc lập. Targeted lint đạt không có nghĩa lint toàn dự án đạt; `App.tsx` và một số module vẫn có nợ kỹ thuật/cảnh báo.
 
@@ -135,6 +137,8 @@ Chưa có xác nhận nghiệm thu trình duyệt có đăng nhập trên toàn 
 | P2      | Tách quyền kỹ thuật/nghiệp vụ, bàn giao có hiệu lực, đa đơn vị         | Thiết kế theo nghiệp vụ được xác nhận, không suy rộng cơ chế một xã thành toàn thành phố                    |
 
 `fetchAuthorizedPages` hiện đã tải hộ, cư dân và hồ sơ theo trang 500 đến khi hết; đánh giá cũ “chỉ tải 1.000 hộ/3.000 cư dân” không còn đúng với các đường này. Nhật ký mặc định vẫn lấy 200 bản ghi và cảnh báo có giới hạn riêng. Cần kiểm tra lỗi giữa các trang, dữ liệu thay đổi khi đang đọc và chi phí tải toàn bộ, thay vì chỉ bỏ giới hạn số lượng.
+
+Cập nhật 18/10/2026: danh sách hộ dùng `/api/gis/households/browse` để phân trang, tìm kiếm, lọc và đếm tại server theo phạm vi RBAC; mỗi trang 12/24/48/96 hộ. Tổng quan dùng `/api/gis/households/overview` trả thống kê, tối đa 16 hộ xem nhanh, 5 hộ cần chú ý và một trang cảnh báo 10/20/50 dòng. Hai màn này không còn chủ động tải toàn bộ hộ/nhân khẩu/hồ sơ lúc mở; chọn hộ mới tải đủ hồ sơ của hộ đó trước khi sửa. Khi mở bản đồ hoặc màn khác cần bộ dữ liệu đầy đủ (kể cả modal cảnh báo tổng hợp), luồng đọc đầy đủ hiện có mới chạy và được giữ lại trong phiên dashboard. Vì vậy RAM sau khi mở bản đồ chưa được tối ưu theo viewport. Thống kê vẫn giữ cách tính dữ liệu cũ/mô phỏng cho hộ chưa có roster; đây chưa phải xác minh dân số. Xem [tiến độ triển khai](audit/17-project-document-reconciliation.md#7-tiến-độ-thực-hiện-từng-bước).
 
 ## 5. Goal và tiêu chí nghiệm thu tiếp theo
 
@@ -240,6 +244,16 @@ Tên/mã đơn vị trong seed và ranh tạm không thay thế nguồn được
 | `gis/utils/cryptoUtils.ts`, `household3dEligibility.ts`, `houseFootprints.ts`        | Rủi ro mã hóa client, điều kiện hiển thị tọa độ và phép thử footprint         |
 | `src/test`, `*.spec.*`, `scripts/`, `target/*tests*.log`                             | Test/công cụ và kết quả có phạm vi; script tồn tại không chứng minh đã chạy   |
 
-Tài liệu nguồn bổ sung: [ranh giới 51 ấp](badiem-boundaries/README.md), [nhập TC2](../data/tc2_household_import/README.md), [chất lượng VietMap/Blender](../DATA_QUALITY_REPORT.md), [đợt UI/UX](audit/16-ui-ux-redesign.md), [GIS/OIDC/OCR](gis-auth-ocr.md), [MapLibre địa lý](maplibre-geographic-3d.md), [sơ đồ TC2](maplibre-ap-tc2.md), [lộ trình PostGIS](postgis-migration.md), [schema GIS 3D](spatial_3d_database_schema.md).
+Tài liệu nguồn bổ sung: [ranh giới 51 ấp](badiem-boundaries/README.md), [nhập TC2](../data/tc2_household_import/README.md), `DATA_QUALITY_REPORT.md`, [đợt UI/UX](audit/16-ui-ux-redesign.md), [GIS/OIDC/OCR](gis-auth-ocr.md), [MapLibre địa lý](maplibre-geographic-3d.md), [sơ đồ TC2](maplibre-ap-tc2.md), [lộ trình PostGIS](postgis-migration.md), [schema GIS 3D](spatial_3d_database_schema.md).
 
 Mẫu đặt goal cho đợt tiếp theo: người dùng/đơn vị → vấn đề và baseline → kết quả đo được → phạm vi/ngoài phạm vi → nguồn và người chịu trách nhiệm dữ liệu → role/scope/hành động → luồng chính/lỗi → migration/bảo mật/phục hồi → test bắt buộc → người nghiệm thu. Tài liệu không tự áp quy tắc vào `AGENTS.md` hoặc thay đổi hành vi ứng dụng.
+
+## 10. Kế hoạch cải thiện bảo toàn các luồng hiện có
+
+Tiến độ: bước 1 về phân biệt tải lỗi/danh sách rỗng đã triển khai, đạt 111 test GIS, TypeScript và build. Chi tiết phạm vi và phần chưa nghiệm thu nằm ở mục 7 của báo cáo đối chiếu bên dưới; các số 85/61 ở mục 3.6 là baseline trước cải thiện.
+
+Xem [ma trận đối chiếu và cổng hồi quy](audit/17-project-document-reconciliation.md): phân biệt việc cần cập nhật tài liệu, cải thiện code có phạm vi nhỏ và thay đổi nền tảng cần migration. Đợt đối chiếu này không thay đổi logic, dữ liệu hoặc quyền đang dùng.
+
+Ưu tiên bổ sung test luồng lỗi trước: lưu hộ/roster qua nhiều request; tải nhật ký/cảnh báo lỗi khác danh sách rỗng; phân trang; nguồn tọa độ và vòng đời camera. Sau đó xử lý từng mục, giữ nguyên hợp đồng ID, hamlet, scope, trạng thái và nhật ký mutation-only. Đổi khóa mã hóa, chuyển PostGIS, thay ranh hoặc bootstrap RBAC cần đợt riêng có backup, kiểm tra dữ liệu cũ và rollback.
+
+Test tự động đạt là mốc nền cho các cải thiện tiếp theo. Để xác nhận các luồng thực tế hoạt động bình thường trước phát hành, vẫn cần nghiệm thu có đăng nhập theo ba vai trò trên desktop/mobile, lỗi mạng và kiểm tra dữ liệu sau tải lại; không diễn giải kết quả hiện tại thành bảo đảm tuyệt đối cho các ca chưa kiểm thử.

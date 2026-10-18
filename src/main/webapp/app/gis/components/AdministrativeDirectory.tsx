@@ -43,7 +43,7 @@ export function AdministrativeDirectory({ onCommuneChange }: { onCommuneChange?:
             label: 'Tỉnh / Thành phố',
             state: provinces,
             value: provinceId,
-            change: (value: string) => {
+            change(value: string) {
               setProvinceId(value);
               setCommuneId('');
               setHamletId('');
@@ -55,7 +55,7 @@ export function AdministrativeDirectory({ onCommuneChange }: { onCommuneChange?:
             label: 'Xã / Phường',
             state: communes,
             value: communeId,
-            change: (value: string) => {
+            change(value: string) {
               setCommuneId(value);
               setHamletId('');
               onCommuneChange?.(value ? Number(value) : null);

@@ -27,6 +27,11 @@ public class RbacWebConfiguration implements WebMvcConfigurer {
                 new HandlerInterceptor() {
                     @Override
                     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+                        // Only completion of an already authorized SSE request; initial requests use every check below.
+                        if (
+                            request.getDispatcherType() == jakarta.servlet.DispatcherType.ASYNC &&
+                            request.getServletPath().equals("/api/rbac/events")
+                        ) return true;
                         String ip = request.getRemoteAddr();
                         if (
                             rbac

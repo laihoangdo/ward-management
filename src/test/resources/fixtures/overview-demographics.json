@@ -1,0 +1,88 @@
+[
+  {
+    "year": 2026,
+    "household": {
+      "id": 1,
+      "ownerName": "Nguyễn Văn An"
+    },
+    "expected": [1, 1, 0, 0]
+  },
+  {
+    "year": 2026,
+    "household": {
+      "id": 2,
+      "ownerName": "Nguyễn Thị Hoa"
+    },
+    "expected": [1, 0, 1, 0]
+  },
+  {
+    "year": 2026,
+    "household": {
+      "id": 3,
+      "ownerName": "An",
+      "residentsCount": 4,
+      "maleCount": 2,
+      "femaleCount": 2,
+      "under18Count": 2
+    },
+    "expected": [4, 2, 2, 2]
+  },
+  {
+    "year": 2026,
+    "household": {
+      "id": 4,
+      "ownerName": "THỊ MAI",
+      "residentsCount": 4,
+      "maleCount": 2,
+      "femaleCount": 2,
+      "under18Count": 2
+    },
+    "expected": [4, 2, 2, 2]
+  },
+  {
+    "year": 2026,
+    "household": {
+      "id": 5,
+      "ownerName": "Hoa",
+      "residentsCount": 3,
+      "maleCount": 0,
+      "femaleCount": 0,
+      "under18Count": 5
+    },
+    "expected": [3, 2, 1, 2]
+  },
+  {
+    "year": 2026,
+    "household": {
+      "id": 6,
+      "ownerName": "An",
+      "residentsCount": 0,
+      "maleCount": 0,
+      "femaleCount": 0
+    },
+    "expected": [1, 1, 0, 0]
+  },
+  {
+    "year": 2032,
+    "household": {
+      "id": 7,
+      "ownerName": "An",
+      "residentsCount": 4,
+      "maleCount": 2,
+      "femaleCount": 2,
+      "under18Count": 2
+    },
+    "expected": [4, 2, 2, 1]
+  },
+  {
+    "year": 2026,
+    "household": {
+      "id": 8,
+      "ownerName": "An",
+      "houseNumber": "12/3A",
+      "residentsCount": 3,
+      "femaleCount": 3
+    },
+    "expected": [3, 2, 1, 0]
+  }
+]

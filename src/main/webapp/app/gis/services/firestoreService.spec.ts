@@ -32,7 +32,7 @@ describe('Backend health', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => {
+        async json() {
           throw new SyntaxError('HTML');
         },
       }),

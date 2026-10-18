@@ -2,6 +2,7 @@ package com.policemanagement.com.web.rest;
 
 import com.policemanagement.com.service.HamletService;
 import com.policemanagement.com.service.dto.HamletDTO;
+import com.policemanagement.com.service.rbac.RbacEventHub;
 import com.policemanagement.com.service.rbac.RbacService;
 import java.util.*;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class RbacResource {
 
     private final RbacService rbac;
+    private final RbacEventHub events;
     private final HamletService areas;
     private final com.policemanagement.com.service.HouseholdQueryService households;
     private final com.policemanagement.com.service.ResidentQueryService residents;
@@ -22,12 +24,14 @@ public class RbacResource {
         RbacService rbac,
         HamletService areas,
         com.policemanagement.com.service.HouseholdQueryService households,
-        com.policemanagement.com.service.ResidentQueryService residents
+        com.policemanagement.com.service.ResidentQueryService residents,
+        RbacEventHub events
     ) {
         this.rbac = rbac;
         this.areas = areas;
         this.households = households;
         this.residents = residents;
+        this.events = events;
     }
 
     @GetMapping("/export/{kind}")
@@ -192,6 +196,12 @@ public class RbacResource {
             rbac.database().queryForObject("select count(*) from " + table + " where id=?", Long.class, id) != 1
         ) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Hồ sơ không tồn tại");
         if (rbac.assignments(subject).isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cán bộ chưa có địa bàn");
+        // Serialize ownership changes so the notification always includes the holder being revoked.
+        rbac.database().execute("lock table rbac_record_scope in share row exclusive mode");
+        var affected = new HashSet<>(
+            rbac.database().queryForList("select subject from rbac_record_scope where kind=? and record_id=?", String.class, kind, id)
+        );
+        affected.add(subject);
         rbac.database().update(
             "insert into rbac_record_scope(kind,record_id,subject) values (?,?,?) on conflict(kind,record_id) do update set subject=excluded.subject",
             kind,
@@ -199,6 +209,7 @@ public class RbacResource {
             subject
         );
         rbac.audit("record-scope", kind + ":" + id, Map.of("subject", subject));
+        affected.forEach(target -> events.afterCommit(new RbacEventHub.Change(target, Set.of("me"), null, true)));
     }
 
     private void kind(String kind) {

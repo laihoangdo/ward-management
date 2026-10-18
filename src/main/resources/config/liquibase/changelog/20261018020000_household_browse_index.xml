@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261018020000-1" author="codex">
+        <createIndex tableName="resident" indexName="ix_resident_household_residence">
+            <column name="household_id"/>
+            <column name="residence_type"/>
+        </createIndex>
+        <rollback><dropIndex tableName="resident" indexName="ix_resident_household_residence"/></rollback>
+    </changeSet>
+</databaseChangeLog>

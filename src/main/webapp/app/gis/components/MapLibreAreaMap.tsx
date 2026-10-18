@@ -334,6 +334,9 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     return households.filter(household => matchesHouseholdSearch(household, query));
   }, [households, appliedSearch]);
   const visibleHouseholds = appliedSearch ? searchMatches : households;
+  const householdsById = useMemo(() => new Map(households.map(h => [h.id, h])), [households]);
+  const searchMatchIds = useMemo(() => new Set(searchMatches.map(h => h.id)), [searchMatches]);
+  const areaHouseholdIds = useMemo(() => new Set(area.features.map(feature => feature.properties.householdId)), [area]);
 
   const householdPoints = useMemo<GeoJSON.FeatureCollection<GeoJSON.Point, { id: string; status: string; residentsCount: number }>>(
     () => ({
@@ -363,13 +366,13 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           .filter(
             feature =>
               feature.properties.kind === 'building' &&
-              (!appliedSearch || (feature.properties.householdId && searchMatches.some(h => h.id === feature.properties.householdId))),
+              (!appliedSearch || (feature.properties.householdId && searchMatchIds.has(feature.properties.householdId))),
           )
           .map((feature, index) => {
             const type =
               buildingTypes.find(item => item.code === feature.properties.buildingType) ||
               buildingTypeFromFloors(Number(feature.properties.floors), buildingTypes);
-            const household = households.find(item => item.id === feature.properties.householdId);
+            const household = householdsById.get(feature.properties.householdId ?? '');
             return {
               ...feature,
               properties: {
@@ -385,7 +388,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
             };
           }),
         ...visibleHouseholds.flatMap(h => {
-          if (h.coordinatesEstimated || area.features.some(feature => feature.properties.householdId === h.id)) return [];
+          if (h.coordinatesEstimated || areaHouseholdIds.has(h.id)) return [];
           const [lat, lng] = h.coordinates || [];
           if (!validCoordinate([lng, lat]) || lat === 0 || lng === 0) return [];
           return [
@@ -409,7 +412,12 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
         }),
       ],
     }),
-    [area, households, visibleHouseholds, buildingTypes, appliedSearch, searchMatches],
+    [area, householdsById, visibleHouseholds, buildingTypes, appliedSearch, searchMatchIds, areaHouseholdIds],
+  );
+
+  const geoBuildingTypesByHousehold = useMemo(
+    () => new Map(geoBuildings.features.map(feature => [feature.properties.householdId, feature.properties.buildingType])),
+    [geoBuildings],
   );
 
   useEffect(() => {
@@ -937,16 +945,24 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     (mapRef.current.getSource('geo-buildings') as GeoJSONSource).setData(geoBuildings);
+  }, [ready, geoBuildings]);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
     (mapRef.current.getSource('road-surfaces') as GeoJSONSource).setData(roadSurfaces);
+  }, [ready, roadSurfaces]);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
     (mapRef.current.getSource('zones') as GeoJSONSource).setData({
       type: 'FeatureCollection',
       features: [...zones.features, ...area.features.filter(feature => feature.properties.kind === 'area')],
     });
-  }, [ready, geoBuildings, roadSurfaces, zones, area]);
+  }, [ready, zones, area]);
 
   useEffect(() => {
     const layer = threeLayerRef.current;
-    if (!ready || !layer) return;
+    if (!ready || !layer || !is3D || !layers.buildings || !useThreeBuildings) return;
     layer.setBuildings(
       toThreeBuildings(
         mapMode === 'schematic' ? SCHEMATIC_FEATURES : geoBuildings,
@@ -955,7 +971,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
         mapMode === 'schematic' ? 'all' : statusFilter,
       ),
     );
-  }, [ready, mapMode, geoBuildings, visualization, customColor, statusFilter]);
+  }, [ready, mapMode, geoBuildings, visualization, customColor, statusFilter, is3D, layers.buildings, useThreeBuildings]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -966,7 +982,8 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       if (mapMode !== 'geographic') return;
       const occupied = new Set<string>();
       const areaOccupied = new Set<string>();
-      for (const household of map.getZoom() >= 16.5 ? households : []) {
+      const showHouseLabels = layers.houseNumbers || (map.getZoom() >= 18 && (layers.houseIds || layers.owners || layers.buildingTypes));
+      for (const household of map.getZoom() >= 16.5 && showHouseLabels ? visibleHouseholds : []) {
         if (geoLabelMarkersRef.current.length >= 120) break;
         if (statusFilter !== 'all' && household.status !== statusFilter) continue;
         if (household.coordinatesEstimated) continue;
@@ -982,11 +999,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           layers.houseIds && map.getZoom() >= 18 ? household.code : '',
           layers.owners && map.getZoom() >= 18 ? household.ownerName : '',
           layers.buildingTypes && map.getZoom() >= 18
-            ? buildingTypes.find(
-                type =>
-                  type.code ===
-                  geoBuildings.features.find(feature => feature.properties.householdId === household.id)?.properties.buildingType,
-              )?.label || 'Chưa khảo sát tầng'
+            ? buildingTypes.find(type => type.code === geoBuildingTypesByHousehold.get(household.id))?.label || 'Chưa khảo sát tầng'
             : '',
         ].filter(Boolean);
         if (!parts.length) continue;
@@ -1039,7 +1052,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       geoLabelMarkersRef.current.forEach(marker => marker.remove());
       geoLabelMarkersRef.current = [];
     };
-  }, [ready, mapMode, households, layers, area, zones, statusFilter, buildingTypes]);
+  }, [ready, mapMode, visibleHouseholds, layers, area, zones, statusFilter, buildingTypes, geoBuildingTypesByHousehold]);
 
   useEffect(() => {
     const map = mapRef.current;

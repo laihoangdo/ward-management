@@ -41,7 +41,7 @@ async function runPersistenceTest() {
         relationship: 'Chủ hộ',
         residenceType: 'Thường trú',
         phone: '0912345678',
-        notes: 'Chủ hộ test'
+        notes: 'Chủ hộ test',
       },
       {
         fullName: 'Nguyễn Thị Hoa',
@@ -49,9 +49,9 @@ async function runPersistenceTest() {
         gender: 'Nữ',
         relationship: 'Vợ',
         residenceType: 'Thường trú',
-        notes: 'Vợ test'
-      }
-    ]
+        notes: 'Vợ test',
+      },
+    ],
   };
 
   // Create household
@@ -71,7 +71,7 @@ async function runPersistenceTest() {
     femaleCount: newHouseholdPayload.femaleCount,
     latitude: newHouseholdPayload.latitude,
     longitude: newHouseholdPayload.longitude,
-    notes: newHouseholdPayload.notes
+    notes: newHouseholdPayload.notes,
   });
   const createdHId = postHRes.data.id;
   console.log(`✓ Household created with ID: ${createdHId}, Code: ${postHRes.data.code}`);
@@ -86,7 +86,7 @@ async function runPersistenceTest() {
       relationship: r.relationship,
       residenceType: 'PERMANENT',
       notes: r.notes,
-      household: { id: createdHId }
+      household: { id: createdHId },
     });
     savedResidents.push(postRRes.data);
   }
@@ -108,7 +108,7 @@ async function runPersistenceTest() {
     notes: 'Ghi chú đã được cập nhật qua modal',
     residentsCount: 3,
     maleCount: 2,
-    femaleCount: 1
+    femaleCount: 1,
   });
   console.log(`✓ Updated ownerName in DB: "${updateHRes.data.ownerName}"`);
 
@@ -120,7 +120,7 @@ async function runPersistenceTest() {
     relationship: 'Con',
     residenceType: 'PERMANENT',
     notes: 'Con trai',
-    household: { id: createdHId }
+    household: { id: createdHId },
   });
   console.log(`✓ Added 3rd resident: ${r3Res.data.fullName} (ID: ${r3Res.data.id})`);
 
@@ -128,13 +128,16 @@ async function runPersistenceTest() {
   console.log('\n[Step 5] Simulating Browser Reload (F5) - re-fetching full dataset...');
   const [f5Households, f5Residents] = await Promise.all([
     axios.get(`${API_BASE}/households?page=0&size=1000&sort=id,asc`),
-    axios.get(`${API_BASE}/residents?page=0&size=3000&sort=id,asc`)
+    axios.get(`${API_BASE}/residents?page=0&size=3000&sort=id,asc`),
   ]);
 
-  const reloadedH = f5Households.data.find((h) => h.id === createdHId);
-  const reloadedResidentsForH = f5Residents.data.filter((r) => r.household?.id === createdHId);
+  const reloadedH = f5Households.data.find(h => h.id === createdHId);
+  const reloadedResidentsForH = f5Residents.data.filter(r => r.household?.id === createdHId);
 
-  console.log('- Reloaded household from DB:', reloadedH ? { id: reloadedH.id, ownerName: reloadedH.ownerName, notes: reloadedH.notes } : 'NOT FOUND!');
+  console.log(
+    '- Reloaded household from DB:',
+    reloadedH ? { id: reloadedH.id, ownerName: reloadedH.ownerName, notes: reloadedH.notes } : 'NOT FOUND!',
+  );
   console.log(`- Reloaded residents count for household ${createdHId}: ${reloadedResidentsForH.length}`);
   reloadedResidentsForH.forEach((r, idx) => {
     console.log(`  ${idx + 1}. ${r.fullName} (${r.relationship}, ${r.gender})`);
@@ -177,7 +180,7 @@ async function runPersistenceTest() {
   console.log('========================================================');
 }
 
-runPersistenceTest().catch((err) => {
+runPersistenceTest().catch(err => {
   console.error('\n❌ TEST FAILED:', err.response ? { status: err.response.status, data: err.response.data } : err.message);
   process.exit(1);
 });

@@ -210,7 +210,7 @@ public class HamletDTO implements Serializable {
             ", officerPhone='" + getOfficerPhone() + "'" +
             ", populationCount=" + getPopulationCount() +
             ", householdCount=" + getHouseholdCount() +
-            ", boundaryGeoJson='" + getBoundaryGeoJson() + "'" +
+            ", boundaryGeoJsonLength=" + (boundaryGeoJson == null ? 0 : boundaryGeoJson.length()) +
             "}";
     }
 }

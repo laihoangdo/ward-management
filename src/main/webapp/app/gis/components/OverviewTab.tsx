@@ -3,6 +3,7 @@ import { Building, Store, AlertTriangle, Users, ArrowRight, FileCheck, CheckCirc
 import { HouseholdFacility, NavigationTab } from '../types';
 import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
 import { Pagination } from './Pagination';
+import { OverviewSummary } from '../services/overviewApi';
 
 interface OverviewTabProps {
   households: HouseholdFacility[];
@@ -10,6 +11,8 @@ interface OverviewTabProps {
   canNavigate?: (tab: NavigationTab) => boolean;
   onOpenExpiringDocuments?: () => void;
   onSelectHousehold: (household: HouseholdFacility) => void;
+  summary?: OverviewSummary;
+  warningPagination?: { page: number; size: number; onPageChange: (page: number) => void; onPageSizeChange: (size: number) => void };
 }
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -18,32 +21,38 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   onSelectHousehold,
   canNavigate = () => true,
   onOpenExpiringDocuments,
+  summary,
+  warningPagination,
 }) => {
-  const totalCount = households.length;
-  const businessCount = households.filter(h => h.type === 'business').length;
-  const warningCount = households.filter(h => h.status === 'warning').length;
+  const totalCount = summary?.total ?? households.length;
+  const businessCount = summary?.business ?? households.filter(h => h.type === 'business').length;
+  const warningCount = summary?.warnings ?? households.filter(h => h.status === 'warning').length;
 
   // Demographics calculation grounded in real resident records
   const allResidents = useMemo(() => {
-    return households.flatMap(h => getEffectiveResidentsList(h));
-  }, [households]);
+    return summary ? [] : households.flatMap(h => getEffectiveResidentsList(h));
+  }, [households, summary]);
 
-  const totalResidents = allResidents.length > 0 ? allResidents.length : households.reduce((sum, h) => sum + (h.residentsCount || 0), 0);
+  const totalResidents =
+    summary?.residents ?? (allResidents.length > 0 ? allResidents.length : households.reduce((sum, h) => sum + (h.residentsCount || 0), 0));
 
   const totalFemale =
-    allResidents.length > 0
+    summary?.female ??
+    (allResidents.length > 0
       ? allResidents.filter(r => r.gender === 'Nữ').length
-      : households.reduce((sum, h) => sum + (h.femaleCount || 0), 0);
+      : households.reduce((sum, h) => sum + (h.femaleCount || 0), 0));
 
   const totalMale =
-    allResidents.length > 0
+    summary?.male ??
+    (allResidents.length > 0
       ? allResidents.filter(r => r.gender === 'Nam').length
-      : households.reduce((sum, h) => sum + (h.maleCount || 0), 0);
+      : households.reduce((sum, h) => sum + (h.maleCount || 0), 0));
 
   const totalUnder18 =
-    allResidents.length > 0
+    summary?.under18 ??
+    (allResidents.length > 0
       ? allResidents.filter(r => r.birthYear != null && new Date().getFullYear() - r.birthYear < 18).length
-      : households.reduce((sum, h) => sum + (h.under18Count || 0), 0);
+      : households.reduce((sum, h) => sum + (h.under18Count || 0), 0));
 
   const totalAbove18 = Math.max(0, totalResidents - totalUnder18);
 
@@ -53,21 +62,25 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   const above18Percent = totalResidents > 0 ? Math.round((totalAbove18 / totalResidents) * 100) : 0;
 
   const hamletNames = useMemo(() => {
-    return Array.from(new Set(households.map(h => h.hamlet).filter(Boolean)));
-  }, [households]);
+    return summary?.hamlets ?? Array.from(new Set(households.map(h => h.hamlet).filter(Boolean)));
+  }, [households, summary]);
 
-  const warningHouseholds = households.filter(h => h.status === 'warning');
-  const [warningCurrentPage, setWarningCurrentPage] = useState<number>(1);
-  const [warningPageSize, setWarningPageSize] = useState<number>(10);
+  const warningHouseholds = summary?.warningItems ?? households.filter(h => h.status === 'warning');
+  const [localWarningPage, setLocalWarningPage] = useState<number>(1);
+  const [localWarningSize, setLocalWarningSize] = useState<number>(10);
+  const warningCurrentPage = warningPagination?.page ?? localWarningPage;
+  const warningPageSize = warningPagination?.size ?? localWarningSize;
+  const setWarningCurrentPage = warningPagination?.onPageChange ?? setLocalWarningPage;
+  const setWarningPageSize = warningPagination?.onPageSizeChange ?? setLocalWarningSize;
 
   useEffect(() => {
-    setWarningCurrentPage(1);
-  }, [warningHouseholds.length, warningPageSize]);
+    if (!summary) setLocalWarningPage(1);
+  }, [warningHouseholds.length, warningPageSize, summary]);
 
   const paginatedWarnings = useMemo(() => {
     const start = (warningCurrentPage - 1) * warningPageSize;
-    return warningHouseholds.slice(start, start + warningPageSize);
-  }, [warningHouseholds, warningCurrentPage, warningPageSize]);
+    return summary ? warningHouseholds : warningHouseholds.slice(start, start + warningPageSize);
+  }, [warningHouseholds, warningCurrentPage, warningPageSize, summary]);
 
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
@@ -111,11 +124,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           Cần chú ý
         </h3>
         <p className="text-sm text-slate-500">Kiểm tra các hộ có cảnh báo và hồ sơ sắp hết hạn trong phạm vi đang xem.</p>
-        {warningHouseholds.length === 0 ? (
+        {warningCount === 0 ? (
           <p className="text-sm text-slate-600">Chưa có hộ dân mang trạng thái cảnh báo trong dữ liệu đã tải.</p>
         ) : (
           <ul className="m-0 p-0 list-none divide-y divide-slate-100">
-            {warningHouseholds.slice(0, 5).map(household => (
+            {(summary?.attentionItems ?? warningHouseholds.slice(0, 5)).map(household => (
               <li key={household.id}>
                 <button
                   type="button"
@@ -321,7 +334,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       </div>
 
       {/* Warning Box Banner */}
-      {warningHouseholds.length > 0 && (
+      {warningCount > 0 && (
         <div
           id="warning-box"
           className="bg-[#fffbeb] dark:bg-amber-950/30 border-2 border-amber-300/90 dark:border-amber-700/80 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs"
@@ -332,7 +345,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
             <div className="flex-1 w-full min-w-0">
               <h3 id="warning-title" className="text-sm sm:text-base font-bold text-[#78350f] dark:text-amber-200 leading-snug">
-                CẢNH BÁO: {warningHouseholds.length} Cơ sở sắp hết hạn Giấy phép kinh doanh / An ninh trật tự
+                CẢNH BÁO: {warningCount} Cơ sở sắp hết hạn Giấy phép kinh doanh / An ninh trật tự
               </h3>
               <p className="text-xs text-amber-900/80 dark:text-amber-300/80 mt-1">
                 Cán bộ CSKV cần kiểm tra thực địa, đôn đốc cơ sở nộp hồ sơ gia hạn đúng quy định trước ngày hết hiệu lực:
@@ -360,11 +373,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               </div>
 
               {/* Pagination controls with 10/20/50 format */}
-              {warningHouseholds.length > 0 && (
+              {warningCount > 0 && (
                 <div className="mt-3">
                   <Pagination
                     currentPage={warningCurrentPage}
-                    totalItems={warningHouseholds.length}
+                    totalItems={warningCount}
                     pageSize={warningPageSize}
                     pageSizeOptions={[10, 20, 50]}
                     onPageChange={setWarningCurrentPage}
@@ -584,7 +597,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             );
           })}
 
-          {households.length > 16 && (
+          {totalCount > 16 && (
             <div
               onClick={() => onNavigateTab('households')}
               className="p-2.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all flex flex-col items-center justify-center col-span-2 sm:col-span-4 lg:col-span-8 py-3"

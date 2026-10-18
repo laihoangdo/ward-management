@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useAppDispatch, useAppSelector } from 'app/config/store';
 import { getSession } from 'app/shared/reducers/authentication';
 import { mapAccountToGisUser, logoutBackendSession } from './services/backendSession';
@@ -6,10 +6,12 @@ import './index.css';
 import { RenewDocumentDialog } from './components/RenewDocumentDialog';
 import { matchesHouseholdSearch } from './utils/householdSearch';
 import { loadOperationalData, OPERATIONAL_DATA_LABELS } from './utils/operationalData';
+import { useDeferredOperationalData } from './utils/useDeferredOperationalData';
 import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, AlertTriangle, Database, CloudCheck, MapPin } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { OverviewTab } from './components/OverviewTab';
+import { ServerOverviewTab } from './components/ServerOverviewTab';
+import { fetchOverviewSummary, OverviewScope } from './services/overviewApi';
 import { AreaMapTab } from './components/AreaMapTab';
 import { BaDiem3DMapEditor } from './components/BaDiem3DMapEditor';
 const FieldHouseMap = React.lazy(() => import('./components/FieldHouseMap'));
@@ -73,7 +75,9 @@ import {
   subscribeHcmAdminUnits,
   subscribeSecurityAlerts,
   seedAuthAndRbacData,
-  fetchRbacMe,
+  subscribeCurrentRbac,
+  retryCurrentRbac,
+  resetRbacEventSession,
   updateOwnAccount,
   logSecurityAlert,
 } from './services/authService';
@@ -88,32 +92,30 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [policyError, setPolicyError] = useState('');
   useEffect(() => {
-    let active = true;
     if (!isAuthenticated) {
       setCurrentUser(null);
       return;
     }
-    const load = async () => {
-      try {
-        const user = await fetchRbacMe();
-        if (active) {
-          setCurrentUser(user);
-          setPolicyError('');
-        }
-      } catch {
-        if (active) {
-          setCurrentUser(null);
-          setPolicyError('Không thể xác nhận quyền truy cập. Liên hệ quản trị đơn vị hoặc thử đăng nhập lại.');
-        }
-      }
-    };
-    void load();
-    const timer = window.setInterval(load, 30000);
-    window.addEventListener('rbac-changed', load);
+    setCurrentUser(null);
+    setPolicyError('');
+    const stop = subscribeCurrentRbac(
+      user => {
+        setCurrentUser(user);
+        setPolicyError('');
+      },
+      () => {
+        setCurrentUser(null);
+        setPolicyError('Không thể xác nhận quyền truy cập. Liên hệ quản trị đơn vị hoặc thử đăng nhập lại.');
+      },
+      () => {
+        // Discard cached screens immediately when a rights/scope notification arrives.
+        setCurrentUser(null);
+        setPolicyError('');
+      },
+    );
     return () => {
-      active = false;
-      window.clearInterval(timer);
-      window.removeEventListener('rbac-changed', load);
+      stop();
+      resetRbacEventSession();
     };
   }, [isAuthenticated, account.login]);
   if (!sessionHasBeenFetched)
@@ -137,6 +139,11 @@ export default function App() {
     return (
       <div role="alert" className="p-8">
         {policyError || 'Đang tải quyền truy cập từ máy chủ...'}
+        {policyError && (
+          <button type="button" className="ml-3 rounded border px-3 py-2" onClick={retryCurrentRbac}>
+            Thử tải lại quyền
+          </button>
+        )}
       </div>
     );
   return <AuthenticatedDashboard key={`${currentUser.id}:${currentUser.version}:${currentUser.role}`} currentUser={currentUser} />;
@@ -181,6 +188,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   const [activeTab, setActiveTab] = useState<NavigationTab>('overview');
   const [households, setHouseholds] = useState<HouseholdFacility[]>([]);
+  const [hasCompleteHouseholds, setHasCompleteHouseholds] = useState(false);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [officer, setOfficer] = useState<OfficerProfile>(DEFAULT_OFFICER);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -189,8 +197,15 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     let active = true;
     void (async () => {
       if (!active) return;
-      const logs = await fetchPatrolLogsFromBackend();
-      if (active) setAuditLogs(logs);
+      try {
+        const logs = await fetchPatrolLogsFromBackend();
+        if (active) {
+          setAuditLogs(logs);
+          setDataErrors(errors => errors.filter(label => label !== OPERATIONAL_DATA_LABELS[2]));
+        }
+      } catch {
+        if (active) setDataErrors(errors => [...new Set([...errors, OPERATIONAL_DATA_LABELS[2]])]);
+      }
     })();
     return () => {
       active = false;
@@ -200,8 +215,18 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const [dataErrors, setDataErrors] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [documentFilter, setDocumentFilter] = useState<'all' | 'expiring_soon' | 'valid'>('all');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [householdListVersion, setHouseholdListVersion] = useState(0);
+  const [overviewVersion, setOverviewVersion] = useState(0);
+  const [overviewScope, setOverviewScope] = useState<OverviewScope>();
+  const handleOverviewScope = useCallback((scope: OverviewScope) => {
+    setOverviewScope(scope);
+    setLastUpdated(new Date());
+    setDataErrors(errors => errors.filter(label => label !== 'Thống kê địa bàn'));
+  }, []);
+  useEffect(() => {
+    setOverviewVersion(version => version + 1);
+  }, [households]);
   // Connection & Backend status
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
@@ -344,10 +369,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   useEffect(() => {
     const onRbacError = (event: Event) => showToast((event as CustomEvent<string>).detail);
     window.addEventListener('rbac-error', onRbacError);
-    let unsubscribeHouseholds: () => void = () => {};
-    let unsubscribeDocuments: () => void = () => {};
-    let unsubscribeOfficer: () => void = () => {};
-    let unsubscribeAuditLogs: () => void = () => {};
+    const unsubscribeHouseholds: () => void = () => {};
+    const unsubscribeDocuments: () => void = () => {};
+    const unsubscribeOfficer: () => void = () => {};
+    const unsubscribeAuditLogs: () => void = () => {};
 
     let cancelled = false;
     const refreshHealth = async () => {
@@ -358,12 +383,6 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     };
     void refreshHealth();
     const healthTimer = window.setInterval(refreshHealth, 30000);
-
-    void loadOperationalData().then(results => {
-      if (cancelled) return;
-      applyOperationalData(results);
-      setIsLoading(false);
-    });
 
     // 4. Seed initial RBAC, Allowed Emails, and Dynamic Menus if empty
     seedAuthAndRbacData().catch(console.warn);
@@ -440,8 +459,6 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   };
   const handleSwitchAccount = handleLogout;
 
-  const warningCount = households.filter(h => h.status === 'warning').length;
-
   // Helper date-time and integrity hash generators for audit logs
   const formatDateTime = (d: Date): string => {
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -511,7 +528,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // Handlers with Backend PostgreSQL Persistence & Audit Logging
   const handleUpdateNotes = async (id: string, notes: string) => {
-    const target = households.find(h => h.id === id);
+    const target = households.find(h => h.id === id) ?? (selectedHousehold?.id === id ? selectedHousehold : undefined);
     const today = new Date().toLocaleDateString('vi-VN');
     try {
       await updateHouseholdNotesInBackend(id, notes);
@@ -622,7 +639,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   const handleDeleteHousehold = async (id: string | number) => {
     const idStr = String(id);
-    const target = households.find(h => h.id === idStr);
+    const target = households.find(h => h.id === idStr) ?? (selectedHousehold?.id === idStr ? selectedHousehold : undefined);
 
     // Optimistic UI update
     setHouseholds(prev => prev.filter(h => h.id !== idStr));
@@ -660,7 +677,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     recordAuditLog(delLog);
   };
 
-  const handleUpdateCoordinates = async (updates: Array<{ id: string; coordinates: [number, number] }>) => {
+  const handleUpdateCoordinates = async (updates: { id: string; coordinates: [number, number] }[]) => {
     // RBAC Check for Officer
     if (currentUser?.role !== 'superadmin' && currentUser.subAdminPermissions?.canEditCoordinates !== true) {
       showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền nắn chỉnh tọa độ.');
@@ -803,7 +820,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   const applyOperationalData = (results: Awaited<ReturnType<typeof loadOperationalData>>) => {
     const [householdResult, documentResult, logResult, alertResult] = results;
-    if (householdResult.status === 'fulfilled') setHouseholds(householdResult.value);
+    if (householdResult.status === 'fulfilled') {
+      setHouseholds(householdResult.value);
+      setHasCompleteHouseholds(true);
+    }
     if (documentResult.status === 'fulfilled') setDocuments(documentResult.value);
     if (logResult.status === 'fulfilled') setAuditLogs(logResult.value);
     if (alertResult.status === 'fulfilled') setSecurityAlerts(alertResult.value);
@@ -813,11 +833,41 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     return failed;
   };
 
+  // Overview/list use bounded APIs. Other existing screens still require complete data.
+  const needsFullData = !['overview', 'households'].includes(activeTab) || isWarningModalOpen;
+  const { load: ensureFullData } = useDeferredOperationalData(needsFullData, applyOperationalData, setIsLoading);
+  const warningCount = hasCompleteHouseholds ? households.filter(h => h.status === 'warning').length : (overviewScope?.warnings ?? 0);
+
+  useEffect(() => {
+    if (activeTab !== 'households') return;
+    const controller = new AbortController();
+    void fetchOverviewSummary('', 0, 10, controller.signal)
+      .then(data => {
+        if (!controller.signal.aborted) {
+          setOverviewScope(data.scope);
+          setDataErrors(errors => errors.filter(label => label !== 'Thống kê địa bàn'));
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setDataErrors(errors => [...new Set([...errors, 'Thống kê địa bàn'])]);
+      });
+    return () => controller.abort();
+  }, [activeTab, households, householdListVersion]);
+
   const handleRefresh = async () => {
+    if (activeTab === 'overview' && !isWarningModalOpen) {
+      setOverviewVersion(version => version + 1);
+      return;
+    }
+    if (activeTab === 'households') {
+      setHouseholdListVersion(version => version + 1);
+      return;
+    }
     if (isLoading) return;
     setIsLoading(true);
     try {
-      const failed = applyOperationalData(await loadOperationalData());
+      const results = await ensureFullData();
+      const failed = results.filter(result => result.status === 'rejected');
       showToast(failed.length ? 'Một số dữ liệu chưa cập nhật. Xem thông báo để thử lại.' : 'Đã cập nhật đầy đủ dữ liệu địa bàn.');
     } finally {
       setIsLoading(false);
@@ -884,9 +934,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // If user searched in header and pressed or typed, filter scoped view
   const displayedHouseholds = useMemo(() => {
+    if (activeTab === 'households') return scopedHouseholds;
     if (!searchQuery.trim()) return scopedHouseholds;
     return scopedHouseholds.filter(household => matchesHouseholdSearch(household, searchQuery));
-  }, [scopedHouseholds, searchQuery]);
+  }, [scopedHouseholds, searchQuery, activeTab]);
 
   return (
     <div
@@ -979,13 +1030,13 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                   </button>
                 </div>
               )}
-              {lastUpdated && <p className="mb-0 text-xs text-slate-500">Lần cập nhật đầy đủ: {lastUpdated.toLocaleString('vi-VN')}</p>}
+              {lastUpdated && <p className="mb-0 text-xs text-slate-500">Lần cập nhật dữ liệu: {lastUpdated.toLocaleString('vi-VN')}</p>}
             </div>
           )}
           {canOpenMenu(activeTab) ? (
             <>
               {/* Active Search Banner when filter is engaged */}
-              {searchQuery.trim() && !isMapFullscreen && (
+              {searchQuery.trim() && !isMapFullscreen && activeTab !== 'households' && activeTab !== 'overview' && (
                 <div className="mb-4 p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
@@ -1038,7 +1089,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                         </span>
                         <span>•</span>
                         <span className="text-emerald-400 font-semibold">
-                          {assignedHouseholds.length} hộ dân / {assignedResidentsCount} nhân khẩu
+                          {(hasCompleteHouseholds ? assignedHouseholds.length : overviewScope?.total) ?? '...'} hộ dân /{' '}
+                          {(hasCompleteHouseholds ? assignedResidentsCount : overviewScope?.residents) ?? '...'} nhân khẩu
                         </span>
                       </div>
                     </div>
@@ -1046,8 +1098,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                 </div>
               )}
               {activeTab === 'overview' && (
-                <OverviewTab
-                  households={displayedHouseholds}
+                <ServerOverviewTab
+                  search={searchQuery}
+                  refreshKey={overviewVersion}
+                  onScopeLoaded={handleOverviewScope}
                   canNavigate={canOpenMenu}
                   onOpenExpiringDocuments={() => {
                     setDocumentFilter('expiring_soon');
@@ -1132,6 +1186,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
               {activeTab === 'households' && (
                 <HouseholdsTab
+                  key={`${currentUser.id}:${currentUser.version ?? 0}`}
+                  serverPaging
+                  refreshKey={householdListVersion}
                   households={scopedHouseholds}
                   searchQuery={searchQuery}
                   onSearchChange={setSearchQuery}

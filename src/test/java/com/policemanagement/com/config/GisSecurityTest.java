@@ -69,6 +69,25 @@ class GisSecurityTest {
         mvc.perform(get("/api/households").with(user("officer").roles("USER"))).andExpect(status().isOk());
     }
 
+    @Test
+    void anonymousCannotOpenTheSseEndpoint() throws Exception {
+        mvc.perform(get("/api/rbac/events").accept(MediaType.TEXT_EVENT_STREAM)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void authenticatedSseCanCompleteItsAsyncDispatch() throws Exception {
+        var result = mvc
+            .perform(
+                get("/api/rbac/events")
+                    .servletPath("/api/rbac/events")
+                    .with(user("officer").roles("USER"))
+                    .accept(MediaType.TEXT_EVENT_STREAM)
+            )
+            .andExpect(status().isOk())
+            .andReturn();
+        mvc.perform(asyncDispatch(result)).andExpect(status().isOk());
+    }
+
     @Configuration
     @EnableWebSecurity
     @EnableWebMvc
@@ -93,6 +112,14 @@ class GisSecurityTest {
 
     @RestController
     static class ProbeController {
+
+        @org.springframework.web.bind.annotation.GetMapping(value = "/api/rbac/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter events() throws java.io.IOException {
+            var emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter();
+            emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().name("ready").data("{}"));
+            emitter.complete();
+            return emitter;
+        }
 
         @RequestMapping("/api/{resource}")
         Map<String, String> businessData() {

@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { invalidateRbac } from './rbacEvents';
+import { subscribeRbacResource } from './rbacSubscription';
+export { resetRbacEventSession } from './rbacEvents';
 import type {
   AppUser,
   AllowedEmailEntry,
@@ -11,21 +14,21 @@ import type {
 } from '../types';
 
 // Compatibility names retained; the server is the sole source of RBAC data.
-const updates = new EventTarget();
-const changed = () => {
-  updates.dispatchEvent(new Event('changed'));
-  window.dispatchEvent(new Event('rbac-changed'));
-};
-export const fetchRbacMe = async () => (await axios.get<AppUser>('/api/rbac/me')).data;
+const changed = (topics: string[]) => invalidateRbac(topics);
+export const retryCurrentRbac = () => invalidateRbac(['me']);
+export const fetchRbacMe = async (signal?: AbortSignal) =>
+  (signal ? await axios.get<AppUser>('/api/rbac/me', { signal }) : await axios.get<AppUser>('/api/rbac/me')).data;
+export const subscribeCurrentRbac = (onData: (user: AppUser) => void, onError: (error: unknown) => void, onInvalidate: () => void) =>
+  subscribeRbacResource('me', signal => fetchRbacMe(signal), onData, onError, onInvalidate);
 export async function updateOwnAccount(fullName: string, rank: string) {
   const { data } = await axios.put<AppUser>('/api/rbac/me/account', { fullName, rank });
-  changed();
+  changed(['me', 'users']);
   return data;
 }
 export const fetchAccessPolicy = async () => (await axios.get<{ emailWhitelistEnabled: boolean }>('/api/rbac/policy')).data;
 export async function saveAccessPolicy(emailWhitelistEnabled: boolean) {
   await axios.put('/api/rbac/policy', { emailWhitelistEnabled });
-  changed();
+  changed(['policy', 'me']);
 }
 export const fetchRbacAreas = async () =>
   (await axios.get<{ id: number; hamletId: number; communeId: number; name: string; hamletName: string }[]>('/api/rbac/delegation-areas'))
@@ -43,32 +46,21 @@ export async function exportRbacCsv(kind: 'households' | 'residents') {
 export const seedAuthAndRbacData = async () => {};
 export const seedAuthCollectionsIfEmpty = seedAuthAndRbacData;
 function subscribe<T>(path: string, onData: (data: T[]) => void) {
-  let active = true;
-  let loading = false;
-  const load = async () => {
-    if (loading || !active) return;
-    loading = true;
-    try {
-      const { data } = await axios.get<T[]>(path);
-      if (active) onData(data);
-    } catch (error) {
-      if (active) {
-        onData([]);
-        if (!(axios.isAxiosError(error) && error.response?.status === 403))
-          window.dispatchEvent(new CustomEvent('rbac-error', { detail: 'Không thể tải dữ liệu phân quyền từ máy chủ.' }));
-      }
-    } finally {
-      loading = false;
-    }
-  };
-  void load();
-  const timer = window.setInterval(load, 30000);
-  updates.addEventListener('changed', load);
-  return () => {
-    active = false;
-    window.clearInterval(timer);
-    updates.removeEventListener('changed', load);
-  };
+  const topic = path.split('/').at(-1)!;
+  return subscribeRbacResource(
+    topic,
+    async signal => {
+      const { data } = await axios.get<T[]>(path, { signal });
+      if (!Array.isArray(data)) throw Error('Invalid RBAC list');
+      return data;
+    },
+    onData,
+    error => {
+      onData([]);
+      if (!(axios.isAxiosError(error) && error.response?.status === 403))
+        window.dispatchEvent(new CustomEvent('rbac-error', { detail: 'Không thể tải dữ liệu phân quyền từ máy chủ.' }));
+    },
+  );
 }
 export const subscribeUsers = (cb: (v: AppUser[]) => void) => subscribe('/api/rbac/users', cb);
 export const subscribeAllowedEmails = (cb: (v: AllowedEmailEntry[]) => void) => subscribe('/api/rbac/settings/whitelist', cb);
@@ -81,15 +73,15 @@ export const subscribeSecurityAlerts = (cb: (v: SecurityAlert[]) => void) => sub
 export const subscribeBlacklistedIps = (cb: (v: BlacklistedIpEntry[]) => void) => subscribe('/api/rbac/settings/blacklist', cb);
 async function saveSetting(kind: string, data: unknown) {
   await axios.post(`/api/rbac/settings/${kind}`, data);
-  changed();
+  changed([kind, ...(['policy', 'whitelist', 'blacklist', 'units'].includes(kind) ? ['me'] : [])]);
 }
 async function deleteSetting(kind: string, id: string) {
   await axios.delete(`/api/rbac/settings/${kind}/${encodeURIComponent(id)}`);
-  changed();
+  changed([kind, ...(['policy', 'whitelist', 'blacklist', 'units'].includes(kind) ? ['me'] : [])]);
 }
 export async function updateDynamicMenusInFirestore(menus: DynamicMenuItemConfig[]) {
   await axios.put('/api/rbac/settings/menus', menus);
-  changed();
+  changed(['menus']);
 }
 export const saveAllowedEmailInFirestore = (data: AllowedEmailEntry) => saveSetting('whitelist', data);
 export const deleteAllowedEmailInFirestore = (id: string) => deleteSetting('whitelist', id);
@@ -97,15 +89,15 @@ export const saveHcmAdminUnitInFirestore = (data: HcmAdminUnit) => saveSetting('
 export const deleteHcmAdminUnitInFirestore = (id: string) => deleteSetting('units', id);
 export async function saveUserInFirestore(user: AppUser) {
   await axios.post('/api/rbac/users', user);
-  changed();
+  changed(['users']);
 }
 export async function deleteUserInFirestore(id: string) {
   await axios.delete(`/api/rbac/users/${encodeURIComponent(id)}`);
-  changed();
+  changed(['users']);
 }
 export async function saveDelegation(user: AppUser) {
   const { data } = await axios.put<AppUser>(`/api/rbac/users/${encodeURIComponent(user.id)}/delegation`, user);
-  changed();
+  changed(['users']);
   return data;
 }
 export async function updateOfficerPermissions(id: string, permissions: SubAdminFeaturePermissions) {
@@ -130,10 +122,15 @@ export async function addIpToBlacklist(
     status: 'blocked',
     hitCount: 0,
   });
-  changed();
+  changed(['blacklist', 'me']);
   return data;
 }
-export const removeIpFromBlacklist = (id: string, _officer: AppUser, _ip?: string) => deleteSetting('blacklist', id);
+export const removeIpFromBlacklist = (id: string, _officer: AppUser, _ip?: string) => {
+  // Legacy caller metadata is retained in the signature; authorization uses the server session.
+  void _officer;
+  void _ip;
+  return deleteSetting('blacklist', id);
+};
 export async function resolveSecurityAlert(id: string, _officer: AppUser, notes?: string) {
   const { data } = await axios.get<SecurityAlert[]>('/api/rbac/settings/alerts');
   const alert = data.find(a => a.id === id);
@@ -144,7 +141,7 @@ export async function createSecurityAlert(
   alert: Omit<SecurityAlert, 'id' | 'timestamp' | 'resolved' | 'emailNotified'>,
 ): Promise<SecurityAlert> {
   const { data } = await axios.post<SecurityAlert>('/api/rbac/settings/alerts', { ...alert, id: crypto.randomUUID(), resolved: false });
-  changed();
+  changed(['alerts']);
   return data;
 }
 export const logSecurityAlert = (alert: {

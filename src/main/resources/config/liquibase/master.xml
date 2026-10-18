@@ -32,4 +32,5 @@
     <include file="config/liquibase/changelog/20261014010000_map_view_roles.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261017010000_field_buildings.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261018010000_hamlet_pdf_boundaries.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261018020000_household_browse_index.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

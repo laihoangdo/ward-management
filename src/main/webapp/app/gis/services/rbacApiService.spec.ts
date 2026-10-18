@@ -3,10 +3,21 @@ import axios from 'axios';
 import { fetchRbacMe, saveDelegation, subscribeDynamicMenus, subscribeUsers } from './rbacApiService';
 
 vi.mock('axios', () => ({ default: { get: vi.fn(), put: vi.fn(), isAxiosError: vi.fn(() => false) } }));
+const events = vi.hoisted(() => ({ listeners: new Set<(event: { type: string; topics: string[] }) => void>() }));
+vi.mock('./rbacEvents', () => ({
+  resetRbacEventSession: vi.fn(),
+  subscribeRbacEvents(listener: (event: { type: string; topics: string[] }) => void) {
+    events.listeners.add(listener);
+    return () => events.listeners.delete(listener);
+  },
+  invalidateRbac: (topics: string[]) => [...events.listeners].forEach(listener => listener({ type: 'change', topics })),
+}));
+const notify = (topics: string[]) => [...events.listeners].forEach(listener => listener({ type: 'change', topics }));
 afterEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
   localStorage.clear();
+  events.listeners.clear();
 });
 describe('Server RBAC authority', () => {
   it('removes only the retired spatial menu from an existing server configuration', async () => {
@@ -18,10 +29,17 @@ describe('Server RBAC authority', () => {
     const callback = vi.fn();
     const stop = subscribeDynamicMenus(callback);
     try {
-      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(25);
       expect(callback).toHaveBeenCalledWith(retained);
       await vi.advanceTimersByTimeAsync(30000);
       expect(callback).toHaveBeenLastCalledWith(retained);
+      expect(axios.get).toHaveBeenCalledTimes(1);
+      notify(['users']);
+      await vi.advanceTimersByTimeAsync(25);
+      expect(axios.get).toHaveBeenCalledTimes(1);
+      notify(['menus']);
+      await vi.advanceTimersByTimeAsync(25);
+      expect(axios.get).toHaveBeenCalledTimes(2);
     } finally {
       stop();
     }
@@ -38,18 +56,22 @@ describe('Server RBAC authority', () => {
     expect((await saveDelegation(user)).version).toBe(5);
     expect(axios.put).toHaveBeenCalledWith('/api/rbac/users/subject/delegation', user);
   });
-  it('clears stale lists on failure and stops polling after unsubscribe', async () => {
+  it('clears stale lists on invalidation failure and stops listening after unsubscribe', async () => {
     vi.useFakeTimers();
     vi.mocked(axios.get)
       .mockResolvedValueOnce({ data: [{ id: 'real' }] })
       .mockRejectedValue(new Error('offline'));
     const callback = vi.fn();
     const stop = subscribeUsers(callback);
-    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(25);
     expect(callback).toHaveBeenLastCalledWith([{ id: 'real' }]);
     await vi.advanceTimersByTimeAsync(30000);
+    expect(axios.get).toHaveBeenCalledTimes(1);
+    notify(['users']);
+    await vi.advanceTimersByTimeAsync(25);
     expect(callback).toHaveBeenLastCalledWith([]);
     stop();
+    notify(['users']);
     await vi.advanceTimersByTimeAsync(30000);
     expect(axios.get).toHaveBeenCalledTimes(2);
   });

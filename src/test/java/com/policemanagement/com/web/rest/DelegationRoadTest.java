@@ -26,7 +26,13 @@ class DelegationRoadTest {
         var unassigned = new HouseholdDTO();
         unassigned.setStreet("Unassigned street");
         when(query.findByCriteria(any(), any())).thenReturn(new PageImpl<>(List.of(house, house, unassigned)));
-        var result = new RbacResource(rbac, null, query, null).delegationRoads();
+        var result = new RbacResource(
+            rbac,
+            null,
+            query,
+            null,
+            mock(com.policemanagement.com.service.rbac.RbacEventHub.class)
+        ).delegationRoads();
         assertEquals(
             List.of(new RbacResource.DelegationRoad(7L, "Actual alley"), new RbacResource.DelegationRoad(7L, "Actual street")),
             result

@@ -293,7 +293,7 @@ describe('field map controls', () => {
     expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: 'Thử lưu lại' }));
     await screen.findByText('1 hộ dân đã liên kết');
-    expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toEqual([]);
+    await waitFor(() => expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toEqual([]));
     expect(axios.post).toHaveBeenCalledTimes(2);
   });
   it('does not auto-write without coordinate permission', async () => {

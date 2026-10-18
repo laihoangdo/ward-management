@@ -255,7 +255,7 @@ export async function deleteInspectionPhotoFromHousehold(
 /**
  * Batch update coordinates for households in PostgreSQL
  */
-export async function updateHouseholdCoordinatesInFirestore(updates: Array<{ id: string; coordinates: [number, number] }>): Promise<void> {
+export async function updateHouseholdCoordinatesInFirestore(updates: { id: string; coordinates: [number, number] }[]): Promise<void> {
   try {
     await updateHouseholdCoordinatesInBackend(updates);
     serviceEmitter.dispatchEvent(new CustomEvent('households-updated'));
