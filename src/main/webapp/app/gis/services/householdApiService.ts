@@ -624,7 +624,7 @@ export async function fetchPatrolLogsFromBackend(size: number = 200): Promise<Au
           details: detailsText,
           previousValue,
           newValue,
-          ipAddress: dto.ipAddress || '192.168.1.45',
+          ipAddress: dto.ipAddress || 'Không ghi nhận',
           deviceInfo,
           integrityHash,
           status,

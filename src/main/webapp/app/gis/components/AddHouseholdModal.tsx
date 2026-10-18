@@ -32,9 +32,16 @@ interface AddHouseholdModalProps {
   onClose: () => void;
   onAddHousehold: (newHousehold: HouseholdCreateInput) => Promise<boolean>;
   initialCoordinates?: [number, number] | null;
+  allowedHamletIds?: number[];
 }
 
-export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, onClose, onAddHousehold, initialCoordinates }) => {
+export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
+  isOpen,
+  onClose,
+  onAddHousehold,
+  initialCoordinates,
+  allowedHamletIds,
+}) => {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [coordinateError, setCoordinateError] = useState<string | null>(null);
@@ -77,6 +84,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
     setCoordinateError(null);
   }, [isOpen, initialCoordinates]);
   const [areas, setAreas] = useState<{ id: number; name: string; hamletName: string }[]>([]);
+  const availableAreas = allowedHamletIds ? areas.filter(area => allowedHamletIds.includes(area.id)) : areas;
   const [areaError, setAreaError] = useState('');
   const loadAreas = async () => {
     setAreaError('');
@@ -236,7 +244,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
       aria-modal="true"
       aria-label="Thêm hộ dân hoặc cơ sở"
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto"
+      className="gis-household-create-dialog fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto"
     >
       <div className="bg-white w-full max-w-xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[92vh] flex flex-col">
         <div className="p-4 sm:p-5 bg-blue-600 text-white flex items-center justify-between shrink-0">
@@ -351,14 +359,14 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
               </div>
               <div>
                 <SearchableSelect
-                  label="Ấp (51 ấp sau sáp nhập) *"
+                  label={allowedHamletIds ? 'Ấp được phân công *' : 'Ấp (51 ấp sau sáp nhập) *'}
                   value={hamlet}
                   onChange={val => {
                     setHamlet(val);
-                    const matched = areas.find(h => h.hamletName === val || h.name === val);
+                    const matched = availableAreas.find(h => h.hamletName === val || h.name === val);
                     setHamletId(matched?.id);
                   }}
-                  options={[...new Set(areas.map(h => h.hamletName))]}
+                  options={[...new Set(availableAreas.map(h => h.hamletName))]}
                   placeholder="Chọn ấp trực thuộc Xã Bà Điểm..."
                   searchPlaceholder="Tìm kiếm 51 ấp (VD: Bắc Lân, Xuân Thới Thượng 1...)"
                   icon={<Building className="w-3.5 h-3.5 text-blue-500" />}
@@ -418,7 +426,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({ isOpen, on
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 text-slate-800"
                 >
                   <option value="">Chọn khu vực thuộc ấp đã chọn</option>
-                  {areas
+                  {availableAreas
                     .filter(a => a.hamletName === hamlet)
                     .map(a => (
                       <option key={a.id} value={a.id}>

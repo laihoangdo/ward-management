@@ -1,11 +1,13 @@
-import boundary from '../data/baDiemPostMergerBoundary.json';
+import { baDiemCommuneBoundary as boundary } from '../data/baDiemCommuneBoundary';
 import { HouseholdFacility } from '../types';
 
-const rings = boundary.features[0].geometry.coordinates as number[][][];
+const polygons = boundary.features.flatMap(feature =>
+  feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates,
+);
 
 export function isCoordinateInBaDiem3dBoundary(lat: number, lng: number): boolean {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat === 0 || lng === 0) return false;
-  return pointInRing(lng, lat, rings[0]) && !rings.slice(1).some(ring => pointInRing(lng, lat, ring));
+  return polygons.some(rings => pointInRing(lng, lat, rings[0]) && !rings.slice(1).some(ring => pointInRing(lng, lat, ring)));
 }
 
 function pointInRing(lng: number, lat: number, ring: number[][]): boolean {
@@ -21,7 +23,7 @@ function pointInRing(lng: number, lat: number, ring: number[][]): boolean {
   return inside;
 }
 
-/** The polygon is provisional; this gates display, not legal address validation. */
+/** Uses the supplied post-merger boundary for map display and coordinate eligibility. */
 export function isHouseholdVisibleIn3d(household: HouseholdFacility): boolean {
   if (household.coordinatesEstimated || !Array.isArray(household.coordinates)) return false;
   const [lat, lng] = household.coordinates;

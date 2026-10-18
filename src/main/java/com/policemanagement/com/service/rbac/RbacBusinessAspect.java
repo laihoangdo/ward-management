@@ -47,6 +47,7 @@ public class RbacBusinessAspect {
                     if (create || !name.equals("partialUpdate") || newArea != null) rbac.area(newArea);
                     if (create) {
                         rbac.permission("canAddHouseholds");
+                        rbac.mapCoordinate(household.getLatitude(), household.getLongitude());
                         var streets = (List<?>) rbac.current().getOrDefault("assignedStreets", List.of());
                         if (
                             !rbac.global() &&
@@ -61,7 +62,13 @@ public class RbacBusinessAspect {
                                 !Objects.equals(household.getLatitude(), old.get("latitude"))) ||
                             ((!name.equals("partialUpdate") || household.getLongitude() != null) &&
                                 !Objects.equals(household.getLongitude(), old.get("longitude")))
-                        ) rbac.permission("canEditCoordinates");
+                        ) {
+                            rbac.permission("canEditCoordinates");
+                            rbac.mapCoordinate(
+                                household.getLatitude() != null ? household.getLatitude() : (Number) old.get("latitude"),
+                                household.getLongitude() != null ? household.getLongitude() : (Number) old.get("longitude")
+                            );
+                        }
                         Map<String, Object> values = rbac.decode(rbac.encode(household));
                         boolean changed = values
                             .entrySet()
@@ -101,6 +108,17 @@ public class RbacBusinessAspect {
                 if (id != null) rbac.area(id);
                 if (write) rbac.permission("canManageStreets");
                 if (create) rbac.superadmin();
+                // Managing streets must not allow expanding one's own geographic authorization.
+                if (
+                    write &&
+                    !create &&
+                    dto instanceof HamletDTO hamlet &&
+                    (!name.equals("partialUpdate") || hamlet.getBoundaryGeoJson() != null)
+                ) {
+                    var oldBoundary = rbac.database().queryForList("select boundary_geo_json from hamlet where id = ?", String.class, id);
+                    String previous = oldBoundary.isEmpty() ? null : oldBoundary.getFirst();
+                    if (!Objects.equals(previous, hamlet.getBoundaryGeoJson())) rbac.superadmin();
+                }
             } else {
                 String kind = kind(entity);
                 if (id != null) rbac.record(kind, id);

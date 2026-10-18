@@ -11,7 +11,8 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { OverviewTab } from './components/OverviewTab';
 import { AreaMapTab } from './components/AreaMapTab';
-import { Field3DMapTab } from './components/Field3DMapTab';
+import { BaDiem3DMapEditor } from './components/BaDiem3DMapEditor';
+const FieldHouseMap = React.lazy(() => import('./components/FieldHouseMap'));
 const MapLibreAreaMap = React.lazy(() => import('./components/MapLibreAreaMap'));
 import { HouseholdsTab } from './components/HouseholdsTab';
 import { ResidentsTab } from './components/ResidentsTab';
@@ -33,6 +34,7 @@ import {
   fetchAllDocumentRecords,
   renewDocumentInBackend,
   savePatrolLogInBackend,
+  fetchPatrolLogsFromBackend,
 } from './services/householdApiService';
 
 import {
@@ -182,6 +184,18 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [officer, setOfficer] = useState<OfficerProfile>(DEFAULT_OFFICER);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  useEffect(() => {
+    if (activeTab !== 'logs' || !currentUser) return;
+    let active = true;
+    void (async () => {
+      if (!active) return;
+      const logs = await fetchPatrolLogsFromBackend();
+      if (active) setAuditLogs(logs);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [activeTab, currentUser?.id]);
   const [renewingDocument, setRenewingDocument] = useState<DocumentRecord | null>(null);
   const [dataErrors, setDataErrors] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -193,23 +207,21 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // Mobile sidebar drawer state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Territory scope for sub-admin and officer ('assigned' | 'all')
-  const [territoryScope, setTerritoryScope] = useState<'assigned' | 'all'>('assigned');
-
-  // Reset territory scope to assigned area whenever logged in user changes
-  useEffect(() => {
-    setTerritoryScope('assigned');
-  }, [currentUser?.id]);
 
   // Modals
   const [selectedHousehold, setSelectedHousehold] = useState<HouseholdFacility | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedMapCoordinates, setSelectedMapCoordinates] = useState<[number, number] | null>(null);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  useEffect(() => {
+    setSelectedHousehold(null);
+    setIsAddModalOpen(false);
+    setSelectedMapCoordinates(null);
+  }, [currentUser.id, currentUser.version]);
 
   // Fullscreen map mode for Advanced Map
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
@@ -846,6 +858,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const isTerritoryRestricted = currentUser?.role === 'sub-admin' || currentUser?.role === 'officer';
 
   const matchesHamlet = (h: HouseholdFacility, user: AppUser | null) => {
+    if (user?.hamletIds) return h.hamletId != null && user.hamletIds.includes(h.hamletId);
     if (!user || !user.assignedHamlets || user.assignedHamlets.length === 0) return false;
     if (!h.hamlet) return false;
     return user.assignedHamlets.some(ah => {
@@ -861,9 +874,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   }, [households, currentUser, isTerritoryRestricted]);
 
   const scopedHouseholds = useMemo(() => {
-    if (!isTerritoryRestricted || territoryScope === 'all') return households;
+    if (!isTerritoryRestricted) return households;
     return assignedHouseholds;
-  }, [households, assignedHouseholds, territoryScope, isTerritoryRestricted]);
+  }, [households, assignedHouseholds, isTerritoryRestricted]);
 
   const assignedResidentsCount = useMemo(() => {
     return assignedHouseholds.reduce((acc, h) => acc + (h.residentsCount || 1), 0);
@@ -895,6 +908,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           dynamicMenus={effectiveDynamicMenus}
           warningCount={warningCount}
           isOpenMobile={isMobileSidebarOpen}
+          isOpenDesktop={isDesktopSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
           onLogout={handleLogout}
           onSwitchAccount={handleSwitchAccount}
@@ -914,6 +928,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
+            onToggleDesktopSidebar={() => setIsDesktopSidebarOpen(open => !open)}
+            isDesktopSidebarOpen={isDesktopSidebarOpen}
             backendStatus={backendStatus}
             theme={theme}
             onToggleTheme={handleToggleTheme}
@@ -1024,45 +1040,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                         <span className="text-emerald-400 font-semibold">
                           {assignedHouseholds.length} hộ dân / {assignedResidentsCount} nhân khẩu
                         </span>
-                        {territoryScope === 'all' && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60">
-                            Đang xem đối chiếu toàn xã (360 hộ)
-                          </span>
-                        )}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Territory Switcher Buttons */}
-                  <div className="flex items-center gap-1.5 p-1 bg-slate-950/90 rounded-xl border border-slate-800 shrink-0 self-start md:self-auto">
-                    <button
-                      type="button"
-                      id="btn-scope-assigned"
-                      onClick={() => setTerritoryScope('assigned')}
-                      className={`px-3 py-1.5 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        territoryScope === 'assigned'
-                          ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                      }`}
-                      title="Chỉ hiển thị dữ liệu hộ dân và bản đồ thuộc ấp được phân công"
-                    >
-                      <span>📍 Địa bàn được giao</span>
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{assignedHouseholds.length}</span>
-                    </button>
-                    <button
-                      type="button"
-                      id="btn-scope-all"
-                      onClick={() => setTerritoryScope('all')}
-                      className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                        territoryScope === 'all'
-                          ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                      }`}
-                      title="Xem toàn bộ hộ dân xã Bà Điểm để đối chiếu"
-                    >
-                      <span>🌐 Toàn xã (Đối chiếu)</span>
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{households.length}</span>
-                    </button>
                   </div>
                 </div>
               )}
@@ -1110,28 +1089,44 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                 </Suspense>
               )}
 
-              {activeTab === 'field-3d-map' && (
-                <Field3DMapTab
-                  households={displayedHouseholds}
-                  capturingOfficerName={[
-                    currentUser?.rank?.trim(),
-                    currentUser?.fullName?.trim() || currentUser?.username || 'Chưa xác định',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onSelectHousehold={setSelectedHousehold}
-                  canAddHouseholds={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
-                  onAddHouseholdAtCoordinates={coordinates => {
-                    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canAddHouseholds !== true) return;
-                    setSelectedMapCoordinates(coordinates);
-                    setIsAddModalOpen(true);
-                  }}
+              {(activeTab === 'field-3d-map' || (activeTab === 'bando-3d' && currentUser?.role !== 'superadmin')) && (
+                <Suspense
+                  fallback={
+                    <div role="status" className="p-6">
+                      Đang tải bản đồ 3D...
+                    </div>
+                  }
+                >
+                  <FieldHouseMap
+                    captureOfficer={{
+                      fullName: currentUser.fullName,
+                      rank: currentUser.rank,
+                      unit: currentUser.unit,
+                      area: currentUser.assignedHamlets?.join(', ') || currentUser.assignedWard,
+                    }}
+                    key={`${currentUser.id}:${currentUser.version ?? 0}`}
+                    households={displayedHouseholds}
+                    canAdd={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
+                    canLink={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canEditCoordinates === true}
+                    onSelect={setSelectedHousehold}
+                    onAdd={coordinates => {
+                      setSelectedMapCoordinates(coordinates);
+                      setIsAddModalOpen(true);
+                    }}
+                    isFullscreen={isMapFullscreen}
+                    onToggleFullscreen={handleToggleMapFullscreen}
+                  />
+                </Suspense>
+              )}
+              {activeTab === 'bando-3d' && currentUser?.role === 'superadmin' && (
+                <BaDiem3DMapEditor
                   isFullscreen={isMapFullscreen}
                   onToggleFullscreen={handleToggleMapFullscreen}
                   onNavigateTab={tab => {
                     if (isMapFullscreen) setIsMapFullscreen(false);
                     setActiveTab(tab);
                   }}
+                  onShowToast={showToast}
                 />
               )}
 
@@ -1322,6 +1317,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       />
 
       <AddHouseholdModal
+        allowedHamletIds={currentUser.role === 'superadmin' ? undefined : (currentUser.hamletIds ?? [])}
         isOpen={isAddModalOpen}
         initialCoordinates={selectedMapCoordinates}
         onClose={() => {

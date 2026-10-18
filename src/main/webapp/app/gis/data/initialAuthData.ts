@@ -421,8 +421,8 @@ export const INITIAL_DYNAMIC_MENUS: DynamicMenuItemConfig[] = [
   },
   {
     id: 'field-3d-map',
-    label: 'Bản Đồ Không Gian 3D Thực Địa',
-    description: 'Mô hình 3D thực địa chuẩn thiết kế Blender (Three.js): 9 phân lớp, ranh giới, 960 khối nhà',
+    label: 'Bản Đồ 3D',
+    description: 'Bản đồ 3D vệ tinh chân thực xã Bà Điểm: mô phỏng 960 khối nhà, chỉnh sửa vị trí, độ cao, mái nhà (Three.js & Blender)',
     iconName: 'Boxes',
     visibleRoles: ['superadmin', 'admin', 'sub-admin', 'officer'],
   },

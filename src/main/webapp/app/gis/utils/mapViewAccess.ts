@@ -3,6 +3,7 @@ import type { AppUser, NavigationTab, SubAdminFeaturePermissions } from '../type
 const MAP_VIEW_PERMISSIONS: Partial<Record<NavigationTab, keyof SubAdminFeaturePermissions>> = {
   'advanced-map': 'canViewAdvancedMap',
   'field-3d-map': 'canViewField3DMap',
+  'bando-3d': 'canViewField3DMap',
 };
 
 export const canViewMapTab = (user: AppUser, tab: NavigationTab): boolean => {

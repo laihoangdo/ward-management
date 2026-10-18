@@ -30,4 +30,6 @@
     <include file="config/liquibase/changelog/20261013000000_hamlet_assignment_bridge.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261014000000_direct_hamlet.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261014010000_map_view_roles.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261017010000_field_buildings.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261018010000_hamlet_pdf_boundaries.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

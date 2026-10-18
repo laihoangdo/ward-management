@@ -16,8 +16,29 @@ const config = defineConfig({
   plugins: [
     tailwindcss(),
     react(),
+    // Keep dev ?raw imports in Vite's transform pipeline; copy this file only for production.
+    ...viteStaticCopy({
+      targets: [
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/assets/xa_ba_diem.geojson', import.meta.url))),
+          dest: '.',
+        },
+      ],
+    }).filter(plugin => plugin.apply === 'build'),
     viteStaticCopy({
       targets: [
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/data/badiem-houses.geojson', import.meta.url))),
+          dest: '.',
+        },
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/assets/badiem_satellite', import.meta.url))),
+          dest: '.',
+        },
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/assets/badiem_map', import.meta.url))),
+          dest: '.',
+        },
         {
           src: normalizePath(fileURLToPath(new URL('./node_modules/tesseract.js/dist/worker.min.js', import.meta.url))),
           dest: 'ocr',

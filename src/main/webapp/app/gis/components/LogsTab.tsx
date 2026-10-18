@@ -64,6 +64,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
     return logs.filter(log => {
       // Action filter
       if (selectedActionFilter !== 'all') {
+        if (selectedActionFilter === 'map_3d' && log.actionType !== 'map_3d') return false;
         if (selectedActionFilter === 'coordinates' && log.actionType !== 'coordinate_update') return false;
         if (selectedActionFilter === 'profile' && log.actionType !== 'profile_update') return false;
         if (selectedActionFilter === 'reminders' && log.actionType !== 'reminder_sent' && log.actionType !== 'document_renew') return false;
@@ -193,6 +194,8 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
 
   const getActionLabel = (type: AuditActionType): string => {
     switch (type) {
+      case 'map_3d':
+        return 'Thao tác bản đồ 3D';
       case 'coordinate_update':
         return 'Chỉnh sửa tọa độ GPS';
       case 'profile_update':
@@ -214,6 +217,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
 
   const getActionBadge = (type: AuditActionType) => {
     switch (type) {
+      case 'map_3d':
       case 'coordinate_update':
         return {
           icon: MapPin,
@@ -408,6 +412,14 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
 
         {/* Action Type Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none text-xs">
+          <button
+            type="button"
+            aria-pressed={selectedActionFilter === 'map_3d'}
+            onClick={() => setSelectedActionFilter('map_3d')}
+            className="px-3 py-1.5 rounded-lg font-medium whitespace-nowrap bg-indigo-100 text-indigo-800"
+          >
+            Bản đồ 3D
+          </button>
           <button
             id="chip-filter-all"
             onClick={() => setSelectedActionFilter('all')}

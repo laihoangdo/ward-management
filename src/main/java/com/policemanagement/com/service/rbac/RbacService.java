@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
@@ -102,6 +103,63 @@ public class RbacService {
 
     public void area(Long id) {
         if (!global() && (id == null || !areas().contains(id))) throw new AccessDeniedException("Ngoài địa bàn được phân công");
+    }
+
+    public List<JsonNode> mapTerritories() {
+        if (global()) return List.of();
+        var request = RequestContextHolder.getRequestAttributes();
+        if (
+            request != null && request.getAttribute("rbac.mapTerritories", RequestAttributes.SCOPE_REQUEST) instanceof List cached
+        ) return cached;
+        var ids = areas();
+        var result = new ArrayList<JsonNode>();
+        for (var row : db.queryForList("select id, boundary_geo_json from hamlet where boundary_geo_json is not null")) {
+            if (!ids.contains(((Number) row.get("id")).longValue())) continue;
+            try {
+                result.add(json.readTree(row.get("boundary_geo_json").toString()));
+            } catch (RuntimeException ex) {
+                /* Invalid or missing boundaries do not grant geographic access. */
+            }
+        }
+        if (request != null) request.setAttribute("rbac.mapTerritories", result, RequestAttributes.SCOPE_REQUEST);
+        return result;
+    }
+
+    public boolean canManageMapGeometry(JsonNode geometry) {
+        return global() || TerritoryGeometry.covered(geometry, mapTerritories());
+    }
+
+    public void mapGeometry(JsonNode geometry) {
+        if (!canManageMapGeometry(geometry)) throw new AccessDeniedException(
+            "Công trình ngoài địa bàn hoặc ấp chưa có ranh giới để xác minh"
+        );
+    }
+
+    public void mapCoordinate(Number lat, Number lng) {
+        if (
+            !global() && (lat == null || lng == null || !TerritoryGeometry.contains(lat.doubleValue(), lng.doubleValue(), mapTerritories()))
+        ) {
+            throw new AccessDeniedException("Tọa độ ngoài địa bàn hoặc ấp chưa có ranh giới để xác minh");
+        }
+    }
+
+    public Set<String> visibleMapHouseholds() {
+        var request = RequestContextHolder.getRequestAttributes();
+        if (
+            request != null && request.getAttribute("rbac.mapHouseholds", RequestAttributes.SCOPE_REQUEST) instanceof Set cached
+        ) return cached;
+        var streets = (List<?>) current().getOrDefault("assignedStreets", List.of());
+        var result = new HashSet<String>();
+        for (var row : db.queryForList(
+            "select id, street, alley from household where hamlet_id in (select hamlet_id from rbac_assignment where subject = ?)",
+            current().get("id")
+        )) {
+            if (streets.isEmpty() || streets.contains(row.get("street")) || streets.contains(row.get("alley"))) result.add(
+                row.get("id").toString()
+            );
+        }
+        if (request != null) request.setAttribute("rbac.mapHouseholds", result, RequestAttributes.SCOPE_REQUEST);
+        return result;
     }
 
     public void household(Long id) {

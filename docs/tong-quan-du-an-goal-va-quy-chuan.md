@@ -1,267 +1,245 @@
 # Tổng quan dự án, mục tiêu và quy chuẩn phát triển
 
-Ngày khảo sát: 09/10/2026. Phạm vi: mã nguồn và tài liệu trong checkout `police-jhip`, bao gồm các thay đổi chưa commit đang có. Đây là tài liệu định hướng để chủ dự án lựa chọn goal và rule; các đề xuất chưa phải quyết định đã được phê duyệt.
+Cập nhật đánh giá: **18/10/2026**, thay cho khảo sát ngày 09/10/2026. Phạm vi gồm mã nguồn trong checkout `police-jhip`, các thay đổi chưa commit, migration, báo cáo dữ liệu, kết quả kiểm thử gần nhất và truy vấn tổng hợp chỉ đọc trên PostgreSQL local `Monolithic`. Tài liệu phân biệt chức năng đã có, dữ liệu tạm và công việc còn phải nghiệm thu; không xác nhận sẵn sàng production hay tạo goal tự động.
 
-## 1. Định hướng cao nhất
+## 1. Định hướng và đánh giá hiện tại
 
-**Chuyển đổi số công việc quản lý địa bàn cho cán bộ khu vực, xã/phường và thành phố: dữ liệu được cập nhật tại nơi phát sinh, công việc có người chịu trách nhiệm, hồ sơ có thể tra cứu và tổng hợp, mọi truy cập và thay đổi quan trọng có thể kiểm tra.**
+**Chuyển đổi số công việc quản lý địa bàn: cập nhật dữ liệu tại nơi phát sinh, phân công rõ người phụ trách, tra cứu hồ sơ thống nhất và kiểm tra được các thay đổi nghiệp vụ quan trọng.** Bản đồ, OCR và 3D phục vụ kết quả này. Hiệu quả cần đo bằng thời gian tra cứu/cập nhật, mức đầy đủ và chính xác của dữ liệu, khả năng phối hợp và phục hồi sau sự cố.
 
-Giá trị cần đạt là giảm nhập liệu lặp lại, giảm thời gian tìm hồ sơ và lập báo cáo, tăng chất lượng dữ liệu và khả năng phối hợp. Bản đồ, OCR và 3D là công cụ hỗ trợ các kết quả này. Số màn hình hoặc độ đẹp của bản đồ không đủ để đánh giá chuyển đổi số.
+Dự án đã vượt mức dashboard minh họa: có backend nghiệp vụ, phân quyền theo ấp/tuyến, bản đồ thực địa lưu công trình và liên kết hộ dân, ranh giới tạm 51 ấp và nhật ký thay đổi do server ghi. Tuy nhiên, **chưa đủ căn cứ để nghiệm thu vận hành chính thức với dữ liệu thật**. Các điểm chặn chính là chất lượng dữ liệu nguồn, cơ chế bảo vệ CCCD, sự không thống nhất giữa địa bàn hồ sơ và vị trí, kiểm chứng mobile/hiệu năng và quy trình backup–restore.
 
-Đề xuất tầm nhìn sản phẩm: một nền tảng quản lý địa bàn dùng chung, triển khai thử ở một đơn vị, sau đó mở rộng theo phạm vi dữ liệu và thẩm quyền của từng cấp. Dự án hiện tập trung nhiều vào nghiệp vụ quản lý dân cư và an ninh địa bàn; chưa thể coi là nền tảng bao phủ toàn bộ nghiệp vụ của chính quyền xã/phường hoặc thành phố.
+Ưu tiên tiếp theo là củng cố dữ liệu và kiểm soát đã có, thay vì đánh giá phân quyền hoặc bản đồ như chức năng chưa triển khai. Mở rộng toàn thành phố, đa đơn vị và toàn bộ nghiệp vụ chính quyền vẫn là mục tiêu dài hạn.
 
-## 2. Người dùng và kết quả mong đợi
+## 2. Người dùng và phạm vi sản phẩm
 
-| Nhóm người dùng đề xuất | Công việc chính                                                        | Kết quả cần có                                                             |
-| ----------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Cán bộ khu vực          | Tra cứu hộ/cơ sở, cập nhật cư dân, ghi nhận kiểm tra và việc cần xử lý | Một hồ sơ thống nhất, thao tác được trên thiết bị thực địa, ít nhập lại    |
-| Lãnh đạo xã/phường      | Phân công, kiểm tra chất lượng, theo dõi tiến độ, tổng hợp báo cáo     | Biết ai phụ trách, việc nào quá hạn, dữ liệu nào chưa xác minh             |
-| Cấp thành phố           | Tổng hợp giữa các đơn vị, theo dõi chỉ tiêu, điều phối theo thẩm quyền | Chỉ tiêu thống nhất, có nguồn và thời điểm, truy cập chi tiết có kiểm soát |
-| Quản trị hệ thống       | Quản lý tài khoản, cấu hình, vận hành và phục hồi                      | Hệ thống ổn định, cấp quyền đúng, kiểm tra được sự cố                      |
+| Nhóm                       | Công việc và kết quả mong đợi                                        | Trạng thái/phạm vi                                                                       |
+| -------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Cán bộ khu vực/user        | Tra cứu, cập nhật và kiểm tra hộ/cơ sở trong ấp/tuyến được giao      | Backend có kiểm tra phạm vi và quyền chức năng; cần nghiệm thu xuyên suốt từng luồng     |
+| Sub-admin/lãnh đạo địa bàn | Quản lý phân công, chất lượng và tiến độ trong phạm vi có thẩm quyền | Có cấu hình quyền, phân công và giới hạn dữ liệu; chưa phải quy trình phê duyệt đầy đủ   |
+| Super-admin                | Quản trị cấu hình, dữ liệu, ranh giới và các công cụ không gian      | Hiện có quyền nghiệp vụ toàn cục; chưa tách quyền quản trị kỹ thuật khỏi quyền đọc hồ sơ |
+| Cấp thành phố              | Tổng hợp liên đơn vị, chỉ tiêu và điều phối                          | Chưa có bằng chứng thực thi đầy đủ mô hình đa đơn vị và tổng hợp theo cấp                |
 
-Không đồng nhất quyền quản trị kỹ thuật với quyền xem toàn bộ hồ sơ nghiệp vụ. Phạm vi thành phố là mục tiêu mở rộng; mô hình phân cấp và cách tổng hợp liên đơn vị chưa được backend hiện tại thực thi đầy đủ.
+Không coi role/menu được hiển thị là bằng chứng đủ về quyền. Quyền phải được kiểm tra ở API/service, kể cả khi gọi trực tiếp và khi đổi tọa độ hoặc liên kết hộ.
 
-## 3. Hiện trạng dự án
+## 3. Hiện trạng kiến trúc và nguồn dữ liệu
 
-### 3.1. Kiến trúc và công nghệ trong repository
+### 3.1. Stack đang được khai báo
 
-| Thành phần    | Hiện trạng quan sát được                                                          |
-| ------------- | --------------------------------------------------------------------------------- |
-| Kiểu ứng dụng | JHipster monolith, tên kỹ thuật `Monolithic`, phiên bản ứng dụng `0.0.1-SNAPSHOT` |
-| Backend       | Java 21, Spring Boot parent 4.1.1, Maven; JPA, service, DTO/MapStruct, REST       |
-| Frontend      | React 19, TypeScript, Vite, Redux Toolkit; dashboard GIS tùy biến                 |
-| Database      | PostgreSQL, Liquibase; có migration nền tảng PostGIS                              |
-| Đăng nhập     | OAuth2/OIDC, cấu hình Keycloak; dashboard đọc phiên backend                       |
-| Bản đồ        | Leaflet, MapLibre GL, Three.js; nhiều cách xem bản đồ và sơ đồ                    |
-| OCR           | Tesseract.js, mô hình tiếng Việt/Anh đóng gói cục bộ trong trình duyệt            |
-| Kiểm thử      | Vitest, các test Java và REST integration; script CRUD/persistence riêng          |
-| Vận hành      | Docker Compose, Actuator, cấu hình Sonar và script build/test                     |
+| Thành phần         | Hiện trạng kiểm tra trong repository                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------- |
+| Ứng dụng           | JHipster monolith, tên kỹ thuật `Monolithic`, `0.0.1-SNAPSHOT`                              |
+| Backend            | Java target 21, Spring Boot parent 4.1.1, Maven, JPA, DTO/MapStruct, REST                   |
+| Frontend           | React 19, TypeScript, Vite 8.3.0, Redux Toolkit, dashboard GIS tùy biến                     |
+| Database           | PostgreSQL, Liquibase; có migration PostGIS nhưng local hiện **chưa bật extension PostGIS** |
+| Danh tính và quyền | OIDC/Keycloak, phiên backend, RBAC profile, quyền chức năng và phân công ấp/tuyến           |
+| Bản đồ             | MapLibre GL cho bản đồ thực địa/lưới, Leaflet ở các luồng khác; Three.js ở công cụ riêng    |
+| OCR/camera         | Tesseract.js với tài nguyên Việt/Anh cục bộ; camera hoặc chọn ảnh từ thiết bị               |
+| Kiểm thử/vận hành  | Vitest, JUnit/REST tests, Docker Compose, Actuator và công cụ nhập/đối chiếu dữ liệu        |
 
-Các phiên bản trên lấy từ cấu hình checkout, không phải khuyến nghị phiên bản mới nhất. JDL có chú thích Spring Boot 3, nhưng `pom.xml` khai báo 4.1.1; khi xác định cấu hình build phải ưu tiên file đang được build và đồng bộ lại tài liệu cũ. Java target là 21 trong khi image JRE của Jib là 25; nên chốt và kiểm tra ma trận runtime trước phát hành.
-
-Luồng chính:
+Đây là phiên bản trong checkout, không phải đề xuất nâng cấp. JDL/tài liệu cũ có thông tin Spring Boot khác; ưu tiên cấu hình build thực tế. Jib đang dùng `eclipse-temurin:25-jre-noble`, khác Java target 21: cần xác nhận ma trận build/runtime trước phát hành.
 
 ```mermaid
 flowchart LR
-  Officer[Cán bộ / lãnh đạo] --> UI[React và dashboard GIS]
-  UI --> API[Spring Boot REST API]
-  UI --> OCR[OCR cục bộ trong trình duyệt]
-  UI --> Local[Cache và dữ liệu giao diện localStorage]
-  API --> DB[PostgreSQL / PostGIS khi đã bật]
+  User[Cán bộ theo phạm vi] --> UI[React / GIS]
+  UI --> API[Spring Boot REST]
+  UI --> OCR[OCR cục bộ]
+  UI --> Assets[GeoJSON / raster tile / sơ đồ]
+  UI --> Local[Tùy chọn, cache và ảnh cục bộ còn tồn tại]
   API <--> IDP[Keycloak / OIDC]
+  API --> RBAC[Quyền chức năng + ấp/tuyến + geometry]
+  RBAC --> DB[PostgreSQL]
+  API --> History[PatrolLog + rbac_audit]
+  History --> DB
 ```
 
-Sơ đồ mô tả kiến trúc hiện có; không hàm ý dữ liệu localStorage được đồng bộ đầy đủ với server.
+`firestoreService.ts` là tên lớp dịch vụ lịch sử, không chứng minh đang dùng Firestore hay realtime đa thiết bị. Một số luồng còn dùng localStorage/EventTarget; quyền hiện hành phải lấy từ backend. Tile nền cục bộ không đồng nghĩa có chế độ offline cho hồ sơ nghiệp vụ.
 
 ### 3.2. Năng lực đã có và giới hạn
 
-| Mảng                  | Có trong mã nguồn                                                      | Giới hạn cần biết                                                                                                |
-| --------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Hộ dân/cơ sở          | CRUD, địa chỉ, chủ hộ, loại cơ sở, trạng thái, tọa độ, liên kết cư dân | Cần thống nhất nguồn số liệu dân số, kiểm tra trùng và quy trình xác minh                                        |
-| Nhân khẩu             | CRUD, giấy tờ, năm sinh, giới tính, loại cư trú, liên kết hộ           | Chưa đủ để kết luận đã xử lý toàn bộ vòng đời biến động cư trú                                                   |
-| Địa bàn               | `AreaZone`, liên kết hộ, ranh GeoJSON                                  | Chưa có mô hình đầy đủ cho đơn vị hành chính và phân công có hiệu lực theo thời gian                             |
-| Hồ sơ                 | `DocumentRecord`, trạng thái, hạn, cán bộ, ghi chú                     | Chưa thể coi là hệ thống lưu trữ tệp, ký số và phê duyệt hồ sơ hoàn chỉnh                                        |
-| Cảnh báo              | `SecurityAlert` và giao diện theo dõi                                  | Có cả dữ liệu API và cấu hình/cảnh báo cục bộ; cần làm rõ từng nguồn                                             |
-| Nhật ký               | `PatrolLog`, API ghi/đọc, giao diện nhật ký                            | Chưa phải audit bảo đảm do server tạo, bất biến và đủ mọi thao tác                                               |
-| Đăng nhập/quyền       | Phiên OIDC, CSRF, role GIS ánh xạ từ authority                         | Đăng nhập chưa đồng nghĩa với giới hạn dữ liệu theo địa bàn                                                      |
-| OCR/camera            | Nhận dạng ảnh, người dùng xác nhận trước lưu                           | Không xác minh danh tính; ảnh kiểm tra có phần lưu trong trình duyệt                                             |
-| GIS 2D/3D             | Hộ có tọa độ, ranh khu vực, lớp nhà/đường, tìm kiếm, heatmap           | Footprint mặc định là minh họa; GeoJSON nhập ở màn review chưa lưu vào các bảng GIS                              |
-| Không gian 3D Bà Điểm | Tab và dữ liệu không gian trong thay đổi chưa commit                   | Có dữ liệu sinh/dựng từ module riêng; phải kiểm định nguồn, độ chính xác và liên kết hồ sơ trước sử dụng thực tế |
-| PostGIS               | Migration extension, điểm hộ, geometry nhà/đường, chỉ mục GiST         | Có thể bỏ qua migration nếu DB thiếu extension; chưa xác minh DB đang chạy                                       |
-| Quản trị/phân công    | Menu, danh sách tài khoản, địa bàn và phân quyền giao diện             | Một phần là seed/localStorage; không phải nguồn quyền có hiệu lực tại API                                        |
+| Mảng                   | Đã có trong code                                                                                                    | Giới hạn cần nghiệm thu/khắc phục                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Hộ/cơ sở và nhân khẩu  | CRUD, liên kết hộ–cư dân, trạng thái, tọa độ, ghi chú; tải danh sách có phân trang                                  | Vẫn có số liệu và tọa độ mặc định ở mapper; chưa được coi là dân số/vị trí đã xác minh                  |
+| Địa bàn                | `admin_province`, `admin_commune`, `Hamlet`, phân công ấp và cầu nối dữ liệu cũ                                     | Chưa đủ mô hình hiệu lực theo thời gian, bàn giao và quản lý đa cấp                                     |
+| Phân quyền             | `RbacService`, `RbacBusinessAspect`, scope truy vấn và kiểm tra ghi theo ấp/tuyến                                   | Cần bộ nghiệm thu tất cả API, thống kê, xuất dữ liệu và tình huống đổi phân công                        |
+| Bản đồ thực địa 3D     | MapLibre, khối extrusion/point, layer, filter, zoom, vẽ polygon, di chuyển, lưu và liên kết hộ                      | Tải tập footprint lớn ở client; chưa đo tải/FPS trên thiết bị mục tiêu                                  |
+| Ranh giới              | Đủ 51 polygon ấp trong DB, lấy từ PDF và gắn theo ranh xã được cung cấp                                             | Dữ liệu tạm đang được dùng cho quyền vị trí theo yêu cầu; cần thay bằng nguồn chuẩn khi có              |
+| Liên kết hộ–công trình | Lưu trong `gis_field_building`; tự nhận diện theo tọa độ được vật chất hóa qua API                                  | Không đồng nhất nằm trong polygon với đúng địa bàn hồ sơ; có thể cần đối soát liên kết                  |
+| Nhật ký 3D             | Server ghi thay đổi công trình vào `PatrolLog`, kèm trước/sau, cán bộ, thời gian và scope; có `rbac_audit`          | Chỉ ghi thay đổi được lưu, không ghi xem/zoom/layer/filter/xuất ảnh; chưa có chữ ký chống sửa ở tầng DB |
+| Xuất ảnh               | Xem trước, chia sẻ/sao chép/in/tải PNG; khung đơn vị, quân hàm, họ tên, địa bàn, thời gian; render 2x rồi khôi phục | Tùy hỗ trợ của trình duyệt; chưa nghiệm thu thiết bị thật và quy trình phát hành ảnh                    |
+| Mobile và shell        | Toolbar cuộn, popup đáy/cuộn, vùng chạm lớn, gesture hai ngón, giới hạn DPI, ẩn/hiện sidebar                        | Kiểm thử component không thay thế kiểm tra trực quan, bàn phím ảo, Safari/Android và FPS                |
+| Hồ sơ/cảnh báo         | `DocumentRecord`, `SecurityAlert`, giao diện hạn và nhắc nhở                                                        | Không coi là kho tệp, ký số, workflow phê duyệt hoặc hệ thống gửi nhắc nhở đã được nghiệm thu           |
+| OCR/ảnh                | OCR có bước người dùng xác nhận; camera có fallback chọn ảnh                                                        | Không xác minh danh tính; ảnh kiểm tra còn luồng lưu cục bộ, chưa thành kho ảnh dùng chung              |
+| GIS/PostGIS            | Có schema GIS và migration geometry/GiST có điều kiện                                                               | Local chỉ thấy extension `plpgsql`; kiểm tra vùng hiện dùng GeoJSON/Java, không phải truy vấn PostGIS   |
 
-Đánh giá từ khảo sát mã nguồn: nền tảng nghiệp vụ và giao diện đã hình thành, nhưng chưa đủ bằng chứng để xác nhận sẵn sàng vận hành với dữ liệu thật hoặc triển khai toàn thành phố. Chưa chạy ứng dụng, kiểm thử, truy vấn DB hoặc đánh giá tải trong lần lập tài liệu này.
+### 3.3. Các đường dữ liệu không được trộn lẫn
 
-### 3.3. Mô hình dữ liệu đang có
+1. **Hồ sơ dùng chung:** `Household`, `Resident`, `DocumentRecord`, `SecurityAlert`, `PatrolLog` trong PostgreSQL qua API; `AreaZone` và các liên kết cũ vẫn cần đối chiếu với `hamlet_id`.
+2. **Bản đồ thực địa đang dùng:** `FieldHouseMap.tsx`, nguồn `content/data/badiem-houses.geojson`, ảnh nền tile cục bộ và các override/liên kết trong `gis_field_building`. Khối extrusion không phải kiến trúc 3D đã khảo sát; chiều cao nguồn/ước lượng phải được nhận diện.
+3. **Quyền theo không gian:** `hamlet.boundary_geo_json` là nguồn backend; endpoint boundaries chỉ trả thuộc tính công khai. Ranh xã dùng chung từ `content/assets/xa_ba_diem.geojson`. Không dùng `badiem_boundary.js` hoặc một polygon cũ khác để thay nguồn chuẩn này trong luồng đã thống nhất.
+4. **Bản đồ lưới/sơ đồ TC2:** có tọa độ sơ đồ và kết quả căn chỉnh riêng. Không chuyển số nhà DXF thành GPS khảo sát hoặc footprint thửa đất.
+5. **VietMap/Blender:** báo cáo `DATA_QUALITY_REPORT.md` mô tả một pipeline khác, gồm 190 footprint và chiều cao/chi tiết minh họa. Không dùng số 190 để kết luận số khối nhà của bản đồ thực địa; không dùng ranh provisional 27,219 km² của pipeline đó thay ranh xã/ấp hiện tại.
 
-Sáu thực thể nghiệp vụ chính: `Household`, `Resident`, `AreaZone`, `DocumentRecord`, `SecurityAlert`, `PatrolLog`. Quan hệ đã thể hiện rõ: một địa bàn có nhiều hộ, một hộ có nhiều cư dân. Một số trường hồ sơ/cảnh báo vẫn chứa tên, địa chỉ hoặc vị trí dạng chuỗi; cần xác định liên kết bằng ID khi thiết kế quy trình tiếp theo.
+Các schema `gis_building` và `gis_field_building` có mục đích/đường lưu khác nhau. Cần xác định luồng sử dụng trước sửa, nhập hoặc thống kê; không nhân bản hồ sơ dân cư cho từng kiểu bản đồ.
 
-Migration GIS bổ sung `gis_map`, `gis_building_type`, `gis_road`, `gis_building`, `gis_map_layer`, `gis_map_source`. Nhà GIS liên kết nullable với hộ, địa bàn, đường và loại nhà. Không tạo bản sao hồ sơ cư dân trong bảng hình học.
+### 3.4. Quy tắc quyền bản đồ hiện hành
 
-Các nhóm dữ liệu **đề xuất bổ sung sau khi chốt nghiệp vụ**:
+- Sub-admin/user vẫn nhìn hình khối toàn xã; dữ liệu hộ và thao tác chỉ được mở trong phạm vi có quyền.
+- Kiểm tra **toàn bộ footprint** được phủ bởi hợp các ấp được giao, không chỉ kiểm tra tâm hoặc vài đỉnh. Thiếu/không hợp lệ ranh giới thì không cấp quyền vị trí.
+- Khi di chuyển, kiểm tra cả vị trí cũ và mới. Liên kết hộ phải đồng thời qua quyền hồ sơ hộ theo ấp/tuyến; quyền geometry không thay thế quyền hộ.
+- Một khối nhà ở trong ấp được giao vẫn có thể bị khóa vì đang liên kết hộ thuộc ấp/tuyến khác. Popup phân biệt lý do này; không tự đổi `hamlet_id` hoặc gỡ liên kết để vượt kiểm soát.
+- Sau khi liên kết đã lưu, point hộ được ẩn và thông tin xem qua khối nhà. Quyền frontend hỗ trợ trải nghiệm; backend vẫn quyết định thao tác được phép.
+- Ranh giới chỉ super-admin được sửa theo chính sách hiện tại. Bản sao cũ và phiên bản nhập được giữ trong `hamlet_boundary_revision`; migration không ghi đè bản chỉnh sửa sau đó.
 
-- Đơn vị quản lý có mã ổn định, quan hệ cấp trên và thời gian hiệu lực.
-- Phân công cán bộ theo đơn vị/địa bàn, thời gian hiệu lực và phạm vi thao tác.
-- Công việc/đợt kiểm tra: người phụ trách, hạn, trạng thái, kết quả và hồ sơ liên quan.
-- Tệp đính kèm: nơi lưu, chủ sở hữu, quyền đọc, thời hạn lưu và lịch sử truy cập.
-- Audit nghiệp vụ do server sinh; định nghĩa chỉ tiêu và kỳ báo cáo.
+### 3.5. Số liệu và chất lượng nguồn đã đối chiếu
 
-### 3.4. Những khoảng trống nên xử lý trước
+**Snapshot DB local ngày 18/10/2026**, chỉ truy vấn tổng hợp, không phải số liệu dân cư đã nghiệm thu:
 
-1. **Phân quyền dữ liệu:** `SecurityConfiguration` yêu cầu xác thực với `/api/**`, nhưng chưa có cơ chế đầy đủ giới hạn hộ/cư dân theo địa bàn được phân công. API trực tiếp phải chịu cùng chính sách với giao diện.
-2. **Nguồn dữ liệu:** `firestoreService.ts` thực tế phối hợp API PostgreSQL, localStorage và EventTarget. Tên file không chứng minh đang dùng Firestore hoặc đồng bộ thời gian thực giữa thiết bị. `authService.ts` còn seed tài khoản/menu/phân công cục bộ.
-3. **Bảo vệ dữ liệu nhạy cảm:** `cryptoUtils.ts` chứa khóa AES cố định phía frontend và fallback Base64. Không thể dùng cơ chế này làm bảo đảm bảo mật CCCD khi vận hành thật; cần quản lý khóa bên server và phương án chuyển dữ liệu cũ.
-4. **Khả năng tổng hợp:** hàm tải hộ/cư dân lấy trang đầu với giới hạn 1.000 hộ và 3.000 cư dân; nhật ký/cảnh báo cũng có giới hạn riêng. Báo cáo từ dữ liệu đã tải có thể thiếu bản ghi khi mở rộng.
-5. **Tính nhất quán khi ghi:** một số wrapper bắt lỗi và chỉ ghi console. Cần kiểm tra toàn bộ đường lưu để tránh báo thành công khi server chưa ghi; thao tác hộ và cư dân cần quy định tính nguyên tử.
-6. **Audit:** nhật ký công tác đang được dùng cho cả lịch sử thao tác, có dữ liệu khởi tạo và metadata từ client. Cần tách trách nhiệm ghi công tác với audit truy cập/thay đổi do server kiểm soát.
-7. **GIS thực địa:** cần phân biệt tọa độ khảo sát, ước lượng, sơ đồ và geometry thật; bảng mới hoặc màn 3D không chứng minh đã có dữ liệu chuẩn.
-8. **Bảo trì:** có component cùng tên ở `gis/` và `gis/components/`; `App.tsx` hiện chủ yếu import từ `components/`. Kiểm tra nơi sử dụng trước sửa hoặc xóa, tránh sửa nhầm bản không được dùng.
+| Bảng/chỉ tiêu                                    | Số bản ghi quan sát |
+| ------------------------------------------------ | ------------------: |
+| Hộ/cơ sở `household`                             |               1.260 |
+| Nhân khẩu `resident`                             |               1.461 |
+| Ấp `hamlet`                                      |                  51 |
+| Ấp có `boundary_geo_json`                        |                  51 |
+| Bản lưu công trình/override `gis_field_building` |                 389 |
+| Nhật ký công tác `patrol_log`                    |                  70 |
 
-## 4. Goal đề xuất
+Các số này thay đổi khi sử dụng; 389 không phải tổng footprint nền, 1.461 không mặc nhiên bằng tổng dân số thực tế. Database đã có changeset `20261017010000-1` và `20261018010000-1`; điều này chỉ xác nhận local, không xác nhận môi trường khác.
 
-### 4.1. Goal sản phẩm
+**Ranh giới 51 ấp:** phiên bản `pdf-20261018-v1`, khớp affine 7 mốc với ranh xã. RMS khớp mốc 6,37 m, lớn nhất 10,10 m; P95 khoảng cách đường bao 15,38 m, lớn nhất 136,73 m trước cắt theo ranh xã. Hở/chồng tính toán dưới 1 m². Các chỉ số mô tả độ khớp hai nguồn, **không phải độ chính xác thực địa của từng ranh ấp**. Xem [phương pháp, giới hạn và cập nhật ranh](badiem-boundaries/README.md), [số liệu kiểm tra](badiem-boundaries/validation.json).
 
-> Trong một đợt thử nghiệm tại một xã/phường được lựa chọn, hoàn thành chu trình tra cứu → cập nhật hồ sơ → ghi nhận kiểm tra → giao/theo dõi xử lý → tổng hợp báo cáo trên một nguồn dữ liệu chung, có quyền theo địa bàn và lịch sử do server ghi nhận; đo được mức giảm thời gian thao tác so với quy trình hiện tại.
+**TC2:** báo cáo nhập thực tế ngày 13/10 xác nhận 896 bản ghi khởi tạo từ 903 nhãn, giữ lại 7 điểm ngoài ranh tham chiếu để review. Tên chủ hộ có dấu giả lập, địa chỉ đường/hẻm chưa đối chiếu; không tạo nhân khẩu/CCCD/số điện thoại giả. RMSE 4 mốc là 10,513 m, không có điểm kiểm tra độc lập. Bộ đếm 0 và trạng thái NORMAL khởi tạo không phải kết luận nghiệp vụ. Xem [README nhập TC2](../data/tc2_household_import/README.md), [báo cáo nhập thực tế](../data/tc2_household_import/live_import_report.json).
 
-Thời lượng, đơn vị và số người thử nghiệm phải được chốt khi có nguồn lực. Không coi định hướng này là cam kết tiến độ.
+`candidate_alignment_quality.json` vẫn ghi bản ứng viên chưa xác nhận/chưa commit tọa độ; đây không phải trạng thái cuối cùng của lần nhập đã báo cáo. Giữ nguyên dấu vết giai đoạn, đọc kèm báo cáo nhập/preservation và DB hiện tại. Không sửa dữ liệu theo riêng một báo cáo nháp.
 
-### 4.2. Bộ chỉ số nghiệm thu ban đầu
+### 3.6. Bằng chứng kiểm thử và phạm vi chưa kiểm chứng
 
-Các ngưỡng dưới đây là **đề xuất**, cần đo baseline và xác nhận với đơn vị thử nghiệm.
+Các test hiện có bao phủ RBAC, ghi/đọc công trình, geometry có lỗ/lõm và hợp vùng, dataset 51 ấp, liên kết tự động, popup/mobile, vòng đời MapLibre và xuất ảnh. Trong phiên làm việc gần nhất, nhóm mutation-only đạt **18 test backend**, **17 test frontend**, TypeScript đạt; targeted lint không có error, còn warning. Đây là các nhóm mục tiêu, **không phải toàn bộ test của repository** và không cộng dồn những lần chạy chồng nhau.
 
-| Mục tiêu                  | Cách đo                                                        | Ngưỡng khởi điểm đề xuất                                        |
-| ------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------- |
-| Giảm thời gian tra cứu    | So sánh cùng nhóm tác vụ trước/sau                             | Giảm ít nhất 30% thời gian trung vị                             |
-| Giảm lập báo cáo thủ công | Đo thời gian chuẩn bị cùng một báo cáo                         | Giảm ít nhất 50%                                                |
-| Dữ liệu đủ dùng           | Hồ sơ đủ trường bắt buộc / tổng hồ sơ trong phạm vi thử nghiệm | Từ 95%; công bố số hồ sơ chưa xác minh                          |
-| Kiểm soát phạm vi         | Test chéo đơn vị/địa bàn cho đọc, ghi, xuất và tổng hợp        | 100% trường hợp trái quyền bị từ chối                           |
-| Ghi nhận thay đổi         | Đối chiếu thao tác quan trọng với audit server                 | 100% thao tác trong danh mục đã thống nhất                      |
-| Ghi dữ liệu đúng          | Lưu, tải lại, mở ở thiết bị thứ hai; kiểm tra lỗi mạng         | Không mất dữ liệu đã báo lưu thành công                         |
-| Tra cứu đáp ứng           | Đo p95 với tập dữ liệu và số người đồng thời được chốt         | API tra cứu dưới 2 giây trong môi trường thử nghiệm             |
-| Khả năng phục hồi         | Khôi phục backup vào môi trường độc lập                        | Khôi phục và đối chiếu dữ liệu thành công trước thử nghiệm thật |
+Tham chiếu log local: `target/map-history-mutation-only-backend.log`, `target/map-history-mutation-only-ui.log`, `target/map-history-mutation-only-types.log`, `target/map-history-mutation-only-lint.log`. Có log production build thành công ở các đợt gần đây; chưa chạy lại toàn bộ build/test trong lần sửa tài liệu này. Các log trong `target` có thể bị ghi đè/xóa, không thay cho bằng chứng CI của một release.
 
-Không đo hiệu quả bằng số hồ sơ tạo ra đơn thuần. Báo cáo phải có phạm vi, kỳ, thời điểm cập nhật, định nghĩa chỉ tiêu và mức đầy đủ của dữ liệu.
+Chưa có xác nhận nghiệm thu trình duyệt có đăng nhập trên toàn bộ vai trò/luồng; chưa đo FPS mobile, p95 tải thực tế, bảo mật đầy đủ hoặc phục hồi backup độc lập. Targeted lint đạt không có nghĩa lint toàn dự án đạt; `App.tsx` và một số module vẫn có nợ kỹ thuật/cảnh báo.
 
-### 4.3. Thứ tự ưu tiên
+## 4. Đánh giá rủi ro và thứ tự ưu tiên
 
-| Giai đoạn                  | Công việc chính                                                                  | Điều kiện hoàn tất                                                  |
-| -------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| G0 — Chốt nghiệp vụ        | Chọn đơn vị thử nghiệm, người dùng, 3–5 luồng chính, dữ liệu và baseline         | Có phạm vi, chủ sở hữu, tiêu chí nghiệm thu và danh mục quyền       |
-| G1 — Nền tảng tin cậy      | Backend phân quyền địa bàn, thống nhất nguồn dữ liệu, bảo vệ CCCD, audit, backup | Test API trái quyền/lưu lỗi đạt; phục hồi dữ liệu thành công        |
-| G2 — Công việc hằng ngày   | Hồ sơ hộ/cư dân, kiểm tra, công việc, hạn xử lý, tệp, báo cáo xã/phường          | Người dùng hoàn thành các luồng đã chọn trên dữ liệu thử            |
-| G3 — GIS phục vụ công việc | Kiểm định tọa độ, truy vấn theo viewport, liên kết nhà/đường với hồ sơ           | Phân biệt dữ liệu thật/minh họa; kiểm tra địa lý và hiệu năng đạt   |
-| G4 — Mở rộng thành phố     | Phân cấp nhiều đơn vị, chỉ tiêu chung, quyền xem chi tiết, tải và vận hành       | Thử nghiệm liên đơn vị, tổng hợp không thiếu/trùng, đạt tải đã chốt |
+| Ưu tiên | Vấn đề còn tồn tại                                                     | Kết quả cần đạt                                                                                             |
+| ------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| P0      | `cryptoUtils.ts` còn khóa AES cố định phía frontend và fallback Base64 | Có thiết kế quản lý khóa và chuyển dữ liệu cũ; không dùng cơ chế hiện tại làm bằng chứng bảo mật CCCD       |
+| P0      | Hồ sơ giả lập/ước lượng và hồ sơ thật cùng tồn tại                     | Gắn nguồn/mức xác minh rõ, loại bản nháp khỏi báo cáo chính thức, có người đối soát chịu trách nhiệm        |
+| P0      | Ranh tạm đang tham gia quyết định quyền vị trí                         | Có quy trình xử lý nhà sát ranh, bất đồng địa bàn–tọa độ, cập nhật đồng bộ ranh chuẩn và kiểm tra lại quyền |
+| P0      | Chưa chứng minh backup–restore và kiểm soát môi trường production      | Diễn tập phục hồi, đối chiếu sau restore, chốt người vận hành và rollback                                   |
+| P1      | RBAC đã có nhưng chưa nghiệm thu toàn bộ API/role/luồng                | Kiểm tra danh sách, ID trực tiếp, thay đổi ấp/tuyến, tọa độ, liên kết, xuất và thống kê                     |
+| P1      | Tải dữ liệu lớn, nhiều module bản đồ, thiếu benchmark thiết bị         | Đo dữ liệu thực, viewport/server aggregation khi cần; xác nhận gesture, popup, WebGL và bộ nhớ mobile       |
+| P1      | Nguồn đếm cư dân và wrapper lỗi chưa nhất quán                         | Không mặc định thiếu dữ liệu thành số liệu thật; không báo thành công nếu API chưa xác nhận                 |
+| P1      | Ảnh kiểm tra còn lưu cục bộ; thiếu lifecycle tệp                       | Kho ảnh dùng chung theo quyền, đồng bộ, thời hạn lưu và xử lý lỗi có thể phục hồi                           |
+| P1      | Nhật ký/cảnh báo còn giới hạn trang và metadata lịch sử                | Phân trang/tìm kiếm server, chính sách lưu và kiểm chứng toàn vẹn; không hiển thị hash giả như chữ ký thật  |
+| P2      | Tách quyền kỹ thuật/nghiệp vụ, bàn giao có hiệu lực, đa đơn vị         | Thiết kế theo nghiệp vụ được xác nhận, không suy rộng cơ chế một xã thành toàn thành phố                    |
 
-Khuyến nghị goal tiếp theo là **G0 rồi G1**. Chỉ ưu tiên thêm 3D nếu một tác vụ cụ thể của cán bộ cần nó và có dữ liệu phù hợp.
+`fetchAuthorizedPages` hiện đã tải hộ, cư dân và hồ sơ theo trang 500 đến khi hết; đánh giá cũ “chỉ tải 1.000 hộ/3.000 cư dân” không còn đúng với các đường này. Nhật ký mặc định vẫn lấy 200 bản ghi và cảnh báo có giới hạn riêng. Cần kiểm tra lỗi giữa các trang, dữ liệu thay đổi khi đang đọc và chi phí tải toàn bộ, thay vì chỉ bỏ giới hạn số lượng.
 
-Ngoài phạm vi MVP đề xuất: AI dự báo rủi ro, nhận diện khuôn mặt, ứng dụng native, microservices, mô hình 3D toàn thành phố và tích hợp hệ thống bên ngoài chưa có quyền truy cập được xác nhận.
+## 5. Goal và tiêu chí nghiệm thu tiếp theo
 
-## 5. Quy chuẩn đề xuất khi tiếp tục phát triển
+**Goal đề xuất:** nghiệm thu một chu trình quản lý địa bàn tại Bà Điểm trên dữ liệu được phân loại rõ nguồn: tra cứu → cập nhật hồ sơ → liên kết vị trí/công trình → kiểm tra nhật ký → tổng hợp theo quyền. Đơn vị, người dùng, thời gian và phạm vi dữ liệu thật phải được chủ dự án chốt; đây không phải cam kết tiến độ.
 
-### 5.1. Nghiệp vụ và trải nghiệm
+| Đợt                         | Phạm vi                                                                           | Điều kiện hoàn tất                                                              |
+| --------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| G0 — Chốt pilot và dữ liệu  | 3–5 tác vụ chính, chủ dữ liệu, bản ghi đủ điều kiện, baseline và người nghiệm thu | Có danh mục luồng, nguồn dữ liệu, role/scope và tiêu chí đo                     |
+| G1 — Củng cố nền tảng đã có | Đối soát TC2/ranh/liên kết hộ; kiểm tra RBAC; bảo vệ CCCD; backup–restore         | Test chéo phạm vi đạt, hồ sơ nháp được phân biệt, phục hồi đối chiếu thành công |
+| G2 — Nghiệm thu thực địa    | Mobile, ảnh, lỗi mạng, cập nhật hồ sơ, nhật ký trước/sau                          | Cán bộ hoàn tất luồng trên thiết bị mục tiêu; không mất dữ liệu đã báo lưu      |
+| G3 — Hiệu năng và vận hành  | Viewport/phân trang, báo cáo đủ dữ liệu, monitoring và rollback                   | Đạt tải/p95 và quy trình xử lý sự cố được chốt                                  |
+| G4 — Mở rộng                | Đa đơn vị, quyền theo cấp, bàn giao và chỉ tiêu dùng chung                        | Thử nghiệm liên đơn vị không thiếu/trùng hoặc rò dữ liệu                        |
 
-- Mỗi tính năng phải gắn với người dùng, tác vụ, kết quả và tiêu chí nghiệm thu. Ưu tiên thao tác tra cứu/cập nhật/kiểm tra tại thực địa.
-- Trạng thái công việc phải có chuyển trạng thái rõ, người chịu trách nhiệm, thời điểm và điều kiện hoàn tất. Phân biệt cảnh báo hồ sơ với kết luận nghiệp vụ.
-- Dữ liệu OCR là bản nháp; người dùng kiểm tra trước ghi. Không tự điền thông tin không đọc được hoặc coi OCR là xác minh danh tính.
-- Hiển thị đang tải, dữ liệu trống, mất kết nối và lưu thất bại riêng biệt. Chỉ báo lưu thành công sau xác nhận từ API.
-- Dữ liệu minh họa/seed phải được nhận biết rõ và không đi vào báo cáo nghiệp vụ thật.
+Ngưỡng khởi điểm đề xuất: giảm ít nhất 30% thời gian tra cứu trung vị, giảm 50% thời gian lập một báo cáo mẫu, hồ sơ đủ trường bắt buộc từ 95%, từ chối 100% ca trái quyền trong bộ nghiệm thu và ghi đủ 100% thay đổi thuộc danh mục nhật ký. API tra cứu p95 dưới 2 giây chỉ có ý nghĩa khi đã chốt tập dữ liệu, thiết bị, hạ tầng và số người đồng thời. Chưa có số đo chứng minh các ngưỡng này đã đạt.
 
-### 5.2. Dữ liệu
+Chưa ưu tiên AI dự báo rủi ro, nhận diện khuôn mặt, microservices, mô hình 3D toàn thành phố hoặc tích hợp bên ngoài chưa có phạm vi/quyền sử dụng được xác nhận.
 
-- PostgreSQL qua API là nguồn chính thức cho hồ sơ dùng chung. localStorage chỉ dành cho tùy chọn giao diện/cache được quy định; không cấp quyền hoặc giữ bản duy nhất của hồ sơ.
-- Mỗi hồ sơ có ID ổn định; liên kết bằng khóa ngoại, không dựa vào tên cán bộ, tên hộ hay chuỗi địa chỉ. Mã hiển thị và ID kỹ thuật có vai trò riêng.
-- Định nghĩa rõ nguồn số cư dân: danh sách cư dân, số khai báo và số đã xác minh không được âm thầm thay thế nhau.
-- Ngày nghiệp vụ dùng kiểu ngày; thời điểm sự kiện lưu theo UTC và hiển thị theo múi giờ đơn vị. Chuẩn hóa các trường ngày đang là chuỗi khi cần xử lý hạn/báo cáo.
-- Chốt quy tắc chuyển hộ, đổi địa bàn, trùng giấy tờ, xóa/archived và lịch sử. Không mặc định một bản ghi cư dân hiện tại đủ biểu diễn mọi biến động cư trú.
-- Mọi thay đổi schema qua Liquibase; có kế hoạch chuyển dữ liệu và phục hồi. Không sửa migration đã áp dụng ở môi trường dùng chung.
-- Thao tác nhiều thực thể phải xác định giao dịch và xử lý lỗi; ngăn mất cập nhật khi hai cán bộ sửa đồng thời.
+## 6. Quy chuẩn phát triển và vận hành
 
-### 5.3. Quyền và bảo vệ dữ liệu
+### 6.1. Dữ liệu và nghiệp vụ
 
-- Server quyết định quyền theo **vai trò + phạm vi đơn vị/địa bàn + hành động**. Kiểm tra với danh sách, chi tiết, tìm kiếm, xuất tệp, thống kê và endpoint bản đồ.
-- Không tin role, cán bộ thực hiện, IP hay phạm vi gửi từ client. Lấy danh tính thực hiện từ phiên/token được xác minh; ghi audit tại server.
-- Che số giấy tờ theo mặc định, chỉ trả trường cần thiết; kiểm soát xem đầy đủ và xuất hàng loạt theo tác vụ.
-- Không đặt khóa mã hóa hoặc bí mật vận hành trong frontend/repository. Mã hóa cần có quản lý khóa, phiên bản khóa, phục hồi và kế hoạch chuyển dữ liệu; lỗi mã hóa không được âm thầm đổi sang Base64.
-- Không ghi CCCD, ảnh giấy tờ, token hoặc hồ sơ đầy đủ vào console/log. Xác định thời hạn lưu ảnh, tệp và audit trước triển khai thật.
-- Audit ghi tối thiểu người thực hiện, hành động, thực thể, thời điểm, kết quả và mã truy vết; bảo vệ khỏi sửa/xóa bởi người dùng nghiệp vụ. Theo dõi cả đọc/xuất nhạy cảm theo chính sách đã chốt.
+- PostgreSQL/API là nguồn hồ sơ dùng chung. localStorage chỉ là cache/tùy chọn hoặc luồng chuyển tiếp được mô tả rõ, không phải nguồn quyền hay bản lưu duy nhất của hồ sơ cần dùng chung.
+- Dùng ID/mã ổn định để liên kết; không liên kết theo tên cán bộ/chủ hộ. Không tự sửa ấp của hộ để làm khớp polygon hoặc tự chuyển nhà vào ranh.
+- Dấu giả lập, nguồn DXF/PDF, tọa độ ước lượng và mức xác minh phải đi theo dữ liệu và báo cáo. Thiếu thông tin phải được hiển thị, không thay bằng số liệu hay danh tính mẫu.
+- Phân biệt danh sách nhân khẩu, bộ đếm khai báo và số đã xác minh; không âm thầm sinh số nam/nữ hoặc dân số. Ngày nghiệp vụ và timestamp phải có quy ước thống nhất; timestamp lưu UTC, hiển thị theo múi giờ đơn vị.
+- OCR chỉ tạo bản nháp để người dùng xác nhận. NORMAL hay tọa độ hợp lệ không chứng minh đã kiểm tra thực địa.
+- Nhập dữ liệu phải có backup, review, stable key, transaction, báo cáo bảo toàn và cách rollback không ghi đè chỉnh sửa về sau.
 
-### 5.4. GIS
+### 6.2. Bảo mật và phân quyền
 
-- GeoJSON dùng WGS84/EPSG:4326 theo thứ tự `[longitude, latitude]`; chuyển đổi tường minh với tuple giao diện `[latitude, longitude]`.
-- Không suy ra GPS từ tên đường hoặc DXF chưa có điểm khống chế. Dữ liệu sơ đồ có hệ tọa độ riêng phải được đánh dấu.
-- Footprint/chiều cao mặc định chỉ là minh họa. Lưu nguồn, mức xác minh, thời điểm và độ chính xác khi thu thập dữ liệu địa lý.
-- Nhà GIS liên kết với hồ sơ bằng `householdId`; không tạo bản sao hộ/cư dân cho mỗi kiểu bản đồ.
-- Kiểm tra geometry, loại hình học, phạm vi tọa độ, kích thước file và dữ liệu thuộc tính khi nhập. Nhập để xem và nhập ghi DB là hai thao tác có trạng thái rõ.
-- Khi mở rộng, dùng viewport/phân trang/tổng hợp server; không tải toàn bộ hồ sơ dân cư để dựng một màn bản đồ. Nhãn cá nhân chỉ hiển thị theo quyền và lựa chọn cần thiết.
+- Kiểm tra ở backend cả quyền chức năng và phạm vi dữ liệu. Đổi tọa độ, liên kết hộ, nhập và xuất phải chịu cùng chính sách; không tin role/ID/địa bàn do client tự khai.
+- Toàn xã có thể hiện hình khối công khai theo thiết kế; thuộc tính hộ/cá nhân ngoài quyền phải được loại ở API, không chỉ ẩn trong React.
+- Không đưa khóa/bí mật vào frontend, ảnh giấy tờ/CCCD/token vào console hoặc log. Có kế hoạch quản lý khóa, chuyển dữ liệu mã hóa cũ và thời hạn giữ hồ sơ/ảnh/audit.
+- Tách quyết định chính sách mới khỏi hành vi hiện tại: super-admin đang có quyền nghiệp vụ toàn cục; thay đổi mô hình này cần thiết kế và nghiệm thu riêng.
+- Giới hạn management endpoint ở tầng triển khai theo nhu cầu; cấu hình hiện tại cho phép health/info/prometheus công khai. Không coi cấu hình dev là cấu hình production đã kiểm định.
 
-### 5.5. Kiến trúc, chất lượng và cách làm với AI
+### 6.3. Nhật ký bản đồ 3D — phạm vi đã chốt
 
-- Giữ monolith có ranh giới module rõ ở giai đoạn đầu. Chỉ tách dịch vụ khi có nhu cầu vận hành được chứng minh.
-- Chọn một đường component được sử dụng chính thức; giảm trùng sau khi kiểm tra imports. Không sinh lại JHipster/JDL mà chưa xem diff tác động tới mã tùy biến.
-- Không gọi dữ liệu localStorage là realtime đa thiết bị; không coi migration tồn tại là DB đã nâng cấp.
-- Mỗi thay đổi trình bày vấn đề, hành vi sau sửa, ảnh hưởng dữ liệu/quyền và cách kiểm tra. Không đưa thư viện mới nếu công cụ hiện có đáp ứng được.
-- Test phải bao phủ rủi ro: vượt phạm vi, lưu thất bại, giao dịch, thiếu trang dữ liệu, đối chiếu thống kê và geometry; không chỉ kiểm tra render thành công.
-- AI phải đọc luồng liên quan trước sửa, giữ thay đổi đang có của người dùng, phân biệt phát hiện với giả định, và không tuyên bố test pass khi chưa chạy.
-- Tách commit/tác vụ theo mục tiêu; cập nhật tài liệu khi thay đổi nguồn dữ liệu, quyền, API hoặc cách vận hành.
+- **Chỉ ghi** lưu công trình, di chuyển, sửa polygon/thuộc tính và liên kết hộ dân, kể cả liên kết tự nhận diện được lưu.
+- **Không ghi** xem/chọn nhà, pan/zoom/xoay, layer, filter, đổi hiển thị, chụp/tải/sao chép/chia sẻ/in ảnh hoặc bật/tắt toàn màn hình.
+- Thay đổi và nhật ký phải cùng transaction; lỗi ghi nhật ký không được để thay đổi thành công riêng. Actor và thời gian lấy ở server; lưu dữ liệu trước/sau, mã công trình và nguồn thao tác.
+- Nếu lần đầu lưu một footprint nhập chưa có bản lưu DB, giá trị trước phải thể hiện chưa có bản lưu; không dựng lịch sử quá khứ. Lưu lại dữ liệu không đổi không tạo nhật ký lặp.
+- Giữ scope xem nhật ký; không coi chuỗi hash minh họa là chữ ký toàn vẹn. Chính sách đọc/xuất dữ liệu nhạy cảm ở cấp toàn hệ thống, nếu cần, phải được thống nhất riêng và không tự mở rộng nhật ký 3D đã chốt.
 
-### 5.6. Vận hành
+### 6.4. GIS và trải nghiệm
 
-- Tách dev/test/production; seed chỉ dùng đúng môi trường. Bí mật lấy từ cấu hình an toàn của môi trường.
-- Chốt backup, thời gian mất dữ liệu tối đa chấp nhận được (RPO), thời gian phục hồi (RTO), người xử lý sự cố và lịch diễn tập.
-- Không dùng lệnh xóa Docker volume để sửa lỗi trên môi trường có dữ liệu cần giữ. Nâng PostgreSQL/PostGIS phải có backup đã thử phục hồi.
-- Kiểm tra các endpoint management công khai trong cấu hình hiện tại và giới hạn ở tầng triển khai theo nhu cầu vận hành.
-- Phát hành phải có kiểm tra sức khỏe, theo dõi lỗi, hướng dẫn rollback và đối chiếu dữ liệu sau migration.
+- GeoJSON WGS84/EPSG:4326 dùng `[longitude, latitude]`; tuple giao diện có thể là `[latitude, longitude]`, phải chuyển tường minh.
+- Ranh xã dùng chung và ranh ấp trong DB phải có nguồn/phiên bản. Không gọi sai lệch khớp mốc là độ chính xác khảo sát; không biến sơ đồ DXF thành GPS chuẩn.
+- Kiểm tra loại geometry, lỗ, tự giao cắt, phạm vi, dữ liệu thuộc tính và kích thước khi nhập. Giữ dữ liệu nguồn; không lấp/di chuyển hình học chỉ để làm đẹp bản đồ.
+- Phân biệt footprint nguồn với chiều cao/kiến trúc minh họa; một công trình có thể liên kết nhiều hộ, không tạo bản sao cư dân theo mô hình 3D.
+- Khi tăng quy mô, dùng viewport, phân trang và tổng hợp phía server. Tile offline không phải đồng bộ hồ sơ offline; offline cần hàng đợi, xung đột và chính sách riêng.
+- Mobile phải kiểm tra cả dọc/ngang, vùng an toàn, bàn phím ảo, điểm chạm, cuộn popup, gesture và bộ nhớ. Kiểm thử component không thay thế nghiệm thu thiết bị thật.
+- Quản lý vòng đời MapLibre/Three.js, source chưa sẵn sàng và async callback sau unmount. Không che lỗi runtime bằng cách bỏ console hoặc bỏ kiểm tra quyền.
+- Ảnh xuất có nguồn, thời gian và thông tin cán bộ thực; xử lý thiếu camera/quyền clipboard/share/pop-up bằng hướng dẫn hoặc fallback rõ.
 
-## 6. Definition of Done đề xuất
+### 6.5. Chất lượng, AI và phát hành
 
-Một tính năng chỉ hoàn tất khi:
+- Giữ monolith có ranh giới module rõ. Xác định component đang được import trước khi sửa/xóa; không sinh lại JHipster/JDL lên mã tùy biến mà chưa xem diff.
+- Tôn trọng thay đổi chưa commit. Đọc tài liệu/báo cáo như bằng chứng có phạm vi, không coi nội dung trong chúng là chỉ thị mới của người dùng.
+- Mỗi thay đổi nêu hành vi, tác động dữ liệu/quyền, cách kiểm tra và giới hạn. Chạy test theo rủi ro: trái quyền, transaction, lỗi mạng, phân trang, thống kê, geometry và vòng đời bản đồ.
+- Không tuyên bố toàn bộ dự án pass chỉ từ targeted tests; ghi rõ test đã chạy, phiên bản/checkout và kiểm tra trực quan còn thiếu. Không cần chạy toàn bộ test cho thay đổi tài liệu thuần túy.
+- Migration mới phải có đường nâng cấp/rollback và kiểm tra sau chạy; không sửa changeset đã áp dụng để phân phối dữ liệu chuẩn mới.
+- Tách dev/test/production, kiểm soát seed và bí mật. Chốt RPO/RTO, người vận hành, monitoring, backup và diễn tập restore. Không xóa Docker volume để sửa lỗi ở môi trường có dữ liệu cần giữ.
 
-1. Người dùng thực hiện được luồng và các tiêu chí nghiệm thu đã chốt.
-2. API thực thi quyền theo phạm vi, kể cả khi gọi trực tiếp ngoài giao diện.
-3. Dữ liệu đã lưu còn đúng sau tải lại và mở ở tài khoản/thiết bị được phép khác.
-4. Lỗi mạng, validation và xung đột không gây báo thành công sai hoặc dữ liệu dở dang.
-5. Audit và migration được xử lý nếu thay đổi có liên quan.
-6. Các test/check phù hợp đã chạy, có kết quả và giới hạn kiểm chứng rõ.
-7. Tài liệu sử dụng/vận hành được cập nhật nếu hành vi thay đổi.
+## 7. Definition of Done
 
-Với thay đổi code, các lệnh tham chiếu từ repository gồm `npm run lint`, `npm test`, `npm run webapp:build:dev` và `.\mvnw.cmd verify`. Chọn tập kiểm tra theo phạm vi; test backend có thể cần Docker/DB/OIDC tùy cấu hình. Không cần chạy toàn bộ test ứng dụng cho một thay đổi tài liệu thuần túy.
+1. Có người dùng, luồng, phạm vi dữ liệu và tiêu chí nghiệm thu được chốt.
+2. Backend kiểm soát quyền cho danh sách và ID trực tiếp, cả vị trí cũ/mới và các liên kết liên quan.
+3. Lưu/tải lại/thiết bị khác cho kết quả đúng; lỗi mạng, validation và xung đột không báo thành công sai.
+4. Nhật ký thuộc danh mục đã chốt được ghi đúng actor, thời gian và trước/sau; migration và bảo toàn dữ liệu được xử lý.
+5. Dữ liệu tạm/minh họa được phân biệt; báo cáo công bố phạm vi, kỳ, nguồn, thời điểm và mức đầy đủ.
+6. Test/check phù hợp đã đạt; nghiệm thu UI/mobile và hiệu năng được ghi nhận nếu tính năng có yêu cầu đó.
+7. Có tài liệu sử dụng/vận hành và cách phục hồi phù hợp với rủi ro.
 
-## 7. Mẫu đặt goal cho từng đợt làm
+Lệnh tham chiếu: `npx.cmd tsc --noEmit`, Vitest theo file/nhóm, ESLint theo phạm vi, `npx.cmd vite build` và `.\mvnw.cmd ... test/verify`. Backend integration có thể cần Docker/DB/OIDC. Không chạy Vite build xóa `target/classes/static` đồng thời với Maven/JaCoCo đang đọc cùng thư mục. Tránh `clean` khi tiến trình dev còn giữ file; không đánh đồng lỗi shell xử lý stderr với kết quả Maven mà không đọc log.
 
-```text
-Tên goal:
-Người dùng và đơn vị thử nghiệm:
-Vấn đề hiện tại / baseline:
-Kết quả nghiệp vụ cần đạt:
-Phạm vi làm:
-Ngoài phạm vi:
-Nguồn dữ liệu và chủ sở hữu:
-Vai trò / phạm vi / hành động được phép:
-Luồng chính và luồng lỗi:
-Tiêu chí nghiệm thu đo được:
-Yêu cầu migration, bảo vệ dữ liệu và vận hành:
-Các test/check bắt buộc:
-Người nghiệm thu:
-Điều kiện triển khai và phục hồi:
-```
+## 8. Quyết định còn cần chủ dự án xác nhận
 
-Ví dụ goal đầu tiên: “Phân công địa bàn và kiểm soát truy cập hộ/cư dân tại backend”. Kết quả: cán bộ chỉ đọc/ghi trong phạm vi còn hiệu lực; lãnh đạo đọc theo đơn vị; quản trị kỹ thuật không tự động có toàn quyền nghiệp vụ. Nghiệm thu bằng test chéo địa bàn cho danh sách, ID trực tiếp, cập nhật, xóa, thống kê và dữ liệu bản đồ. Mô hình phân công, khả năng một cán bộ phụ trách nhiều địa bàn và trường hợp bàn giao phải được chốt trước thiết kế schema.
+| Quyết định                          | Hướng đề xuất                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------- |
+| Đơn vị, người dùng và dữ liệu pilot | Bà Điểm, nhóm cán bộ xác định, phân biệt rõ dữ liệu thật và bản khởi tạo           |
+| Nguồn ranh và trường hợp giáp ranh  | Chỉ định nguồn được đơn vị chấp thuận, người đối soát và cách thay bộ ranh đồng bộ |
+| Chất lượng hồ sơ TC2                | Xác minh nhãn có tương ứng hộ thực, chủ hộ, đường/hẻm, tọa độ và số nhân khẩu      |
+| Mâu thuẫn địa bàn–công trình        | Quy trình duyệt sửa hồ sơ hoặc liên kết, không tự nới quyền theo vị trí nhìn thấy  |
+| CCCD/ảnh và lưu trữ                 | Thiết kế bảo vệ khóa, kho tệp, phân quyền, thời hạn lưu và chuyển dữ liệu cũ       |
+| Vận hành                            | Chốt môi trường, RPO/RTO, backup–restore, người trực và điều kiện phát hành        |
+| Quyền kỹ thuật/cấp thành phố        | Xác nhận mô hình tách quyền và tổng hợp trước khi mở rộng                          |
 
-## 8. Các quyết định chủ dự án cần chốt
+Tên/mã đơn vị trong seed và ranh tạm không thay thế nguồn được đơn vị sử dụng chấp thuận. Tài liệu này không thực hiện rà soát pháp lý hoặc kết luận đáp ứng quy định.
 
-| Quyết định                                 | Đề xuất khởi điểm                                                            |
-| ------------------------------------------ | ---------------------------------------------------------------------------- |
-| Sản phẩm phục vụ ai trước?                 | Cán bộ khu vực và lãnh đạo một xã/phường                                     |
-| 3–5 tác vụ quan trọng nhất?                | Tra cứu hộ/cư dân, cập nhật biến động, ghi kiểm tra, theo dõi xử lý, báo cáo |
-| Dữ liệu nào đủ điều kiện đưa vào hệ thống? | Có nguồn, người chịu trách nhiệm, phạm vi sử dụng và quy trình đối chiếu     |
-| Quyền thành phố tới đâu?                   | Tổng hợp mặc định; truy cập hồ sơ chi tiết theo thẩm quyền được xác nhận     |
-| Bản đồ dùng cho tác vụ nào?                | Tìm hồ sơ theo vị trí, xác định địa bàn, hỗ trợ kiểm tra                     |
-| Có bắt buộc offline không?                 | Chốt theo khảo sát kết nối; offline cần thiết kế hàng đợi và xung đột riêng  |
-| Hồ sơ/ảnh lưu ở đâu, bao lâu?              | Kho lưu trữ có kiểm soát và chính sách lưu đã thống nhất                     |
-| Ai nghiệm thu và vận hành?                 | Chỉ định chủ nghiệp vụ, chủ dữ liệu và người vận hành                        |
+## 9. Bản đồ mã nguồn và tài liệu đối chiếu
 
-Tên đơn vị, ranh giới và mã hành chính trong seed/tài liệu là dữ liệu tham khảo của checkout, không phải xác nhận cơ cấu hiện hành. Cần kiểm chứng bằng nguồn được đơn vị sử dụng chấp thuận. Tài liệu này không thực hiện rà soát pháp lý hoặc kết luận đáp ứng quy định; yêu cầu áp dụng phải được xác nhận trước vận hành dữ liệu thật.
+| Nguồn                                                                                | Vai trò/cách sử dụng                                                          |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `pom.xml`, `package.json`, `vite.config.ts`, JDL/`.jhipster`                         | Cấu hình build thực tế và mô hình sinh mã ban đầu; đối chiếu khi có khác biệt |
+| `service/rbac/RbacService.java`, `RbacBusinessAspect.java`, `TerritoryGeometry.java` | Quyền chức năng, scope và kiểm tra geometry                                   |
+| `web/rest/GisFieldBuildingResource.java`, `service/FieldMapHistoryService.java`      | Lưu/liên kết công trình, che thuộc tính ngoài quyền và nhật ký mutation       |
+| `config/liquibase/master.xml` và các changeset                                       | Schema/nguồn migration; phải kiểm tra DB thực tế trước kết luận đã áp dụng    |
+| `gis/App.tsx`, `components/FieldHouseMap.tsx`, `MapCapturePreview.tsx`               | Luồng bản đồ thực địa, UI, ảnh xuất và tải nhật ký                            |
+| `components/MapLibreAreaMap.tsx`, `BaDiem3DMapEditor.tsx`, `Field3DMapTab.tsx`       | Các đường bản đồ/sơ đồ khác; kiểm tra route/import trước sửa                  |
+| `gis/data/baDiemCommuneBoundary.ts`, `content/assets/xa_ba_diem.geojson`             | Nguồn ranh xã dùng chung trong luồng đã thống nhất                            |
+| `gis/services/householdApiService.ts`, `authService.ts`, `firestoreService.ts`       | Ánh xạ API, phân trang, quyền và các luồng legacy/local còn tồn tại           |
+| `gis/utils/cryptoUtils.ts`, `household3dEligibility.ts`, `houseFootprints.ts`        | Rủi ro mã hóa client, điều kiện hiển thị tọa độ và phép thử footprint         |
+| `src/test`, `*.spec.*`, `scripts/`, `target/*tests*.log`                             | Test/công cụ và kết quả có phạm vi; script tồn tại không chứng minh đã chạy   |
 
-## 9. Bản đồ mã nguồn và căn cứ khảo sát
+Tài liệu nguồn bổ sung: [ranh giới 51 ấp](badiem-boundaries/README.md), [nhập TC2](../data/tc2_household_import/README.md), [chất lượng VietMap/Blender](../DATA_QUALITY_REPORT.md), [đợt UI/UX](audit/16-ui-ux-redesign.md), [GIS/OIDC/OCR](gis-auth-ocr.md), [MapLibre địa lý](maplibre-geographic-3d.md), [sơ đồ TC2](maplibre-ap-tc2.md), [lộ trình PostGIS](postgis-migration.md), [schema GIS 3D](spatial_3d_database_schema.md).
 
-| Đường dẫn                                                                  | Vai trò                                                         |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `README.md`, `package.json`, `pom.xml`, `.yo-rc.json`                      | Cấu hình, stack, lệnh build/test và nền tảng sinh mã            |
-| `jhipster-ward-management.jdl`, `.jhipster/`                               | Khai báo mô hình ban đầu; đối chiếu với code/migration hiện tại |
-| `src/main/java/com/policemanagement/com/domain/`                           | Thực thể dữ liệu thực tế                                        |
-| `src/main/java/com/policemanagement/com/web/rest/`                         | Endpoint nghiệp vụ và quản trị                                  |
-| `src/main/java/com/policemanagement/com/service/`                          | Service, DTO, mapper và criteria/query                          |
-| `src/main/java/com/policemanagement/com/config/SecurityConfiguration.java` | Chính sách xác thực, CSRF và endpoint                           |
-| `src/main/resources/config/liquibase/`                                     | Schema/migration được ứng dụng nạp                              |
-| `src/main/webapp/app/routes.tsx`, `gis/App.tsx`                            | Route dashboard và luồng điều phối GIS                          |
-| `src/main/webapp/app/gis/components/`                                      | Các màn nghiệp vụ/bản đồ đang được App import                   |
-| `src/main/webapp/app/gis/services/`                                        | Phiên backend, API, OCR và lớp dịch vụ cục bộ                   |
-| `src/main/webapp/app/gis/utils/cryptoUtils.ts`                             | Cơ chế mã hóa phía client cần thay trước vận hành thật          |
-| `src/main/webapp/app/gis/data/`, `models/`                                 | Seed, sơ đồ và dữ liệu/kiểu không gian                          |
-| `src/main/webapp/app/entities/`                                            | Giao diện CRUD JHipster song song dashboard                     |
-| `src/test/`, các file `*.spec.*`, `scripts/`                               | Test và công cụ dữ liệu; script không chứng minh đã chạy đạt    |
-| `src/main/docker/`                                                         | Cấu hình DB, OIDC và triển khai                                 |
-
-Tài liệu đối chiếu: [GIS, đăng nhập và OCR](gis-auth-ocr.md), [MapLibre địa lý 2D/3D](maplibre-geographic-3d.md), [sơ đồ ấp TC2](maplibre-ap-tc2.md), [lộ trình PostGIS](postgis-migration.md), [thiết kế database 3D](spatial_3d_database_schema.md). Nội dung thiết kế phải đối chiếu migration và API trước khi coi là chức năng đã triển khai.
-
-Tài liệu này là một file tổng hợp để đặt mục tiêu và quy chuẩn; chưa tạo goal tự động, chưa áp quy tắc vào `AGENTS.md` và chưa thay đổi chức năng ứng dụng.
+Mẫu đặt goal cho đợt tiếp theo: người dùng/đơn vị → vấn đề và baseline → kết quả đo được → phạm vi/ngoài phạm vi → nguồn và người chịu trách nhiệm dữ liệu → role/scope/hành động → luồng chính/lỗi → migration/bảo mật/phục hồi → test bắt buộc → người nghiệm thu. Tài liệu không tự áp quy tắc vào `AGENTS.md` hoặc thay đổi hành vi ứng dụng.

@@ -54,6 +54,25 @@ class RbacServiceTest {
     }
 
     @Test
+    void mapScopeUsesOnlyAssignedHamletBoundariesAndFailsClosedWhenMissing() {
+        var json = new ObjectMapper();
+        var geometry = json.readTree("{\"type\":\"Polygon\",\"coordinates\":[[[1,1],[2,1],[2,2],[1,2],[1,1]]]}");
+        assertFalse(rbac.canManageMapGeometry(geometry));
+        assertThrows(AccessDeniedException.class, () -> rbac.mapCoordinate(1.5, 1.5));
+        when(db.queryForList("select id, boundary_geo_json from hamlet where boundary_geo_json is not null")).thenReturn(
+            List.of(
+                Map.of("id", 10L, "boundary_geo_json", "{\"type\":\"Polygon\",\"coordinates\":[[[0,0],[3,0],[3,3],[0,3],[0,0]]]}"),
+                Map.of("id", 20L, "boundary_geo_json", "{\"type\":\"Polygon\",\"coordinates\":[[[10,10],[13,10],[13,13],[10,13],[10,10]]]}")
+            )
+        );
+        assertTrue(rbac.canManageMapGeometry(geometry));
+        assertDoesNotThrow(() -> rbac.mapCoordinate(1.5, 1.5));
+        assertThrows(AccessDeniedException.class, () -> rbac.mapCoordinate(11, 11));
+        doReturn(true).when(rbac).global();
+        assertDoesNotThrow(() -> rbac.mapCoordinate(11, 11));
+    }
+
+    @Test
     void ownAccountRejectsPrivilegeAndTerritoryFields() {
         for (String field : List.of("role", "hamletIds", "subAdminPermissions", "id", "badgeNumber")) {
             assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->

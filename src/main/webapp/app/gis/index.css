@@ -446,4 +446,25 @@ html.dark .text-purple-600 {
     max-width: 100%;
     border-radius: 16px 16px 0 0;
   }
+  :is(.gis-household-dialog, .gis-household-create-dialog) {
+    overscroll-behavior: contain;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+  :is(.gis-household-dialog, .gis-household-create-dialog) > div {
+    min-width: 0;
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+    overflow-wrap: anywhere;
+  }
+  :is(.gis-household-dialog, .gis-household-create-dialog) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+    font-size: 16px;
+    min-height: 44px;
+    min-width: 0;
+  }
+  :is(.gis-household-dialog, .gis-household-create-dialog) button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
 }

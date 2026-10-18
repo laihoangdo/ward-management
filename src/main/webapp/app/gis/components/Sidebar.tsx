@@ -31,6 +31,7 @@ interface SidebarProps {
   dynamicMenus: DynamicMenuItemConfig[];
   warningCount: number;
   isOpenMobile?: boolean;
+  isOpenDesktop?: boolean;
   onCloseMobile?: () => void;
   onLogout: () => void;
   onSwitchAccount: () => void;
@@ -44,6 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   dynamicMenus,
   warningCount,
   isOpenMobile = false,
+  isOpenDesktop = true,
   onCloseMobile,
   onLogout,
   onSwitchAccount,
@@ -54,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     'area-map': Map,
     'advanced-map': Grid,
     'field-3d-map': Boxes,
+    'bando-3d': Boxes,
     households: Users,
     residents: UserCheck,
     documents: FileText,
@@ -93,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const menuGroup = (id: NavigationTab) => {
     if (['overview', 'households', 'residents', 'documents'].includes(id)) return 'Công việc hằng ngày';
-    if (['area-map', 'advanced-map', 'field-3d-map', 'areas'].includes(id)) return 'Địa bàn và bản đồ';
+    if (['area-map', 'advanced-map', 'field-3d-map', 'bando-3d', 'areas'].includes(id)) return 'Địa bàn và bản đồ';
     if (id === 'logs') return 'Lịch sử kiểm tra';
     if (id === 'settings') return 'Tài khoản của tôi';
     return 'Quản trị và phân quyền';
@@ -324,7 +327,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-72 h-full shrink-0 border-r border-slate-800 overflow-hidden">{sidebarContent}</aside>
+      {isOpenDesktop && (
+        <aside id="gis-desktop-sidebar" className="hidden lg:flex w-72 h-full shrink-0 border-r border-slate-800 overflow-hidden">
+          {sidebarContent}
+        </aside>
+      )}
 
       {/* Mobile Drawer Backdrop & Panel */}
       {isOpenMobile && (

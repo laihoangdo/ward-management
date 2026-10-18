@@ -1,5 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Search, RefreshCw, Shield, Menu, X, Sun, Moon, Mic, LogOut, UserCheck, Home, Bell } from 'lucide-react';
+import {
+  Search,
+  RefreshCw,
+  Shield,
+  Menu,
+  X,
+  Sun,
+  Moon,
+  Mic,
+  LogOut,
+  UserCheck,
+  Home,
+  Bell,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react';
 import { Link } from 'react-router';
 import { NavigationTab, AppUser } from '../types';
 import { VoiceSearchModal } from './VoiceSearchModal';
@@ -12,6 +27,8 @@ interface HeaderProps {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onToggleMobileSidebar?: () => void;
+  onToggleDesktopSidebar?: () => void;
+  isDesktopSidebarOpen?: boolean;
   backendStatus?: 'checking' | 'online' | 'offline';
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
@@ -29,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery,
   onSearchChange,
   onToggleMobileSidebar,
+  onToggleDesktopSidebar,
+  isDesktopSidebarOpen = true,
   backendStatus = 'checking',
   theme = 'light',
   onToggleTheme,
@@ -97,6 +116,19 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="gis-header h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
       {/* Title / Hamburger menu / Home button */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
+        {onToggleDesktopSidebar && (
+          <button
+            type="button"
+            onClick={onToggleDesktopSidebar}
+            aria-label={isDesktopSidebarOpen ? 'Ẩn menu bên trái' : 'Hiện menu bên trái'}
+            title={isDesktopSidebarOpen ? 'Ẩn menu bên trái' : 'Hiện menu bên trái'}
+            aria-expanded={isDesktopSidebarOpen}
+            aria-controls="gis-desktop-sidebar"
+            className="hidden lg:flex h-10 w-10 items-center justify-center shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            {isDesktopSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+          </button>
+        )}
         {/* Mobile/Tablet Hamburger Toggle Button */}
         {onToggleMobileSidebar && (
           <button

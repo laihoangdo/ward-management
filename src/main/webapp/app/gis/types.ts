@@ -3,6 +3,7 @@ export type NavigationTab =
   | 'area-map'
   | 'advanced-map'
   | 'field-3d-map'
+  | 'bando-3d'
   | 'households'
   | 'residents'
   | 'documents'
@@ -265,6 +266,7 @@ export interface OcrExtractedData {
 }
 
 export type AuditActionType =
+  | 'map_3d'
   | 'coordinate_update' // Chỉnh sửa tọa độ
   | 'profile_update' // Cập nhật hồ sơ / ghi chú kiểm tra
   | 'reminder_sent' // Nhắc nhở & đôn đốc

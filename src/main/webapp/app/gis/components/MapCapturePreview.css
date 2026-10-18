@@ -1,0 +1,37 @@
+.field-capture-backdrop .tc2-capture-modal {
+  max-height: calc(100dvh - 24px);
+  color: #0f172a;
+}
+.field-capture-backdrop .tc2-capture-preview {
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+.field-capture-backdrop :is(.tc2-capture-header, .tc2-capture-footer) {
+  flex-shrink: 0;
+}
+@media (max-width: 760px), (max-height: 600px) {
+  .field-capture-backdrop {
+    padding: max(8px, env(safe-area-inset-bottom)) 8px;
+  }
+  .field-capture-backdrop .tc2-capture-modal {
+    overflow-y: auto;
+  }
+  .field-capture-backdrop :is(.tc2-capture-header, .tc2-capture-footer) {
+    padding: 10px;
+    gap: 8px;
+  }
+  .field-capture-backdrop .tc2-capture-header h3 {
+    font-size: 15px;
+  }
+  .field-capture-backdrop .tc2-capture-preview {
+    padding: 8px;
+    flex-shrink: 0;
+  }
+  .field-capture-backdrop .tc2-capture-preview img {
+    max-height: 45dvh;
+  }
+  .field-capture-backdrop button {
+    min-height: 44px;
+  }
+}

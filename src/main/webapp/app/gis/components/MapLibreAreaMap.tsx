@@ -8,7 +8,7 @@ import './MapLibreAreaMap.css';
 import { HouseholdFacility } from '../types';
 import apTc2Schematic from '../data/apTc2Schematic.json';
 import apTc2DxfLinework from '../data/apTc2DxfLinework.json';
-import baDiemBoundaryGis from '../data/baDiemBoundaryGis.json';
+import { baDiemCommuneBoundary as baDiemBoundaryGis } from '../data/baDiemCommuneBoundary';
 import {
   BUILDING_TYPES,
   BuildingTypeConfig,
