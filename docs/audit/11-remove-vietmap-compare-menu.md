@@ -1,3 +1,5 @@
+> Historical snapshot: VietMap Compare and its unused Blender pipeline were subsequently removed. See `18-remove-vietmap-pipeline.md` for current status.
+
 # Remove the VietMap comparison menu
 
 Removed only the vietmap-compare menu: App import/render branch, navigation type, default configuration, sidebar icon/automatic injection and backend catalog registration. Deleted components/VietMapCompareTab.tsx after saving a local recovery copy in target/removed-vietmap-menu. Exact retired-ID filters exclude stored legacy configuration on backend reads, frontend subscriptions and sidebar rendering; no database deletion/migration executed. Field 3D fallback placement now anchors after advanced-map when absent from server configuration.

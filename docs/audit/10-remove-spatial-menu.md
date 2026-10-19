@@ -1,3 +1,5 @@
+> Historical snapshot: VietMap Compare and its unused Blender pipeline were subsequently removed. See `18-remove-vietmap-pipeline.md` for current status.
+
 # Remove only the obsolete spatial menu
 
 Requested scope: remove “Không gian 3D” (spatial-3d-map), preserve “Bản Đồ Không Gian 3D” (field-3d-map) and all other app features.

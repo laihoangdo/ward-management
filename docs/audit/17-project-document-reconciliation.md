@@ -1,3 +1,5 @@
+> Historical snapshot: VietMap Compare and its unused Blender pipeline were subsequently removed. See `18-remove-vietmap-pipeline.md` for current status.
+
 # Đối chiếu tài liệu và kế hoạch cải thiện có kiểm soát hồi quy
 
 Ngày: **18/10/2026**. Tài liệu gốc: [tổng quan dự án, mục tiêu và quy chuẩn](../tong-quan-du-an-goal-va-quy-chuan.md).

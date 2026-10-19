@@ -1,3 +1,5 @@
+> Historical snapshot: VietMap Compare and its unused Blender pipeline were subsequently removed. See `18-remove-vietmap-pipeline.md` for current status.
+
 # Feature inventory
 
 This is a source-evidenced inventory, not acceptance certification. IMPLEMENTED means a concrete code path exists and can be inspected; runtime verification is stated separately. Roles: officer (ROLE_USER), sub-admin (ROLE_SUB_ADMIN), admin (ROLE_ADMIN), superadmin (ROLE_SUPERADMIN); permissions and territorial assignments further restrict access. Generated route roles and GIS business roles are separate checks. All paths below are relative to `src/main` unless stated otherwise.

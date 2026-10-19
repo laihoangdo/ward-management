@@ -1,3 +1,5 @@
+> Historical snapshot: VietMap Compare and its unused Blender pipeline were subsequently removed. See `18-remove-vietmap-pipeline.md` for current status.
+
 # Safe cleanup plan — no cleanup executed
 
 Categories: A KEEP; B KEEP_BUT_REVIEW; C SAFE_CLEANUP_CANDIDATE; D POTENTIALLY_UNUSED; E LEGACY_OR_DUPLICATE; F INVESTIGATE. See `04-file-classification.tsv` for a per-file inventory of Git-tracked and untracked source paths. Directory classifications are triage defaults, not proof of individual file obsolescence.

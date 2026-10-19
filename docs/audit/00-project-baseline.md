@@ -1,3 +1,5 @@
+> Historical snapshot: VietMap Compare and its unused Blender pipeline were subsequently removed. See `18-remove-vietmap-pipeline.md` for current status.
+
 # Project baseline — 2026-10-11
 
 For final integration attempts and post-implementation checks, see [execution results](05-execution-results.md); early discovery results below are retained as the baseline.

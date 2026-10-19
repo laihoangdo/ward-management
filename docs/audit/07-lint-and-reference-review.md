@@ -1,3 +1,5 @@
+> Historical snapshot: VietMap Compare and its unused Blender pipeline were subsequently removed. See `18-remove-vietmap-pipeline.md` for current status.
+
 # Lint and reference review — 2026-10-11
 
 Read-only inspection: no ESLint --fix, source cleanup, dependency removal, permission changes or database writes. Existing source/user changes preserved. Reports are generated under ignored target; no application tests rerun because this batch adds documentation only.

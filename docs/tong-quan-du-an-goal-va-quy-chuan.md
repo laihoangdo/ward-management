@@ -77,7 +77,7 @@ flowchart LR
 2. **Bản đồ thực địa đang dùng:** `FieldHouseMap.tsx`, nguồn `content/data/badiem-houses.geojson`, ảnh nền tile cục bộ và các override/liên kết trong `gis_field_building`. Khối extrusion không phải kiến trúc 3D đã khảo sát; chiều cao nguồn/ước lượng phải được nhận diện.
 3. **Quyền theo không gian:** `hamlet.boundary_geo_json` là nguồn backend; endpoint boundaries chỉ trả thuộc tính công khai. Ranh xã dùng chung từ `content/assets/xa_ba_diem.geojson`. Không dùng `badiem_boundary.js` hoặc một polygon cũ khác để thay nguồn chuẩn này trong luồng đã thống nhất.
 4. **Bản đồ lưới/sơ đồ TC2:** có tọa độ sơ đồ và kết quả căn chỉnh riêng. Không chuyển số nhà DXF thành GPS khảo sát hoặc footprint thửa đất.
-5. **VietMap/Blender:** báo cáo `DATA_QUALITY_REPORT.md` mô tả một pipeline khác, gồm 190 footprint và chiều cao/chi tiết minh họa. Không dùng số 190 để kết luận số khối nhà của bản đồ thực địa; không dùng ranh provisional 27,219 km² của pipeline đó thay ranh xã/ấp hiện tại.
+5. **VietMap Compare đã loại bỏ:** pipeline VietMap/Blender cũ, component 3D không được sử dụng và GLB tương ứng đã được gỡ. Các bản đồ hiện tại tiếp tục dùng dữ liệu riêng; xem [biên bản dọn dẹp](audit/18-remove-vietmap-pipeline.md).
 
 Các schema `gis_building` và `gis_field_building` có mục đích/đường lưu khác nhau. Cần xác định luồng sử dụng trước sửa, nhập hoặc thống kê; không nhân bản hồ sơ dân cư cho từng kiểu bản đồ.
 
@@ -238,7 +238,7 @@ Tên/mã đơn vị trong seed và ranh tạm không thay thế nguồn được
 | `web/rest/GisFieldBuildingResource.java`, `service/FieldMapHistoryService.java`      | Lưu/liên kết công trình, che thuộc tính ngoài quyền và nhật ký mutation       |
 | `config/liquibase/master.xml` và các changeset                                       | Schema/nguồn migration; phải kiểm tra DB thực tế trước kết luận đã áp dụng    |
 | `gis/App.tsx`, `components/FieldHouseMap.tsx`, `MapCapturePreview.tsx`               | Luồng bản đồ thực địa, UI, ảnh xuất và tải nhật ký                            |
-| `components/MapLibreAreaMap.tsx`, `BaDiem3DMapEditor.tsx`, `Field3DMapTab.tsx`       | Các đường bản đồ/sơ đồ khác; kiểm tra route/import trước sửa                  |
+| `components/MapLibreAreaMap.tsx`, `BaDiem3DMapEditor.tsx`       | Các đường bản đồ/sơ đồ khác; kiểm tra route/import trước sửa                  |
 | `gis/data/baDiemCommuneBoundary.ts`, `content/assets/xa_ba_diem.geojson`             | Nguồn ranh xã dùng chung trong luồng đã thống nhất                            |
 | `gis/services/householdApiService.ts`, `authService.ts`, `firestoreService.ts`       | Ánh xạ API, phân trang, quyền và các luồng legacy/local còn tồn tại           |
 | `gis/utils/cryptoUtils.ts`, `household3dEligibility.ts`, `houseFootprints.ts`        | Rủi ro mã hóa client, điều kiện hiển thị tọa độ và phép thử footprint         |

@@ -224,7 +224,7 @@ public class RbacResource {
             return rbac
                 .settings(kind)
                 .stream()
-                .filter(menu -> !Set.of("spatial-3d-map").contains(Objects.toString(menu.get("id"), "")))
+                .filter(menu -> !Set.of("spatial-3d-map", "vietmap-compare").contains(Objects.toString(menu.get("id"), "")))
                 .toList();
         }
         rbac.superadmin();
