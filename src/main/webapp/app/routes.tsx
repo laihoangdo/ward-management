@@ -13,6 +13,7 @@ const loading = <div>loading ...</div>;
 
 const Admin = React.lazy(() => import('app/modules/administration'));
 const GisDashboard = React.lazy(() => import('app/gis/App'));
+const RosterPage = React.lazy(() => import('app/roster/RosterPage'));
 
 const AppRoutes = () => {
   return (
@@ -22,6 +23,14 @@ const AppRoutes = () => {
           <Route index element={<Home />} />
           <Route path="dashboard" element={<GisDashboard />} />
           <Route path="gis-dashboard" element={<GisDashboard />} />
+          <Route
+            path="roster"
+            element={
+              <PrivateRoute hasAnyAuthorities={[Authority.USER, Authority.ADMIN, 'ROLE_SUPERADMIN']}>
+                <RosterPage />
+              </PrivateRoute>
+            }
+          />
           <Route path="logout" element={<Logout />} />
           <Route
             path="admin/*"

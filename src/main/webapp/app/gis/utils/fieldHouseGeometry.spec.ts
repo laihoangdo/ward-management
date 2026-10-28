@@ -17,6 +17,11 @@ const house = (id: string): FieldHouse => ({
 const household = (id: string, coordinates: [number, number], estimated = false) =>
   ({ id, coordinates, coordinatesEstimated: estimated, status: 'normal' }) as HouseholdFacility;
 describe('field map geometry', () => {
+  it('never infers building links from TC2 random coordinates even if the estimated flag is missing', () => {
+    const temporary = { ...household('temp', [10.0005, 106.0005]), coordinateMethod: 'RANDOM_WITHIN_TC2' };
+    expect(indexHouseholds([house('a')], [temporary]).size).toBe(0);
+  });
+
   it('moves all polygon rings and retains shape, closure and metadata', () => {
     const original = house('a');
     original.properties.householdIds = ['1'];

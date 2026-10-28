@@ -1,0 +1,11 @@
+# Required private file; missing credentials must fail startup, not fall back to superuser.
+# Run migrations separately with the admin connection before enabling this profile.
+spring:
+  docker:
+    compose:
+      # Docker service connections override datasource credentials; runtime must use its own role.
+      enabled: false
+  config:
+    import: file:.rbac/database-runtime.properties
+  liquibase:
+    enabled: false

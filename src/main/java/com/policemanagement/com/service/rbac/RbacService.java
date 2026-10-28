@@ -39,6 +39,13 @@ public class RbacService {
     @org.springframework.beans.factory.annotation.Autowired
     private RbacFailureAudit failureAudit;
 
+    private com.policemanagement.com.service.PostgisSpatialService spatial;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setSpatial(com.policemanagement.com.service.PostgisSpatialService spatial) {
+        this.spatial = spatial;
+    }
+
     public RbacService(JdbcTemplate db, ObjectMapper json, KeycloakAdminClient kc) {
         this.db = db;
         this.json = json;
@@ -126,7 +133,12 @@ public class RbacService {
     }
 
     public boolean canManageMapGeometry(JsonNode geometry) {
-        return global() || TerritoryGeometry.covered(geometry, mapTerritories());
+        if (global()) return true;
+        // During cutover both engines must approve; enabling PostGIS must never widen access.
+        return (
+            (spatial == null || !spatial.enabled() || spatial.covered(geometry, areas())) &&
+            TerritoryGeometry.covered(geometry, mapTerritories())
+        );
     }
 
     public void mapGeometry(JsonNode geometry) {
@@ -137,7 +149,11 @@ public class RbacService {
 
     public void mapCoordinate(Number lat, Number lng) {
         if (
-            !global() && (lat == null || lng == null || !TerritoryGeometry.contains(lat.doubleValue(), lng.doubleValue(), mapTerritories()))
+            !global() &&
+            (lat == null ||
+                lng == null ||
+                (spatial != null && spatial.enabled() && !spatial.contains(lat, lng, areas())) ||
+                !TerritoryGeometry.contains(lat.doubleValue(), lng.doubleValue(), mapTerritories()))
         ) {
             throw new AccessDeniedException("Tọa độ ngoài địa bàn hoặc ấp chưa có ranh giới để xác minh");
         }
@@ -539,13 +555,31 @@ public class RbacService {
     public <T> org.springframework.data.jpa.domain.Specification<T> recordScope(String kind) {
         if (global()) return org.springframework.data.jpa.domain.Specification.unrestricted();
         List<Long> ids = scopedRecordIds(kind);
-        return (root, query, builder) -> ids.isEmpty() ? builder.disjunction() : root.get("id").in(ids);
+        List<Long> allowedAreas = areas();
+        List<?> streets = (List<?>) current().getOrDefault("assignedStreets", List.of());
+        return (root, query, builder) -> {
+            if (ids.isEmpty()) return builder.disjunction();
+            var owned = root.get("id").in(ids);
+            if (!"document".equals(kind)) return owned;
+            var houses = query.subquery(Long.class);
+            var h = houses.from(com.policemanagement.com.domain.Household.class);
+            var area = h.get("hamletId").in(allowedAreas);
+            houses
+                .select(h.get("id"))
+                .where(streets.isEmpty() ? area : builder.and(area, builder.or(h.get("street").in(streets), h.get("alley").in(streets))));
+            return builder.and(owned, builder.or(builder.isNull(root.get("householdId")), root.get("householdId").in(houses)));
+        };
     }
 
     public void record(String kind, Long id) {
         if (!global() && !scopedRecordIds(kind).contains(id)) throw new AccessDeniedException(
             "Hồ sơ ngoài phạm vi hoặc chưa xác minh phân công"
         );
+        if ("document".equals(kind)) {
+            var households = db.queryForList("select household_id from document_record where id=?", Long.class, id);
+            if (households.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hồ sơ");
+            if (households.getFirst() != null) household(households.getFirst());
+        }
     }
 
     @org.springframework.transaction.annotation.Transactional

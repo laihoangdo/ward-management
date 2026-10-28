@@ -4,6 +4,7 @@ import { HouseholdFacility, HouseholdCreateInput, Resident, DocumentRecord, Audi
 import { IHousehold } from 'app/shared/model/household.model';
 import { IResident } from 'app/shared/model/resident.model';
 import { IDocumentRecord } from 'app/shared/model/document-record.model';
+import { mapDocumentDto } from './documentLifecycle';
 
 /**
  * Chuyển đổi từ Backend IHousehold (JHipster DTO) sang Frontend HouseholdFacility
@@ -14,14 +15,16 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
   // Tọa độ Bà Điểm mặc định nếu thiếu
   const lat = typeof dto.latitude === 'number' && !isNaN(dto.latitude) && dto.latitude !== 0 ? dto.latitude : 10.854;
   const lng = typeof dto.longitude === 'number' && !isNaN(dto.longitude) && dto.longitude !== 0 ? dto.longitude : 106.612;
-  const coordinatesEstimated = !(
-    typeof dto.latitude === 'number' &&
-    Number.isFinite(dto.latitude) &&
-    dto.latitude !== 0 &&
-    typeof dto.longitude === 'number' &&
-    Number.isFinite(dto.longitude) &&
-    dto.longitude !== 0
-  );
+  const coordinatesEstimated =
+    dto.coordinateMethod === 'RANDOM_WITHIN_TC2' ||
+    !(
+      typeof dto.latitude === 'number' &&
+      Number.isFinite(dto.latitude) &&
+      dto.latitude !== 0 &&
+      typeof dto.longitude === 'number' &&
+      Number.isFinite(dto.longitude) &&
+      dto.longitude !== 0
+    );
 
   // Chuyển đổi FacilityType
   let type: 'household' | 'business' | 'special_monitoring' = 'household';
@@ -41,21 +44,21 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
     status = 'business';
   }
 
-  const residentsCount = Number(dto.residentsCount ?? 1);
-  const maleCount = Number(dto.maleCount ?? Math.ceil(residentsCount / 2));
-  const femaleCount = Number(dto.femaleCount ?? residentsCount - maleCount);
+  const residentsCount = Number(dto.residentsCount ?? 0);
+  const maleCount = Number(dto.maleCount ?? 0);
+  const femaleCount = Number(dto.femaleCount ?? 0);
   const under18Count = Number(dto.under18Count ?? 0);
-  const above18Count = Number(dto.above18Count ?? residentsCount - under18Count);
+  const above18Count = Number(dto.above18Count ?? 0);
 
   return {
     id: idStr,
     code: dto.code || `HK-BD-${String(dto.id || index + 1).padStart(3, '0')}`,
-    houseNumber: dto.houseNumber || '1',
-    street: dto.street || 'Đường Phan Văn Hớn',
+    houseNumber: dto.houseNumber || '',
+    street: dto.street || dto.rawAddress || dto.legacyAddress || 'Chưa tách địa chỉ',
     hamlet: dto.hamlet || '',
     hamletId: dto.hamletId || undefined,
-    neighborhoodGroup: dto.neighborhoodGroup || 'Tổ 1',
-    alley: dto.alley || 'Mặt tiền đường',
+    neighborhoodGroup: dto.neighborhoodGroup || '',
+    alley: dto.alley || '',
     ownerName: dto.ownerName || 'Chưa cập nhật',
     ownerPhone: dto.ownerPhone || '',
     type,
@@ -72,12 +75,13 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
     licenseType: dto.licenseType || undefined,
     coordinates: [lat, lng],
     coordinatesEstimated,
+    coordinateMethod: dto.coordinateMethod,
     gridPosition: {
       row: Math.floor(index / 10),
       col: index % 10,
     },
     notes: dto.notes || 'Hồ sơ quản lý địa bàn Xã Bà Điểm.',
-    lastCheckedDate: dto.lastCheckedDate || new Date().toLocaleDateString('vi-VN'),
+    lastCheckedDate: dto.lastCheckedDate || 'Chưa kiểm tra',
     officerInCharge: dto.officerInCharge || 'Cán bộ CSKV Xã Bà Điểm',
     residentsList: [],
     inspectionPhotos: [],
@@ -225,22 +229,7 @@ export async function fetchCompleteHouseholdsFromBackend(): Promise<HouseholdFac
     const assignedResidents = dto.id ? residentsByHouseholdId.get(dto.id) || [] : [];
     const baseH = mapDtoToHousehold(dto, idx);
 
-    if (assignedResidents.length > 0) {
-      const maleCount = assignedResidents.filter(r => r.gender === 'Nam').length;
-      const femaleCount = assignedResidents.filter(r => r.gender === 'Nữ').length;
-      const under18Count = assignedResidents.filter(r => 2026 - r.birthYear < 18).length;
-      const above18Count = assignedResidents.length - under18Count;
-
-      return {
-        ...baseH,
-        residentsList: assignedResidents,
-        residentsCount: assignedResidents.length,
-        maleCount,
-        femaleCount,
-        under18Count,
-        above18Count,
-      };
-    }
+    if (assignedResidents.length > 0) return { ...baseH, residentsList: assignedResidents };
     return baseH;
   });
 }
@@ -487,47 +476,10 @@ export async function fetchAllResidents(size: number = 3000): Promise<IResident[
 /**
  * 11. Tải danh sách hồ sơ giấy tờ từ PostgreSQL
  */
-export async function renewDocumentInBackend(id: string, expiryDate: string): Promise<void> {
-  if (!/^\d+$/.test(id) || !/^\d{4}-\d{2}-\d{2}$/.test(expiryDate) || Date.parse(expiryDate) <= Date.now())
-    throw new Error('Ngày hết hạn phải là ngày tương lai, định dạng YYYY-MM-DD.');
-  await axios.patch(
-    `/api/document-records/${id}`,
-    { id: Number(id), expiryDate, status: 'VALID' },
-    { headers: { 'Content-Type': 'application/merge-patch+json' } },
-  );
-}
-
 export async function fetchAllDocumentRecords(size: number = 1000): Promise<DocumentRecord[]> {
   const res = await fetchAuthorizedPages<IDocumentRecord>('/api/document-records');
   if (Array.isArray(res.data)) {
-    return res.data.map(dto => {
-      const idStr = String(dto.id || `doc-${Date.now()}`);
-      const statusVal = dto.status === 'EXPIRED' ? 'expired' : dto.status === 'EXPIRING_SOON' ? 'expiring_soon' : 'valid';
-      const urgencyVal = statusVal === 'expired' ? 'high' : statusVal === 'expiring_soon' ? 'medium' : 'normal';
-
-      let hamletName: any = 'Ấp Bắc Lân';
-      if (dto.address?.includes('Nam Lân')) hamletName = 'Ấp Nam Lân';
-      else if (dto.address?.includes('Tây Lân')) hamletName = 'Ấp Tây Lân';
-      else if (dto.address?.includes('Đông Lân')) hamletName = 'Ấp Đông Lân';
-      else if (dto.address?.includes('Hậu Lân')) hamletName = 'Ấp Hậu Lân';
-      else if (dto.address?.includes('Tiền Lân')) hamletName = 'Ấp Tiền Lân';
-
-      return {
-        id: idStr,
-        docCode: `HS-BD-${String(dto.id || 1).padStart(3, '0')}`,
-        title: dto.docName || 'Hồ sơ kiểm tra ANTT & PCCC',
-        targetName: dto.householdName || 'Cơ sở quản lý',
-        address: dto.address || 'Xã Bà Điểm, TP. Hồ Chí Minh',
-        hamlet: hamletName,
-        category: 'license_security',
-        categoryLabel: dto.docType || 'Giấy phép ANTT',
-        issueDate: '2026-01-01',
-        expiryDate: dto.expiryDate || '2027-01-01',
-        status: statusVal,
-        urgency: urgencyVal,
-        notes: dto.notes || 'Hồ sơ an ninh trật tự',
-      };
-    });
+    return res.data.map(dto => mapDocumentDto(dto));
   }
   return [];
 }

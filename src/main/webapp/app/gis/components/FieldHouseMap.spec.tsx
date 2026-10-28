@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   queryRenderedFeatures: vi.fn(),
   setData: vi.fn(),
   setHouseholdData: vi.fn(),
+  setTemporaryData: vi.fn(),
   setHamletData: vi.fn(),
   setTerritoryData: vi.fn(),
   fitBounds: vi.fn(),
@@ -51,13 +52,15 @@ vi.mock('maplibre-gl', () => ({
           ? undefined
           : {
               setData:
-                id === 'households'
-                  ? mocks.setHouseholdData
-                  : id === 'hamlets'
-                    ? mocks.setHamletData
-                    : id === 'assigned-territories'
-                      ? mocks.setTerritoryData
-                      : mocks.setData,
+                id === 'temporary-households'
+                  ? mocks.setTemporaryData
+                  : id === 'households'
+                    ? mocks.setHouseholdData
+                    : id === 'hamlets'
+                      ? mocks.setHamletData
+                      : id === 'assigned-territories'
+                        ? mocks.setTerritoryData
+                        : mocks.setData,
             };
     },
     NavigationControl: class {},
@@ -128,6 +131,62 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('field map controls', () => {
+  it('shows temporary points separately, toggles their layer, and never auto-links their coordinates', async () => {
+    const temporary = {
+      ...household,
+      id: 'temp',
+      coordinates: [10.0005, 106.0005],
+      coordinatesEstimated: true,
+      coordinateMethod: 'RANDOM_WITHIN_TC2',
+    } as HouseholdFacility;
+    const fallback = { ...temporary, id: 'fallback', coordinateMethod: undefined };
+    const onSelect = vi.fn();
+    render(<FieldHouseMap households={[temporary, fallback]} canAdd canLink onAdd={vi.fn()} onSelect={onSelect} />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('1 công trình');
+    await waitFor(() =>
+      expect(mocks.setTemporaryData).toHaveBeenLastCalledWith(
+        expect.objectContaining({ features: [expect.objectContaining({ properties: expect.objectContaining({ id: 'temp' }) })] }),
+      ),
+    );
+    expect(mocks.setHouseholdData).toHaveBeenLastCalledWith({ type: 'FeatureCollection', features: [] });
+    expect(axios.post).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Hộ dân — vị trí tạm' }));
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('temporary-households', 'visibility', 'none');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Hộ dân — vị trí tạm' }));
+    mocks.queryRenderedFeatures.mockReturnValue([{ layer: { id: 'temporary-households' }, properties: { id: 'temp' } }]);
+    act(() => {
+      mocks.handlers.get('click')?.({ point: {}, lngLat: { lng: 106.0005, lat: 10.0005 } });
+    });
+    expect(onSelect).toHaveBeenCalledWith(temporary);
+  });
+
+  it('does not expose temporary points outside assigned map territory', async () => {
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories: [house] }
+          : { type: 'FeatureCollection', features: String(url).includes('/api/') ? [] : [house] },
+      }),
+    );
+    const inside = {
+      ...household,
+      id: 'inside',
+      coordinates: [10.00025, 106.0005],
+      coordinatesEstimated: true,
+      coordinateMethod: 'RANDOM_WITHIN_TC2',
+    } as HouseholdFacility;
+    const outside = { ...inside, id: 'outside', coordinates: [11, 107] } as HouseholdFacility;
+    await mount([inside, outside], false);
+    await waitFor(() =>
+      expect(mocks.setTemporaryData).toHaveBeenLastCalledWith(
+        expect.objectContaining({ features: [expect.objectContaining({ properties: expect.objectContaining({ id: 'inside' }) })] }),
+      ),
+    );
+  });
+
   it('does not update missing sources while the map style is being recreated', async () => {
     const view = render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} />);
     act(() => {

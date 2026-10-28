@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { DiscardChangesDialog } from './DiscardChangesDialog';
 import { useUnsavedPageGuard } from '../utils/useUnsavedPageGuard';
 import { useDialogFocus } from '../utils/useDialogFocus';
@@ -337,6 +338,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
   const effectiveResidents = useMemo(() => getEffectiveResidentsList(household), [household]);
 
   const dialogRef = useDialogFocus(true, () => requestDiscard('close'), isSaving);
+  const unified = household.code.startsWith('TC2');
   const content = (
     <div
       ref={dialogRef}
@@ -347,6 +349,12 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
       className={`gis-household-dialog ${presentation === 'drawer' ? 'gis-household-drawer' : ''} fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto`}
     >
       <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[92vh] flex flex-col">
+        {unified && (
+          <div className="p-4 bg-amber-50 text-amber-950">
+            <p>Vị trí tạm; thông tin hộ và nhân khẩu cần đối chiếu nguồn.</p>
+            <Link to={`/roster?legacyHousehold=${encodeURIComponent(household.id)}`}>Mở hồ sơ đầy đủ · chỉnh sửa · nguồn · lịch sử</Link>
+          </div>
+        )}
         {/* Modal Header */}
         <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -484,6 +492,10 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
               <button
                 disabled={isSaving || !canInspect}
                 onClick={() => {
+                  if (unified) {
+                    window.location.assign(`/roster?legacyHousehold=${encodeURIComponent(household.id)}`);
+                    return;
+                  }
                   if (isEditingInfo) requestDiscard('info');
                   else {
                     setEditForm(originalForm);
@@ -501,7 +513,6 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
               </button>
 
               <button
-                disabled={isSaving}
                 onClick={() => {
                   if (infoDirty || notesDirty) {
                     setSaveError('Lưu hoặc bỏ nội dung đang chỉnh sửa trước khi xóa hồ sơ.');
@@ -510,7 +521,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                   handleDeleteHouseholdClick();
                 }}
                 className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Xóa vĩnh viễn hộ dân khỏi cơ sở dữ liệu PostgreSQL"
+                title="Dữ liệu thật được giữ lịch sử; không xóa cứng"
+                disabled={unified || isSaving}
               >
                 <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                 <span>Xóa hộ</span>

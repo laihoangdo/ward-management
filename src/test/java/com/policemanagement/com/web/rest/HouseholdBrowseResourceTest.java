@@ -43,6 +43,13 @@ class HouseholdBrowseResourceTest {
         );
         for (String column : List.of("residents_count", "male_count", "female_count", "under_18_count"))
             db.execute("alter table household add " + column + " int");
+        db.execute("alter table household add roster_id bigint generated always as (id)");
+        db.execute("alter table resident add roster_id bigint generated always as (id)");
+        db.execute("alter table resident add birth_date date");
+        db.execute("alter table resident add birth_date_precision varchar default 'UNKNOWN'");
+        db.execute("create schema tc2_roster");
+        db.execute("create table tc2_roster.household_membership(resident_id bigint,household_id bigint,valid_to date)");
+        db.execute("create table tc2_roster.residence_record(household_id bigint,record_kind varchar)");
         rbac = mock(RbacService.class);
         when(rbac.current()).thenReturn(Map.of());
         when(rbac.global()).thenReturn(true);
@@ -72,7 +79,22 @@ class HouseholdBrowseResourceTest {
     }
 
     private Map<String, Object> page(int page, int size, String search, String residence) {
+        syncFixtures();
         return resource.browse(page, size, search, "all", "all", residence);
+    }
+
+    private void syncFixtures() {
+        db.execute("delete from tc2_roster.household_membership");
+        db.execute("delete from tc2_roster.residence_record");
+        db.execute("insert into tc2_roster.household_membership select id,household_id,null from resident where household_id is not null");
+        db.execute(
+            "insert into tc2_roster.residence_record select household_id,residence_type from resident where household_id is not null"
+        );
+    }
+
+    private Map<String, Object> overview(String search, int page, int size) {
+        syncFixtures();
+        return resource.overview(search, page, size);
     }
 
     @Test
@@ -132,7 +154,9 @@ class HouseholdBrowseResourceTest {
     void searchAndResidenceAreEvaluatedBeforePagingIncludingResidentNames() {
         add(1, 28, "Allowed");
         add(2, 28, "Allowed");
-        db.update("insert into resident values(1,2,'TEMPORARY','Trần Thị Bình','TEST-ID','FEMALE',2015)");
+        db.update(
+            "insert into resident(id,household_id,residence_type,full_name,id_card_number,gender,birth_year) values(1,2,'TEMPORARY','Trần Thị Bình','TEST-ID','FEMALE',2015)"
+        );
         assertEquals(2L, page(0, 12, "NGUYEN", "all").get("total"));
         assertEquals(1L, page(0, 12, "tran thi binh", "temporary").get("total"));
         assertEquals(0L, page(0, 12, "%", "all").get("total"));
@@ -147,24 +171,31 @@ class HouseholdBrowseResourceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void overviewCountsRealAndLegacyPopulationWithoutReturningRosters() {
+    void overviewCountsOnlyLinkedPeopleAndDoesNotInventDemographics() {
         add(1, 28, "Allowed");
         add(2, 28, "Allowed");
         db.update("update household set residents_count=99,male_count=99 where id=1");
         db.update(
             "update household set residents_count=4,male_count=2,female_count=2,under_18_count=2,status='WARNING',type='BUSINESS' where id=2"
         );
-        db.update("insert into resident values(1,1,'PERMANENT','A','ID','FEMALE',?)", java.time.LocalDate.now().getYear() - 5);
-        db.update("insert into resident values(2,1,'PERMANENT','B','ID',null,null)");
-        var result = resource.overview("", 0, 10);
+        db.update(
+            "insert into resident(id,household_id,residence_type,full_name,id_card_number,gender,birth_year) values(1,1,'PERMANENT','A','ID','FEMALE',?)",
+            java.time.LocalDate.now().getYear() - 5
+        );
+        db.update(
+            "insert into resident(id,household_id,residence_type,full_name,id_card_number,gender,birth_year) values(2,1,'PERMANENT','B','ID',null,null)"
+        );
+        var result = overview("", 0, 10);
         assertEquals(2L, ((Number) result.get("total")).longValue());
         assertEquals(1L, ((Number) result.get("business")).longValue());
         assertEquals(1L, result.get("warnings"));
-        assertEquals(6L, result.get("residents"));
-        assertEquals(3L, result.get("female"));
-        assertEquals(3L, result.get("male"));
-        assertEquals(1L, result.get("fallbackHouseholds"));
-        assertEquals(6L, ((Number) ((Map<?, ?>) result.get("scope")).get("residents")).longValue());
+        assertEquals(2L, result.get("residents"));
+        assertEquals(1L, result.get("female"));
+        assertEquals(0L, result.get("male"));
+        assertEquals(1L, result.get("unknownGender"));
+        assertEquals(2L, result.get("unknownAge"));
+        assertEquals(0L, result.get("fallbackHouseholds"));
+        assertEquals(2L, ((Number) ((Map<?, ?>) result.get("scope")).get("residents")).longValue());
         assertEquals(2, ((List<?>) result.get("previewItems")).size());
         assertEquals(1, ((List<?>) result.get("warningItems")).size());
     }
@@ -179,26 +210,26 @@ class HouseholdBrowseResourceTest {
         when(rbac.global()).thenReturn(false);
         when(rbac.areas()).thenReturn(List.of(28L));
         when(rbac.current()).thenReturn(Map.of("assignedStreets", List.of("Allowed")));
-        var result = resource.overview("", 999, 20);
+        var result = overview("", 999, 20);
         assertEquals(51L, ((Number) result.get("total")).longValue());
         assertEquals(51L, result.get("warnings"));
         assertEquals(2, result.get("warningPage"));
         assertEquals(11, ((List<?>) result.get("warningItems")).size());
         assertEquals(16, ((List<?>) result.get("previewItems")).size());
         assertEquals(5, ((List<?>) result.get("attentionItems")).size());
-        var missing = resource.overview("unmatched", 0, 10);
+        var missing = overview("unmatched", 0, 10);
         assertEquals(0L, ((Number) missing.get("total")).longValue());
         assertEquals(51L, ((Number) ((Map<?, ?>) missing.get("scope")).get("total")).longValue());
         when(rbac.areas()).thenReturn(List.of());
-        assertEquals(0L, resource.overview("", 0, 10).get("residents"));
-        assertEquals(List.of(), resource.overview("", 0, 10).get("hamlets"));
+        assertEquals(0L, overview("", 0, 10).get("residents"));
+        assertEquals(List.of(), overview("", 0, 10).get("hamlets"));
     }
 
     @Test
     void overviewRejectsInvalidQueries() {
-        assertThrows(ResponseStatusException.class, () -> resource.overview("", -1, 10));
-        assertThrows(ResponseStatusException.class, () -> resource.overview("", 0, 500));
-        assertThrows(ResponseStatusException.class, () -> resource.overview("x".repeat(201), 0, 10));
+        assertThrows(ResponseStatusException.class, () -> overview("", -1, 10));
+        assertThrows(ResponseStatusException.class, () -> overview("", 0, 500));
+        assertThrows(ResponseStatusException.class, () -> overview("x".repeat(201), 0, 10));
     }
 
     @Test
@@ -206,10 +237,12 @@ class HouseholdBrowseResourceTest {
         add(1, 28, "Allowed");
         add(2, 28, "Allowed");
         db.update("update household set owner_name=null where id=1");
-        db.update("insert into resident values(1,2,'PERMANENT','Trần Thị Bình','ID','FEMALE',2015)");
-        assertEquals(1L, ((Number) resource.overview("chua cap nhat", 0, 10).get("total")).longValue());
-        assertEquals(1L, ((Number) resource.overview("hk-bd-001", 0, 10).get("total")).longValue());
-        assertEquals(1L, ((Number) resource.overview("tran thi binh", 0, 10).get("total")).longValue());
-        assertEquals(1L, resource.overview("tran thi binh", 0, 10).get("residents"));
+        db.update(
+            "insert into resident(id,household_id,residence_type,full_name,id_card_number,gender,birth_year) values(1,2,'PERMANENT','Trần Thị Bình','ID','FEMALE',2015)"
+        );
+        assertEquals(1L, ((Number) overview("chua cap nhat", 0, 10).get("total")).longValue());
+        assertEquals(1L, ((Number) overview("hk-bd-001", 0, 10).get("total")).longValue());
+        assertEquals(1L, ((Number) overview("tran thi binh", 0, 10).get("total")).longValue());
+        assertEquals(1L, overview("tran thi binh", 0, 10).get("residents"));
     }
 }

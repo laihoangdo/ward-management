@@ -161,6 +161,18 @@
 .field-notice {
   background: #064e3b;
 }
+.field-temporary-notice {
+  margin: 0;
+  padding: 8px 14px;
+  background: #422c13;
+  color: #ffedd5;
+  border-top: 1px solid #875322;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.field-temporary-notice span {
+  color: #fb923c;
+}
 @media (max-width: 760px), (max-height: 600px) and (pointer: coarse) {
   .field-house-map {
     min-height: 0;

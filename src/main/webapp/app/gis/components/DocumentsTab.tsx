@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { FileText, AlertTriangle, Clock, Send, Search, FileCheck } from 'lucide-react';
 import { DocumentRecord } from '../types';
 import { Pagination } from './Pagination';
+import { documentExpiry, hcmToday } from '../services/documentLifecycle';
 
 interface DocumentsTabProps {
   documents: DocumentRecord[];
@@ -12,17 +13,34 @@ interface DocumentsTabProps {
   onFilterStatusChange?: (status: 'all' | 'expiring_soon' | 'valid') => void;
   onRenewDocument: (id: string) => void;
   onSendReminder: (id: string) => void;
+  onCreateDocument?: () => void;
+  onHistory?: (document: DocumentRecord) => void;
 }
 
 export const DocumentsTab: React.FC<DocumentsTabProps> = ({
-  documents,
+  documents: sourceDocuments,
   canRenew = true,
   canRemind = true,
   onRenewDocument,
   onSendReminder,
+  onCreateDocument,
+  onHistory,
   filterStatus: externalFilter,
   onFilterStatusChange,
 }) => {
+  const [today, setToday] = useState(hcmToday);
+  useEffect(() => {
+    const timer = window.setInterval(() => setToday(hcmToday()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const documents = useMemo(
+    () =>
+      sourceDocuments.map(document => {
+        const expiry = documentExpiry(document.householdId ? document.expiryOn : undefined, today);
+        return { ...document, ...expiry, daysRemaining: expiry.daysRemaining };
+      }),
+    [sourceDocuments, today],
+  );
   const [localFilter, setLocalFilter] = useState<'all' | 'expiring_soon' | 'valid'>('all');
   const filterStatus = externalFilter ?? localFilter;
   const setFilterStatus = onFilterStatusChange ?? setLocalFilter;
@@ -83,16 +101,30 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onCreateDocument && (
+              <button
+                type="button"
+                disabled={!canRenew}
+                onClick={onCreateDocument}
+                className="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white"
+              >
+                Thêm hồ sơ
+              </button>
+            )}
             <span className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 rounded-xl text-xs font-bold flex items-center gap-1.5">
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span>
-                {expiringCount} giấy phép cần xử lý trong tháng {String(new Date().getMonth() + 1).padStart(2, '0')}/
-                {new Date().getFullYear()}
-              </span>
+              <span>{expiringCount} hồ sơ hết hạn trong 30 ngày tới</span>
             </span>
           </div>
         </div>
       </div>
+
+      {documents.some(d => d.status === 'unverified') && (
+        <p role="status" className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          {documents.filter(d => d.status === 'unverified').length} hồ sơ chưa đối chiếu ngày/hộ. Không được tính là giấy phép hợp lệ; tên
+          và ngày nguyên văn chỉ là dữ liệu nguồn.
+        </p>
+      )}
 
       {/* Filter and search bar */}
       <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
@@ -167,13 +199,16 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
           ) : (
             paginatedDocs.map(doc => {
               const isExpiring = doc.status === 'expiring_soon';
+              const isExpired = doc.status === 'expired';
               return (
                 <div
                   key={doc.id}
                   className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
-                    isExpiring
-                      ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700/60 hover:border-amber-400'
-                      : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                    isExpired
+                      ? 'bg-red-50/70 dark:bg-red-950/20 border-red-300 dark:border-red-700/60'
+                      : isExpiring
+                        ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700/60 hover:border-amber-400'
+                        : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                   }`}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -183,13 +218,16 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                           {doc.docCode}
                         </span>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-300">• {doc.categoryLabel}</span>
-                        <span className="text-xs font-bold text-slate-400 font-mono">({doc.hamlet})</span>
+                        <span className="text-xs font-bold text-slate-400 font-mono">
+                          {doc.householdId ? `Hộ #${doc.householdId}` : 'Chưa liên kết hộ'}
+                        </span>
                       </div>
 
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">{doc.title}</h4>
 
                       <div className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                        Đối tượng / Cơ sở: <strong className="text-slate-900 dark:text-white">{doc.targetName}</strong> ({doc.address})
+                        Tên / địa chỉ nguồn: <strong className="text-slate-900 dark:text-white">{doc.targetName}</strong>{' '}
+                        {doc.address && `(${doc.address})`}
                       </div>
                     </div>
 
@@ -200,12 +238,13 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                         <div
                           className={`text-xs font-bold font-mono ${isExpiring ? 'text-amber-900 dark:text-amber-300' : 'text-slate-700 dark:text-slate-200'}`}
                         >
-                          {doc.expiryDate}
+                          {doc.expiryOn || 'Chưa xác nhận'}
+                          {doc.status === 'expired' && <span className="ml-2 text-red-700">Đã hết hạn</span>}
                           {doc.daysRemaining !== undefined && (
                             <span
-                              className={`ml-1.5 text-[10px] font-bold ${isExpiring ? 'text-amber-800 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}
+                              className={`ml-1.5 text-[10px] font-bold ${isExpired ? 'text-red-700 dark:text-red-400' : isExpiring ? 'text-amber-800 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}
                             >
-                              {isExpiring ? `(⚠️ Còn ${doc.daysRemaining} ngày)` : `(+${doc.daysRemaining} ngày)`}
+                              {doc.daysRemaining < 0 ? `(Quá hạn ${-doc.daysRemaining} ngày)` : `(Còn ${doc.daysRemaining} ngày)`}
                             </span>
                           )}
                         </div>
@@ -231,11 +270,20 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                           className="flex-1 sm:flex-initial px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs min-h-[38px]"
                         >
                           <FileCheck className="w-3 h-3" />
-                          <span>Gia hạn</span>
+                          <span>{doc.expiryOn ? 'Gia hạn' : 'Đối chiếu'}</span>
                         </button>
+                        {onHistory && (
+                          <button type="button" onClick={() => onHistory(doc)} className="rounded-lg border px-3 py-2 text-xs">
+                            Lịch sử
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
+
+                  {doc.legacyExpiryDate && (
+                    <p className="mt-2 text-xs text-slate-500">Ngày nguyên văn nguồn (chưa dùng để tính hạn): {doc.legacyExpiryDate}</p>
+                  )}
 
                   {/* Notes and instructions */}
                   <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">

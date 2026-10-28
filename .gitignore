@@ -168,3 +168,8 @@ coverage/
 
 # Private local database snapshot before user-authorized TC2 household import
 /backups/tc2-import-20261013/
+
+# Real TC2 source files, encryption keys, imports, reports and recovery snapshots
+/DSNK*.xlsx
+/.tc2-private/
+/backups/tc2-roster-*/

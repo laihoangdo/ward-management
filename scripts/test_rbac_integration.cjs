@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const assert = require('node:assert/strict');
+const database = require('./database-context.cjs');
 const base = process.env.RBAC_TEST_URL || 'http://localhost:8081';
 const issuer = 'http://localhost:9080/realms/jhipster';
 const container = 'monolithic-keycloak-1';
@@ -305,7 +306,7 @@ async function main() {
             'docker',
             [
               'exec',
-              'monolithic-postgresql-1',
+              database.container,
               'psql',
               '-U',
               'Monolithic',

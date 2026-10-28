@@ -34,4 +34,13 @@
     <include file="config/liquibase/changelog/20261018010000_hamlet_pdf_boundaries.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261018020000_household_browse_index.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261019000000_remove_vietmap_menu.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261020000000_tc2_roster.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261020010000_tc2_review.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261020020000_tc2_identity_validity.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261027000000_tc2_unify_core.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261027010000_tc2_legacy_projections.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261028000000_database_integrity.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261028010000_document_lifecycle.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261029000000_postgis_operational.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261029010000_postgis_restore_safe.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

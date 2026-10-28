@@ -178,7 +178,8 @@ export interface HouseholdFacility {
   licenseExpiry?: string;
   licenseType?: string;
   coordinates: [number, number]; // Latitude, Longitude in An Lac, Binh Tan
-  coordinatesEstimated?: boolean; // True when the backend had no complete coordinate pair.
+  coordinatesEstimated?: boolean; // Missing/fallback or explicitly temporary coordinates.
+  coordinateMethod?: string;
   gridPosition: {
     row: number;
     col: number;
@@ -197,15 +198,21 @@ export interface DocumentRecord {
   title: string;
   targetName: string;
   address: string;
-  hamlet: HamletName;
+  hamlet: string;
   category: 'license_security' | 'business_permit' | 'temporary_stay' | 'special_record' | 'fire_safety';
   categoryLabel: string;
   issueDate: string;
   expiryDate: string;
-  status: 'valid' | 'expiring_soon' | 'expired' | 'pending_renewal';
+  status: 'valid' | 'expiring_soon' | 'expired' | 'pending_renewal' | 'unverified';
   urgency: 'high' | 'medium' | 'normal';
   notes: string;
   daysRemaining?: number;
+  householdId?: number;
+  expiryOn?: string;
+  legacyExpiryDate?: string;
+  documentNumber?: string;
+  issuingAuthority?: string;
+  version?: number;
 }
 
 /** Unknown demographic totals can be omitted when creating a record. */

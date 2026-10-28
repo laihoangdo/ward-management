@@ -29,7 +29,7 @@ public class KeycloakAdminClient {
     );
 
     public KeycloakAdminClient(
-        @Value("${spring.security.oauth2.client.provider.oidc.issuer-uri}") String issuer,
+        @Value("${rbac.keycloak.issuer-uri:${spring.security.oauth2.client.provider.oidc.issuer-uri}}") String issuer,
         @Value("${rbac.keycloak.client-id:rbac-admin}") String client,
         @Value("${rbac.keycloak.client-secret:}") String secret
     ) {

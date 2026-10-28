@@ -102,10 +102,22 @@ export default function FieldHouseMap({
     empty: true,
     occupied: true,
     households: true,
+    temporaryHouseholds: true,
     boundary: true,
     hamlets: true,
   });
   const explicitlyLinked = useMemo(() => new Set(houses.flatMap(h => h.properties.householdIds ?? [])), [houses]);
+  const temporaryHouseholds = useMemo(
+    () =>
+      households.filter(h => {
+        if (h.coordinateMethod !== 'RANDOM_WITHIN_TC2' || explicitlyLinked.has(h.id)) return false;
+        const [lat, lng] = h.coordinates ?? [];
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || lat === 0 || lng === 0)
+          return false;
+        return access.global || territoryShapes.some(geometry => containsHousePoint(geometry, [lng, lat]));
+      }),
+    [households, explicitlyLinked, access.global, territoryShapes],
+  );
   const householdsOnMap = useMemo(
     () =>
       access.global
@@ -114,6 +126,7 @@ export default function FieldHouseMap({
             h =>
               explicitlyLinked.has(h.id) ||
               (!h.coordinatesEstimated &&
+                h.coordinateMethod !== 'RANDOM_WITHIN_TC2' &&
                 h.coordinates?.every(Number.isFinite) &&
                 territoryShapes.some(geometry => containsHousePoint(geometry, [h.coordinates[1], h.coordinates[0]]))),
           ),
@@ -339,6 +352,19 @@ export default function FieldHouseMap({
           'circle-stroke-color': '#fff',
         },
       });
+      map.addSource('temporary-households', { type: 'geojson', data: EMPTY });
+      map.addLayer({
+        id: 'temporary-households',
+        type: 'circle',
+        source: 'temporary-households',
+        paint: {
+          'circle-radius': 5,
+          'circle-color': '#f97316',
+          'circle-opacity': 0.9,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#fff',
+        },
+      });
       map.addSource('boundary', {
         type: 'geojson',
         data: {
@@ -405,8 +431,8 @@ export default function FieldHouseMap({
         return;
       }
       if (!map.getLayer('houses-3d')) return;
-      const hits = map.queryRenderedFeatures(event.point, { layers: ['households', 'house-points', 'houses-3d'] });
-      const h = hits.find(f => f.layer.id === 'households');
+      const hits = map.queryRenderedFeatures(event.point, { layers: ['temporary-households', 'households', 'house-points', 'houses-3d'] });
+      const h = hits.find(f => f.layer.id === 'temporary-households') ?? hits.find(f => f.layer.id === 'households');
       if (h) {
         const record = live.households.find(item => item.id === h.properties.id);
         if (record) live.onSelect(record);
@@ -504,6 +530,8 @@ export default function FieldHouseMap({
     show('houses-3d', layers.buildings && representation === '3d');
     show('house-points', layers.buildings && representation === 'point');
     show('households', layers.households);
+    show('temporary-households', layers.temporaryHouseholds);
+    map.setFilter('temporary-households', status === 'all' ? null : ['==', ['get', 'status'], status]);
     map.setFilter('households', status === 'all' ? null : ['==', ['get', 'status'], status]);
   }, [ready, layers, representation, status]);
 
@@ -520,12 +548,25 @@ export default function FieldHouseMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || initializedMapRef.current !== map) return;
+    (map.getSource('temporary-households') as maplibregl.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features: temporaryHouseholds.map(h => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [h.coordinates[1], h.coordinates[0]] },
+        properties: { id: h.id, status: h.status, coordinateMethod: h.coordinateMethod },
+      })),
+    });
+  }, [ready, temporaryHouseholds]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || initializedMapRef.current !== map) return;
     (map.getSource('households') as maplibregl.GeoJSONSource | undefined)?.setData({
       type: 'FeatureCollection',
       features: households.flatMap(h => {
         if (explicitlyLinked.has(h.id)) return [];
         const point: number[] | undefined =
-          h.coordinates && !h.coordinatesEstimated && h.coordinates.every(Number.isFinite)
+          h.coordinates && !h.coordinatesEstimated && h.coordinateMethod !== 'RANDOM_WITHIN_TC2' && h.coordinates.every(Number.isFinite)
             ? [h.coordinates[1], h.coordinates[0]]
             : undefined;
         if (!access.global && point && !territoryShapes.some(geometry => containsHousePoint(geometry, point))) return [];
@@ -651,6 +692,9 @@ export default function FieldHouseMap({
         const canvas = frameMapCapture(map.getCanvas(), captureOfficer, [
           `Trích xuất: ${new Date().toLocaleString('vi-VN')} · Tâm bản đồ: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`,
           `Zoom: ${map.getZoom().toFixed(1)} · ${houses.length.toLocaleString('vi-VN')} công trình · ${layers.map ? 'Bản đồ nền và ảnh vệ tinh hiện có của dự án' : 'Ảnh vệ tinh hiện có của dự án'}`,
+          ...(layers.temporaryHouseholds && temporaryHouseholds.length
+            ? ['Điểm cam: vị trí hộ tạm, chưa xác minh; chưa liên kết công trình.']
+            : []),
           ...(layers.hamlets && hamletBoundaries.features.some(feature => feature.properties?.provisional)
             ? ['Ranh giới ấp tạm dựng từ PDF.']
             : []),
@@ -746,6 +790,12 @@ export default function FieldHouseMap({
           Chỉ xem hình khối toàn xã và hồ sơ hộ dân được giao. Chưa có ranh giới ấp được phân quyền để cho phép thao tác vị trí.
         </p>
       )}
+      {layers.temporaryHouseholds && temporaryHouseholds.length > 0 && (
+        <p className="field-temporary-notice">
+          <span aria-hidden="true">●</span> {temporaryHouseholds.length.toLocaleString('vi-VN')} hộ/nhóm địa chỉ · Điểm cam là vị trí tạm,
+          chưa xác minh; chưa liên kết khối nhà.
+        </p>
+      )}
       <div className="field-map-body">
         <div ref={containerRef} className="field-map-canvas" />
         <div className="field-mouse-help">
@@ -766,6 +816,7 @@ export default function FieldHouseMap({
               ['occupied', 'Nhà có thông tin hộ dân'],
               ['empty', 'Nhà chưa có hộ dân'],
               ['households', 'Điểm hộ dân'],
+              ['temporaryHouseholds', 'Hộ dân — vị trí tạm'],
             ] as [keyof typeof layers, string][]
           ).map(([key, label]) => (
             <label key={key}>

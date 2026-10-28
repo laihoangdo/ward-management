@@ -148,6 +148,19 @@ class GisFieldBuildingResourceTest {
     }
 
     @Test
+    void randomTc2CoordinatesAreNotAutomaticallyLinkedEvenWhenInsideBuilding() {
+        var db = mock(JdbcTemplate.class);
+        var rbac = mock(RbacService.class);
+        when(rbac.global()).thenReturn(true);
+        when(rbac.canManageMapGeometry(any())).thenReturn(true);
+        when(db.queryForMap(anyString(), eq(1L))).thenReturn(
+            Map.of("latitude", 0.2, "longitude", 0.5, "coordinate_method", "RANDOM_WITHIN_TC2")
+        );
+        new GisFieldBuildingResource(db, json, rbac, history).autoLink(List.of(feature("[[0,0],[1,0],[1,1],[0,0]]")));
+        verify(db, never()).update(anyString(), any(Object[].class));
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void autoLinkMergesIntoExistingRecordWithoutOverwritingItsProperties() {
         var db = mock(JdbcTemplate.class);

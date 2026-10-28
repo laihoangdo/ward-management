@@ -4,6 +4,8 @@ import { getSession } from 'app/shared/reducers/authentication';
 import { mapAccountToGisUser, logoutBackendSession } from './services/backendSession';
 import './index.css';
 import { RenewDocumentDialog } from './components/RenewDocumentDialog';
+import { DocumentHistoryDialog } from './components/DocumentHistoryDialog';
+import { DocumentCommand, saveLegalDocument } from './services/documentLifecycle';
 import { matchesHouseholdSearch } from './utils/householdSearch';
 import { loadOperationalData, OPERATIONAL_DATA_LABELS } from './utils/operationalData';
 import { useDeferredOperationalData } from './utils/useDeferredOperationalData';
@@ -16,8 +18,7 @@ import { AreaMapTab } from './components/AreaMapTab';
 import { BaDiem3DMapEditor } from './components/BaDiem3DMapEditor';
 const FieldHouseMap = React.lazy(() => import('./components/FieldHouseMap'));
 const MapLibreAreaMap = React.lazy(() => import('./components/MapLibreAreaMap'));
-import { HouseholdsTab } from './components/HouseholdsTab';
-import { ResidentsTab } from './components/ResidentsTab';
+const UnifiedRoster = React.lazy(() => import('../roster/RosterPage'));
 import { DocumentsTab } from './components/DocumentsTab';
 import { AreasTab } from './components/AreasTab';
 import { LogsTab } from './components/LogsTab';
@@ -34,7 +35,6 @@ import {
   updateHouseholdCoordinatesInBackend,
   deleteHouseholdInBackend,
   fetchAllDocumentRecords,
-  renewDocumentInBackend,
   savePatrolLogInBackend,
   fetchPatrolLogsFromBackend,
 } from './services/householdApiService';
@@ -212,6 +212,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     };
   }, [activeTab, currentUser?.id]);
   const [renewingDocument, setRenewingDocument] = useState<DocumentRecord | null>(null);
+  const [creatingDocument, setCreatingDocument] = useState(false);
+  const [historyDocument, setHistoryDocument] = useState<DocumentRecord | null>(null);
   const [dataErrors, setDataErrors] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [documentFilter, setDocumentFilter] = useState<'all' | 'expiring_soon' | 'valid'>('all');
@@ -797,16 +799,15 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     const record = documents.find(document => document.id === docId);
     if (record) setRenewingDocument(record);
   };
-  const saveDocumentRenewal = async (date: string) => {
-    if (!renewingDocument) return;
-    await renewDocumentInBackend(renewingDocument.id, date);
+  const saveDocumentRenewal = async (command: DocumentCommand) => {
+    await saveLegalDocument(creatingDocument ? null : renewingDocument!.id, command);
     try {
       setDocuments(await fetchAllDocumentRecords());
     } catch {
-      showToast('Đã lưu gia hạn, nhưng chưa tải lại được danh sách. Vui lòng cập nhật dữ liệu.');
+      showToast('Đã lưu hồ sơ, nhưng chưa tải lại được danh sách. Vui lòng cập nhật dữ liệu.');
       return;
     }
-    showToast('Đã lưu gia hạn hồ sơ.');
+    showToast('Đã lưu hồ sơ và lịch sử thay đổi.');
   };
 
   const handleSendReminder = async (docId: string) => {
@@ -834,7 +835,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   };
 
   // Overview/list use bounded APIs. Other existing screens still require complete data.
-  const needsFullData = !['overview', 'households'].includes(activeTab) || isWarningModalOpen;
+  const needsFullData = !['overview', 'households', 'residents'].includes(activeTab) || isWarningModalOpen;
   const { load: ensureFullData } = useDeferredOperationalData(needsFullData, applyOperationalData, setIsLoading);
   const warningCount = hasCompleteHouseholds ? households.filter(h => h.status === 'warning').length : (overviewScope?.warnings ?? 0);
 
@@ -859,7 +860,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       setOverviewVersion(version => version + 1);
       return;
     }
-    if (activeTab === 'households') {
+    if (activeTab === 'households' || activeTab === 'residents') {
       setHouseholdListVersion(version => version + 1);
       return;
     }
@@ -1036,28 +1037,32 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           {canOpenMenu(activeTab) ? (
             <>
               {/* Active Search Banner when filter is engaged */}
-              {searchQuery.trim() && !isMapFullscreen && activeTab !== 'households' && activeTab !== 'overview' && (
-                <div className="mb-4 p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
-                    <span className="text-slate-600 dark:text-slate-300">Kết quả lọc tìm kiếm:</span>
-                    <span className="font-bold text-blue-900 dark:text-blue-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
-                      "{searchQuery}"
-                    </span>
-                    <span className="text-slate-500 font-mono text-[11px] hidden sm:inline">
-                      ({displayedHouseholds.length} hồ sơ phù hợp)
-                    </span>
+              {searchQuery.trim() &&
+                !isMapFullscreen &&
+                activeTab !== 'households' &&
+                activeTab !== 'residents' &&
+                activeTab !== 'overview' && (
+                  <div className="mb-4 p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
+                      <span className="text-slate-600 dark:text-slate-300">Kết quả lọc tìm kiếm:</span>
+                      <span className="font-bold text-blue-900 dark:text-blue-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                        "{searchQuery}"
+                      </span>
+                      <span className="text-slate-500 font-mono text-[11px] hidden sm:inline">
+                        ({displayedHouseholds.length} hồ sơ phù hợp)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      id="btn-clear-active-search"
+                      onClick={() => setSearchQuery('')}
+                      className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer shadow-xs"
+                    >
+                      <span>Xóa bộ lọc</span>
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    id="btn-clear-active-search"
-                    onClick={() => setSearchQuery('')}
-                    className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer shadow-xs"
-                  >
-                    <span>Xóa bộ lọc</span>
-                  </button>
-                </div>
-              )}
+                )}
 
               {/* Territory Scope Control Bar for Sub-Admin and Officer */}
               {isTerritoryRestricted && !isMapFullscreen && (
@@ -1184,39 +1189,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                 />
               )}
 
-              {activeTab === 'households' && (
-                <HouseholdsTab
-                  key={`${currentUser.id}:${currentUser.version ?? 0}`}
-                  serverPaging
-                  refreshKey={householdListVersion}
-                  households={scopedHouseholds}
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  isLoading={isLoading}
-                  currentUser={currentUser}
-                  onSelectHousehold={setSelectedHousehold}
-                  onOpenAddModal={() => {
-                    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canAddHouseholds !== true) {
-                      showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền đăng ký hộ dân mới.');
-                      return;
-                    }
-                    setSelectedMapCoordinates(null);
-                    setIsAddModalOpen(true);
-                  }}
-                  onDeleteHousehold={handleDeleteHousehold}
-                  onShowToast={showToast}
-                />
-              )}
-
-              {activeTab === 'residents' && (
-                <ResidentsTab
-                  households={displayedHouseholds}
-                  allHouseholds={households}
-                  onSelectHousehold={setSelectedHousehold}
-                  onUpdateHousehold={handleUpdateHouseholdFull}
-                  currentUser={currentUser}
-                  onShowToast={showToast}
-                />
+              {(activeTab === 'households' || activeTab === 'residents') && (
+                <Suspense fallback={<p>Đang tải hồ sơ dân cư…</p>}>
+                  <UnifiedRoster
+                    key={`${currentUser.id}:${currentUser.version ?? 0}`}
+                    initialTab={activeTab}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    refreshKey={householdListVersion}
+                    embedded
+                  />
+                </Suspense>
               )}
 
               {activeTab === 'documents' && (
@@ -1228,6 +1211,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                   documents={documents}
                   onRenewDocument={handleRenewDocument}
                   onSendReminder={handleSendReminder}
+                  onCreateDocument={() => setCreatingDocument(true)}
+                  onHistory={document => setHistoryDocument(document)}
                 />
               )}
 
@@ -1359,9 +1344,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       </div>
 
       {/* Modals & Dialogs */}
-      {renewingDocument && (
-        <RenewDocumentDialog document={renewingDocument} onClose={() => setRenewingDocument(null)} onSave={saveDocumentRenewal} />
+      {(renewingDocument || creatingDocument) && (
+        <RenewDocumentDialog
+          document={renewingDocument}
+          onClose={() => {
+            setRenewingDocument(null);
+            setCreatingDocument(false);
+          }}
+          onSave={saveDocumentRenewal}
+        />
       )}
+      {historyDocument && <DocumentHistoryDialog document={historyDocument} onClose={() => setHistoryDocument(null)} />}
       <HouseholdDetailModal
         presentation={['area-map', 'advanced-map', 'field-3d-map'].includes(activeTab) ? 'drawer' : 'dialog'}
         household={selectedHousehold}

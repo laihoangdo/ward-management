@@ -81,7 +81,7 @@ public class GisFieldBuildingResource {
         return Map.of("allowed", rbac.canManageMapGeometry(geometry));
     }
 
-    private Map<String, Object> scopedView(List<JsonNode> features) {
+    Map<String, Object> scopedView(List<JsonNode> features) {
         if (rbac.global()) return Map.of("type", "FeatureCollection", "features", features);
         var visible = rbac.visibleMapHouseholds();
         var masked = features
@@ -214,8 +214,9 @@ public class GisFieldBuildingResource {
                     return Map.of();
                 }
                 rbac.household(numericId);
-                var household = db.queryForMap("select latitude, longitude from household where id = ?", numericId);
+                var household = db.queryForMap("select latitude, longitude, coordinate_method from household where id = ?", numericId);
                 if (
+                    "RANDOM_WITHIN_TC2".equals(household.get("coordinate_method")) ||
                     !(household.get("latitude") instanceof Number lat) ||
                     !(household.get("longitude") instanceof Number lng) ||
                     !Double.isFinite(lat.doubleValue()) ||

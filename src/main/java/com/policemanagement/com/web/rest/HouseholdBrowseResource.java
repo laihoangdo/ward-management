@@ -34,12 +34,9 @@ public class HouseholdBrowseResource {
     }
 
     private static final String RESIDENCE = """
-    case when exists(select 1 from resident r where r.household_id=h.id and r.residence_type='STAY') then 'stay'
-    when exists(select 1 from resident r where r.household_id=h.id and r.residence_type='TEMPORARY') then 'temporary'
-    when exists(select 1 from resident r where r.household_id=h.id) then 'permanent'
-    when lower(coalesce(h.notes,'')) like '%lưu trú%' or lower(coalesce(h.notes,'')) like '%khách sạn%' or lower(coalesce(h.notes,'')) like '%nhà nghỉ%' then 'stay'
-    when lower(coalesce(h.notes,'')) like '%tạm trú%' or lower(coalesce(h.notes,'')) like '%thuê trọ%' or lower(coalesce(h.notes,'')) like '%phòng trọ%' or lower(coalesce(h.notes,'')) like '%công nhân%' then 'temporary'
-    else 'permanent' end
+    case when exists(select 1 from tc2_roster.residence_record rr where rr.household_id=h.roster_id and rr.record_kind='TEMPORARY') then 'temporary'
+    when exists(select 1 from tc2_roster.residence_record rr where rr.household_id=h.roster_id and rr.record_kind='PERMANENT') then 'permanent'
+    else 'unknown' end
     """;
 
     static String folded(String expression) {
@@ -102,25 +99,6 @@ public class HouseholdBrowseResource {
             .toList();
         var entities = new HashMap<Long, com.policemanagement.com.service.dto.HouseholdDTO>();
         if (!ids.isEmpty()) repository.findAllById(ids).forEach(entity -> entities.put(entity.getId(), mapper.toDto(entity)));
-        if (!ids.isEmpty()) {
-            params.put("pageIds", ids);
-            var counts = db.queryForList(
-                "select household_id, count(*) as amount, sum(case when gender='FEMALE' then 1 else 0 end) as females, sum(case when 2026-coalesce(birth_year,1990)<18 then 1 else 0 end) as minors from resident where household_id in (:pageIds) group by household_id",
-                params
-            );
-            for (var row : counts) {
-                var dto = entities.get(((Number) row.get("household_id")).longValue());
-                if (dto == null) continue;
-                int count = ((Number) row.get("amount")).intValue(),
-                    female = ((Number) row.get("females")).intValue(),
-                    minor = ((Number) row.get("minors")).intValue();
-                dto.setResidentsCount(count);
-                dto.setFemaleCount(female);
-                dto.setMaleCount(count - female);
-                dto.setUnder18Count(minor);
-                dto.setAbove18Count(count - minor);
-            }
-        }
         var items = new ArrayList<Map<String, Object>>();
         for (var row : rows) {
             long id = ((Number) row.get("id")).longValue();
@@ -168,32 +146,24 @@ public class HouseholdBrowseResource {
                 selected,
             params
         );
-        int year = java.time.LocalDate.now().getYear();
-        params.put("year", year);
+        params.put("adultCutoff", java.sql.Date.valueOf(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).minusYears(18)));
         var population = db.queryForMap(
             base +
-                "select count(*) as residents, coalesce(sum(case when r.gender='FEMALE' then 1 else 0 end),0) as female, coalesce(sum(case when :year-coalesce(nullif(r.birth_year,0),1990)<18 then 1 else 0 end),0) as minors from resident r join scoped h on h.id=r.household_id where " +
+                "select count(distinct r.id) as residents,count(distinct r.id) filter(where r.gender='FEMALE') as female," +
+                "count(distinct r.id) filter(where r.gender='MALE') as male," +
+                "count(distinct r.id) filter(where r.birth_date_precision='DAY' and r.birth_date>:adultCutoff) as minors," +
+                "count(distinct r.id) filter(where r.birth_date_precision='DAY' and r.birth_date<=:adultCutoff) as adults " +
+                "from public.resident r join tc2_roster.household_membership m on m.resident_id=r.roster_id and m.valid_to is null " +
+                "join scoped h on h.roster_id=m.household_id where " +
                 query.filter(),
             params
         );
         long residents = ((Number) population.get("residents")).longValue();
         long female = ((Number) population.get("female")).longValue();
+        long male = ((Number) population.get("male")).longValue();
         long minors = ((Number) population.get("minors")).longValue();
+        long adults = ((Number) population.get("adults")).longValue();
         long fallbackHouseholds = 0;
-        var legacy = db.queryForList(
-            base +
-                "select h.residents_count,h.male_count,h.female_count,h.under_18_count,h.owner_name,h.house_number" +
-                selected +
-                " and not exists(select 1 from resident r where r.household_id=h.id)",
-            params
-        );
-        for (var row : legacy) {
-            var counts = com.policemanagement.com.service.OverviewDemographics.fallback(row, year);
-            residents += counts.residents();
-            female += counts.female();
-            minors += counts.under18();
-            fallbackHouseholds++;
-        }
         var hamlets = db.queryForList(
             base + "select h.browse_hamlet" + selected + " and h.browse_hamlet<>'' group by h.browse_hamlet order by min(h.id)",
             params,
@@ -202,7 +172,8 @@ public class HouseholdBrowseResource {
         // Header territory totals remain independent of the overview search.
         var scope = db.queryForMap(
             base +
-                "select count(*) as total, coalesce(sum(coalesce(p.amount,nullif(h.residents_count,0),1)),0) as residents, coalesce(sum(case when h.status='WARNING' then 1 else 0 end),0) as warnings from scoped h left join (select r.household_id,count(*) as amount from resident r join scoped s on s.id=r.household_id group by r.household_id) p on p.household_id=h.id",
+                "select count(*) as total,(select count(distinct m.resident_id) from tc2_roster.household_membership m join scoped s on s.roster_id=m.household_id where m.valid_to is null) as residents," +
+                "count(*) filter(where h.status='WARNING') as warnings from scoped h",
             params
         );
         long warnings = ((Number) metrics.get("warnings")).longValue();
@@ -213,9 +184,11 @@ public class HouseholdBrowseResource {
         result.put("warnings", warnings);
         result.put("residents", residents);
         result.put("female", female);
-        result.put("male", residents - female);
+        result.put("male", male);
+        result.put("unknownGender", residents - male - female);
         result.put("under18", minors);
-        result.put("above18", Math.max(0, residents - minors));
+        result.put("above18", adults);
+        result.put("unknownAge", residents - minors - adults);
         result.put("fallbackHouseholds", fallbackHouseholds);
         result.put("hamlets", hamlets);
         result.put("scope", scope);

@@ -3,7 +3,8 @@ import { URL, fileURLToPath } from 'node:url';
 
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, normalizePath } from 'vite';
+import { defineConfig, normalizePath, type ProxyOptions } from 'vite';
+import { proxyOrigin } from './src/main/webapp/app/config/proxy-origin';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 const { getAbsoluteFSPath } = await import('swagger-ui-dist');
@@ -115,14 +116,26 @@ const config = defineConfig({
     'process.env.LOG_LEVEL': JSON.stringify(development ? 'info' : 'error'),
   },
   server: {
-    host: true,
+    host: process.env.VITE_DEV_HOST || 'localhost',
     port: 9000,
+    allowedHosts: (process.env.VITE_ALLOWED_HOSTS || '')
+      .split(',')
+      .map(host => host.trim())
+      .filter(Boolean),
     proxy: Object.fromEntries(
-      ['/api', '/services', '/management', '/v3/api-docs', '/oauth2', '/login'].map(res => [
-        res,
+      ['/realms', '/resources', '/api', '/services', '/management', '/v3/api-docs', '/oauth2', '/login'].map(route => [
+        route,
         {
-          target: 'http://localhost:8080',
-        },
+          target: ['/realms', '/resources'].includes(route) ? 'http://localhost:9080' : 'http://localhost:8080',
+          configure(proxy) {
+            proxy.on('proxyReq', (outgoing, request) => {
+              const origin = proxyOrigin(request);
+              outgoing.setHeader('X-Forwarded-Proto', origin.protocol);
+              outgoing.setHeader('X-Forwarded-Host', origin.host);
+              outgoing.setHeader('X-Forwarded-Port', origin.port);
+            });
+          },
+        } satisfies ProxyOptions,
       ]),
     ),
   },

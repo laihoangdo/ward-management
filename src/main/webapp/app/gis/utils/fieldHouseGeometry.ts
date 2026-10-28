@@ -103,7 +103,7 @@ export function indexHouseholds(houses: FieldHouse[], households: HouseholdFacil
   }
   for (const h of households) {
     let id = explicit.get(h.id);
-    if (!id && !h.coordinatesEstimated && h.coordinates?.every(Number.isFinite)) {
+    if (!id && !h.coordinatesEstimated && h.coordinateMethod !== 'RANDOM_WITHIN_TC2' && h.coordinates?.every(Number.isFinite)) {
       const [lat, lng] = h.coordinates;
       id = [...(cells.get(`${cell(lng)}:${cell(lat)}`) ?? []), ...(cells.get('*') ?? [])].find(house =>
         containsHousePoint(house.geometry, [lng, lat]),

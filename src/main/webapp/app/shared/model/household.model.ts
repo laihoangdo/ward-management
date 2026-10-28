@@ -4,6 +4,12 @@ import { SecurityStatus } from 'app/shared/model/enumerations/security-status.mo
 
 export interface IHousehold {
   id?: number;
+  rosterId?: string;
+  rawAddress?: string;
+  coordinateMethod?: string;
+  origin?: string;
+  verificationStatus?: string;
+  sourceCaseNumber?: string;
   code?: string;
   houseNumber?: string;
   street?: string;
