@@ -968,7 +968,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       )}
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden relative ${isMapFullscreen ? 'w-full' : ''}`}>
+      <div className={`gis-workspace flex-1 flex flex-col min-w-0 h-full overflow-hidden relative ${isMapFullscreen ? 'w-full' : ''}`}>
         {/* Top Header */}
         {!isMapFullscreen && (
           <Header

@@ -1,4 +1,9 @@
 ﻿.field-house-map {
+  --field-surface: var(--gis-surface, #ffffff);
+  --field-soft: var(--gis-surface-soft, #f1f5f3);
+  --field-text: var(--gis-text, #172c35);
+  --field-muted: var(--gis-muted, #526170);
+  --field-border: var(--gis-border, #cbd2d9);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -7,7 +12,7 @@
   min-height: 650px;
   min-width: 0;
   background: #14212b;
-  color: #f8fafc;
+  color: var(--field-text);
 }
 .field-house-map > header {
   display: flex;
@@ -15,6 +20,8 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
+  background: var(--field-surface);
+  border-bottom: 1px solid var(--field-border);
 }
 .field-map-actions {
   display: flex;
@@ -22,25 +29,42 @@
   gap: 8px;
   min-width: 0;
 }
-.field-house-map button {
+.field-house-map button:not([class*='maplibregl-ctrl']) {
   padding: 7px 10px;
-  border: 1px solid #64748b;
+  border: 1px solid var(--field-border);
   border-radius: 6px;
-  background: #334155;
-  font-size: 13px;
+  background: var(--field-surface);
+  color: var(--field-text);
+  font-size: 14px;
+  min-height: 40px;
+  cursor: pointer;
   touch-action: manipulation;
 }
-.field-house-map button:hover:enabled {
-  background: #475569;
+.field-house-map button:not([class*='maplibregl-ctrl']):hover:enabled {
+  background: var(--field-soft);
+  border-color: var(--gis-primary, #1c4e3a);
 }
 .field-house-map button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 .field-house-map .field-primary {
-  background: #2563eb;
+  background: var(--gis-primary, #1c4e3a);
+  color: #fff;
+  border-color: var(--gis-primary, #1c4e3a);
   width: 100%;
   margin: 10px 0;
+}
+.field-house-map .field-primary:hover:enabled {
+  background: var(--gis-primary-hover, #153c2c);
+}
+.field-house-map button[aria-pressed='true'] {
+  background: var(--gis-selected, #e8f1ec);
+  border-color: var(--gis-primary, #1c4e3a);
+}
+.field-house-map :is(button, input, select, summary):focus-visible {
+  outline: 3px solid var(--gis-focus, #2563eb);
+  outline-offset: 2px;
 }
 .field-map-body {
   position: relative;
@@ -59,10 +83,10 @@
   position: absolute;
   z-index: 2;
   padding: 14px;
-  background: rgba(15, 23, 42, 0.96);
-  border: 1px solid #475569;
-  border-radius: 9px;
-  box-shadow: 0 5px 20px #0005;
+  background: var(--field-surface);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgb(15 35 30 / 16%);
   max-height: calc(100% - 25px);
   overflow-y: auto;
   box-sizing: border-box;
@@ -80,7 +104,7 @@
   gap: 8px;
   padding: 10px 0;
   z-index: 1;
-  background: #0f172a;
+  background: var(--field-surface);
 }
 .field-panel-heading h3 {
   min-width: 0;
@@ -110,17 +134,20 @@
 .field-house-map label {
   display: block;
   margin: 10px 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 .field-property-editor {
   margin: 12px 0;
   padding: 10px;
-  border: 1px solid #475569;
+  border: 1px solid var(--field-border);
+  background: var(--field-soft);
   border-radius: 6px;
 }
 .field-property-editor summary {
   cursor: pointer;
   font-weight: 600;
+  padding-block: 4px;
+  min-height: 32px;
 }
 .field-property-editor fieldset {
   min-width: 0;
@@ -132,18 +159,26 @@
 .field-house-map select {
   display: block;
   width: 100%;
-  background: #fff;
-  color: #0f172a;
+  background: var(--field-surface);
+  color: var(--field-text);
+  border: 1px solid var(--gis-control-border, #84939c);
+  min-height: 40px;
+  font-size: 14px;
   border-radius: 4px;
   padding: 7px;
   margin-top: 5px;
 }
 .field-house-map input[type='checkbox'] {
   margin-right: 8px;
+  accent-color: var(--gis-primary, #1c4e3a);
+}
+.field-house-map input::placeholder {
+  color: var(--field-muted);
+  opacity: 1;
 }
 .field-house-map small {
   display: block;
-  color: #cbd5e1;
+  color: var(--field-muted);
   font-size: 12px;
 }
 .field-panel h3 {
@@ -151,17 +186,17 @@
   margin-bottom: 8px;
 }
 .field-panel p {
-  font-size: 13px;
+  font-size: 14px;
   margin: 10px 0;
 }
 .field-id {
   overflow-wrap: anywhere;
-  color: #94a3b8;
+  color: var(--field-muted);
 }
 .field-household {
   display: block;
   width: 100%;
-  color: #6ee7b7;
+  color: var(--gis-accent-text, #1c4e3a);
   margin: 5px 0;
   text-align: left;
 }
@@ -173,9 +208,12 @@
 }
 .field-error {
   background: #7f1d1d;
+  color: #fff;
 }
 .field-notice {
-  background: #064e3b;
+  background: var(--field-soft);
+  color: var(--field-text);
+  border-bottom: 1px solid var(--field-border);
 }
 .field-temporary-notice {
   margin: 0;
@@ -253,7 +291,7 @@
     width: auto;
   }
   .field-layers summary {
-    min-height: 24px;
+    min-height: 40px;
     margin-bottom: 0;
   }
   .field-layers[open] summary {

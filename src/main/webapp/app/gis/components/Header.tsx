@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="gis-header h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
+    <header className="gis-header h-14 bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
       {/* Title / Hamburger menu / Home button */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
         {onToggleDesktopSidebar && (
@@ -133,6 +133,8 @@ export const Header: React.FC<HeaderProps> = ({
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
+            type="button"
+            aria-label="Mở menu điều hành"
             className="lg:hidden h-8 w-8 sm:h-9 sm:w-9 text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors relative flex items-center justify-center shrink-0 cursor-pointer"
             title="Mở menu điều hành"
           >
@@ -148,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
           to="/"
           id="btn-header-home"
           title="Quay về Trang chủ Cổng thông tin Monolithic"
-          className="hidden sm:flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-slate-700 bg-slate-50 hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-300 font-semibold text-xs transition-colors shadow-xs shrink-0 cursor-pointer no-underline"
+          className="gis-header-home hidden sm:flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-slate-700 bg-slate-50 hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-300 font-semibold text-xs transition-colors shadow-xs shrink-0 cursor-pointer no-underline"
           style={{ textDecoration: 'none' }}
         >
           <Home className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
@@ -156,14 +158,17 @@ export const Header: React.FC<HeaderProps> = ({
         </Link>
 
         {/* Shield Icon */}
-        <div className="hidden md:flex w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 items-center justify-center border border-blue-500/20 shrink-0">
+        <div
+          aria-hidden="true"
+          className="gis-header-emblem hidden md:flex w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 items-center justify-center border border-blue-500/20 shrink-0"
+        >
           <Shield className="w-4 h-4" />
         </div>
 
         {/* Module Title & Breadcrumb */}
         <div className="min-w-0 pr-1 flex-1">
           <h1
-            className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight truncate m-0 p-0"
+            className="gis-header-title text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight m-0 p-0"
             style={{ margin: 0, fontWeight: 700 }}
           >
             {getTabTitle()}
@@ -175,9 +180,9 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Action shortcuts & Search */}
-      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+      <div className="gis-header-actions flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Desktop & Tablet Quick Search with Voice Search trigger */}
-        <div className="relative hidden md:block w-36 lg:w-56 xl:w-64 shrink-0">
+        <div className="gis-header-search relative hidden md:block w-36 lg:w-56 xl:w-64 shrink-0">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="search"
@@ -225,7 +230,7 @@ export const Header: React.FC<HeaderProps> = ({
           aria-expanded={isMobileSearchOpen}
           aria-controls="gis-mobile-search"
           onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-          className={`md:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
+          className={`gis-header-mobile-search-toggle md:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
             isMobileSearchOpen || searchQuery
               ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
               : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
@@ -236,7 +241,16 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Database & Cloud status badge - ALWAYS single line */}
-        <div className="hidden xl:flex items-center gap-1.5 h-9 px-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-[11px] font-medium whitespace-nowrap shrink-0">
+        <div
+          title={
+            backendStatus === 'online'
+              ? 'Máy chủ trực tuyến'
+              : backendStatus === 'offline'
+                ? 'Mất kết nối máy chủ'
+                : 'Đang kiểm tra máy chủ'
+          }
+          className="gis-header-connection hidden xl:flex items-center gap-1.5 h-9 px-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-[11px] font-medium whitespace-nowrap shrink-0"
+        >
           <span
             className={`w-2 h-2 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'} shrink-0`}
           />
@@ -261,7 +275,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <UserCheck className="w-4 h-4 shrink-0" />
-            <span className="hidden xl:inline whitespace-nowrap">Nhân khẩu</span>
+            <span className="gis-header-shortcut-label hidden xl:inline whitespace-nowrap">Nhân khẩu</span>
           </button>
         )}
 
@@ -274,7 +288,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="flex h-9 px-2 sm:px-2.5 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
         >
           <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-          <span className="hidden xl:inline whitespace-nowrap">Cập nhật</span>
+          <span className="gis-header-shortcut-label hidden xl:inline whitespace-nowrap">Cập nhật</span>
         </button>
 
         {/* Real-time Clock Widget */}
@@ -322,11 +336,11 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Current User Quick Badge & Logout */}
         {currentUser && (
-          <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 shrink-0">
+          <div className="gis-header-account hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 shrink-0">
             <div className="w-7 h-7 rounded-lg bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-xs shrink-0">
               {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'A'}
             </div>
-            <div className="text-right leading-tight min-w-0">
+            <div className="gis-header-user-detail text-right leading-tight min-w-0">
               <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate whitespace-nowrap max-w-[120px]">
                 {currentUser.fullName || currentUser.username}
               </div>
@@ -373,7 +387,12 @@ export const Header: React.FC<HeaderProps> = ({
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {searchQuery && (
-                <button type="button" onClick={() => onSearchChange('')} className="text-slate-400 hover:text-slate-600 p-1">
+                <button
+                  type="button"
+                  aria-label="Xóa tìm kiếm"
+                  onClick={() => onSearchChange('')}
+                  className="text-slate-400 hover:text-slate-600 p-1"
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}

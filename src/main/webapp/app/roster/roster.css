@@ -1,14 +1,14 @@
 .roster-page {
   --roster-surface: var(--gis-surface, #ffffff);
   --roster-background: var(--gis-background, #f8f9fa);
-  --roster-soft: #f8fafc;
-  --roster-text: #172033;
+  --roster-soft: var(--gis-surface-soft, #f8fafc);
+  --roster-text: var(--gis-text, #172033);
   --roster-muted: var(--gis-muted, #526170);
   --roster-border: var(--gis-border, #cbd2d9);
   --roster-primary: var(--gis-primary, #1c4e3a);
   --roster-primary-hover: var(--gis-primary-hover, #153c2c);
   --roster-selected: var(--gis-selected, #e8f1ec);
-  --roster-accent: #1c4e3a;
+  --roster-accent: var(--gis-accent-text, #1c4e3a);
   padding: 24px;
   max-width: 1500px;
   margin: auto;
@@ -226,6 +226,7 @@
 }
 .roster-page :is(input, select) {
   background: var(--roster-soft);
+  border-color: var(--gis-control-border, var(--roster-border));
 }
 .roster-page label {
   color: var(--roster-muted);
@@ -268,14 +269,14 @@
   padding: 12px 16px;
 }
 .dark .roster-page {
-  --roster-surface: #0f172a;
-  --roster-background: #090d16;
-  --roster-soft: #162032;
-  --roster-text: #f1f5f9;
-  --roster-muted: #a8b7ca;
-  --roster-border: #334155;
-  --roster-selected: #18372d;
-  --roster-accent: #a7dfbd;
+  --roster-surface: var(--gis-surface, #0f172a);
+  --roster-background: var(--gis-background, #090d16);
+  --roster-soft: var(--gis-surface-soft, #162032);
+  --roster-text: var(--gis-text, #f1f5f9);
+  --roster-muted: var(--gis-muted, #a8b7ca);
+  --roster-border: var(--gis-border, #334155);
+  --roster-selected: var(--gis-selected, #18372d);
+  --roster-accent: var(--gis-accent-text, #a7dfbd);
 }
 .dark .roster-page .roster-error {
   background: #3b1720;
