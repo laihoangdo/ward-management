@@ -20,7 +20,12 @@ const mocks = vi.hoisted(() => ({
   mapOptions: vi.fn(),
   missingSources: new Set<string>(),
   addSource: vi.fn(),
+  setPaintProperty: vi.fn(),
+  effectsAttach: vi.fn(),
+  effectsDisplay: vi.fn(),
+  effectsDispose: vi.fn(),
 }));
+vi.mock('../three/field-effects.js', () => ({ attachFieldEffects: mocks.effectsAttach }));
 vi.mock('axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), isAxiosError: vi.fn(() => false) } }));
 vi.mock('maplibre-gl', () => ({
   default: {
@@ -33,7 +38,7 @@ vi.mock('maplibre-gl', () => ({
       easeTo = vi.fn();
       doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
       scrollZoom = { setWheelZoomRate: vi.fn(), setZoomRate: vi.fn() };
-      setPaintProperty = vi.fn();
+      setPaintProperty = mocks.setPaintProperty;
       setLayoutProperty = mocks.setLayoutProperty;
       setFilter = mocks.setFilter;
       queryRenderedFeatures = mocks.queryRenderedFeatures;
@@ -109,6 +114,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.handlers.clear();
   mocks.missingSources.clear();
+  mocks.effectsAttach.mockImplementation(() => ({
+    ready: Promise.resolve({}),
+    setDisplayState: mocks.effectsDisplay,
+    dispose: mocks.effectsDispose,
+  }));
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -131,6 +141,104 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('field map controls', () => {
+  it('saves selected building properties through the existing permission-checked endpoint', async () => {
+    await mount([], true);
+    selectHouse();
+    fireEvent.click(screen.getByText('Sửa thuộc tính khối nhà'));
+    fireEvent.change(screen.getByLabelText('Số tầng'), { target: { value: '20' } });
+    fireEvent.change(screen.getByLabelText('Màu mái'), { target: { value: '#aabbcc' } });
+    fireEvent.submit(screen.getByText('Lưu thuộc tính khối nhà').closest('form')!);
+    await screen.findByText('Đã lưu thuộc tính khối nhà.');
+    const [url, payload] = vi.mocked(axios.put).mock.calls[0];
+    expect(url).toBe('/api/gis/field-buildings/badiem-test');
+    expect((payload as FieldHouse).geometry).toEqual(house.geometry);
+    expect((payload as FieldHouse).properties).toMatchObject({ floors: 20, height: 70, roofColor: '#aabbcc', appearanceSource: 'manual' });
+  });
+
+  it('does not expose the property editor without coordinate-edit permission', async () => {
+    await mount([], false);
+    selectHouse();
+    expect(screen.queryByText('Sửa thuộc tính khối nhà')).toBeNull();
+  });
+  it('keeps synthetic appearance out of household-link persistence', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/badiem-houses.geojson')
+        ? Promise.resolve({
+            data: {
+              type: 'FeatureCollection',
+              features: [
+                {
+                  ...house,
+                  properties: { ...house.properties, height: 12.8, wallColor: '#e2d9c8', roofColor: '#727d83', roofShape: 'flat' },
+                },
+              ],
+            },
+          })
+        : originalGet(url, config),
+    );
+    await mount([household], true);
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledOnce());
+    selectHouse();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Chọn hộ dân để liên kết' }), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu liên kết hộ dân' }));
+    await waitFor(() => expect(axios.put).toHaveBeenCalledOnce());
+    const payload = vi.mocked(axios.put).mock.calls[0][1] as FieldHouse;
+    expect(payload.properties.height).toBe(12.8);
+    expect(payload.properties).not.toHaveProperty('wallColor');
+    expect(payload.properties).not.toHaveProperty('roofShape');
+    expect(payload.properties.householdIds).toEqual(['1']);
+  });
+  it('applies effects on the existing map, preserves selection and restores native rendering when disabled', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/badiem-houses.geojson')
+        ? Promise.resolve({
+            data: {
+              type: 'FeatureCollection',
+              features: [
+                {
+                  ...house,
+                  properties: { ...house.properties, height: 12.8, wallColor: '#e2d9c8', roofColor: '#727d83', roofShape: 'flat' },
+                },
+              ],
+            },
+          })
+        : originalGet(url, config),
+    );
+    await mount([], false);
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.setPaintProperty).toHaveBeenCalledWith('houses-3d', 'fill-extrusion-opacity', 0));
+    const input = mocks.effectsAttach.mock.calls[0][1].collection.features[0];
+    expect(input.properties.height).toBe(12.8);
+    expect(input.properties.wallColor).toBe('#e2d9c8');
+    selectHouse();
+    await waitFor(() =>
+      expect(mocks.effectsDisplay).toHaveBeenLastCalledWith([
+        expect.objectContaining({ id: 'badiem-test', color: '#fbbf24', visible: true }),
+      ]),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Tắt hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsDispose).toHaveBeenCalledOnce());
+    expect(mocks.setPaintProperty).toHaveBeenLastCalledWith('houses-3d', 'fill-extrusion-opacity', 0.88);
+    expect(axios.put).not.toHaveBeenCalled();
+    expect(vi.mocked(axios.get).mock.calls.filter(([url]) => String(url).includes('.geojson'))).toHaveLength(1);
+  });
+
+  it('keeps native buildings visible when effects cannot initialize', async () => {
+    mocks.effectsAttach.mockImplementation(() => ({
+      ready: Promise.reject(new Error('Worker failed')),
+      setDisplayState: mocks.effectsDisplay,
+      dispose: mocks.effectsDispose,
+    }));
+    await mount([], false);
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await screen.findByText('Không khởi tạo được hiệu ứng; bản đồ gốc vẫn hoạt động.');
+    expect(mocks.effectsAttach).toHaveBeenCalledOnce();
+    expect(mocks.setPaintProperty).not.toHaveBeenCalledWith('houses-3d', 'fill-extrusion-opacity', 0);
+  });
   it('shows temporary points separately, toggles their layer, and never auto-links their coordinates', async () => {
     const temporary = {
       ...household,

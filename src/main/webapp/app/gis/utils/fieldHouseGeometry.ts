@@ -13,8 +13,61 @@ export type FieldHouse = GeoJSON.Feature<
     householdIds?: string[];
     canManage?: boolean;
     accessReason?: 'outside-territory' | 'linked-household-outside-scope';
+    levels?: number;
+    floorHeight?: number;
+    wallColor?: string;
+    roofColor?: string;
+    roofShape?: string;
+    appearanceSeed?: number;
+    visualizationSource?: string;
+    heightSource?: string;
+    appearanceSource?: 'manual';
   }
 >;
+export const MAX_BUILDING_FLOORS = 20;
+export const DEFAULT_FLOOR_HEIGHT = 3.5;
+export const MAX_BUILDING_HEIGHT = MAX_BUILDING_FLOORS * DEFAULT_FLOOR_HEIGHT;
+
+export function validateBuildingProperties(properties: FieldHouse['properties']): string | null {
+  if (
+    typeof properties.floors !== 'number' ||
+    !Number.isInteger(properties.floors) ||
+    properties.floors < 1 ||
+    properties.floors > MAX_BUILDING_FLOORS
+  )
+    return 'Số tầng phải là số nguyên từ 1 đến 20.';
+  if (!Number.isFinite(properties.height) || properties.height < 0.5 || properties.height > MAX_BUILDING_HEIGHT)
+    return 'Chiều cao phải từ 0,5 đến 70 m (tối đa 20 tầng).';
+  if ((properties.name ?? '').length > 255) return 'Tên công trình không quá 255 ký tự.';
+  for (const value of [properties.color, properties.wallColor, properties.roofColor]) {
+    if (value !== undefined && !/^#[a-f\d]{6}$/i.test(value)) return 'Màu công trình không hợp lệ.';
+  }
+  if (properties.roofShape !== undefined && !['flat', 'gable'].includes(properties.roofShape)) return 'Kiểu mái không hợp lệ.';
+  return null;
+}
+/** Saved geometry, height and permissions win; retain visual fields absent from API DTOs. */
+export function mergeSavedHouse(base: FieldHouse | undefined, saved: FieldHouse): FieldHouse {
+  return { ...base, ...saved, properties: { ...base?.properties, ...saved.properties } };
+}
+
+/** Keep visual-only metadata out of business persistence DTOs. */
+export function persistedHouse(house: FieldHouse): FieldHouse {
+  const properties = { ...house.properties };
+  for (const key of [
+    'levels',
+    'floorHeight',
+    'wallColor',
+    'roofColor',
+    'roofShape',
+    'appearanceSeed',
+    'visualizationSource',
+    'heightSource',
+  ] as const) {
+    if (properties.appearanceSource === 'manual' && ['wallColor', 'roofColor', 'roofShape', 'floorHeight'].includes(key)) continue;
+    delete properties[key];
+  }
+  return { ...house, properties };
+}
 export const houseBounds = (house: FieldHouse): [number, number, number, number] => {
   const points = house.geometry.type === 'Polygon' ? house.geometry.coordinates.flat() : house.geometry.coordinates.flat(2);
   return points.reduce<[number, number, number, number]>(

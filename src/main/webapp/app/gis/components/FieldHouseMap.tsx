@@ -4,12 +4,24 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { HouseholdFacility, HouseholdStatus } from '../types';
 import { baDiemCommuneBoundary as boundary, baDiemCommuneBounds } from '../data/baDiemCommuneBoundary';
-import { FieldHouse, houseBounds, indexHouseholds, moveHouse, validateDraft } from '../utils/fieldHouseGeometry';
+import {
+  FieldHouse,
+  houseBounds,
+  indexHouseholds,
+  mergeSavedHouse,
+  moveHouse,
+  persistedHouse,
+  validateDraft,
+  validateBuildingProperties,
+  MAX_BUILDING_FLOORS,
+  MAX_BUILDING_HEIGHT,
+} from '../utils/fieldHouseGeometry';
 import { containsHousePoint } from '../utils/houseFootprints';
 import { localRasterRequest } from '../utils/localRasterRequest';
 import './FieldHouseMap.css';
 import { frameMapCapture, MapCaptureOfficer } from '../utils/mapCapture';
 import { MapCapturePreview } from './MapCapturePreview';
+import FieldHousePropertiesEditor from './FieldHousePropertiesEditor';
 
 interface Props {
   captureOfficer?: MapCaptureOfficer;
@@ -25,6 +37,7 @@ const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: 
 const STATUS: Record<HouseholdStatus, string> = { normal: 'Bình thường', warning: 'Chú ý', alert: 'Cảnh báo', business: 'Kinh doanh' };
 const COLORS = { normal: '#10b981', warning: '#f59e0b', alert: '#ef4444', business: '#38bdf8' };
 const COMPACT_MAP_QUERY = '(max-width: 760px), (max-height: 600px) and (pointer: coarse)';
+type FieldEffects = ReturnType<typeof import('../three/field-effects.js').attachFieldEffects>;
 function territoryPolygons(value: unknown): (GeoJSON.Polygon | GeoJSON.MultiPolygon)[] {
   if (!value || typeof value !== 'object') return [];
   const type = (value as { type?: string }).type;
@@ -75,6 +88,9 @@ export default function FieldHouseMap({
   const territoryShapes = useMemo(() => access.territories.flatMap(territoryPolygons), [access.territories]);
   const [checkedAccess, setCheckedAccess] = useState({ id: '', allowed: false });
   const [houses, setHouses] = useState<FieldHouse[]>([]);
+  const [threeEnabled, setThreeEnabled] = useState(false);
+  const [threeActive, setThreeActive] = useState(false);
+  const effectsRef = useRef<FieldEffects | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -171,7 +187,7 @@ export default function FieldHouseMap({
           axios.get<GeoJSON.FeatureCollection>('/api/gis/field-buildings/boundaries', { signal: controller.signal }),
         ]);
         const merged = new Map(base.data.features.map(h => [h.properties.buildingId, h]));
-        saved.data.features.forEach(h => merged.set(h.properties.buildingId, h));
+        saved.data.features.forEach(h => merged.set(h.properties.buildingId, mergeSavedHouse(merged.get(h.properties.buildingId), h)));
         setHouses([...merged.values()]);
         setAccess(territory.data);
         setHamletBoundaries(hamlets.data);
@@ -231,10 +247,15 @@ export default function FieldHouseMap({
         for (let offset = 0; offset < candidatesToSave.length; offset += 50) {
           const { data } = await axios.post<GeoJSON.FeatureCollection<FieldHouse['geometry'], FieldHouse['properties']>>(
             '/api/gis/field-buildings/auto-link',
-            candidatesToSave.slice(offset, offset + 50),
+            candidatesToSave.slice(offset, offset + 50).map(persistedHouse),
           );
           const confirmed = new Map(data.features.map(h => [h.properties.buildingId, h]));
-          setHouses(previous => previous.map(h => confirmed.get(h.properties.buildingId) ?? h));
+          setHouses(previous =>
+            previous.map(h => {
+              const saved = confirmed.get(h.properties.buildingId);
+              return saved ? mergeSavedHouse(h, saved) : h;
+            }),
+          );
         }
       } catch {
         setAutoLinkError(true);
@@ -499,6 +520,90 @@ export default function FieldHouseMap({
 
   useEffect(() => {
     const map = mapRef.current;
+    setThreeActive(false);
+    if (!map || !ready || loading || !threeEnabled || representation !== '3d' || !layers.buildings) return undefined;
+    let cancelled = false;
+    let effects: FieldEffects | undefined;
+    const [west, south, east, north] = baDiemCommuneBounds;
+    // Rebuild only for geometry changes, never for selection or status filters.
+    const timer = window.setTimeout(() => {
+      void import('../three/field-effects.js')
+        .then(({ attachFieldEffects }) => {
+          if (cancelled) return;
+          effects = attachFieldEffects(map, {
+            collection: { type: 'FeatureCollection', features: houses },
+            anchor: [(west + east) / 2, (south + north) / 2],
+            onError() {
+              if (!cancelled) {
+                setThreeEnabled(false);
+                setThreeActive(false);
+                setNotice('Hiệu ứng Three.js bị lỗi; đã khôi phục bản đồ gốc.');
+              }
+            },
+          });
+          effectsRef.current = effects;
+          effects.setDisplayState(displayStatesRef.current);
+          return effects.ready.then(() => {
+            if (!cancelled) setThreeActive(true);
+          });
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setThreeEnabled(false);
+            setNotice('Không khởi tạo được hiệu ứng; bản đồ gốc vẫn hoạt động.');
+          }
+        });
+    }, 200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      effectsRef.current = null;
+      effects?.dispose();
+    };
+  }, [ready, loading, threeEnabled, houses, representation, layers.buildings]);
+
+  const displayStates = useMemo(
+    () =>
+      houses.map((house, index) => {
+        const residents = indexed.get(house.properties.buildingId) ?? [];
+        const occupied = residents.length > 0;
+        const visible =
+          (occupied ? layers.occupied : layers.empty) && (status === 'all' || residents.some(resident => resident.status === status));
+        const highest = residents.some(r => r.status === 'alert')
+          ? 'alert'
+          : residents.some(r => r.status === 'warning')
+            ? 'warning'
+            : residents.some(r => r.status === 'business')
+              ? 'business'
+              : 'normal';
+        return {
+          id: String(house.id ?? house.properties.buildingId ?? index),
+          visible,
+          color:
+            house.properties.buildingId === selectedId
+              ? '#fbbf24'
+              : occupied
+                ? COLORS[highest]
+                : house.properties.appearanceSource === 'manual'
+                  ? undefined
+                  : house.properties.color,
+        };
+      }),
+    [houses, indexed, layers.occupied, layers.empty, status, selectedId],
+  );
+  const displayStatesRef = useRef(displayStates);
+  displayStatesRef.current = displayStates;
+  useEffect(() => {
+    effectsRef.current?.setDisplayState(displayStates);
+  }, [displayStates]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (ready && map?.getLayer('houses-3d')) map.setPaintProperty('houses-3d', 'fill-extrusion-opacity', threeActive ? 0 : 0.88);
+  }, [ready, threeActive]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!ready || !map || initializedMapRef.current !== map) return;
     const colorExpression: maplibregl.ExpressionSpecification = [
       'case',
@@ -608,10 +713,13 @@ export default function FieldHouseMap({
       const { data: scope } = await axios.post<{ allowed: boolean }>('/api/gis/field-buildings/access/check', house.geometry);
       if (!scope.allowed) throw Error('Khối nhà nằm ngoài phạm vi ấp được giao hoặc chưa có ranh giới để xác minh.');
     }
-    const { data } = await axios.put<FieldHouse>(`/api/gis/field-buildings/${encodeURIComponent(house.properties.buildingId)}`, house);
+    const { data } = await axios.put<FieldHouse>(
+      `/api/gis/field-buildings/${encodeURIComponent(house.properties.buildingId)}`,
+      persistedHouse(house),
+    );
     setHouses(prev => {
       const index = prev.findIndex(h => h.properties.buildingId === data.properties.buildingId);
-      return index < 0 ? [...prev, data] : prev.map((h, i) => (i === index ? data : h));
+      return index < 0 ? [...prev, mergeSavedHouse(house, data)] : prev.map((h, i) => (i === index ? mergeSavedHouse(h, data) : h));
     });
     return data;
   };
@@ -758,8 +866,17 @@ export default function FieldHouseMap({
           <button type="button" onClick={onToggleFullscreen}>
             {isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
           </button>
+          <button type="button" aria-pressed={threeEnabled} disabled={!ready || loading} onClick={() => setThreeEnabled(value => !value)}>
+            {threeEnabled ? 'Tắt hiệu ứng Three.js' : 'Hiệu ứng Three.js'}
+          </button>
         </div>
       </header>
+      {threeEnabled && (
+        <p role="status" className="field-notice">
+          {threeActive ? 'Hiệu ứng Three.js đang bật' : 'Đang chuẩn bị hiệu ứng Three.js…'} · Thuộc tính minh họa từ GeoJSON dùng chung,
+          không phải khảo sát thực tế.
+        </p>
+      )}
       {error && (
         <p role="alert" className="field-error">
           {error}
@@ -875,7 +992,7 @@ export default function FieldHouseMap({
               <input
                 type="number"
                 min={1}
-                max={100}
+                max={MAX_BUILDING_FLOORS}
                 value={floors}
                 onChange={e => {
                   const v = Number(e.target.value);
@@ -886,7 +1003,14 @@ export default function FieldHouseMap({
             </label>
             <label>
               Chiều cao (m)
-              <input type="number" min={0.5} max={300} step={0.5} value={height} onChange={e => setHeight(Number(e.target.value))} />
+              <input
+                type="number"
+                min={0.5}
+                max={MAX_BUILDING_HEIGHT}
+                step={0.5}
+                value={height}
+                onChange={e => setHeight(Number(e.target.value))}
+              />
             </label>
             <label>
               Màu khối nhà
@@ -899,8 +1023,8 @@ export default function FieldHouseMap({
                 void act(async () => {
                   const problem = validateDraft(draft);
                   if (problem) throw Error(problem);
-                  if (!Number.isFinite(height) || height < 0.5 || height > 300 || !Number.isInteger(floors) || floors < 1 || floors > 100)
-                    throw Error('Kiểm tra số tầng và chiều cao (0,5–300 m).');
+                  const invalidProperties = validateBuildingProperties({ buildingId: '', height, floors, name, color });
+                  if (invalidProperties) throw Error(invalidProperties);
                   const id = `custom-${crypto.randomUUID()}`;
                   await persist({
                     type: 'Feature',
@@ -951,6 +1075,19 @@ export default function FieldHouseMap({
             <button type="button" onClick={zoomSelected}>
               Zoom tới khối nhà
             </button>
+            {mode === 'select' && canLink && canManageSelected && (
+              <FieldHousePropertiesEditor
+                key={selectedId}
+                house={selected}
+                busy={busy}
+                onSave={updated =>
+                  act(async () => {
+                    await persist(updated);
+                    setNotice('Đã lưu thuộc tính khối nhà.');
+                  })
+                }
+              />
+            )}
             {!canManageSelected && (
               <p>
                 {selected.properties.accessReason === 'linked-household-outside-scope'

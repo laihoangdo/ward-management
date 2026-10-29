@@ -1156,25 +1156,27 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                     </div>
                   }
                 >
-                  <FieldHouseMap
-                    captureOfficer={{
-                      fullName: currentUser.fullName,
-                      rank: currentUser.rank,
-                      unit: currentUser.unit,
-                      area: currentUser.assignedHamlets?.join(', ') || currentUser.assignedWard,
-                    }}
-                    key={`${currentUser.id}:${currentUser.version ?? 0}`}
-                    households={displayedHouseholds}
-                    canAdd={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
-                    canLink={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canEditCoordinates === true}
-                    onSelect={setSelectedHousehold}
-                    onAdd={coordinates => {
-                      setSelectedMapCoordinates(coordinates);
-                      setIsAddModalOpen(true);
-                    }}
-                    isFullscreen={isMapFullscreen}
-                    onToggleFullscreen={handleToggleMapFullscreen}
-                  />
+                  <div className="flex-1 min-h-0">
+                    <FieldHouseMap
+                      captureOfficer={{
+                        fullName: currentUser.fullName,
+                        rank: currentUser.rank,
+                        unit: currentUser.unit,
+                        area: currentUser.assignedHamlets?.join(', ') || currentUser.assignedWard,
+                      }}
+                      key={`${currentUser.id}:${currentUser.version ?? 0}`}
+                      households={displayedHouseholds}
+                      canAdd={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
+                      canLink={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canEditCoordinates === true}
+                      onSelect={setSelectedHousehold}
+                      onAdd={coordinates => {
+                        setSelectedMapCoordinates(coordinates);
+                        setIsAddModalOpen(true);
+                      }}
+                      isFullscreen={isMapFullscreen}
+                      onToggleFullscreen={handleToggleMapFullscreen}
+                    />
+                  </div>
                 </Suspense>
               )}
               {activeTab === 'bando-3d' && currentUser?.role === 'superadmin' && (

@@ -280,12 +280,32 @@ public class GisFieldBuildingResource {
             !Double.isFinite(height) ||
             !properties.path("height").isNumber() ||
             height < 0.5 ||
-            height > 300 ||
+            height > 70 ||
             properties.path("name").asText("").length() > 255 ||
             !properties.path("color").asText("#b6c9d6").matches("#[a-fA-F0-9]{6}")
         ) invalid();
-        JsonNode floors = properties.path("floors");
-        if (!floors.isMissingNode() && (!floors.isIntegralNumber() || floors.asInt() < 1 || floors.asInt() > 100)) invalid();
+        for (String key : List.of("floors", "levels")) {
+            JsonNode floors = properties.path(key);
+            if (!floors.isMissingNode() && (!floors.isIntegralNumber() || floors.asInt() < 1 || floors.asInt() > 20)) invalid();
+        }
+        for (String key : List.of("wallColor", "roofColor")) {
+            JsonNode value = properties.path(key);
+            if (!value.isMissingNode() && (!value.isString() || !value.asText().matches("#[a-fA-F0-9]{6}"))) invalid();
+        }
+        JsonNode roof = properties.path("roofShape");
+        if (!roof.isMissingNode() && !List.of("flat", "gable").contains(roof.asText())) invalid();
+        JsonNode floorHeight = properties.path("floorHeight");
+        if (
+            !floorHeight.isMissingNode() &&
+            (!floorHeight.isNumber() ||
+                !Double.isFinite(floorHeight.asDouble()) ||
+                floorHeight.asDouble() <= 0 ||
+                floorHeight.asDouble() > 70)
+        ) invalid();
+        JsonNode appearanceSource = properties.path("appearanceSource");
+        if (!appearanceSource.isMissingNode() && !"manual".equals(appearanceSource.asText())) invalid();
+        JsonNode estimated = properties.path("estimated");
+        if (!estimated.isMissingNode() && !estimated.isBoolean()) invalid();
         JsonNode geometry = feature.path("geometry");
         JsonNode coordinates = geometry.path("coordinates");
         if (!coordinates.isArray() || coordinates.isEmpty() || coordinates.size() > 1000) invalid();

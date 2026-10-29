@@ -80,6 +80,7 @@
     "bootstrap": "5.3.8",
     "bootswatch": "5.3.8",
     "dayjs": "1.11.23",
+    "earcut": "3.2.4",
     "firebase": "^12.19.0",
     "html2canvas-pro": "^2.4.5",
     "lucide-react": "^1.48.0",

@@ -17,6 +17,62 @@ import tools.jackson.databind.ObjectMapper;
 class GisFieldBuildingResourceTest {
 
     private final ObjectMapper json = new ObjectMapper();
+
+    @Test
+    void validatesTwentyFloorLimitAndEditedMaterials() {
+        var feature = feature("[[0,0],[1,0],[1,1],[0,0]]");
+        var properties = (tools.jackson.databind.node.ObjectNode) feature.path("properties");
+        properties.put("floors", 20);
+        properties.put("height", 70);
+        properties.put("wallColor", "#112233");
+        properties.put("roofColor", "#aabbcc");
+        properties.put("roofShape", "gable");
+        properties.put("appearanceSource", "manual");
+        properties.put("floorHeight", 3.5);
+        properties.put("estimated", true);
+        assertDoesNotThrow(() -> GisFieldBuildingResource.validate("custom-1", feature));
+        properties.put("floors", 21);
+        assertThrows(ResponseStatusException.class, () -> GisFieldBuildingResource.validate("custom-1", feature));
+        properties.put("floors", 1.5);
+        assertThrows(ResponseStatusException.class, () -> GisFieldBuildingResource.validate("custom-1", feature));
+        properties.put("floors", 20);
+        properties.put("height", 70.1);
+        assertThrows(ResponseStatusException.class, () -> GisFieldBuildingResource.validate("custom-1", feature));
+        properties.put("height", 70);
+        properties.put("levels", 21);
+        assertThrows(ResponseStatusException.class, () -> GisFieldBuildingResource.validate("custom-1", feature));
+        properties.remove("levels");
+        properties.put("wallColor", "invalid");
+        assertThrows(ResponseStatusException.class, () -> GisFieldBuildingResource.validate("custom-1", feature));
+        properties.put("wallColor", "#112233");
+        properties.put("roofShape", "unknown");
+        assertThrows(ResponseStatusException.class, () -> GisFieldBuildingResource.validate("custom-1", feature));
+    }
+
+    @Test
+    void savesAndReturnsManuallyEditedAppearanceWithExistingHouseholdLinks() {
+        var feature = feature("[[0,0],[1,0],[1,1],[0,0]]");
+        var properties = (tools.jackson.databind.node.ObjectNode) feature.path("properties");
+        properties.put("floors", 20);
+        properties.put("height", 70);
+        properties.put("wallColor", "#112233");
+        properties.put("roofColor", "#aabbcc");
+        properties.put("roofShape", "gable");
+        properties.put("appearanceSource", "manual");
+        var db = mock(JdbcTemplate.class);
+        var rbac = mock(RbacService.class);
+        var saved = new GisFieldBuildingResource(db, json, rbac, history).save("custom-1", feature);
+        assertEquals("#aabbcc", saved.path("properties").path("roofColor").asText());
+        assertEquals("1", saved.path("properties").path("householdIds").path(0).asText());
+        verify(db).update(
+            "insert into gis_field_building (id, feature_json) values (?, ?) on conflict (id) do update set feature_json = excluded.feature_json",
+            "custom-1",
+            json.writeValueAsString(feature)
+        );
+        verify(rbac).permission("canEditCoordinates");
+        verify(history).mutation("custom-1", null, feature, false);
+    }
+
     private final com.policemanagement.com.service.FieldMapHistoryService history = mock(
         com.policemanagement.com.service.FieldMapHistoryService.class
     );

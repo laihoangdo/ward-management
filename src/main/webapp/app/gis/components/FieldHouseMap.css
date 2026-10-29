@@ -112,6 +112,22 @@
   margin: 10px 0;
   font-size: 13px;
 }
+.field-property-editor {
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid #475569;
+  border-radius: 6px;
+}
+.field-property-editor summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.field-property-editor fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
 .field-house-map input:not([type='checkbox']),
 .field-house-map select {
   display: block;
