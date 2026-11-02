@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Maximize2, Minimize2, Layers } from 'lucide-react';
 import { matchesHouseholdSearch } from '../utils/householdSearch';
 import axios from 'axios';
 import html2canvas from 'html2canvas-pro';
@@ -858,6 +859,13 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       labelMarkersRef.current = [];
       geoLabelMarkersRef.current.forEach(marker => marker.remove());
       geoLabelMarkersRef.current = [];
+      // MapLibre 5 removes the style without calling custom layer onRemove.
+      // Detach Three.js first, before map.remove deliberately loses the shared GL context.
+      const threeLayer = threeLayerRef.current;
+      if (threeLayer) {
+        if (map.getLayer(threeLayer.id)) map.removeLayer(threeLayer.id);
+        else threeLayer.onRemove();
+      }
       map.remove();
       mapRef.current = null;
       threeLayerRef.current = null;
@@ -1521,7 +1529,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
             type="button"
             aria-pressed={useThreeBuildings}
             onClick={() => setUseThreeBuildings(value => !value)}
-            className={`rounded px-3 py-2 text-sm ${useThreeBuildings ? 'bg-indigo-700 text-white' : 'bg-slate-100'}`}
+            className={`rounded px-3 py-2 text-sm ${useThreeBuildings ? 'bg-blue-700 text-white' : 'bg-slate-100'}`}
           >
             Khối nhà {useThreeBuildings ? 'Three.js' : 'cơ bản'}
           </button>
@@ -1737,7 +1745,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
               aria-label={fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
               onClick={() => void toggleFullscreen()}
             >
-              ⛶
+              {fullscreen ? <Minimize2 size={18} aria-hidden="true" /> : <Maximize2 size={18} aria-hidden="true" />}
             </button>
             <button
               type="button"
@@ -1745,7 +1753,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
               aria-label="Bật/tắt panel lớp"
               onClick={() => setShowLayerPanel(value => !value)}
             >
-              ☷
+              <Layers size={18} aria-hidden="true" />
             </button>
             <button
               type="button"

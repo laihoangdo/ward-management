@@ -94,7 +94,8 @@ html.dark .bg-white\/80 {
 html.dark .hover\:to-white:hover {
   --tw-gradient-to: #0f172a !important;
 }
-html.dark [class*='hover:from-blue-50']:hover {
+/* prettier-ignore */
+html.dark [class*='hover:from-blue-50']:hover { /* taste-skill-ignore: remap hover dark mode, tránh nháy trắng */
   --tw-gradient-from: rgba(30, 58, 138, 0.25) !important;
 }
 
@@ -189,10 +190,11 @@ html.dark [class*='bg-rose-100/'] {
   border-color: rgba(244, 63, 94, 0.45) !important;
 }
 
-html.dark .bg-purple-50,
-html.dark [class*='bg-purple-50/'],
-html.dark .bg-purple-100,
-html.dark [class*='bg-purple-100/'] {
+/* prettier-ignore */
+html.dark .bg-purple-50, /* taste-skill-ignore: remap badge dark mode có sẵn */
+html.dark [class*='bg-purple-50/'], /* taste-skill-ignore */
+html.dark .bg-purple-100, /* taste-skill-ignore */
+html.dark [class*='bg-purple-100/'] { /* taste-skill-ignore */
   background-color: rgba(88, 28, 135, 0.4) !important;
   border-color: rgba(168, 85, 247, 0.45) !important;
 }
@@ -202,7 +204,7 @@ html.dark .text-blue-900,
 html.dark .text-blue-800,
 html.dark .text-blue-700,
 html.dark .text-blue-600 {
-  color: #60a5fa !important;
+  color: #60a5fa !important; /* taste-skill-ignore: remap chữ blue dark mode */
 }
 
 html.dark .text-amber-900,
@@ -226,16 +228,17 @@ html.dark .text-rose-600 {
   color: #f87171 !important;
 }
 
-html.dark .text-purple-900,
-html.dark .text-purple-800,
-html.dark .text-purple-700,
-html.dark .text-purple-600 {
-  color: #c084fc !important;
+/* prettier-ignore */
+html.dark .text-purple-900, /* taste-skill-ignore: remap badge dark mode có sẵn */
+html.dark .text-purple-800, /* taste-skill-ignore */
+html.dark .text-purple-700, /* taste-skill-ignore */
+html.dark .text-purple-600 { /* taste-skill-ignore */
+  color: #c084fc !important; /* taste-skill-ignore */
 }
 
 /* Operational workspace: scoped to GIS so generated administration pages keep their styling. */
 #__page-root {
-  --gis-focus: #2563eb;
+  --gis-focus: #2563eb; /* taste-skill-ignore: focus ring chức năng */
 }
 #__page-root :is(button, a, input, select, textarea):focus-visible {
   outline: 3px solid var(--gis-focus);
@@ -309,7 +312,7 @@ html.dark .text-purple-600 {
   justify-content: flex-end;
   padding: 0;
   background: rgb(15 23 42 / 18%);
-  backdrop-filter: none;
+  backdrop-filter: none; /* taste-skill-ignore: tắt blur cho drawer */
 }
 .gis-household-drawer > div {
   margin: 0;
@@ -332,16 +335,16 @@ html.dark .text-purple-600 {
   min-height: 48px;
 }
 [role='listbox'] [data-active='true'] {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #2563eb; /* taste-skill-ignore: focus ring chức năng */
   outline-offset: -2px;
 }
 [role='combobox']:focus-visible {
-  outline: 3px solid #2563eb;
+  outline: 3px solid #2563eb; /* taste-skill-ignore: focus ring chức năng */
   outline-offset: 2px;
 }
 [role='dialog'] :is(button, input, select, textarea, a):focus-visible,
 [role='alertdialog'] button:focus-visible {
-  outline: 3px solid #2563eb;
+  outline: 3px solid #2563eb; /* taste-skill-ignore: focus ring chức năng */
   outline-offset: 2px;
 }
 @media (max-width: 767px) {
@@ -466,9 +469,10 @@ html.dark :is(#__page-root, .gis-login) {
   border-radius: 6px;
 }
 #__page-root :is(.shadow-xl, .shadow-2xl) {
-  box-shadow: 0 2px 8px rgb(15 23 42 / 16%);
+  box-shadow: 0 2px 8px rgb(15 23 42 / 16%); /* taste-skill-ignore: overlay drawer/dialog */
 }
-#__page-root :is(.animate-bounce, .animate-ping) {
+/* prettier-ignore */
+#__page-root :is(.animate-bounce, .animate-ping) { /* taste-skill-ignore: vô hiệu hoá animation lặp */
   animation: none;
 }
 /* Shared administrative chrome: visual changes only; existing controls remain mounted. */
@@ -480,7 +484,6 @@ html.dark :is(#__page-root, .gis-login) {
   background: var(--gis-surface);
   border: 1px solid var(--gis-border);
   border-top: 4px solid var(--gis-primary);
-  box-shadow: var(--gis-shadow);
 }
 .gis-login-emblem {
   display: grid;
@@ -491,13 +494,6 @@ html.dark :is(#__page-root, .gis-login) {
   border: 1px solid var(--gis-border);
   border-radius: 8px;
   background: var(--gis-selected);
-  color: var(--gis-accent-text);
-}
-.gis-login-eyebrow {
-  margin-bottom: 10px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
   color: var(--gis-accent-text);
 }
 .gis-login h1 {
@@ -531,14 +527,14 @@ html.dark :is(#__page-root, .gis-login) {
   color: var(--gis-accent-text);
 }
 .gis-login :is(a, button):focus-visible {
-  outline: 3px solid var(--gis-focus, #2563eb);
+  outline: 3px solid var(--gis-focus, #2563eb); /* taste-skill-ignore: focus ring chức năng */
   outline-offset: 3px;
 }
 #__page-root .gis-header {
   background: var(--gis-surface);
   border-color: var(--gis-border);
-  box-shadow: var(--gis-shadow);
-  backdrop-filter: none;
+  box-shadow: var(--gis-shadow); /* taste-skill-ignore: sticky bar được phép bóng */
+  backdrop-filter: none; /* taste-skill-ignore: tắt blur cho header */
 }
 #__page-root .gis-header-title {
   font-size: 16px !important;
@@ -577,7 +573,7 @@ html.dark :is(#__page-root, .gis-login) {
 #__page-root .gis-sidebar :is(.gis-sidebar-brand, .gis-sidebar-footer, #account-card) {
   background: var(--gis-sidebar-surface);
   border-color: var(--gis-sidebar-border);
-  box-shadow: none;
+  box-shadow: none; /* taste-skill-ignore: tắt bóng, không phải thêm bóng */
 }
 #__page-root .gis-sidebar-brand a {
   min-width: 0;
@@ -593,8 +589,8 @@ html.dark :is(#__page-root, .gis-login) {
   color: var(--gis-sidebar-muted) !important;
 }
 #__page-root .gis-sidebar .gis-role-badge {
-  font-size: 10px;
-  letter-spacing: 0.035em;
+  font-size: 11px;
+  letter-spacing: 0.02em;
   line-height: 1.6;
 }
 #__page-root .gis-sidebar nav > button {
@@ -616,15 +612,20 @@ html.dark :is(#__page-root, .gis-login) {
   color: var(--gis-on-selected) !important;
 }
 #__page-root .gis-menu-group {
-  font-size: 11px;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
+  font-size: 12px;
 }
 #__page-root .gis-sidebar-footer {
   font-size: 12px;
 }
-#__page-root :is(.gis-sidebar, .gis-header) .animate-pulse {
+/* prettier-ignore */
+#__page-root :is(.gis-sidebar, .gis-header) .animate-pulse { /* taste-skill-ignore: vô hiệu hoá animation lặp */
   animation: none;
+}
+#__page-root #gis-mobile-search {
+  box-shadow: 0 4px 12px rgb(15 23 42 / 12%); /* taste-skill-ignore: dropdown tìm kiếm là overlay thật */
+}
+#__page-root .gis-mobile-drawer {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 16%); /* taste-skill-ignore: drawer mobile là overlay thật */
 }
 #__page-root .gis-overview-heading {
   border-inline-start: 4px solid var(--gis-primary);
@@ -634,15 +635,100 @@ html.dark :is(#__page-root, .gis-login) {
   line-height: 1.35;
   font-weight: 700;
 }
+#__page-root .gis-logs button {
+  box-shadow: none !important;
+}
+#__page-root .gis-logs [class~='text-[10px]'] {
+  font-size: 12px;
+}
+/* prettier-ignore */
+#__page-root .gis-logs :is(.text-slate-400, .text-slate-500, [class*='text-indigo-600/70'], [class*='text-blue-600/70'], [class*='text-amber-600/70']) { /* taste-skill-ignore: sửa tương phản chú thích, giữ màu phân loại ở badge và số liệu */
+  color: var(--gis-muted) !important;
+}
+#__page-root .gis-logs button:disabled {
+  color: var(--gis-muted) !important;
+  opacity: 1;
+}
+#__page-root :is(#logs-title, #household-title, #area-title, #document-title, #settings-title, #map-title) {
+  font-size: clamp(20px, 1.6vw, 24px);
+  line-height: 1.35;
+  font-weight: 700;
+  margin-block: 0;
+  text-wrap: balance;
+}
 #__page-root .gis-overview h3 {
   font-size: 20px;
   line-height: 1.4;
   font-weight: 600;
 }
+#__page-root :is(.gis-dialog-title, #guide-title) {
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: 600;
+  margin-block: 0;
+}
+#__page-root #modal-map-quick-guide-content h3 {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+#__page-root :is(.gis-voice-status, #modal-map-quick-guide-content h4) {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+#__page-root .gis-voice-dialog {
+  max-height: 94dvh;
+}
+#__page-root .gis-voice-dialog > :not(.gis-voice-body) {
+  flex-shrink: 0;
+}
+#__page-root .gis-voice-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab, #superadmin-access-guard) h2 {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #edf3f7;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(h3, h4) {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #edf3f7;
+}
+#__page-root #subadmin-delegation-tab .gis-admin-list-heading {
+  color: var(--gis-text);
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) button {
+  box-shadow: none !important;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class~='text-[9px]'], [class~='text-[10px]']) {
+  font-size: 12px;
+}
+#__page-root #superadmin-hub-tab [class~='text-[10px]'] {
+  color: #b0c0cb;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) .gis-admin-title,
+#__page-root #superadmin-access-guard h2 {
+  font-size: 24px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+#__page-root .gis-voice-footer {
+  flex-wrap: wrap;
+}
+#__page-root .gis-voice-footer #btn-voice-confirm-search {
+  max-width: 100%;
+  min-height: 44px;
+}
 #__page-root .gis-overview #work-queue-title {
   font-size: 18px;
 }
-#__page-root .gis-overview :is(#overview-eyebrow, #overview-title) {
+#__page-root .gis-overview #overview-title {
   color: var(--gis-accent-text) !important;
 }
 #__page-root .gis-overview #overview-description {
@@ -655,9 +741,6 @@ html.dark :is(#__page-root, .gis-login) {
 }
 #__page-root .gis-overview [class~='text-[10px]'] {
   font-size: 12px;
-}
-#__page-root .gis-overview :is([id^='stat-'][id$='-card'], section) {
-  box-shadow: var(--gis-shadow);
 }
 #__page-root .gis-overview [id^='stat-'][id$='-label'] {
   white-space: normal;

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
+import { useRouteQuery, RECORD_QUERY_KEYS } from '../gis/utils/useRouteQuery';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './roster.css';
@@ -334,15 +335,26 @@ export default function RosterPage({
   searchQuery,
   onSearchChange,
   refreshKey = 0,
+  householdTarget,
 }: {
   initialTab?: string;
   embedded?: boolean;
   searchQuery?: string;
   onSearchChange?: (value: string) => void;
   refreshKey?: number;
+  householdTarget?: { legacyId: string; edit: boolean } | null;
 }) {
-  const [tab, setTab] = useState(initialTab);
-  const [urlParams] = useSearchParams();
+  const { params: urlParams, updateQuery } = useRouteQuery();
+  const rosterTabs = ['households', 'residents', 'import', 'history', 'map'];
+  const tabParam = embedded ? (urlParams.get('rosterTab') ?? urlParams.get('tab')) : urlParams.get('tab');
+  const routeTab = rosterTabs.includes(tabParam ?? '') ? tabParam! : initialTab;
+  const tab = routeTab;
+  const setTab = (value: string) =>
+    updateQuery({
+      ...(embedded && !['households', 'residents'].includes(value) ? { rosterTab: value } : { tab: value, rosterTab: null }),
+      ...RECORD_QUERY_KEYS,
+      page: null,
+    });
   const [kind, setKind] = useState('');
   const [category, setCategory] = useState('');
   const [origin, setOrigin] = useState('');
@@ -357,7 +369,9 @@ export default function RosterPage({
   const [list, setList] = useState<{ tab: string; items: Row[]; total: number }>({ tab: '', items: [], total: 0 });
   const items = list.tab === tab ? list.items : [];
   const total = list.tab === tab ? list.total : 0;
-  const [page, setPage] = useState(0);
+  const pageParam = Number(urlParams.get('page') ?? 1);
+  const page = Number.isSafeInteger(pageParam) && pageParam > 0 ? pageParam - 1 : 0;
+  const setPage = (value: number) => updateQuery({ page: value > 0 ? String(value + 1) : null });
   const [search, setLocalSearch] = useState(searchQuery ?? '');
   const setSearch = (value: string) => {
     setLocalSearch(value);
@@ -366,7 +380,6 @@ export default function RosterPage({
   useEffect(() => {
     if (searchQuery !== undefined) {
       setLocalSearch(searchQuery);
-      setPage(0);
     }
   }, [searchQuery]);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -374,6 +387,7 @@ export default function RosterPage({
   const detailRequestRef = useRef(0);
   const detailRef = useRef<HTMLElement>(null);
   const [household, setHousehold] = useState<Row | null>(null);
+  const [pendingHouseEdit, setPendingHouseEdit] = useState<string | null>(null);
   const [person, setPerson] = useState<Row | null>(null);
   const [collections, setCollections] = useState<Row[]>([]);
   const [collection, setCollection] = useState<Row | null>(null);
@@ -402,6 +416,7 @@ export default function RosterPage({
   const [candidates, setCandidates] = useState<Row[]>([]);
   const [personSearch, setPersonSearch] = useState('');
   const reason: Field = { key: 'reason', label: 'Lý do / nguồn kiểm chứng', required: true };
+  const previousTabRef = useRef(routeTab);
   useEffect(() => {
     detailRequestRef.current += 1;
     setDetailOpen(false);
@@ -409,12 +424,13 @@ export default function RosterPage({
     setHistoryTarget(null);
     setLinkPerson(null);
     setTransferMembership(null);
-    setTab(initialTab);
-    setPage(0);
-    setSearch('');
+    if (previousTabRef.current !== routeTab) {
+      setSearch('');
+      previousTabRef.current = routeTab;
+    }
     setPerson(null);
     setHousehold(null);
-  }, [initialTab]);
+  }, [routeTab]);
   const run = async (f: () => Promise<void>) => {
     setError('');
     setBusy(true);
@@ -437,6 +453,7 @@ export default function RosterPage({
     setCandidates([]);
   };
   const closeDetail = () => {
+    updateQuery({ ...RECORD_QUERY_KEYS });
     detailRequestRef.current += 1;
     setDetailOpen(false);
     setDetailLoading(false);
@@ -444,7 +461,11 @@ export default function RosterPage({
     setPerson(null);
     clearDetailActions();
   };
-  const loadHouse = React.useCallback(async (id: string) => {
+  const loadHouse = async (id: string) => {
+    if (urlParams.get('household') !== String(id) || urlParams.has('resident') || urlParams.has('legacyHousehold')) {
+      updateQuery({ ...RECORD_QUERY_KEYS, household: String(id), tab: 'households', rosterTab: null });
+      return;
+    }
     const request = ++detailRequestRef.current;
     setDetailOpen(true);
     setDetailLoading(true);
@@ -457,12 +478,20 @@ export default function RosterPage({
       if (request !== detailRequestRef.current) return;
       setHousehold(data);
       setPerson(null);
-      setTab('households');
     } finally {
       if (request === detailRequestRef.current) setDetailLoading(false);
     }
-  }, []);
+  };
   const loadPerson = async (id: string) => {
+    if (urlParams.get('resident') !== String(id)) {
+      updateQuery({
+        resident: String(id),
+        household: household?.id ? String(household.id) : urlParams.get('household'),
+        edit: null,
+        legacyHousehold: null,
+      });
+      return;
+    }
     const request = ++detailRequestRef.current;
     setDetailOpen(true);
     setDetailLoading(true);
@@ -479,6 +508,10 @@ export default function RosterPage({
     if (detailOpen && !detailLoading) detailRef.current?.focus({ preventScroll: true });
   }, [detailOpen, detailLoading, person?.id, household?.id]);
   const loadCollection = async (id: string) => {
+    if (urlParams.get('collection') !== String(id)) {
+      updateQuery({ collection: String(id) });
+      return;
+    }
     const { data } = await axios.get(`${api}/collections/${id}`);
     setCollection(data);
     setSourcePage(0);
@@ -486,14 +519,72 @@ export default function RosterPage({
   useEffect(() => {
     run(async () => {
       await refresh();
-      const legacyId = urlParams.get('legacyHousehold');
-      if (legacyId && /^\d+$/.test(legacyId)) {
-        const { data } = await axios.get(`${api}/legacy-households/${legacyId}`);
-        setHousehold(data);
-        setDetailOpen(true);
-      }
     });
   }, []);
+  const legacyHouseholdId = householdTarget?.legacyId ?? urlParams.get('legacyHousehold');
+  const canonicalHouseholdId = urlParams.get('household');
+  const residentId = urlParams.get('resident');
+  const editRequested = householdTarget?.edit ?? urlParams.get('edit') === 'true';
+  useEffect(() => {
+    const request = ++detailRequestRef.current;
+    setHousehold(null);
+    setPerson(null);
+    setEditor(null);
+    setPendingHouseEdit(null);
+    const hasTarget = !!(legacyHouseholdId || canonicalHouseholdId || residentId);
+    setDetailOpen(hasTarget);
+    setDetailLoading(hasTarget);
+    setError('');
+    if (!hasTarget) return;
+    const controller = new AbortController();
+    const options = { signal: controller.signal };
+    const housePath = canonicalHouseholdId
+      ? `households/${encodeURIComponent(canonicalHouseholdId)}`
+      : legacyHouseholdId
+        ? `legacy-households/${encodeURIComponent(legacyHouseholdId)}`
+        : null;
+    Promise.all([
+      housePath ? axios.get(`${api}/${housePath}`, options) : Promise.resolve(null),
+      residentId ? axios.get(`${api}/residents/${encodeURIComponent(residentId)}`, options) : Promise.resolve(null),
+    ])
+      .then(([houseResponse, personResponse]) => {
+        if (request !== detailRequestRef.current) return;
+        if (houseResponse) setHousehold(houseResponse.data);
+        if (personResponse) setPerson(personResponse.data);
+        if (editRequested && houseResponse && !personResponse) setPendingHouseEdit(houseResponse.data.id);
+      })
+      .catch(e => {
+        if (request === detailRequestRef.current) {
+          setDetailOpen(false);
+          setError(errorMessage(e));
+        }
+      })
+      .finally(() => {
+        if (request === detailRequestRef.current) setDetailLoading(false);
+      });
+    return () => {
+      controller.abort();
+      detailRequestRef.current += 1;
+    };
+  }, [legacyHouseholdId, canonicalHouseholdId, residentId, editRequested, householdTarget, routeTab]);
+  const collectionId = urlParams.get('collection');
+  useEffect(() => {
+    setCollection(null);
+    if (!collectionId || routeTab !== 'import') return;
+    const controller = new AbortController();
+    axios
+      .get(`${api}/collections/${encodeURIComponent(collectionId)}`, { signal: controller.signal })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) {
+          setCollection(data);
+          setSourcePage(0);
+        }
+      })
+      .catch(e => {
+        if (!controller.signal.aborted) setError(errorMessage(e));
+      });
+    return () => controller.abort();
+  }, [collectionId, routeTab]);
   useEffect(() => {
     const controller = new AbortController();
     if (tab === 'households' || tab === 'residents')
@@ -534,8 +625,12 @@ export default function RosterPage({
       setHousehold(data);
     }
   };
-  const editHouse = () => {
+  const editHouse = (syncUrl = true) => {
     if (!household) return;
+    if (syncUrl && !editRequested) {
+      updateQuery({ edit: 'true' });
+      return;
+    }
     const selectedHousehold = household;
     setEditor({
       title: 'Sửa thông tin hộ',
@@ -567,6 +662,12 @@ export default function RosterPage({
       },
     });
   };
+  useEffect(() => {
+    if (pendingHouseEdit && household?.id === pendingHouseEdit && !detailLoading) {
+      editHouse(false);
+      setPendingHouseEdit(null);
+    }
+  }, [pendingHouseEdit, household, detailLoading]);
   const addMember = (existing?: Row) => {
     if (!household) return;
     const selectedHousehold = household;
@@ -621,7 +722,7 @@ export default function RosterPage({
         Vị trí: {household.coordinate_method === 'RANDOM_WITHIN_TC2' ? 'Random tạm trong TC2 — chưa xác minh' : household.coordinate_method}
         . Tên đại diện nguồn chưa mặc nhiên là chủ hộ đã xác minh.
       </p>
-      <button onClick={editHouse}>Sửa hộ</button>
+      <button onClick={() => editHouse()}>Sửa hộ</button>
       <button onClick={() => run(() => showHistory('household', household.id, 0))}>Lịch sử hộ</button>
       <p>
         {household.origin === 'EXCEL' ? 'Khởi tạo từ dữ liệu Excel gốc của ấp' : 'Khởi tạo trực tiếp'} ·{' '}
@@ -1153,9 +1254,7 @@ export default function RosterPage({
             key={v}
             aria-pressed={tab === v}
             onClick={() => {
-              closeDetail();
               setTab(v);
-              setPage(0);
               setSearch('');
               setList({ tab: '', items: [], total: 0 });
               setPerson(null);
@@ -1740,7 +1839,10 @@ export default function RosterPage({
           fields={editor.fields}
           initial={editor.initial}
           onSave={editor.save}
-          onClose={() => setEditor(null)}
+          onClose={() => {
+            setEditor(null);
+            updateQuery({ edit: null });
+          }}
           readOnly={editor.readOnly}
         />
       )}

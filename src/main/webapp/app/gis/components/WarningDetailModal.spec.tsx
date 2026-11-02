@@ -91,4 +91,21 @@ describe('warning actions require actual user identity', () => {
     expect(onAlertResolved).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Đã xác minh & Xử lý xong' })).toBeTruthy();
   });
+
+  it('keeps the same hook order when a mounted modal opens and closes', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const props = { onClose: vi.fn(), households: [], onSelectHousehold: vi.fn(), securityAlerts: [alert], currentUser: user };
+      const view = render(<WarningDetailModal {...props} isOpen={false} />);
+      for (let cycle = 0; cycle < 2; cycle++) {
+        view.rerender(<WarningDetailModal {...props} isOpen />);
+        expect(screen.getByRole('button', { name: 'Đóng cảnh báo' })).toBeTruthy();
+        view.rerender(<WarningDetailModal {...props} isOpen={false} />);
+        expect(screen.queryByRole('button', { name: 'Đóng cảnh báo' })).toBeNull();
+      }
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      error.mockRestore();
+    }
+  });
 });

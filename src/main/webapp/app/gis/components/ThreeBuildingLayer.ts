@@ -71,6 +71,7 @@ export class ThreeBuildingLayer implements CustomLayerInterface {
   private rebuild(): void {
     for (const mesh of this.meshes) {
       this.scene.remove(mesh);
+      mesh.dispose();
       mesh.geometry.dispose();
       (mesh.material as THREE.Material).dispose();
     }
@@ -164,10 +165,14 @@ export class ThreeBuildingLayer implements CustomLayerInterface {
 
   onRemove(): void {
     for (const mesh of this.meshes) {
+      this.scene.remove(mesh);
+      mesh.dispose();
       mesh.geometry.dispose();
       (mesh.material as THREE.Material).dispose();
     }
     this.meshes = [];
+    this.instanceColors.clear();
+    this.scene.clear();
     this.renderer?.dispose();
     this.renderer = undefined;
     this.map = undefined;

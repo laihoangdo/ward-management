@@ -192,7 +192,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div id="account-card" className="p-3 sm:p-4 mx-3 my-2.5 rounded-xl border border-slate-750">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <span className={`gis-role-badge inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase mb-1 ${roleInfo.bg}`}>
+            <span
+              className={`gis-role-badge inline-block text-[11px] font-bold px-1.5 py-0.5 rounded border uppercase mb-1 ${roleInfo.bg}`}
+            >
               {roleInfo.label}
             </span>
             <div id="officer-name" className="text-sm font-semibold text-white leading-relaxed break-words">
@@ -214,7 +216,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="mt-2 pt-2 border-t border-slate-750 flex items-center justify-between text-[10px]">
           <div className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${roleInfo.indicator}`} />
-            <span className="text-slate-300 font-mono">SH: {currentUser.badgeNumber}</span>
+            <span className="text-slate-300 tabular-nums">SH: {currentUser.badgeNumber}</span>
           </div>
           <button
             type="button"
@@ -238,23 +240,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation Links */}
       <nav aria-label="Menu điều hành" className="flex-1 min-h-0 px-3 py-1 space-y-1 overflow-y-auto">
-        <div className="px-3 py-1 text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+        <div className="px-3 py-1 text-xs font-semibold text-slate-400 flex items-center justify-between">
           <span>Menu Điều Hành</span>
-          <span className="text-[10px] text-slate-500 font-mono">{visibleMenus.length} mục</span>
+          <span className="text-[11px] text-slate-500 tabular-nums">{visibleMenus.length} mục</span>
         </div>
 
         {/* Nút Về Trang Chủ Hệ Thống Monolithic */}
         <Link
           to="/"
           id="sidebar-btn-home-portal"
-          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-all duration-150 min-h-[40px] cursor-pointer bg-slate-800/80 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/30 group mb-2 shadow-xs"
+          className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold transition-colors duration-150 min-h-[40px] cursor-pointer bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-slate-700 group mb-2"
           title="Quay về Trang chủ Cổng thông tin Monolithic"
         >
           <div className="flex items-center gap-2.5 truncate">
-            <Home className="w-4 h-4 text-blue-400 group-hover:text-white shrink-0" />
+            <Home className="w-4 h-4 text-slate-400 group-hover:text-white shrink-0" />
             <span className="truncate">Về Trang chủ Cổng TT</span>
           </div>
-          <span className="text-[10px] text-blue-300 group-hover:text-white font-mono bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-500/30">
+          <span className="text-[11px] text-slate-300 group-hover:text-white bg-slate-700/60 px-1.5 py-0.5 rounded border border-slate-600">
             Portal
           </span>
         </Link>
@@ -274,9 +276,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 aria-current={isActive ? 'page' : undefined}
                 id={`nav-${item.id}`}
                 onClick={() => handleSelect(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 min-h-[42px] cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors duration-150 min-h-[42px] cursor-pointer ${
                   isActive
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-slate-700 text-white'
                     : isSpecial
                       ? 'text-amber-300 hover:bg-slate-800/80 bg-slate-900/40 border border-slate-800/60'
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -287,7 +289,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="whitespace-normal break-words leading-snug">{item.label}</span>
                 </div>
                 {item.id === 'superadmin-hub' && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-red-900/60 text-red-300 border border-red-700/60 shrink-0">
+                  <span className="px-1.5 py-0.5 rounded text-[11px] font-bold tabular-nums bg-red-900/60 text-red-300 border border-red-700/60 shrink-0">
                     SUPER
                   </span>
                 )}
@@ -313,9 +315,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             id="sidebar-status"
             className={`flex items-center gap-1.5 ${backendStatus === 'online' ? 'text-emerald-400' : 'text-amber-400'} font-semibold text-[10px] sm:text-[11px]`}
           >
-            <span
-              className={`h-2 w-2 rounded-full inline-block ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`}
-            ></span>
+            <span className={`h-2 w-2 rounded-full inline-block ${backendStatus === 'online' ? 'bg-emerald-500' : 'bg-amber-400'}`}></span>
             {backendStatus === 'online'
               ? 'Hệ thống trực tuyến'
               : backendStatus === 'offline'
@@ -353,7 +353,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
 
           {/* Drawer Panel */}
-          <div className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+          <div className="gis-mobile-drawer relative w-72 max-w-[85vw] h-full z-10 animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </div>
         </div>

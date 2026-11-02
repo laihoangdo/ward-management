@@ -785,8 +785,8 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({
       {/* 1. TOP HEADER TOOLBAR */}
       <div className="h-14 px-4 bg-slate-900/90 backdrop-blur border-b border-slate-800 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
-            <Boxes className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 flex items-center justify-center text-amber-400">
+            <Boxes className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
@@ -832,7 +832,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({
           <button
             onClick={() => setEditMode('rotate')}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-              editMode === 'rotate' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-700/60'
+              editMode === 'rotate' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-700/60' // taste-skill-ignore: màu mode Xoay, phân biệt Chọn xanh và Di chuyển amber
             }`}
             title="Xoay hướng nhà"
           >

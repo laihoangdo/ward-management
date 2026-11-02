@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Building2, AlertTriangle, CheckCircle2, Flame } from 'lucide-react';
+import { Building2, AlertTriangle, CheckCircle2, Flame, Store, User } from 'lucide-react';
 import { HouseholdFacility } from '../types';
 import { Pagination } from './Pagination';
 
@@ -36,11 +36,8 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
       {/* Banner */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div>
-          <div
-            id="area-eyebrow"
-            className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1"
-          >
-            PHÂN QUYỀN ĐỊA BÀN — XÃ BÀ ĐIỂM
+          <div id="area-eyebrow" className="text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+            Phân quyền địa bàn xã Bà Điểm
           </div>
           <h2 id="area-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Quản lý khu vực dân cư các Ấp thuộc Xã Bà Điểm
@@ -73,11 +70,7 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2.5">
-                  <div
-                    className={`w-9 h-9 rounded-xl text-white flex items-center justify-center font-bold text-sm shadow-xs ${
-                      idx % 3 === 0 ? 'bg-blue-600' : idx % 3 === 1 ? 'bg-indigo-600' : 'bg-emerald-600'
-                    }`}
-                  >
+                  <div className="w-9 h-9 rounded-xl text-white flex items-center justify-center font-bold text-sm shadow-xs bg-blue-600">
                     {idx + 1}
                   </div>
                   <div>
@@ -172,8 +165,9 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
                     {h.code}
                   </span>
                 </div>
-                <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 truncate">
-                  {h.businessName ? `🏪 ${h.businessName}` : `👤 ${h.ownerName}`}
+                <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center gap-1 min-w-0">
+                  {h.businessName ? <Store className="w-3 h-3 shrink-0" /> : <User className="w-3 h-3 shrink-0" />}
+                  <span className="truncate">{h.businessName || h.ownerName}</span>
                 </div>
                 <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
                   <span>{h.residentsCount} nhân khẩu</span>

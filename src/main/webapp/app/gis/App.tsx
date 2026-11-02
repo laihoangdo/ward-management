@@ -28,6 +28,8 @@ import { AddHouseholdModal } from './components/AddHouseholdModal';
 import { WarningDetailModal } from './components/WarningDetailModal';
 import { normalizeHousehold, normalizeHouseholdList } from './utils/householdUtils';
 import { canViewMapTab } from './utils/mapViewAccess';
+import { useRouteQuery, RECORD_QUERY_KEYS } from './utils/useRouteQuery';
+import { loadHouseholdDetail } from './services/householdBrowse';
 import {
   createHouseholdInBackend,
   updateHouseholdInBackend,
@@ -150,6 +152,7 @@ export default function App() {
 }
 
 function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
+  const { params: routeParams, updateQuery } = useRouteQuery();
   const [usersList, setUsersList] = useState<AppUser[]>([]);
   const [allowedEmails, setAllowedEmails] = useState<AllowedEmailEntry[]>([]);
   const [dynamicMenus, setDynamicMenus] = useState<DynamicMenuItemConfig[]>([]);
@@ -177,16 +180,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           currentUser.subAdminPermissions?.[menu.requiredPermission] === true),
     );
 
-  useEffect(() => {
-    if (effectiveDynamicMenus.length && !canOpenMenu(activeTab)) {
-      const first = effectiveDynamicMenus.find(menu => canOpenMenu(menu.id));
-      if (first) setActiveTab(first.id);
-    }
-  }, [effectiveDynamicMenus]);
   const [hcmUnits, setHcmUnits] = useState<HcmAdminUnit[]>([]);
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
 
-  const [activeTab, setActiveTab] = useState<NavigationTab>('overview');
+  const requestedTab = (routeParams.get('tab') || 'overview') as NavigationTab;
+  const activeTab = canOpenMenu(requestedTab) ? requestedTab : (effectiveDynamicMenus.find(menu => canOpenMenu(menu.id))?.id ?? 'overview');
+  const setActiveTab = (tab: NavigationTab) => {
+    if (canOpenMenu(tab)) updateQuery({ tab, ...RECORD_QUERY_KEYS, page: null, section: null, rosterTab: null });
+  };
+  useEffect(() => {
+    if (requestedTab !== activeTab) updateQuery({ tab: activeTab, ...RECORD_QUERY_KEYS, page: null, section: null, rosterTab: null }, true);
+  }, [requestedTab, activeTab, updateQuery]);
   const [households, setHouseholds] = useState<HouseholdFacility[]>([]);
   const [hasCompleteHouseholds, setHasCompleteHouseholds] = useState(false);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
@@ -241,6 +245,34 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // Modals
   const [selectedHousehold, setSelectedHousehold] = useState<HouseholdFacility | null>(null);
+  const [householdRouteError, setHouseholdRouteError] = useState('');
+  const [householdRouteLoading, setHouseholdRouteLoading] = useState(false);
+  const gisHouseholdId = routeParams.get('gisHousehold');
+  const openHousehold = (household: HouseholdFacility) => updateQuery({ ...RECORD_QUERY_KEYS, gisHousehold: household.id });
+  useEffect(() => {
+    const controller = new AbortController();
+    setSelectedHousehold(null);
+    setHouseholdRouteError('');
+    setHouseholdRouteLoading(false);
+    if (!gisHouseholdId || requestedTab !== activeTab) return () => controller.abort();
+    if (!/^\d+$/.test(gisHouseholdId)) {
+      setHouseholdRouteError('Mã hộ trên URL không hợp lệ.');
+      return () => controller.abort();
+    }
+    setHouseholdRouteLoading(true);
+    void loadHouseholdDetail(gisHouseholdId, controller.signal)
+      .then(household => {
+        if (!controller.signal.aborted) setSelectedHousehold(household);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setHouseholdRouteError('Không mở được hồ sơ hộ. Hồ sơ không tồn tại hoặc bạn không có quyền truy cập.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setHouseholdRouteLoading(false);
+      });
+    return () => controller.abort();
+  }, [gisHouseholdId, activeTab, requestedTab, currentUser.id, currentUser.version]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedMapCoordinates, setSelectedMapCoordinates] = useState<[number, number] | null>(null);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
@@ -252,6 +284,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // Fullscreen map mode for Advanced Map
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  useEffect(() => {
+    setIsMapFullscreen(false);
+    setIsAddModalOpen(false);
+    setIsWarningModalOpen(false);
+    setSelectedMapCoordinates(null);
+  }, [activeTab]);
 
   // Toggle map fullscreen safely via pure viewport mode (no browser gesture restrictions)
   const handleToggleMapFullscreen = () => {
@@ -647,6 +685,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     setHouseholds(prev => prev.filter(h => h.id !== idStr));
     if (selectedHousehold && selectedHousehold.id === idStr) {
       setSelectedHousehold(null);
+      updateQuery({ gisHousehold: null }, true);
     }
 
     try {
@@ -682,7 +721,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const handleUpdateCoordinates = async (updates: { id: string; coordinates: [number, number] }[]) => {
     // RBAC Check for Officer
     if (currentUser?.role !== 'superadmin' && currentUser.subAdminPermissions?.canEditCoordinates !== true) {
-      showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền nắn chỉnh tọa độ.');
+      showToast('Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền nắn chỉnh tọa độ.');
       logSecurityAlert({
         level: 'warning',
         title: 'Cố gắng sửa đổi tọa độ ngoài thẩm quyền',
@@ -753,7 +792,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const handleAddHousehold = async (newH: HouseholdCreateInput) => {
     // RBAC Check for Officer
     if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canAddHouseholds !== true) {
-      showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền đăng ký hộ dân mới.');
+      showToast('Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền đăng ký hộ dân mới.');
       return false;
     }
 
@@ -1003,6 +1042,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               : 'overflow-y-auto p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-6 scroll-smooth'
           }`}
         >
+          {householdRouteLoading && <p role="status">Đang tải hồ sơ hộ…</p>}
+          {householdRouteError && <p role="alert">{householdRouteError}</p>}
           {!isMapFullscreen && (
             <div className="mb-4 space-y-2">
               {isLoading && (
@@ -1066,7 +1107,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
               {/* Territory Scope Control Bar for Sub-Admin and Officer */}
               {isTerritoryRestricted && !isMapFullscreen && (
-                <div className="mb-4 p-3.5 sm:p-4 bg-gradient-to-r from-blue-900/30 via-slate-900/70 to-indigo-950/40 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-indigo-950/60 border border-blue-700/40 dark:border-blue-800/60 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+                <div className="mb-4 p-3.5 sm:p-4 bg-slate-900 border border-slate-700 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
                   <div className="flex items-start sm:items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 sm:mt-0">
                       <MapPin className="w-5 h-5 text-amber-400" />
@@ -1116,14 +1157,14 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                     if (isMapFullscreen) setIsMapFullscreen(false);
                     setActiveTab(tab);
                   }}
-                  onSelectHousehold={setSelectedHousehold}
+                  onSelectHousehold={openHousehold}
                 />
               )}
 
               {activeTab === 'area-map' && (
                 <AreaMapTab
                   households={displayedHouseholds}
-                  onSelectHousehold={setSelectedHousehold}
+                  onSelectHousehold={openHousehold}
                   onRefresh={handleRefresh}
                   onNavigateTab={tab => {
                     if (isMapFullscreen) setIsMapFullscreen(false);
@@ -1142,7 +1183,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                 >
                   <MapLibreAreaMap
                     households={displayedHouseholds}
-                    onSelectHousehold={setSelectedHousehold}
+                    onSelectHousehold={openHousehold}
                     onUpdateCoordinates={handleUpdateCoordinates}
                   />
                 </Suspense>
@@ -1168,7 +1209,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                       households={displayedHouseholds}
                       canAdd={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
                       canLink={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canEditCoordinates === true}
-                      onSelect={setSelectedHousehold}
+                      onSelect={openHousehold}
                       onAdd={coordinates => {
                         setSelectedMapCoordinates(coordinates);
                         setIsAddModalOpen(true);
@@ -1218,15 +1259,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                 />
               )}
 
-              {activeTab === 'areas' && <AreasTab households={displayedHouseholds} onSelectHousehold={setSelectedHousehold} />}
+              {activeTab === 'areas' && <AreasTab households={displayedHouseholds} onSelectHousehold={openHousehold} />}
 
               {activeTab === 'logs' && (
-                <LogsTab
-                  logs={auditLogs}
-                  households={households}
-                  onSelectHousehold={setSelectedHousehold}
-                  onAddManualLog={handleAddManualLog}
-                />
+                <LogsTab logs={auditLogs} households={households} onSelectHousehold={openHousehold} onAddManualLog={handleAddManualLog} />
               )}
 
               {activeTab === 'subadmin-delegation' && (
@@ -1361,11 +1397,27 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         presentation={['area-map', 'advanced-map', 'field-3d-map'].includes(activeTab) ? 'drawer' : 'dialog'}
         household={selectedHousehold}
         currentUser={currentUser}
-        onClose={() => setSelectedHousehold(null)}
+        onClose={() => updateQuery({ gisHousehold: null })}
         onUpdateNotes={handleUpdateNotes}
         onHouseholdUpdated={handleUpdateHouseholdFull}
         onDeleteHousehold={handleDeleteHousehold}
         onShowToast={showToast}
+        onOpenRoster={(household, edit) => {
+          if (!canOpenMenu('households')) {
+            showToast('Bạn không có quyền mở danh sách hộ.');
+            return;
+          }
+          updateQuery({
+            ...RECORD_QUERY_KEYS,
+            tab: 'households',
+            legacyHousehold: household.id,
+            edit: edit ? 'true' : null,
+            page: null,
+            rosterTab: null,
+          });
+          setSearchQuery('');
+          setIsMapFullscreen(false);
+        }}
       />
 
       <AddHouseholdModal
@@ -1383,7 +1435,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         isOpen={isWarningModalOpen}
         onClose={() => setIsWarningModalOpen(false)}
         households={households}
-        onSelectHousehold={setSelectedHousehold}
+        onSelectHousehold={openHousehold}
         securityAlerts={securityAlerts}
         currentUser={currentUser}
         onAlertResolved={alertId => {

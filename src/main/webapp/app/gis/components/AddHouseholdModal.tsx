@@ -7,6 +7,7 @@ import { SearchableSelect } from './SearchableSelect';
 import { fetchRbacAreas } from '../services/rbacApiService';
 import { isCoordinateInBaDiem3dBoundary } from '../utils/household3dEligibility';
 import { useUnsavedPageGuard } from '../utils/useUnsavedPageGuard';
+import { RESIDENCE_TYPE_CONFIG } from '../utils/residenceUtils';
 
 const BADIEM_STREETS = [
   'Đường Phan Văn Hớn',
@@ -562,11 +563,13 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
                   onClick={() => setResidenceType('Lưu trú')}
                   className={`py-2 px-2.5 rounded-xl font-bold border text-xs transition-all flex items-center justify-center gap-1.5 ${
                     residenceType === 'Lưu trú'
-                      ? 'bg-purple-600 text-white border-purple-600 shadow-xs ring-2 ring-purple-500/20'
+                      ? 'bg-purple-600 text-white border-purple-600 shadow-xs ring-2 ring-purple-500/20' // taste-skill-ignore: màu phân loại Lưu trú đồng bộ residenceUtils
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${residenceType === 'Lưu trú' ? 'bg-white' : 'bg-purple-500'}`}></span>
+                  <span
+                    className={`w-2 h-2 rounded-full ${residenceType === 'Lưu trú' ? 'bg-white' : RESIDENCE_TYPE_CONFIG['Lưu trú'].dotBg}`}
+                  ></span>
                   <span>Lưu trú</span>
                 </button>
               </div>

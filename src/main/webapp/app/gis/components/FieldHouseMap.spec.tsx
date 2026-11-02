@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   effectsAttach: vi.fn(),
   effectsDisplay: vi.fn(),
   effectsDispose: vi.fn(),
+  mapRemove: vi.fn(),
 }));
 vi.mock('../three/field-effects.js', () => ({ attachFieldEffects: mocks.effectsAttach }));
 vi.mock('axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), isAxiosError: vi.fn(() => false) } }));
@@ -33,7 +34,7 @@ vi.mock('maplibre-gl', () => ({
       addControl = vi.fn();
       addSource = mocks.addSource;
       addLayer = vi.fn();
-      remove = vi.fn();
+      remove = mocks.mapRemove;
       resize = vi.fn();
       easeTo = vi.fn();
       doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
@@ -225,6 +226,16 @@ describe('field map controls', () => {
     expect(mocks.setPaintProperty).toHaveBeenLastCalledWith('houses-3d', 'fill-extrusion-opacity', 0.88);
     expect(axios.put).not.toHaveBeenCalled();
     expect(vi.mocked(axios.get).mock.calls.filter(([url]) => String(url).includes('.geojson'))).toHaveLength(1);
+  });
+
+  it('disposes shared-context effects before destroying the host map', async () => {
+    await mount([], false);
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledOnce());
+    cleanup();
+    expect(mocks.effectsDispose).toHaveBeenCalled();
+    expect(mocks.mapRemove).toHaveBeenCalledOnce();
+    expect(mocks.effectsDispose.mock.invocationCallOrder[0]).toBeLessThan(mocks.mapRemove.mock.invocationCallOrder[0]);
   });
 
   it('keeps native buildings visible when effects cannot initialize', async () => {
@@ -482,7 +493,7 @@ describe('field map controls', () => {
   });
   it('saves explicit household links and reports API failures without a success message', async () => {
     await mount();
-    expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features.map(feature => feature.properties.id)).toEqual(['1']);
+    await waitFor(() => expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features.map(feature => feature.properties.id)).toEqual(['1']));
     selectHouse();
     const select = screen.getByLabelText('Chọn hộ dân để liên kết');
     fireEvent.change(select, { target: { value: '1' } });

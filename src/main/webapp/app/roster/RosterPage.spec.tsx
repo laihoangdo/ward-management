@@ -1,12 +1,23 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router';
 import axios from 'axios';
 import RosterPage from './RosterPage';
 
 vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), isCancel: () => false, isAxiosError: () => false } }));
 vi.mock('maplibre-gl', () => ({ default: {} }));
+function RouteProbe() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return (
+    <>
+      <output data-testid="route">{location.search}</output>
+      <button onClick={() => navigate(-1)}>Browser Back</button>
+      <button onClick={() => navigate(1)}>Browser Forward</button>
+    </>
+  );
+}
 describe('Real roster workflows', () => {
   beforeEach(() => {
     vi.mocked(axios.get).mockImplementation(async url => {
@@ -16,7 +27,7 @@ describe('Real roster workflows', () => {
         return {
           data: { id: 'h1', code: 'TC2-TEST', raw_address: 'Địa chỉ thử nghiệm', members: [], sources: [], version: 0, origin: 'MANUAL' },
         };
-      if (String(url).endsWith('/households')) return { data: { items: [], total: 0 } };
+      if (String(url).endsWith('/households') || String(url).endsWith('/residents')) return { data: { items: [], total: 0 } };
       return { data: [] };
     });
   });
@@ -30,6 +41,133 @@ describe('Real roster workflows', () => {
         <RosterPage />
       </MemoryRouter>,
     );
+  it('keeps household detail and edit mode on the URL across Back and Forward', async () => {
+    render(
+      <MemoryRouter initialEntries={['/roster?tab=households', '/roster?tab=households&household=h1']}>
+        <RouteProbe />
+        <RosterPage />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: /TC2-TEST ·/ });
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa hộ' }));
+    await screen.findByRole('dialog', { name: 'Sửa thông tin hộ' });
+    expect(screen.getByTestId('route').textContent).toContain('edit=true');
+    fireEvent.click(screen.getByText('Browser Back'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await screen.findByRole('heading', { name: /TC2-TEST ·/ });
+    fireEvent.click(screen.getByText('Browser Back'));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: /TC2-TEST ·/ })).toBeNull());
+    fireEvent.click(screen.getByText('Browser Forward'));
+    await screen.findByRole('heading', { name: /TC2-TEST ·/ });
+    fireEvent.click(screen.getByRole('button', { name: 'Đóng chi tiết' }));
+    await waitFor(() => expect(screen.getByTestId('route').textContent).not.toContain('household='));
+  });
+  it('loads a resident directly from the URL without relying on the current list page', async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, config) => {
+      if (String(url).endsWith('/residents/r1'))
+        return { data: { id: 'r1', full_name: 'Người kiểm thử tổng hợp', identities: [], records: [], sources: [], verifications: [] } };
+      return original(url, config);
+    });
+    render(
+      <MemoryRouter initialEntries={['/roster?tab=residents&resident=r1&page=3']}>
+        <RosterPage />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Người kiểm thử tổng hợp' });
+    expect(axios.get).toHaveBeenCalledWith('/api/roster/residents/r1', expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(axios.get).toHaveBeenCalledWith(
+      '/api/roster/residents',
+      expect.objectContaining({ params: expect.objectContaining({ page: 2 }) }),
+    );
+  });
+  it('restores an embedded roster subpage and makes its tab changes navigable', async () => {
+    render(
+      <MemoryRouter initialEntries={['/dashboard?tab=households&rosterTab=history']}>
+        <RouteProbe />
+        <RosterPage embedded />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('button', { name: 'Lịch sử & báo cáo' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Nhập Excel / đối soát' }));
+    await waitFor(() => expect(screen.getByTestId('route').textContent).toContain('rosterTab=import'));
+    expect(screen.getByTestId('route').textContent).toContain('tab=households');
+    fireEvent.click(screen.getByText('Browser Back'));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Lịch sử & báo cáo' }).getAttribute('aria-pressed')).toBe('true'));
+  });
+  it.each([false, true])('resolves a GIS ID to its canonical household in the embedded menu (edit=%s)', async edit => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, config) =>
+      String(url).endsWith('/legacy-households/123')
+        ? {
+            data: {
+              id: 'canonical-synthetic',
+              code: 'TC2-SYNTHETIC',
+              raw_address: 'Địa chỉ tổng hợp',
+              members: [],
+              sources: [],
+              version: 2,
+            },
+          }
+        : original(url, config),
+    );
+    render(
+      <MemoryRouter>
+        <RosterPage embedded householdTarget={{ legacyId: '123', edit }} />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: /TC2-SYNTHETIC · Địa chỉ tổng hợp/ });
+    expect(axios.get).toHaveBeenCalledWith(
+      '/api/roster/legacy-households/123',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(axios.get).not.toHaveBeenCalledWith('/api/roster/households/123');
+    if (edit) await screen.findByRole('heading', { name: 'Sửa thông tin hộ' });
+    else expect(screen.queryByRole('heading', { name: 'Sửa thông tin hộ' })).toBeNull();
+  });
+  it('reports an unlinked household without opening another household', async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, config) => {
+      if (String(url).includes('/legacy-households/')) throw new Error('Không tìm thấy hồ sơ liên kết');
+      return original(url, config);
+    });
+    render(
+      <MemoryRouter>
+        <RosterPage embedded householdTarget={{ legacyId: '123', edit: true }} />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('alert');
+    expect(screen.queryByRole('heading', { name: 'Sửa thông tin hộ' })).toBeNull();
+  });
+  it('ignores an older household response after the target changes', async () => {
+    let resolveOld!: (value: any) => void;
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, config) => {
+      if (String(url).endsWith('/legacy-households/123'))
+        return new Promise(resolve => {
+          resolveOld = resolve;
+        });
+      if (String(url).endsWith('/legacy-households/124')) return { data: { id: 'new', code: 'TC2-NEW', members: [], sources: [] } };
+      return original(url, config);
+    });
+    const view = render(
+      <MemoryRouter>
+        <RosterPage embedded householdTarget={{ legacyId: '123', edit: true }} />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(resolveOld).toBeDefined());
+    view.rerender(
+      <MemoryRouter>
+        <RosterPage embedded householdTarget={{ legacyId: '124', edit: false }} />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: /TC2-NEW/ });
+    await act(async () => {
+      resolveOld({ data: { id: 'old', code: 'TC2-OLD', members: [], sources: [] } });
+    });
+    expect(screen.queryByRole('heading', { name: /TC2-OLD|Sửa thông tin hộ/ })).toBeNull();
+    expect(screen.getByRole('heading', { name: /TC2-NEW/ })).toBeDefined();
+  });
   it('requires a review step and sends a stable request ID when creating a household', async () => {
     vi.mocked(axios.post).mockResolvedValue({ data: { id: 'h1' } });
     open();

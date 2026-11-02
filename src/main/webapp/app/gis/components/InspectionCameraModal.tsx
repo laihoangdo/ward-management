@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X, RefreshCw, Upload, Check, AlertCircle, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react';
 import { HouseholdFacility, InspectionPhoto } from '../types';
 import { addInspectionPhotoToHousehold } from '../services/firestoreService';
+import { cameraErrorMessage, isExpectedCameraError, shouldRetryCameraConstraints } from '../utils/cameraErrors';
 
 interface InspectionCameraModalProps {
   isOpen: boolean;
@@ -19,7 +20,6 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
   onClose,
   onPhotoSaved,
 }) => {
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -31,19 +31,21 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
   const [isFlashing, setIsFlashing] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const cameraRequestRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Stop video tracks helper
   const stopStream = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
+    cameraRequestRef.current++;
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
   };
 
   // Start video stream
   const startCamera = async (mode: 'environment' | 'user') => {
     stopStream();
+    const requestId = cameraRequestRef.current;
     setErrorMessage(null);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -63,34 +65,40 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      setStream(mediaStream);
+      if (requestId !== cameraRequestRef.current) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      streamRef.current = mediaStream;
       setHasPermission(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
     } catch (err: unknown) {
-      console.warn('Camera stream error:', err);
+      if (requestId !== cameraRequestRef.current) return;
+      if (!shouldRetryCameraConstraints(err)) {
+        setHasPermission(false);
+        setErrorMessage(cameraErrorMessage(err));
+        return;
+      }
       // Fallback try simple video constraint
       try {
         const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        setStream(fallbackStream);
+        if (requestId !== cameraRequestRef.current) {
+          fallbackStream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        streamRef.current = fallbackStream;
         setHasPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = fallbackStream;
         }
       } catch (fallbackErr: unknown) {
+        if (requestId !== cameraRequestRef.current) return;
+        if (!isExpectedCameraError(fallbackErr)) console.warn('Camera stream error:', fallbackErr);
         setHasPermission(false);
-        const errObj = fallbackErr as { name?: string; message?: string };
-        if (errObj.name === 'NotAllowedError' || errObj.name === 'PermissionDeniedError') {
-          setErrorMessage(
-            'Quyền truy cập Camera bị từ chối. Vui lòng cho phép quyền truy cập máy ảnh hoặc sử dụng tính năng tải ảnh từ thư viện.',
-          );
-        } else if (errObj.name === 'NotFoundError' || errObj.name === 'DevicesNotFoundError') {
-          setErrorMessage('Không tìm thấy thiết bị Camera nào trên máy. Bạn có thể tải ảnh chụp sẵn từ thiết bị.');
-        } else {
-          setErrorMessage('Không thể khởi động Camera. Bạn có thể sử dụng nút tải ảnh từ thiết bị bên dưới.');
-        }
+        setErrorMessage(cameraErrorMessage(fallbackErr));
       }
     }
   };
@@ -548,7 +556,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                     id="btn-save-photo-firestore"
                     onClick={handleSaveToFirestore}
                     disabled={isSaving}
-                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>

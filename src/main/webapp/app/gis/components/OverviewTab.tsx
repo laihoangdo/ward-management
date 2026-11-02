@@ -85,15 +85,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
   return (
     <div className="gis-overview space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Overview Title Banner */}
-      <div className="gis-overview-heading bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="gis-overview-heading bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div
-              id="overview-eyebrow"
-              className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1"
-            >
-              TRUNG TÂM ĐIỀU HÀNH
-            </div>
             <h2 id="overview-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Tổng quan địa bàn
             </h2>
@@ -104,14 +98,14 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
             <button
               onClick={() => onNavigateTab('area-map')}
-              className="flex-1 sm:flex-initial px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 min-h-[40px]"
+              className="flex-1 sm:flex-initial px-3.5 py-2 bg-[#1c4e3a] hover:bg-[#153d2e] text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 min-h-[40px]"
             >
               <span>Xem sơ đồ khối</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onNavigateTab('households')}
-              className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-1.5 min-h-[40px]"
+              className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-1.5 min-h-[40px]"
             >
               <span>Danh sách {totalCount} hộ</span>
             </button>
@@ -178,26 +172,21 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           onClick={() => {
             if (canNavigate('households')) onNavigateTab('households');
           }}
-          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group flex flex-col justify-between"
+          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span id="stat-total-label" className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">
+          <div className="flex items-center justify-between gap-2">
+            <span id="stat-total-label" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Tổng hộ / Cơ sở
             </span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
-              <Building className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <Building aria-hidden="true" className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-            <span
-              id="stat-total-value"
-              className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight"
-            >
+            <span id="stat-total-value" className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white">
               {totalCount}
             </span>
-            <span className="text-[10px] sm:text-xs text-slate-400 font-medium">hộ & cơ sở</span>
+            <span className="text-xs text-slate-400 font-medium">hộ & cơ sở</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+          <div className="mt-2 sm:mt-3 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
             <span className="truncate">Hồ sơ trong phạm vi truy cập</span>
           </div>
@@ -218,27 +207,22 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           onClick={() => {
             if (canNavigate('households')) onNavigateTab('households');
           }}
-          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-700 transition-all cursor-pointer group flex flex-col justify-between"
+          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span id="stat-business-label" className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">
+          <div className="flex items-center justify-between gap-2">
+            <span id="stat-business-label" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               CSKD có điều kiện
             </span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
-              <Store className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <Store aria-hidden="true" className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-            <span
-              id="stat-business-value"
-              className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight"
-            >
+            <span id="stat-business-value" className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white">
               {businessCount}
             </span>
-            <span className="text-[10px] sm:text-xs text-slate-400 font-medium">điểm kinh doanh</span>
+            <span className="text-xs text-slate-400 font-medium">điểm kinh doanh</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+          <div className="mt-2 sm:mt-3 text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
             <span className="truncate">Quán net, cầm đồ, karaoke</span>
           </div>
         </div>
@@ -258,30 +242,43 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           onClick={() => {
             if (canNavigate('documents')) onNavigateTab('documents');
           }}
-          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-amber-300 dark:border-amber-700/80 shadow-xs hover:border-amber-400 transition-all cursor-pointer group flex flex-col justify-between bg-amber-50/20 dark:bg-amber-950/20"
+          className={`bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border transition-colors cursor-pointer group flex flex-col justify-between ${
+            warningCount > 0
+              ? 'border-amber-300 dark:border-amber-700/80 bg-amber-50/20 dark:bg-amber-950/20 hover:border-amber-400'
+              : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-500'
+          }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <span
               id="stat-warning-label"
-              className="text-[10px] sm:text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider truncate"
+              className={`text-xs font-semibold ${warningCount > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}
             >
               Cảnh báo hồ sơ
             </span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors shrink-0">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <AlertTriangle
+              aria-hidden="true"
+              className={`w-4 h-4 shrink-0 ${warningCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}
+            />
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
             <span
               id="stat-warning-value"
-              className="text-2xl sm:text-3xl font-extrabold text-amber-900 dark:text-amber-200 font-mono tracking-tight"
+              className={`text-2xl sm:text-3xl font-semibold ${warningCount > 0 ? 'text-amber-900 dark:text-amber-200' : 'text-slate-900 dark:text-white'}`}
             >
               {warningCount}
             </span>
-            <span className="text-[10px] sm:text-xs text-amber-700/80 dark:text-amber-400/80 font-medium">sắp hết hạn</span>
+            <span className={`text-xs font-medium ${warningCount > 0 ? 'text-amber-700/80 dark:text-amber-400/80' : 'text-slate-400'}`}>
+              sắp hết hạn
+            </span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-amber-700 dark:text-amber-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-amber-200/60 dark:border-amber-800/60 truncate">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-ping"></span>
+          <div
+            className={`mt-2 sm:mt-3 text-[11px] flex items-center gap-1 pt-1.5 sm:pt-2 border-t truncate ${
+              warningCount > 0
+                ? 'text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60'
+                : 'text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
+            }`}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
             <span className="truncate">Cần kiểm tra gia hạn</span>
           </div>
         </div>
@@ -301,32 +298,27 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           onClick={() => {
             if (canNavigate('residents')) onNavigateTab('residents');
           }}
-          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-all group flex flex-col justify-between cursor-pointer hover:shadow-sm"
+          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-500 transition-colors group flex flex-col justify-between cursor-pointer"
           title="Bấm để mở danh sách Quản lý nhân khẩu & Định danh"
         >
-          <div className="flex items-center justify-between">
-            <span id="stat-population-label" className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">
+          <div className="flex items-center justify-between gap-2">
+            <span id="stat-population-label" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Tổng nhân khẩu
             </span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
-              <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <UserCheck aria-hidden="true" className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-            <span
-              id="stat-population-value"
-              className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight"
-            >
+            <span id="stat-population-value" className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white">
               {totalResidents.toLocaleString('vi-VN')}
             </span>
-            <span className="text-[10px] sm:text-xs text-slate-400 font-medium">người dân</span>
+            <span className="text-xs text-slate-400 font-medium">người dân</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+          <div className="mt-2 sm:mt-3 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
             <div className="flex items-center gap-1 truncate">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
               <span className="truncate">TB ~{totalCount > 0 ? (totalResidents / totalCount).toFixed(1) : 0} người / hộ</span>
             </div>
-            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover:underline flex items-center gap-0.5">
+            <span className="text-[11px] font-semibold text-[#1c4e3a] dark:text-[#a7dfbd] group-hover:underline flex items-center gap-0.5">
               Tra cứu <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </div>
@@ -337,12 +329,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       {warningCount > 0 && (
         <div
           id="warning-box"
-          className="bg-[#fffbeb] dark:bg-amber-950/30 border-2 border-amber-300/90 dark:border-amber-700/80 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs"
+          className="bg-[#fffbeb] dark:bg-amber-950/30 border-2 border-amber-300/90 dark:border-amber-700/80 rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-100 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
-              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
+            <AlertTriangle aria-hidden="true" className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="flex-1 w-full min-w-0">
               <h3 id="warning-title" className="text-sm sm:text-base font-bold text-[#78350f] dark:text-amber-200 leading-snug">
                 CẢNH BÁO: {warningCount} Cơ sở sắp hết hạn Giấy phép kinh doanh / An ninh trật tự
@@ -383,7 +373,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                     onPageChange={setWarningCurrentPage}
                     onPageSizeChange={setWarningPageSize}
                     itemLabel="cơ sở cảnh báo"
-                    className="!bg-white/80 dark:!bg-slate-900/80 !border-amber-300/80 dark:!border-amber-700/80 shadow-xs"
+                    className="!bg-white/80 dark:!bg-slate-900/80 !border-amber-300/80 dark:!border-amber-700/80"
                   />
                 </div>
               )}
@@ -407,12 +397,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       )}
 
       {/* Demographics & Population Stats */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
-            <div id="demographic-eyebrow" className="text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1">
-              THỐNG KÊ NHÂN KHẨU
-            </div>
             <h3 id="demographic-stats-title" className="text-xl font-bold text-[#1e293b] dark:text-white tracking-tight">
               Cơ cấu nhân khẩu
             </h3>
@@ -444,20 +431,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 <Users className="w-4 h-4 text-blue-600" />
                 <span>Tỷ lệ nam nữ</span>
               </h4>
-              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+              <span className="text-xs font-semibold tabular-nums text-slate-600 dark:text-slate-300">
                 {totalResidents.toLocaleString('vi-VN')} nhân khẩu
               </span>
             </div>
 
             {/* Visual ratio bar */}
-            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
+            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
               <div
-                className="h-full bg-pink-500 transition-all duration-500"
+                className="h-full bg-pink-500 transition-[width] duration-500"
                 style={{ width: `${femalePercent}%` }}
                 title={`Nữ: ${totalFemale} (${femalePercent}%)`}
               />
               <div
-                className="h-full bg-blue-600 transition-all duration-500"
+                className="h-full bg-blue-600 transition-[width] duration-500"
                 style={{ width: `${malePercent}%` }}
                 title={`Nam: ${totalMale} (${malePercent}%)`}
               />
@@ -465,7 +452,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
             {/* Gender labels */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-3 h-3 rounded-full bg-pink-500 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Giới tính Nữ</span>
@@ -475,7 +462,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Giới tính Nam</span>
@@ -497,20 +484,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 <Users className="w-4 h-4 text-emerald-600" />
                 <span>Cơ cấu độ tuổi</span>
               </h4>
-              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+              <span className="text-xs font-semibold tabular-nums text-slate-600 dark:text-slate-300">
                 {totalResidents.toLocaleString('vi-VN')} nhân khẩu
               </span>
             </div>
 
             {/* Visual ratio bar */}
-            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
+            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
               <div
-                className="h-full bg-emerald-600 transition-all duration-500"
+                className="h-full bg-emerald-600 transition-[width] duration-500"
                 style={{ width: `${above18Percent}%` }}
                 title={`Từ 18 trở lên: ${totalAbove18} (${above18Percent}%)`}
               />
               <div
-                className="h-full bg-amber-500 transition-all duration-500"
+                className="h-full bg-amber-500 transition-[width] duration-500"
                 style={{ width: `${under18Percent}%` }}
                 title={`Dưới 18: ${totalUnder18} (${under18Percent}%)`}
               />
@@ -518,7 +505,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
             {/* Age labels */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Độ tuổi trưởng thành</span>
@@ -528,7 +515,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Trẻ em & Thiếu niên</span>
@@ -569,7 +556,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             if (h.status === 'warning') {
               badgeBg =
                 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-300 hover:bg-amber-100 ring-2 ring-amber-400/50';
-              statusDot = 'bg-amber-500 animate-ping';
+              statusDot = 'bg-amber-500';
             } else if (h.status === 'alert') {
               badgeBg =
                 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-300 hover:bg-rose-100 ring-2 ring-rose-400/50';
@@ -584,7 +571,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <div
                 key={h.id}
                 onClick={() => onSelectHousehold(h)}
-                className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${badgeBg}`}
+                className={`p-2.5 rounded-xl border text-center cursor-pointer transition-colors ${badgeBg}`}
                 title={`${h.houseNumber} ${h.street} - ${h.ownerName}`}
               >
                 <div className="flex items-center justify-center gap-1 mb-1">
@@ -592,7 +579,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <span className="text-[11px] font-bold truncate">Số {h.houseNumber}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate font-medium">{h.street}</div>
-                <div className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-mono">{h.hamlet}</div>
+                <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{h.hamlet}</div>
               </div>
             );
           })}
@@ -600,7 +587,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           {totalCount > 16 && (
             <div
               onClick={() => onNavigateTab('households')}
-              className="p-2.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all flex flex-col items-center justify-center col-span-2 sm:col-span-4 lg:col-span-8 py-3"
+              className="p-2.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex flex-col items-center justify-center col-span-2 sm:col-span-4 lg:col-span-8 py-3"
             >
               <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
                 + Xem toàn bộ {totalCount} hộ dân và cơ sở trên địa bàn &rarr;

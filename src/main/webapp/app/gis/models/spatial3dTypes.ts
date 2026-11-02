@@ -15,7 +15,7 @@ export const DEFAULT_BUILDING_TYPES: BuildingTypeConfig[] = [
   { code: 'two', label: 'Nhà 2 tầng', floors: 2, height: 8.0, color: '#10b981', description: 'Nhà 1 trệt 1 lầu dân cư' },
   { code: 'three', label: 'Nhà 3 tầng', floors: 3, height: 11.5, color: '#f97316', description: 'Nhà phố 1 trệt 2 lầu' },
   { code: 'four', label: 'Nhà 4 tầng', floors: 4, height: 15.0, color: '#ef4444', description: 'Nhà phố thương mại / căn hộ gia đình' },
-  { code: 'fivePlus', label: 'Nhà 5+ tầng', floors: 5, height: 19.0, color: '#8b5cf6', description: 'Nhà cao tầng / căn hộ dịch vụ' },
+  { code: 'fivePlus', label: 'Nhà 5+ tầng', floors: 5, height: 19.0, color: '#8b5cf6', description: 'Nhà cao tầng / căn hộ dịch vụ' }, // taste-skill-ignore: màu dữ liệu phân loại công trình, giữ legend và renderer hiện có
   {
     code: 'large',
     label: 'Tòa nhà lớn',

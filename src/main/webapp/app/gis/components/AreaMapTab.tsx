@@ -19,6 +19,8 @@ import {
   SlidersHorizontal,
   X,
   Navigation,
+  User,
+  AlertTriangle,
 } from 'lucide-react';
 import { HouseholdFacility, NavigationTab } from '../types';
 
@@ -28,6 +30,19 @@ interface AreaMapTabProps {
   onRefresh: () => void;
   onNavigateTab?: (tab: NavigationTab) => void;
 }
+
+// Màu purple trong tệp này là màu phân loại chiều dữ liệu "Tuyến hẻm" (alley): chấm chú thích, chip lọc,
+// nhãn hẻm trên thẻ nhà, nhãn lọc đang bật và nút cô lập hẻm dùng chung một hue để cán bộ nhận diện nhanh
+// nhóm hẻm. Đây là màu phân loại nghiệp vụ, không phải accent trang trí.
+const ALLEY_LEGEND_DOT = 'w-2 h-2 rounded-full bg-purple-500'; // taste-skill-ignore: màu phân loại tuyến hẻm
+const ALLEY_LEGEND_TEXT = 'font-semibold text-purple-600'; // taste-skill-ignore: màu phân loại tuyến hẻm
+const ALLEY_ACTIVE_PILL = 'bg-purple-600 text-white shadow-xs'; // taste-skill-ignore: màu phân loại tuyến hẻm
+const ALLEY_FILTER_TAG = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-600 text-white text-[11px] font-bold shadow-xs'; // taste-skill-ignore: màu phân loại tuyến hẻm
+const ALLEY_CARD_BADGE =
+  'inline-block text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-semibold border border-purple-150 truncate max-w-full'; // taste-skill-ignore: màu phân loại tuyến hẻm
+const ALLEY_VALUE_TEXT = 'font-bold text-purple-800 text-xs truncate block'; // taste-skill-ignore: màu phân loại tuyến hẻm
+const ALLEY_ISOLATE_BUTTON =
+  'flex-1 py-1 px-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center'; // taste-skill-ignore: màu phân loại tuyến hẻm
 
 /**
  * Trích xuất hoặc chuẩn hóa Tổ dân phố của hộ dân
@@ -338,12 +353,9 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
         <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <div
-                id="map-eyebrow"
-                className="text-[11px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase mb-1 flex items-center gap-1.5"
-              >
+              <div id="map-eyebrow" className="text-[11px] sm:text-xs font-semibold text-blue-600 mb-1 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5" />
-                <span>BẢN ĐỒ DÂN CƯ & PHÂN VÙNG QUẢN LÝ</span>
+                <span>Bản đồ dân cư & phân vùng quản lý</span>
               </div>
               <h2 id="map-title" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                 Sơ đồ địa bàn tương tác
@@ -416,7 +428,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
           </div>
 
           <p id="map-help" className="text-[11px] sm:text-xs text-slate-500 mt-2.5 pt-2.5 border-t border-slate-100 italic">
-            💡 Sơ đồ phân tổ và hẻm giúp cán bộ CSKV tập trung vào từng cụm dân cư phụ trách mà không bị rối mắt bởi lượng lớn dữ liệu.
+            Sơ đồ phân tổ và hẻm giúp cán bộ CSKV tập trung vào từng cụm dân cư phụ trách mà không bị rối mắt bởi lượng lớn dữ liệu.
           </p>
         </div>
       )}
@@ -458,9 +470,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               id="mode-filter-alley"
               onClick={() => setFilterMode('alley')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                filterMode === 'alley' || selectedAlley !== 'all'
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                filterMode === 'alley' || selectedAlley !== 'all' ? ALLEY_ACTIVE_PILL : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Navigation className="w-3.5 h-3.5" />
@@ -587,7 +597,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
         {/* Granular Filter Row 3: HẺM / VỊ TRÍ NHÀ SELECTOR */}
         <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-purple-500" />
+            <span className={ALLEY_LEGEND_DOT} />
             <span className="text-xs font-bold text-slate-700">Tuyến Hẻm:</span>
           </div>
 
@@ -596,7 +606,9 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               id="filter-alley-all"
               onClick={() => setSelectedAlley('all')}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
-                selectedAlley === 'all' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                selectedAlley === 'all'
+                  ? 'bg-purple-600 text-white' // taste-skill-ignore: màu phân loại tuyến hẻm
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               Tất cả vị trí / hẻm
@@ -612,14 +624,16 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 }}
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
                   selectedAlley === name
-                    ? 'bg-purple-600 text-white font-bold shadow-xs'
-                    : 'bg-purple-50/70 text-purple-900 border border-purple-200 hover:bg-purple-100'
+                    ? 'bg-purple-600 text-white font-bold shadow-xs' // taste-skill-ignore: màu phân loại tuyến hẻm
+                    : 'bg-purple-50/70 text-purple-900 border border-purple-200 hover:bg-purple-100' // taste-skill-ignore: màu phân loại tuyến hẻm
                 }`}
               >
                 <span>{name}</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    selectedAlley === name ? 'bg-purple-800 text-white' : 'bg-purple-200/80 text-purple-800'
+                    selectedAlley === name
+                      ? 'bg-purple-800 text-white' // taste-skill-ignore: màu phân loại tuyến hẻm
+                      : 'bg-purple-200/80 text-purple-800' // taste-skill-ignore: màu phân loại tuyến hẻm
                   }`}
                 >
                   {count}
@@ -657,7 +671,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               )}
 
               {selectedAlley !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-600 text-white text-[11px] font-bold shadow-xs">
+                <span className={ALLEY_FILTER_TAG}>
                   Hẻm: {selectedAlley}
                   <button onClick={() => setSelectedAlley('all')} className="hover:text-slate-200">
                     <X className="w-3 h-3" />
@@ -737,7 +751,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
           <div className="text-[11px] text-slate-400">
             Ký hiệu: <span className="font-semibold text-blue-600">Tổ X</span> (Tổ dân phố) •{' '}
-            <span className="font-semibold text-purple-600">Hẻm / Tuyến</span>
+            <span className={ALLEY_LEGEND_TEXT}>Hẻm / Tuyến</span>
           </div>
         </div>
       </div>
@@ -802,17 +816,19 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
                     {/* Alley / Location Badge */}
                     <div className="mt-1.5">
-                      <span
-                        className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-semibold border border-purple-150 truncate max-w-full"
-                        title={alley}
-                      >
+                      <span className={ALLEY_CARD_BADGE} title={alley}>
                         {alley}
                       </span>
                     </div>
 
                     {/* Owner or Business name */}
-                    <div className="mt-2 text-xs font-bold text-slate-800 truncate">
-                      {item.businessName ? `🏪 ${item.businessName}` : `👤 ${item.ownerName}`}
+                    <div className="mt-2 text-xs font-bold text-slate-800 flex items-center gap-1 min-w-0">
+                      {item.businessName ? (
+                        <Store className="w-3 h-3 shrink-0 text-slate-400" />
+                      ) : (
+                        <User className="w-3 h-3 shrink-0 text-slate-400" />
+                      )}
+                      <span className="truncate">{item.businessName || item.ownerName}</span>
                     </div>
                   </div>
 
@@ -827,13 +843,15 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
                   {/* Warning banner tag if warning */}
                   {item.status === 'warning' && (
-                    <div className="mt-2 py-0.5 px-1 bg-amber-200/80 rounded text-[10px] font-bold text-amber-900 text-center truncate">
-                      ⚠️ Hết hạn {item.licenseExpiry}
+                    <div className="mt-2 py-0.5 px-1 bg-amber-200/80 rounded text-[10px] font-bold text-amber-900 flex items-center justify-center gap-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Hết hạn {item.licenseExpiry}</span>
                     </div>
                   )}
                   {item.status === 'alert' && (
-                    <div className="mt-2 py-0.5 px-1 bg-rose-200/80 rounded text-[10px] font-bold text-rose-900 text-center truncate">
-                      🚨 Quản lý đối tượng
+                    <div className="mt-2 py-0.5 px-1 bg-rose-200/80 rounded text-[10px] font-bold text-rose-900 flex items-center justify-center gap-1">
+                      <AlertOctagon className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Quản lý đối tượng</span>
                     </div>
                   )}
                 </div>
@@ -917,7 +935,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               </div>
 
               {/* Administrative Classification (Tổ dân phố & Hẻm) */}
-              <div className="p-3 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/80 rounded-xl space-y-2">
+              <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-xl space-y-2">
                 <div className="text-[11px] font-bold text-blue-900 flex items-center gap-1.5 uppercase tracking-wide">
                   <Home className="w-3.5 h-3.5 text-blue-700" />
                   <span>Phân cấp quản lý địa bàn</span>
@@ -930,7 +948,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                   </div>
                   <div className="bg-white/90 p-2 rounded-lg border border-blue-100">
                     <span className="text-[10px] text-slate-500 block font-semibold">Vị trí / Tuyến hẻm:</span>
-                    <span className="font-bold text-purple-800 text-xs truncate block" title={getHouseholdAlley(inspectedHousehold)}>
+                    <span className={ALLEY_VALUE_TEXT} title={getHouseholdAlley(inspectedHousehold)}>
                       {getHouseholdAlley(inspectedHousehold)}
                     </span>
                   </div>
@@ -957,7 +975,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                       setSelectedAlley(al);
                       setFilterMode('alley');
                     }}
-                    className="flex-1 py-1 px-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center"
+                    className={ALLEY_ISOLATE_BUTTON}
                     title="Chỉ hiển thị các nhà cùng Tuyến Hẻm này trên bản đồ"
                   >
                     Chỉ xem Hẻm này

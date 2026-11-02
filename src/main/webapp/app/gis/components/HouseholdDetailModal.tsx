@@ -32,6 +32,11 @@ import { deleteInspectionPhotoFromHousehold } from '../services/firestoreService
 import { decryptCccd, maskCccd, isEncryptedAes } from '../utils/cryptoUtils';
 import { BADIEM_51_HAMLETS } from '../data/baDiemHamlets';
 
+const ALLEY_BADGE_CLASS =
+  'text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700'; // taste-skill-ignore: màu phân loại tuyến hẻm đồng bộ sơ đồ địa bàn
+const PHOTO_SCRIM_CLASS =
+  'absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between'; // taste-skill-ignore: scrim trung tính trên ảnh thật để đọc caption và nút xoá
+
 const BADIEM_STREETS = [
   'Đường Phan Văn Hớn',
   'Đường Nguyễn Ảnh Thủ',
@@ -57,6 +62,7 @@ interface HouseholdDetailModalProps {
   onHouseholdUpdated?: (updatedHousehold: HouseholdFacility) => Promise<void>;
   onDeleteHousehold?: (id: string) => void;
   onShowToast?: (msg: string) => void;
+  onOpenRoster?: (household: HouseholdFacility, edit: boolean) => void;
 }
 
 export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = props =>
@@ -72,6 +78,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
   onHouseholdUpdated,
   onDeleteHousehold,
   onShowToast,
+  onOpenRoster,
 }) => {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState(household.notes || '');
@@ -85,7 +92,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
 
   const handleTriggerCamera = () => {
     if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canUpdateInspection !== true) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
+      const msg = 'Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
       return;
@@ -95,7 +102,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
 
   const handleTriggerEditNotes = () => {
     if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canUpdateInspection !== true) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
+      const msg = 'Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
       return;
@@ -105,7 +112,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
 
   const handleTriggerOcr = () => {
     if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canScanOcr !== true) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền quét OCR Căn cước công dân.';
+      const msg = 'Thẩm quyền bị khóa: Bạn chưa được phân quyền quét OCR Căn cước công dân.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
       return;
@@ -352,7 +359,17 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
         {unified && (
           <div className="p-4 bg-amber-50 text-amber-950">
             <p>Vị trí tạm; thông tin hộ và nhân khẩu cần đối chiếu nguồn.</p>
-            <Link to={`/roster?legacyHousehold=${encodeURIComponent(household.id)}`}>Mở hồ sơ đầy đủ · chỉnh sửa · nguồn · lịch sử</Link>
+            <Link
+              to={`/dashboard?tab=households&legacyHousehold=${encodeURIComponent(household.id)}`}
+              onClick={event => {
+                if (onOpenRoster && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+                  event.preventDefault();
+                  onOpenRoster(household, false);
+                }
+              }}
+            >
+              Mở hồ sơ đầy đủ · chỉnh sửa · nguồn · lịch sử
+            </Link>
           </div>
         )}
         {/* Modal Header */}
@@ -375,11 +392,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                 <span className="text-[11px] sm:text-xs text-slate-300 font-semibold">
                   {household.hamlet} • {household.neighborhoodGroup || 'Tổ 1'} • Xã Bà Điểm, TP. Hồ Chí Minh
                 </span>
-                {household.alley && (
-                  <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700">
-                    {household.alley}
-                  </span>
-                )}
+                {household.alley && <span className={ALLEY_BADGE_CLASS}>{household.alley}</span>}
                 {(() => {
                   const resType = getHouseholdResidenceType(household);
                   const config = RESIDENCE_TYPE_CONFIG[resType];
@@ -393,7 +406,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                   );
                 })()}
               </div>
-              <h3 className="text-sm sm:text-lg font-bold text-white mt-0.5 leading-snug">
+              <h3 className="gis-dialog-title text-sm sm:text-lg font-bold text-white mt-0.5 leading-snug">
                 {household.businessName
                   ? `${household.businessName} (Số ${household.houseNumber})`
                   : `Số ${household.houseNumber} ${household.street}`}
@@ -406,7 +419,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
               id="btn-open-ocr-header"
               disabled={isSaving || !canScan}
               onClick={handleTriggerOcr}
-              className="px-2.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
               title="Quét OCR CCCD"
             >
               <ScanLine className="w-3.5 h-3.5" />
@@ -417,7 +430,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
               id="btn-open-camera-header"
               disabled={isSaving || !canInspect}
               onClick={handleTriggerCamera}
-              className="px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
               title="Bật Camera chụp ảnh hiện trạng"
             >
               <Camera className="w-3.5 h-3.5" />
@@ -493,7 +506,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                 disabled={isSaving || !canInspect}
                 onClick={() => {
                   if (unified) {
-                    window.location.assign(`/roster?legacyHousehold=${encodeURIComponent(household.id)}`);
+                    if (onOpenRoster) onOpenRoster(household, true);
+                    else window.location.assign(`/dashboard?tab=households&legacyHousehold=${encodeURIComponent(household.id)}&edit=true`);
                     return;
                   }
                   if (isEditingInfo) requestDiscard('info');
@@ -811,7 +825,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                 id="btn-trigger-inspection-camera"
                 disabled={isSaving || !canInspect}
                 onClick={handleTriggerCamera}
-                className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer min-h-[36px]"
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[36px]"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>Chụp ảnh mới</span>
@@ -832,7 +846,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       alt={photo.caption || 'Ảnh hiện trạng'}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between">
+                    <div className={PHOTO_SCRIM_CLASS}>
                       <div className="flex justify-end">
                         <button
                           onClick={e => handleDeletePhoto(photo.id, e)}

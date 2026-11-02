@@ -473,6 +473,8 @@ export default function FieldHouseMap({
     observer.observe(containerRef.current!);
     return () => {
       observer.disconnect();
+      effectsRef.current?.dispose();
+      effectsRef.current = null;
       initializedMapRef.current = null;
       mapRef.current = null;
       map.remove();

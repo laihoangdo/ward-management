@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouteQuery } from '../utils/useRouteQuery';
 import axios from 'axios';
 import {
   Shield,
@@ -115,7 +116,11 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   const effectiveAlertsList = securityAlertsList || securityAlerts || [];
   const effectiveUsersList = usersList || [];
 
-  const [activeSubTab, setActiveSubTab] = useState<'menus' | 'hcm-units' | 'users' | 'whitelist' | 'security'>('menus');
+  const { params: routeParams, updateQuery } = useRouteQuery();
+  const sections = ['menus', 'hcm-units', 'users', 'whitelist', 'security'];
+  const section = routeParams.get('section') ?? 'menus';
+  const activeSubTab = sections.includes(section) ? section : 'menus';
+  const setActiveSubTab = (value: string) => updateQuery({ section: value });
 
   // Dynamic Menus State
   const [menus, setMenus] = useState<DynamicMenuItemConfig[]>(effectiveMenusList);
@@ -547,8 +552,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
         </label>
       )}
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-red-950 via-slate-900 to-slate-900 border border-red-800/40 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-80 h-full bg-red-600/5 blur-3xl pointer-events-none" />
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -560,7 +564,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 {currentUser.rank} {currentUser.fullName} • Số hiệu: {currentUser.badgeNumber}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Trung Tâm Quản Trị Hệ Thống Tối Cao</h1>
+            <h2 className="gis-admin-title text-2xl font-bold text-white tracking-tight">Trung tâm quản trị hệ thống tối cao</h2>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
               Toàn quyền cấu hình menu động theo vai trò, quản lý mạng lưới đơn vị hành chính và tuyến hẻm mới nhất TP.HCM, phân quyền tài
               khoản và giám sát an ninh dữ liệu.
@@ -1289,7 +1293,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
             {/* Form Add Suspicious IP */}
             <form onSubmit={handleAddBlacklistIp} className="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5 text-rose-400" />
                 Thêm Địa Chỉ IP Nghi Vấn Vào Danh Sách Đen
               </h3>
@@ -1346,9 +1350,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             {/* List of Blacklisted IPs */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  Danh sách IP đang bị chặn ({blacklistedIps.length})
-                </h3>
+                <h3 className="text-sm font-semibold text-slate-300">Danh sách IP đang bị chặn ({blacklistedIps.length})</h3>
                 <span className="text-[11px] text-slate-500">Có hiệu lực tại API của ứng dụng</span>
               </div>
 

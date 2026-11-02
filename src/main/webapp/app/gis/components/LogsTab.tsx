@@ -221,8 +221,8 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
       case 'coordinate_update':
         return {
           icon: MapPin,
-          bg: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
-          dot: 'bg-indigo-500',
+          bg: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800', // taste-skill-ignore: màu phân loại loại hành động
+          dot: 'bg-indigo-500', // taste-skill-ignore: màu phân loại loại hành động
         };
       case 'profile_update':
         return {
@@ -251,8 +251,8 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
       case 'ocr_scan':
         return {
           icon: ScanLine,
-          bg: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800',
-          dot: 'bg-purple-500',
+          bg: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800', // taste-skill-ignore: màu phân loại loại hành động
+          dot: 'bg-purple-500', // taste-skill-ignore: màu phân loại loại hành động
         };
       default:
         return {
@@ -263,18 +263,31 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
     }
   };
 
+  // Màu phân loại nghiệp vụ: indigo/purple gắn với NHÓM hành động (bản đồ 3D, tọa độ, OCR) và xuất hiện
+  // đồng bộ ở badge, chip lọc và thẻ thống kê — chọn màu theo nhóm dữ liệu, không phải accent trang trí.
+  const MAP_3D_CHIP_CLASS = 'px-3 py-1.5 rounded-lg font-medium whitespace-nowrap bg-indigo-100 text-indigo-800'; // taste-skill-ignore: màu phân loại loại hành động
+  const COORDINATE_STAT_STYLES = {
+    card: 'p-3 sm:p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40', // taste-skill-ignore: màu phân loại loại hành động
+    label: 'text-[11px] font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5', // taste-skill-ignore: màu phân loại loại hành động
+    icon: 'w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400', // taste-skill-ignore: màu phân loại loại hành động
+    value: 'text-xl sm:text-2xl font-bold text-indigo-900 dark:text-indigo-100 mt-1', // taste-skill-ignore: màu phân loại loại hành động
+    caption: 'text-[10px] text-indigo-600/70 dark:text-indigo-400/70 mt-0.5', // taste-skill-ignore: màu phân loại loại hành động
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6 pb-12">
+    <div className="gis-logs space-y-4 sm:space-y-6 pb-12">
       {/* Tab Header Banner */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800/80 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-xs">
+            <div className="w-12 h-12 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
               <History className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Nhật Ký Thao Tác & Minh Bạch Quản Lý</h2>
+                <h2 id="logs-title" className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                  Nhật ký thao tác & minh bạch quản lý
+                </h2>
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Thời gian thực
@@ -326,13 +339,13 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             <div className="text-[10px] text-slate-400 mt-0.5">Tất cả tài khoản hệ thống</div>
           </div>
 
-          <div className="p-3 sm:p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40">
-            <div className="text-[11px] font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+          <div className={COORDINATE_STAT_STYLES.card}>
+            <div className={COORDINATE_STAT_STYLES.label}>
+              <MapPin className={COORDINATE_STAT_STYLES.icon} />
               <span>Chỉnh sửa tọa độ</span>
             </div>
-            <div className="text-xl sm:text-2xl font-bold text-indigo-900 dark:text-indigo-100 mt-1">{stats.coordinateUpdates}</div>
-            <div className="text-[10px] text-indigo-600/70 dark:text-indigo-400/70 mt-0.5">Nắn chỉnh vị trí mốc GPS</div>
+            <div className={COORDINATE_STAT_STYLES.value}>{stats.coordinateUpdates}</div>
+            <div className={COORDINATE_STAT_STYLES.caption}>Nắn chỉnh vị trí mốc GPS</div>
           </div>
 
           <div className="p-3 sm:p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
@@ -416,14 +429,14 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             type="button"
             aria-pressed={selectedActionFilter === 'map_3d'}
             onClick={() => setSelectedActionFilter('map_3d')}
-            className="px-3 py-1.5 rounded-lg font-medium whitespace-nowrap bg-indigo-100 text-indigo-800"
+            className={MAP_3D_CHIP_CLASS}
           >
             Bản đồ 3D
           </button>
           <button
             id="chip-filter-all"
             onClick={() => setSelectedActionFilter('all')}
-            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors cursor-pointer ${
               selectedActionFilter === 'all'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -435,66 +448,66 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
           <button
             id="chip-filter-coordinates"
             onClick={() => setSelectedActionFilter('coordinates')}
-            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'coordinates'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-indigo-600 text-white shadow-xs' // taste-skill-ignore: màu phân loại loại hành động
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
-            <span>📍 Chỉnh sửa tọa độ ({stats.coordinateUpdates})</span>
+            <span>Chỉnh sửa tọa độ ({stats.coordinateUpdates})</span>
           </button>
 
           <button
             id="chip-filter-profile"
             onClick={() => setSelectedActionFilter('profile')}
-            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'profile'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>📝 Cập nhật hồ sơ ({stats.profileUpdates})</span>
+            <span>Cập nhật hồ sơ ({stats.profileUpdates})</span>
           </button>
 
           <button
             id="chip-filter-reminders"
             onClick={() => setSelectedActionFilter('reminders')}
-            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'reminders'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <Bell className="w-3.5 h-3.5" />
-            <span>🔔 Nhắc nhở & Đôn đốc ({stats.reminders})</span>
+            <span>Nhắc nhở & Đôn đốc ({stats.reminders})</span>
           </button>
 
           <button
             id="chip-filter-add"
             onClick={() => setSelectedActionFilter('add')}
-            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'add'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>➕ Đăng ký mới ({stats.additions})</span>
+            <span>Đăng ký mới ({stats.additions})</span>
           </button>
 
           <button
             id="chip-filter-ocr"
             onClick={() => setSelectedActionFilter('ocr')}
-            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'ocr'
-                ? 'bg-purple-600 text-white shadow-xs'
+                ? 'bg-purple-600 text-white shadow-xs' // taste-skill-ignore: màu phân loại loại hành động
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
             <ScanLine className="w-3.5 h-3.5" />
-            <span>🔍 Quét OCR ({stats.ocrScans})</span>
+            <span>Quét OCR ({stats.ocrScans})</span>
           </button>
         </div>
       </div>
@@ -538,7 +551,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   {/* Left Column: Icon + Core Information */}
                   <div className="flex items-start gap-3.5 flex-1 min-w-0">
-                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${badge.bg}`}>
+                    <div className="w-10 h-10 flex items-center justify-center shrink-0 text-slate-600 dark:text-slate-300">
                       <Icon className="w-5 h-5" />
                     </div>
 
@@ -699,7 +712,9 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">📝</div>
+                <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <FileText className="w-4 h-4" />
+                </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Ghi Nhật Ký Tuần Tra / Kiểm Tra Thực Địa</h3>
               </div>
               <button

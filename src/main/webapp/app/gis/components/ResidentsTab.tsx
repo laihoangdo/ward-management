@@ -52,6 +52,15 @@ interface ResidentsTabProps {
   onShowToast?: (msg: string) => void;
 }
 
+// Thẻ thống kê "Độ tuổi lao động" dùng indigo theo bộ màu thẻ nhân khẩu học (mỗi nhóm chỉ số một hue),
+// đồng bộ với các thẻ nhân khẩu học còn lại của tab. Màu phân loại dữ liệu, không phải accent trang trí.
+const DEMOGRAPHIC_LABOR_STYLES = {
+  card: 'p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-900/50', // taste-skill-ignore: màu phân loại thẻ nhân khẩu học
+  label: 'text-[11px] font-medium text-indigo-800 dark:text-indigo-300', // taste-skill-ignore: màu phân loại thẻ nhân khẩu học
+  value: 'text-xl font-bold text-indigo-700 dark:text-indigo-300 mt-0.5', // taste-skill-ignore: màu phân loại thẻ nhân khẩu học
+  caption: 'text-[10px] text-indigo-600 dark:text-indigo-400 mt-1', // taste-skill-ignore: màu phân loại thẻ nhân khẩu học
+};
+
 export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   households,
   allHouseholds,
@@ -649,10 +658,10 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             <div className="text-[10px] text-rose-600 dark:text-rose-400 mt-1">Quản lý nghiệp vụ CSKV</div>
           </div>
 
-          <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-900/50">
-            <div className="text-[11px] font-medium text-indigo-800 dark:text-indigo-300">Độ tuổi lao động</div>
-            <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300 mt-0.5">{laborCount}</div>
-            <div className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-1">
+          <div className={DEMOGRAPHIC_LABOR_STYLES.card}>
+            <div className={DEMOGRAPHIC_LABOR_STYLES.label}>Độ tuổi lao động</div>
+            <div className={DEMOGRAPHIC_LABOR_STYLES.value}>{laborCount}</div>
+            <div className={DEMOGRAPHIC_LABOR_STYLES.caption}>
               Dưới 18: {under18Count} • Trên 60: {elderlyCount}
             </div>
           </div>
@@ -1794,7 +1803,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl">
             <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white">
                   <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>

@@ -52,6 +52,24 @@ Giữ các màu cảnh báo, trạng thái hộ dân, phân quyền, biểu tư�
 - Chuyển trạng thái ưu tiên màu/border, không nhảy layout hoặc chạy animation liên tục; tôn trọng reduced motion.
 - Mục tiêu kiểm tra tương phản: chữ thông thường ít nhất 4,5:1; focus/control boundary có tương phản phù hợp. Đây không thay thế kiểm thử toàn diện bằng screen reader hoặc chứng nhận WCAG.
 
+## Rà soát taste-skill — quy ước áp dụng cho app screen
+
+Skill `design-taste-frontend` chạy ở chế độ `--app` (dashboard/admin), không dùng rule landing page. Kết quả đo lưu ở `target/taste-before/` và `target/taste-after/`. Quy ước rút ra, áp dụng cho mọi sửa giao diện sau này:
+
+- **Không đặt icon trong ô nền màu.** KPI là nhãn + số; icon đi kèm thì trơn và màu chữ. Ngoại lệ duy nhất: logo brand đơn nhất ở sidebar.
+- **Số liệu không dùng font mono**; dùng `tabular-nums` để canh cột.
+- **Không nhãn eyebrow** (chữ hoa, tracking rộng phía trên tiêu đề); viết thường, cỡ body.
+- **Card phẳng:** không shadow ở trạng thái nghỉ. Shadow chỉ cho overlay thật: menu thả, dialog, drawer, panel nổi trên bản đồ, sticky bar.
+- **Cỡ chữ nhỏ nhất 11px**; subline/meta 11–12px, dữ liệu và nhãn chính 13–14px, số KPI lớn.
+- **Transition gọi tên thuộc tính** (`transition-colors`, `transition-[width]`), không dùng `transition-all`.
+- **Không animation lặp** (ping/pulse/bounce) trong chrome; chỉ giữ trong phản hồi chức năng của modal (đang nghe, đang quét).
+- **Màu cảnh báo chỉ hiện khi có cảnh báo** (ví dụ thẻ "Cảnh báo hồ sơ" về trung tính khi count = 0).
+- Pattern chức năng bắt buộc giữ (remap dark mode, focus ring, neutralizer animation) phải mang comment `taste-skill-ignore` trên đúng dòng bị flag, kèm `/* prettier-ignore */` cho block CSS kết thúc bằng `{` để comment không bị prettier dịch dòng.
+- Hue phân loại hành động, tuyến hẻm, cư trú và dữ liệu biểu đồ được giữ khi có nhãn/legend nhất quán; không coi mọi màu tím là trang trí. Ngoại lệ ghi tại class/config, không đổi logic hoặc giấu trạng thái để vượt lint.
+- Kiểm tra Bootstrap/Tailwind trên trình duyệt thật: cỡ heading có thể bị Bootstrap ghi đè. Selector sửa phải giới hạn ở tiêu đề/tab/dialog liên quan; không reset toàn cục.
+- Modal mobile: giới hạn chiều cao theo viewport, nội dung cuộn được và nút đóng/xác nhận nằm trong vùng thao tác. Callback chạy thành công không chứng minh nút thực sự nhìn thấy; smoke phải kiểm tra bounding rectangle.
+- Chỉnh skill hoặc bỏ qua chỉ số đo đều không chấp nhận; nếu một WARN không sửa được thì bảo lưu bằng lý do ghi trong tài liệu kiểm thử.
+
 ## Kiểm tra hồi quy
 
 - Kiểm tra light/dark ở 375, 768, 1024 và 1440 px, nội dung đơn vị/label dài, không overflow toàn trang.

@@ -28,7 +28,7 @@ export const SuperAdminAccessGuard: React.FC<SuperAdminAccessGuardProps> = ({
             <span className="px-2.5 py-0.5 rounded text-[10px] uppercase font-mono font-bold bg-red-950 text-red-300 border border-red-700/60">
               Yêu Cầu Thẩm Quyền Tối Cao
             </span>
-            <h2 className="text-xl sm:text-2xl font-bold text-white mt-0.5 tracking-tight">Trung Tâm Quản Trị Hệ Thống Tối Cao</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white mt-0.5 tracking-tight">Trung tâm quản trị</h2>
           </div>
         </div>
 
@@ -65,8 +65,7 @@ export const SuperAdminAccessGuard: React.FC<SuperAdminAccessGuardProps> = ({
             </li>
           </ul>
           <p className="text-xs text-amber-300/90 pt-1">
-            ⚠️ Để thao tác các tính năng trên, bạn cần đăng nhập với tài khoản <strong>Super Admin</strong> hoặc email quản trị viên tối
-            cao.
+            Để thao tác các tính năng trên, bạn cần đăng nhập với tài khoản <strong>Super Admin</strong> hoặc email quản trị viên tối cao.
           </p>
         </div>
 
@@ -76,7 +75,7 @@ export const SuperAdminAccessGuard: React.FC<SuperAdminAccessGuardProps> = ({
             type="button"
             id="btn-switch-to-superadmin"
             onClick={onSwitchToSuperAdmin}
-            className="py-3 px-4 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-red-900/40 flex items-center justify-center gap-2 transition cursor-pointer"
+            className="py-3 px-4 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <Shield className="w-4 h-4" />
             Đăng nhập bằng tài khoản quản trị

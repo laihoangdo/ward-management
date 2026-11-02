@@ -3,16 +3,13 @@ import { exportRbacCsv } from '../services/rbacApiService';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { browseHouseholds, loadHouseholdDetail, HouseholdBrowsePage } from '../services/householdBrowse';
 import {
-  Users,
   Plus,
   Search,
-  Filter,
   Eye,
   Phone,
   Building,
   Store,
   AlertOctagon,
-  CheckCircle,
   FileSpreadsheet,
   Home,
   Clock,
@@ -23,7 +20,6 @@ import {
   List,
   RotateCcw,
   Sparkles,
-  MapPin,
   Calendar,
   Trash2,
 } from 'lucide-react';
@@ -279,10 +275,10 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
           <div>
             <div
               id="household-eyebrow"
-              className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1 flex items-center gap-1.5"
+              className="text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>DỮ LIỆU ĐỊA BÀN & CƯ TRÚ</span>
+              <span>Dữ liệu địa bàn & cư trú</span>
             </div>
             <h2 id="household-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Danh sách hộ dân & Cơ sở
@@ -320,7 +316,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         {/* Header line for quick filter chips */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Bộ lọc nhanh cư trú:</span>
             </span>
@@ -449,7 +445,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                 ? RESIDENCE_TYPE_CONFIG['Lưu trú'].activeChipBg +
                   ' ' +
                   RESIDENCE_TYPE_CONFIG['Lưu trú'].activeChipText +
-                  ' shadow-md shadow-purple-500/20 ' +
+                  ' ' +
                   RESIDENCE_TYPE_CONFIG['Lưu trú'].activeChipRing +
                   ' border ' +
                   RESIDENCE_TYPE_CONFIG['Lưu trú'].activeChipBorder
@@ -465,10 +461,10 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             <Building2 className="w-3.5 h-3.5 shrink-0" />
             <span>Lưu trú</span>
             <span
-              className={`px-1.5 py-0.2 text-[10px] font-mono rounded-full font-bold ${
+              className={`px-1.5 py-0.2 text-[10px] tabular-nums rounded-full font-bold ${
                 selectedResidenceType === 'Lưu trú'
-                  ? 'bg-purple-700 text-white'
-                  : 'bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                  ? 'bg-purple-700 text-white' // taste-skill-ignore: màu phân loại loại cư trú
+                  : 'bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-800' // taste-skill-ignore: màu phân loại loại cư trú
               }`}
             >
               {residenceCounts['Lưu trú']}
@@ -669,7 +665,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                     }
                   }}
                   onClick={() => selectHousehold(item)}
-                  className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:border-blue-400/80 dark:hover:border-blue-500/80 hover:bg-linear-to-b hover:from-blue-50/25 dark:hover:from-blue-950/30 hover:to-white dark:hover:to-slate-900 cursor-pointer active:scale-[0.985] flex flex-col justify-between select-none"
+                  className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:border-blue-400/80 dark:hover:border-blue-500/80 hover:bg-blue-50/40 dark:hover:bg-blue-950/30 cursor-pointer active:scale-[0.985] flex flex-col justify-between select-none"
                 >
                   {/* Top Bar: Code + Hamlet + Badges */}
                   <div className="space-y-2.5">

@@ -38,3 +38,25 @@ it('offers DB roads only in assigned areas and preserves an existing legacy assi
   fireEvent.click(screen.getByRole('button', { name: /Lưu Cấu Hình Phân Quyền/ }));
   await waitFor(() => expect(saveDelegation).toHaveBeenCalledWith(expect.objectContaining({ hamletIds: [7] })));
 });
+
+it('exposes permission state and lets the keyboard toggle the same permission without saving', async () => {
+  const officer = {
+    id: 'officer',
+    role: 'officer',
+    fullName: 'Cán bộ kiểm thử',
+    assignedHamlets: [],
+    assignedStreets: [],
+  } as AppUser;
+  vi.mocked(fetchRbacAreas).mockResolvedValue([]);
+  vi.mocked(fetchDelegationRoads).mockResolvedValue([]);
+  render(
+    <SubAdminDelegationTab currentUser={{ ...officer, id: 'actor', role: 'superadmin' }} usersList={[officer]} onShowToast={vi.fn()} />,
+  );
+  const permission = await screen.findByRole('checkbox', { name: /Quét Camera/ });
+  expect(permission.getAttribute('aria-checked')).toBe('false');
+  fireEvent.keyDown(permission, { key: ' ' });
+  expect(permission.getAttribute('aria-checked')).toBe('true');
+  fireEvent.keyDown(permission, { key: 'Enter' });
+  expect(permission.getAttribute('aria-checked')).toBe('false');
+  expect(saveDelegation).not.toHaveBeenCalled();
+});

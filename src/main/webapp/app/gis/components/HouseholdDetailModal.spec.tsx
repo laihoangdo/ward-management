@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { HouseholdDetailModal } from './HouseholdDetailModal';
 import { HouseholdFacility, AppUser } from '../types';
+import { MemoryRouter } from 'react-router';
 
 vi.mock('./InspectionCameraModal', () => ({ InspectionCameraModal: () => null }));
 vi.mock('./OcrScanModal', () => ({ OcrScanModal: () => null }));
@@ -24,6 +25,26 @@ const household = {
 } as unknown as HouseholdFacility;
 
 describe('Household save feedback', () => {
+  it.each([false, true])('opens the exact GIS household in the roster menu (edit=%s)', edit => {
+    const openRoster = vi.fn();
+    const selected = { ...household, id: '123', code: 'TC2-SYNTHETIC', locationStatus: 'PROVISIONAL' };
+    const view = render(
+      <MemoryRouter>
+        <HouseholdDetailModal
+          household={selected}
+          currentUser={{ role: 'superadmin' } as AppUser}
+          onClose={vi.fn()}
+          onUpdateNotes={vi.fn()}
+          onOpenRoster={openRoster}
+        />
+      </MemoryRouter>,
+    );
+    fireEvent.click(
+      edit ? screen.getByRole('button', { name: 'Chỉnh sửa thông tin hộ' }) : screen.getByRole('link', { name: /Mở hồ sơ đầy đủ/ }),
+    );
+    expect(openRoster).toHaveBeenCalledWith(selected, edit);
+    view.unmount();
+  });
   it('preserves zero residents and blank optional address fields when editing', () => {
     render(
       <HouseholdDetailModal

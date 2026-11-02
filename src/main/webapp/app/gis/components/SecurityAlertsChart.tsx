@@ -64,7 +64,7 @@ const SEVERITY_COLORS = {
 const CATEGORY_COLORS = [
   '#ef4444', // Đột nhập/Sửa Database
   '#f59e0b', // Brute-force/Đăng nhập
-  '#8b5cf6', // Xâm nhập Whitelist
+  '#8b5cf6', // taste-skill-ignore: hue phân loại Xâm nhập Whitelist, có legend
   '#06b6d4', // Leo thang đặc quyền / Quét IP
   '#64748b', // Khác
 ];
@@ -651,7 +651,7 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
                   <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
                   <Bar dataKey="database" name="Cơ sở dữ liệu" fill="#ef4444" stackId="a" />
                   <Bar dataKey="auth" name="Đăng nhập" fill="#f59e0b" stackId="a" />
-                  <Bar dataKey="whitelist" name="Whitelist" fill="#8b5cf6" stackId="a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="whitelist" name="Whitelist" fill={CATEGORY_COLORS[2]} stackId="a" radius={[4, 4, 0, 0]} />
                 </BarChart>
               )}
             </ResponsiveContainer>

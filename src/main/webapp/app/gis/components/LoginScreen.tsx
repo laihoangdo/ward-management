@@ -8,7 +8,6 @@ export const LoginScreen = () => (
       <div className="gis-login-emblem">
         <Shield aria-hidden="true" className="h-7 w-7" />
       </div>
-      <p className="gis-login-eyebrow">KHÔNG GIAN LÀM VIỆC NỘI BỘ</p>
       <h1 className="text-2xl font-bold">Quản lý an ninh địa bàn</h1>
       <p className="gis-login-description mt-3">Đăng nhập bằng tài khoản được đơn vị cấp để truy cập bản đồ và dữ liệu nghiệp vụ.</p>
       <button

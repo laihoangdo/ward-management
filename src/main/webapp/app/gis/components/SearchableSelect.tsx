@@ -125,12 +125,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
   const borderFocusClass =
     accentColor === 'indigo'
-      ? 'focus:border-indigo-500 border-indigo-500 ring-2 ring-indigo-100'
+      ? 'focus:border-indigo-500 border-indigo-500 ring-2 ring-indigo-100' // taste-skill-ignore: accentColor cấu hình có sẵn; giữ giao diện component và focus state
       : accentColor === 'emerald'
         ? 'focus:border-emerald-500 border-emerald-500 ring-2 ring-emerald-100'
         : 'focus:border-blue-500 border-blue-500 ring-2 ring-blue-100';
 
-  const checkBadgeBg = accentColor === 'indigo' ? 'bg-indigo-600' : accentColor === 'emerald' ? 'bg-emerald-600' : 'bg-blue-600';
+  const checkBadgeBg = accentColor === 'indigo' ? 'bg-indigo-600' : accentColor === 'emerald' ? 'bg-emerald-600' : 'bg-blue-600'; // taste-skill-ignore: màu cấu hình đồng bộ focus và dấu chọn
 
   return (
     <div ref={containerRef} className={`relative w-full ${className}`}>

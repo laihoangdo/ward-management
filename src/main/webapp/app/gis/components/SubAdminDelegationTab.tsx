@@ -252,7 +252,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
   return (
     <div id="subadmin-delegation-tab" className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-slate-900 border border-blue-800/40 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -268,13 +268,9 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 {currentUser.position} • {currentUser.fullName}
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
-              {isAdmin
-                ? 'Quản Lý & Phân Quyền Cán Bộ Quản Lý Ấp & Công An Viên'
-                : isSubAdmin
-                  ? 'Phân Quyền Tuyến Địa Bàn Cho Công An Viên Cấp Dưới'
-                  : 'Ủy Quyền Thẩm Quyền Nghiệp Vụ Toàn Diện Các Cấp'}
-            </h1>
+            <h2 className="gis-admin-title text-2xl font-bold text-white tracking-tight">
+              {isAdmin ? 'Quản lý và phân quyền cán bộ' : isSubAdmin ? 'Phân quyền địa bàn' : 'Phân quyền nghiệp vụ'}
+            </h2>
             <p className="text-xs text-slate-300 mt-1 max-w-3xl">
               {isAdmin
                 ? 'Trưởng Công an Xã trực tiếp phân công địa bàn ấp, phân quyền nghiệp vụ cho Cán bộ Quản lý Ấp (Sub-Admin) và giám sát phân bổ quyền cho Công an viên cấp dưới.'
@@ -288,7 +284,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
             type="button"
             id="btn-save-delegation"
             onClick={handleSaveDelegation}
-            className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-blue-900/40 flex items-center gap-2 transition cursor-pointer self-start md:self-auto"
+            className="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm flex items-center gap-2 transition-colors cursor-pointer self-start md:self-auto"
           >
             <ShieldCheck className="w-4 h-4" />
             Lưu Cấu Hình Phân Quyền
@@ -301,7 +297,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
         {/* Left: Officer Selector */}
         <div className="lg:col-span-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <h3 className="gis-admin-list-heading text-sm font-semibold text-slate-300">
               Cán bộ cấp dưới thuộc thẩm quyền ({subordinates.length})
             </h3>
           </div>
@@ -378,8 +374,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                     onClick={() => handleSelectOfficer(off)}
                     className={`w-full text-left p-4 rounded-xl border transition-all flex items-start justify-between cursor-pointer ${
                       isSelected
-                        ? 'bg-blue-950/60 border-blue-500 text-white shadow-lg'
-                        : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:bg-slate-850 hover:border-slate-700'
+                        ? 'bg-slate-800 border-blue-500 text-white'
+                        : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
                     }`}
                   >
                     <div>
@@ -520,7 +516,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
               {/* Toggles for Feature permissions */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-blue-400" />
                     Bảng Phân Quyền Tính Năng Nghiệp Vụ
                   </h3>
@@ -534,13 +530,23 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                     return (
                       <div
                         key={item.key}
+                        role="checkbox"
+                        aria-checked={isGranted}
+                        aria-label={item.title}
+                        tabIndex={0}
+                        onKeyDown={event => {
+                          if (event.key === ' ' || event.key === 'Enter') {
+                            event.preventDefault();
+                            handleTogglePermission(item.key);
+                          }
+                        }}
                         onClick={() => handleTogglePermission(item.key)}
                         className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
-                          isGranted ? 'bg-blue-950/40 border-blue-700/60' : 'bg-slate-950 border-slate-800 opacity-60'
+                          isGranted ? 'bg-slate-800 border-blue-700/60' : 'bg-slate-950 border-slate-800'
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-lg mt-0.5 ${isGranted ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                          <div className="p-2 mt-0.5 text-slate-300">
                             <IconComp className="w-4 h-4" />
                           </div>
                           <div>
@@ -552,10 +558,10 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                         <div className="shrink-0 mt-1">
                           <div
                             className={`w-5 h-5 rounded-md flex items-center justify-center border transition ${
-                              isGranted ? 'bg-blue-600 border-blue-500 text-white' : 'border-slate-700 bg-slate-900 text-transparent'
+                              isGranted ? 'bg-blue-600 border-blue-500 text-white' : 'border-slate-700 bg-slate-900'
                             }`}
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className={`w-3.5 h-3.5 ${isGranted ? 'visible' : 'invisible'}`} aria-hidden="true" />
                           </div>
                         </div>
                       </div>

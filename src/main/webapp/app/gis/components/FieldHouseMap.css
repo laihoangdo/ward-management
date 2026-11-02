@@ -63,7 +63,7 @@
   border-color: var(--gis-primary, #1c4e3a);
 }
 .field-house-map :is(button, input, select, summary):focus-visible {
-  outline: 3px solid var(--gis-focus, #2563eb);
+  outline: 3px solid var(--gis-focus, #2563eb); /* taste-skill-ignore: focus ring chức năng */
   outline-offset: 2px;
 }
 .field-map-body {
@@ -86,7 +86,7 @@
   background: var(--field-surface);
   border: 1px solid var(--field-border);
   border-radius: 8px;
-  box-shadow: 0 3px 12px rgb(15 35 30 / 16%);
+  box-shadow: 0 3px 12px rgb(15 35 30 / 16%); /* taste-skill-ignore: panel nổi trên bản đồ là overlay thật */
   max-height: calc(100% - 25px);
   overflow-y: auto;
   box-sizing: border-box;
@@ -334,7 +334,7 @@
     right: 8px;
     pointer-events: none;
     color: #fff;
-    text-shadow: 0 1px 3px #000;
+    text-shadow: 0 1px 3px #000; /* taste-skill-ignore: chữ trên ảnh bản đồ cần shadow để đọc được */
     font-size: 11px;
     text-align: center;
   }

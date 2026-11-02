@@ -42,8 +42,6 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
   onAlertResolved,
   onIpBlacklisted,
 }) => {
-  if (!isOpen) return null;
-
   const warningHouseholds = households.filter(h => h.status === 'warning');
   const [remindedList, setRemindedList] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'security' | 'licenses'>('security');
@@ -165,17 +163,19 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
   const unresolvedCount = localAlerts.filter(a => !a.resolved).length;
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[94vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-red-700 via-amber-700 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 bg-red-800 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-800/90 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
               <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
+              <h3 className="gis-dialog-title text-sm sm:text-base font-bold flex items-center gap-2">
                 Trung Tâm Cảnh Báo An Ninh & Giám Sát Địa Bàn
                 {unresolvedCount > 0 && (
                   <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-extrabold animate-pulse">
@@ -188,7 +188,12 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10">
+          <button
+            type="button"
+            aria-label="Đóng cảnh báo"
+            onClick={onClose}
+            className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

@@ -86,11 +86,8 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div
-              id="document-eyebrow"
-              className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1"
-            >
-              KIỂM SOÁT HỒ SƠ
+            <div id="document-eyebrow" className="text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+              Kiểm soát hồ sơ
             </div>
             <h2 id="document-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Quản lý hồ sơ & Giấy tờ an ninh

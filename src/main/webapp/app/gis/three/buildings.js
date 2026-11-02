@@ -103,7 +103,7 @@ const fragmentShader = `
   }
 `;
 
-const paletteColors = ['#64748b', '#22c55e', '#facc15', '#ef4444', '#a855f7'];
+const paletteColors = ['#64748b', '#22c55e', '#facc15', '#ef4444', '#a855f7']; // taste-skill-ignore: thang màu dữ liệu công trình, không đổi renderer trong đợt UI
 
 /** Geometry roots are translation-only. Do not apply a non-uniform parent scale. */
 export class BuildingLayer {

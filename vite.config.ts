@@ -4,8 +4,10 @@ import { URL, fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, normalizePath, type ProxyOptions } from 'vite';
-import { proxyOrigin } from './src/main/webapp/app/config/proxy-origin';
+import { proxyOrigin } from './src/main/webapp/app/config/proxy-origin.ts';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { postcssBrowserCompat } from './scripts/postcss-browser-compat.ts';
+import { compatibleOcrLanguageAsset } from './scripts/ocr-language-compat.ts';
 
 const { getAbsoluteFSPath } = await import('swagger-ui-dist');
 const swaggerUiPath = getAbsoluteFSPath();
@@ -15,6 +17,7 @@ const development = process.env.NODE_ENV !== 'production';
 
 const config = defineConfig({
   plugins: [
+    { ...postcssBrowserCompat(), enforce: 'pre' },
     tailwindcss(),
     react(),
     // Keep dev ?raw imports in Vite's transform pipeline; copy this file only for production.
@@ -58,6 +61,7 @@ const config = defineConfig({
           ),
           dest: 'ocr/lang',
           rename: { stripBase: true },
+          transform: { encoding: 'buffer', handler: compatibleOcrLanguageAsset },
         },
         {
           src: [
@@ -103,6 +107,11 @@ const config = defineConfig({
   },
   resolve: {
     tsconfigPaths: true,
+  },
+  optimizeDeps: {
+    rolldownOptions: {
+      plugins: [postcssBrowserCompat()],
+    },
   },
   define: {
     DEVELOPMENT: JSON.stringify(development),

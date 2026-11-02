@@ -248,9 +248,9 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+      <div className="gis-voice-dialog bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-3.5 sm:p-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex items-center justify-between">
+        <div className="p-3.5 sm:p-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-colors ${
@@ -266,7 +266,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                   {isListening ? 'ĐANG LẮNG NGHE (TIẾNG VIỆT)' : 'TÌM KIẾM GIỌNG NÓI'}
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-white mt-0.5">Trợ lý giọng nói An ninh Địa bàn</h3>
+              <h3 className="gis-dialog-title text-sm font-bold text-white mt-0.5">Trợ lý giọng nói An ninh Địa bàn</h3>
             </div>
           </div>
 
@@ -283,7 +283,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-6 space-y-4">
+        <div className="gis-voice-body p-4 sm:p-6 space-y-4">
           {/* Main Visualizer & Mic Pulse */}
           <div className="flex flex-col items-center justify-center py-2 text-center">
             <div className="relative mb-3">
@@ -301,8 +301,8 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                 onClick={isListening ? stopListening : startListening}
                 className={`relative w-20 h-20 rounded-full flex items-center justify-center shadow-xl transition-all cursor-pointer ${
                   isListening
-                    ? 'bg-gradient-to-tr from-rose-600 to-red-500 text-white ring-4 ring-rose-300 dark:ring-rose-900 scale-105'
-                    : 'bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'
+                    ? 'bg-rose-600 text-white ring-4 ring-rose-300 dark:ring-rose-900 scale-105'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
                 title={isListening ? 'Nhấn để dừng nhận diện' : 'Nhấn vào để bắt đầu nói'}
               >
@@ -312,7 +312,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 
             {/* Voice Status Text */}
             <div className="space-y-1">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
+              <h4 className="gis-voice-status text-sm font-semibold text-slate-600 dark:text-slate-300 flex items-center justify-center gap-1.5">
                 <Volume2 className={`w-3.5 h-3.5 ${isListening ? 'text-rose-500' : 'text-slate-400'}`} />
                 <span>
                   {isListening
@@ -440,7 +440,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+        <div className="gis-voice-footer p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <button
               type="button"
@@ -482,7 +482,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               type="button"
               onClick={() => handleApply(transcript || interimText)}
               disabled={!transcript && !interimText}
-              className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer min-h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-1.5 cursor-pointer min-h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Check className="w-4 h-4" />
               <span>Áp dụng tìm kiếm</span>

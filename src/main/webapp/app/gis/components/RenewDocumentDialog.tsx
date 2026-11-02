@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Check } from 'lucide-react';
 import { DocumentRecord } from '../types';
 import { browseHouseholds } from '../services/householdBrowse';
 import { DocumentCommand, hcmToday } from '../services/documentLifecycle';
@@ -174,7 +175,7 @@ export function RenewDocumentDialog({
                     onClick={() => setHouseholdId(h.id)}
                     className="block w-full rounded border p-2 text-left text-sm"
                   >
-                    {householdId === h.id ? '✓ ' : ''}
+                    {householdId === h.id && <Check className="inline-block h-4 w-4 mr-1" aria-hidden="true" />}
                     {h.code} — {h.address}
                   </button>
                 ))}

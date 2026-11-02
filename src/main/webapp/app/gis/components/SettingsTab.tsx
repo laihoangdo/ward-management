@@ -55,8 +55,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       {/* Banner */}
       <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
-          <div id="settings-eyebrow" className="text-[11px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase mb-1">
-            TÙY CHỈNH HỆ THỐNG
+          <div id="settings-eyebrow" className="text-[11px] sm:text-xs font-semibold text-blue-600 mb-1">
+            Tùy chỉnh hệ thống
           </div>
           <h2 id="settings-title" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Cài đặt
@@ -272,8 +272,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold">
-                      <Moon className="w-4 h-4 text-indigo-400" />
+                    <div className="w-8 h-8 rounded-lg bg-slate-700/60 flex items-center justify-center">
+                      <Moon className="w-4 h-4 text-slate-300" />
                     </div>
                     {theme === 'dark' && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">Đang chọn</span>
@@ -355,7 +355,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   <span className="text-slate-300">/api/stats/overview (Thống kê)</span>
                 </div>
                 <div className="flex items-center justify-between p-1.5 bg-slate-800/80 rounded border border-slate-700">
-                  <span className="text-purple-400 font-bold">GET</span>
+                  <span className="text-emerald-400 font-bold">GET</span>
                   <span className="text-slate-300">/api/audit-logs (Nhật ký công tác)</span>
                 </div>
               </div>

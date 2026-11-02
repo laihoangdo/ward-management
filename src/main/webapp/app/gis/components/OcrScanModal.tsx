@@ -25,6 +25,7 @@ import { HouseholdFacility, InspectionPhoto, OcrExtractedData, Resident } from '
 import { updateHouseholdDataInFirestore, addInspectionPhotoToHousehold } from '../services/firestoreService';
 import { encryptCccd, maskCccd } from '../utils/cryptoUtils';
 import { scanDocument } from '../services/ocrService';
+import { cameraErrorMessage, isExpectedCameraError } from '../utils/cameraErrors';
 
 interface OcrScanModalProps {
   isOpen: boolean;
@@ -104,9 +105,9 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
       }
     } catch (err: any) {
       if (requestId !== cameraRequestRef.current) return;
-      console.warn('Camera access issue:', err);
+      if (!isExpectedCameraError(err)) console.warn('Camera access issue:', err);
       setHasPermission(false);
-      setErrorMessage('Không thể mở Camera. Vui lòng cấp quyền máy ảnh trên trình duyệt hoặc tải ảnh từ thư viện.');
+      setErrorMessage(cameraErrorMessage(err));
     }
   };
 
@@ -374,10 +375,10 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
     >
       <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[94vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between shrink-0">
+        <div className="p-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 shadow-md font-bold shrink-0">
-              <ScanLine className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 flex items-center justify-center text-emerald-300 shrink-0">
+              <ScanLine className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
@@ -386,13 +387,15 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                 </span>
                 <span className="text-slate-300 text-xs font-semibold">Hộ {household.code}</span>
               </div>
-              <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
+              <h3 className="gis-dialog-title text-sm sm:text-base font-bold text-white mt-0.5">
                 Trích xuất thông tin Căn cước công dân / Giấy phép kinh doanh
               </h3>
             </div>
           </div>
 
           <button
+            type="button"
+            aria-label="Đóng OCR"
             disabled={isSaving}
             onClick={requestClose}
             className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
@@ -498,7 +501,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   </div>
 
                   {/* Animated Laser Scanning Line */}
-                  <div className="relative w-full h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#34d399] animate-pulse my-auto" />
+                  <div className="relative w-full h-0.5 bg-emerald-400 animate-pulse motion-reduce:animate-none my-auto" />
 
                   {/* Bottom corners */}
                   <div className="flex justify-between items-end">
@@ -549,7 +552,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   id="btn-capture-ocr-shot"
                   type="button"
                   onClick={handleCaptureFromVideo}
-                  className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-700/20 transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[42px]"
+                  className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer min-h-[42px]"
                 >
                   <Camera className="w-4 h-4" />
                   <span>Chụp & Phân Tích OCR Ngay</span>
@@ -586,7 +589,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             <div className="py-12 px-4 text-center space-y-4">
               <div className="relative w-16 h-16 mx-auto">
                 <div className="absolute inset-0 rounded-full border-4 border-emerald-200 dark:border-emerald-900 animate-ping opacity-25" />
-                <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg">
+                <div className="relative w-16 h-16 rounded-2xl bg-emerald-700 flex items-center justify-center text-white">
                   <Sparkles className="w-8 h-8 animate-spin" />
                 </div>
               </div>
@@ -624,8 +627,8 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                       {extractedData.documentType === 'business_license'
-                        ? '📄 Giấy phép / Đăng ký kinh doanh'
-                        : '🪪 Căn cước công dân (CCCD / CMND)'}
+                        ? 'Giấy phép / Đăng ký kinh doanh'
+                        : 'Căn cước công dân (CCCD / CMND)'}
                     </span>
                     <span className="text-[11px] text-slate-500 font-mono">Cần kiểm tra lại</span>
                   </div>
@@ -867,7 +870,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                 type="button"
                 onClick={handleConfirmAndSave}
                 disabled={isSaving}
-                className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer min-h-[38px] disabled:opacity-60"
+                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-1.5 cursor-pointer min-h-[38px] disabled:opacity-60"
               >
                 {isSaving ? (
                   <>

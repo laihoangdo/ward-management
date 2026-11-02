@@ -22,28 +22,18 @@ export const Home = () => {
 
   return (
     <Row>
-      <Col md="3" className="pad">
-        <span className="hipster rounded" />
-      </Col>
-      <Col md="9">
+      <Col lg="10" className="mx-auto">
         <h1 className="h2">Quản lý địa bàn và dân cư</h1>
-        <div
-          className="p-4 mb-4 rounded-3 text-white shadow-sm"
-          style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%)' }}
-        >
+        <div className="p-4 mb-4 rounded-3 text-white" style={{ background: '#122e35' }}>
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
-              <span className="badge bg-warning text-dark mb-2 fw-bold">HỆ THỐNG AN NINH ĐỊA BÀN</span>
+              <p className="small mb-2 text-light">Hệ thống an ninh địa bàn</p>
               <h2 className="h3 fw-bold mb-1">Không gian làm việc địa bàn</h2>
               <p className="mb-0 text-light" style={{ opacity: 0.9 }}>
                 Tra cứu hộ dân, nhân khẩu và hồ sơ; xem vị trí trên bản đồ và ghi nhận kiểm tra trong phạm vi được phân công.
               </p>
             </div>
-            <button
-              type="button"
-              className="btn btn-warning fw-bold px-4 py-2 text-dark text-nowrap shadow"
-              onClick={() => navigate('/dashboard')}
-            >
+            <button type="button" className="btn btn-light fw-bold px-4 py-2 text-dark text-nowrap" onClick={() => navigate('/dashboard')}>
               Mở không gian làm việc
             </button>
           </div>
