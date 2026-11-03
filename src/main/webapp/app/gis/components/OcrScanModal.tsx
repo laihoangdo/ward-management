@@ -1,26 +1,6 @@
 import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  Camera,
-  ScanLine,
-  FileText,
-  CheckCircle,
-  AlertTriangle,
-  X,
-  RefreshCw,
-  Sparkles,
-  User,
-  UserPlus,
-  Building,
-  Upload,
-  ArrowRight,
-  ShieldCheck,
-  Check,
-  RotateCcw,
-  Images,
-  Info,
-  Lock,
-} from 'lucide-react';
+import { Camera, ScanLine, CheckCircle, AlertTriangle, X, RefreshCw, Sparkles, Upload, Check, RotateCcw, Images } from 'lucide-react';
 import { HouseholdFacility, InspectionPhoto, OcrExtractedData, Resident } from '../types';
 import { updateHouseholdDataInFirestore, addInspectionPhotoToHousehold } from '../services/firestoreService';
 import { encryptCccd, maskCccd } from '../utils/cryptoUtils';
@@ -41,7 +21,6 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
   const scanControllerRef = useRef<AbortController | null>(null);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Selected or captured image
@@ -77,7 +56,6 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
     setErrorMessage(null);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setHasPermission(false);
       setErrorMessage('Thiết bị không hỗ trợ hoặc chặn quyền truy cập Camera trực tiếp. Bạn có thể tải ảnh chụp giấy tờ lên.');
       return;
     }
@@ -98,7 +76,6 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
         return;
       }
       streamRef.current = mediaStream;
-      setHasPermission(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -106,7 +83,6 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
     } catch (err: any) {
       if (requestId !== cameraRequestRef.current) return;
       if (!isExpectedCameraError(err)) console.warn('Camera access issue:', err);
-      setHasPermission(false);
       setErrorMessage(cameraErrorMessage(err));
     }
   };
@@ -265,8 +241,6 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
       if (applyMode === 'add_resident') {
         // Add new resident to household
         const birthYear = extractedData.birthYear!;
-        const isMale = extractedData.gender !== 'Nữ';
-        const age = now.getFullYear() - birthYear;
 
         const rawCccd = extractedData.idCardNumber ? extractedData.idCardNumber.trim() : '';
         const encryptedCccd = rawCccd ? await encryptCccd(rawCccd) : '';

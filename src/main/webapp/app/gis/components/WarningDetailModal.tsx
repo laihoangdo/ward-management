@@ -1,22 +1,5 @@
 import React, { useState } from 'react';
-import {
-  X,
-  AlertTriangle,
-  Send,
-  CheckCircle2,
-  Clock,
-  MapPin,
-  Store,
-  Phone,
-  ShieldAlert,
-  ShieldCheck,
-  Ban,
-  Lock,
-  UserCheck,
-  Check,
-  AlertOctagon,
-  FileCheck,
-} from 'lucide-react';
+import { X, AlertTriangle, Send, CheckCircle2, MapPin, Store, ShieldAlert, Ban, Lock, AlertOctagon, FileCheck } from 'lucide-react';
 import { HouseholdFacility, SecurityAlert, AppUser } from '../types';
 import { resolveSecurityAlert, addIpToBlacklist } from '../services/authService';
 import { Pagination } from './Pagination';

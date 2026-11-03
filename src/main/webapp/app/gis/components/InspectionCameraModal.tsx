@@ -21,7 +21,6 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
   onPhotoSaved,
 }) => {
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -49,7 +48,6 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     setErrorMessage(null);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setHasPermission(false);
       setErrorMessage('Trình duyệt không hỗ trợ trực tiếp Web Camera. Bạn có thể sử dụng tính năng tải ảnh từ máy.');
       return;
     }
@@ -70,7 +68,6 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
         return;
       }
       streamRef.current = mediaStream;
-      setHasPermission(true);
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -78,7 +75,6 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     } catch (err: unknown) {
       if (requestId !== cameraRequestRef.current) return;
       if (!shouldRetryCameraConstraints(err)) {
-        setHasPermission(false);
         setErrorMessage(cameraErrorMessage(err));
         return;
       }
@@ -90,14 +86,12 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
           return;
         }
         streamRef.current = fallbackStream;
-        setHasPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = fallbackStream;
         }
       } catch (fallbackErr: unknown) {
         if (requestId !== cameraRequestRef.current) return;
         if (!isExpectedCameraError(fallbackErr)) console.warn('Camera stream error:', fallbackErr);
-        setHasPermission(false);
         setErrorMessage(cameraErrorMessage(fallbackErr));
       }
     }

@@ -1,5 +1,7 @@
 # Monolithic
 
+Chuẩn bị release và lệnh database thống nhất: [release source cleanup](docs/release-source-cleanup.md). Giữ nguyên lịch sử Liquibase và dữ liệu DB hiện tại; dùng `npm run db:status` để kiểm tra và `npm run db:migrate` để áp dụng migration đã xem xét, không chạy seed mẫu/reset.
+
 Project có dashboard GIS tại `/dashboard`, dùng phiên OAuth2/OIDC của backend và OCR tiếng Việt/Anh chạy cục bộ trong trình duyệt. Xem [hướng dẫn GIS, xác thực và OCR](docs/gis-auth-ocr.md) trước khi chạy hoặc cấu hình quyền truy cập.
 
 **Local hiện tại (29/10/2026):** DB vận hành là PostgreSQL 18.6/PostGIS 3.6.4 trên cổng `5433`; cluster `5432` là bản trước cutover, mặc định read-only. Xem [triển khai PostGIS và phục hồi](docs/postgis-deployment-20261029.md). `npm run backend:start` / `app:start` dùng role runtime đã provision, không tự chạy migration hay thay container cũ. Khởi động DB bằng `docker compose -f src/main/docker/postgis.yml up -d --wait`; không dùng `services:up` legacy cho cluster mới.

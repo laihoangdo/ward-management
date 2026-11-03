@@ -1,15 +1,9 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import {
   Boxes,
-  RotateCcw,
-  ZoomIn,
-  ZoomOut,
-  Compass,
-  Eye,
-  EyeOff,
   Sun,
   Sunset,
   Moon,
@@ -20,25 +14,19 @@ import {
   Undo2,
   Redo2,
   Download,
-  UploadCloud,
   Layers,
   Building2,
-  Sliders,
   CheckCircle2,
-  AlertTriangle,
   X,
   Maximize2,
   Minimize2,
   Sparkles,
-  Info,
   MapPin,
-  Palette,
-  Check,
 } from 'lucide-react';
 import { NavigationTab } from '../types';
 import baDiemBuildingsData from '../data/baDiemBuildingsGis.json';
 import satellite18Tiles from '../data/badiemSatellite18Index.json';
-import { BA_DIEM_CENTER, latLngToWorld, worldToLatLng } from '../data/baDiemSpatialData';
+import { latLngToWorld, worldToLatLng } from '../data/baDiemSpatialData';
 import { createBuilding3DMesh, RoofType, DEFAULT_PALETTES } from '../utils/buildingGeometryGenerator';
 
 export interface EditableBuilding {
@@ -75,12 +63,7 @@ interface BaDiem3DMapEditorProps {
   onToggleFullscreen?: () => void;
 }
 
-export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({
-  onNavigateTab,
-  onShowToast,
-  isFullscreen = false,
-  onToggleFullscreen,
-}) => {
+export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToast, isFullscreen = false, onToggleFullscreen }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Three.js References
@@ -113,15 +96,12 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({
   const [showSatellite, setShowSatellite] = useState(true);
   const [satelliteOpacity, setSatelliteOpacity] = useState(1.0);
   const [showBoundary, setShowBoundary] = useState(true);
-  const [showGrid, setShowGrid] = useState(false);
   const [filterCategory, setFilterCategory] = useState<'all' | 'residential' | 'commercial' | 'other'>('all');
 
   // State: Undo/Redo & Save
   const [history, setHistory] = useState<HistoryStep[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isConfirmLeaveOpen, setIsConfirmLeaveOpen] = useState(false);
-  const [pendingTab, setPendingTab] = useState<NavigationTab | null>(null);
   const [isSyncingBlender, setIsSyncingBlender] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -1333,50 +1313,6 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({
           </div>
         )}
       </div>
-
-      {/* 4. UNSAVED CHANGES MODAL BEFORE LEAVING */}
-      {isConfirmLeaveOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl text-slate-100 space-y-4">
-            <div className="flex items-center space-x-3 text-amber-400">
-              <AlertTriangle className="w-6 h-6 shrink-0" />
-              <h3 className="text-base font-bold text-white">Bạn có thay đổi chưa lưu trên Bản Đồ 3D!</h3>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Các thông số vị trí, chiều cao, số tầng hoặc mái nhà vừa chỉnh sửa chưa được lưu lại. Bạn có muốn lưu trước khi chuyển sang
-              mục khác không?
-            </p>
-            <div className="flex items-center justify-end space-x-2 pt-2">
-              <button
-                onClick={() => setIsConfirmLeaveOpen(false)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800"
-              >
-                Ở lại màn hình
-              </button>
-              <button
-                onClick={() => {
-                  setIsConfirmLeaveOpen(false);
-                  setHasUnsavedChanges(false);
-                  if (pendingTab && onNavigateTab) onNavigateTab(pendingTab);
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600/80 hover:bg-red-600 text-white"
-              >
-                Bỏ qua thay đổi
-              </button>
-              <button
-                onClick={() => {
-                  handleSave();
-                  setIsConfirmLeaveOpen(false);
-                  if (pendingTab && onNavigateTab) onNavigateTab(pendingTab);
-                }}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
-              >
-                Lưu & Tiếp tục
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Mic,
   MicOff,
-  Search,
   X,
   Volume2,
   Sparkles,
@@ -13,7 +12,6 @@ import {
   MapPin,
   Building,
   AlertTriangle,
-  UserCheck,
   ExternalLink,
   Edit3,
 } from 'lucide-react';
@@ -48,7 +46,6 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   const [transcript, setTranscript] = useState<string>('');
   const [interimText, setInterimText] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSupported, setIsSupported] = useState<boolean>(true);
   const [isPermissionDenied, setIsPermissionDenied] = useState<boolean>(false);
 
   const recognitionRef = useRef<any>(null);
@@ -114,7 +111,6 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
       (window as any).msSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setIsSupported(false);
       setErrorMessage(
         'Trình duyệt chưa hỗ trợ Web Speech API trực tiếp hoặc đang chạy trong chế độ bảo mật nghiêm ngặt. Cán bộ có thể gõ nội dung hoặc bấm từ khóa nhanh bên dưới.',
       );
@@ -241,8 +237,6 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   };
 
   if (!isOpen) return null;
-
-  const activeDisplayQuery = transcript || interimText;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150">

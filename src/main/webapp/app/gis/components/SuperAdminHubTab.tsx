@@ -3,7 +3,6 @@ import { useRouteQuery } from '../utils/useRouteQuery';
 import axios from 'axios';
 import {
   Shield,
-  ShieldCheck,
   ShieldAlert,
   Users,
   Settings2,
@@ -15,23 +14,14 @@ import {
   Edit2,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Upload,
-  Download,
   Search,
-  Filter,
-  RefreshCw,
   Eye,
   EyeOff,
-  Send,
-  Building2,
   Ban,
-  Lock,
   Unlock,
   FileCheck,
   AlertOctagon,
-  Activity,
-  Check,
 } from 'lucide-react';
 import {
   AppUser,
@@ -88,7 +78,6 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   securityAlerts,
   securityAlertsList,
   onShowToast = (_msg: string) => {},
-  onSwitchAccount,
 }) => {
   const [rbacAreas, setRbacAreas] = useState<{ id: number; name: string; hamletName: string }[]>([]);
   const [whitelistEnabled, setWhitelistEnabled] = useState(false);
@@ -134,7 +123,6 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
   // Users State
   const [userSearch, setUserSearch] = useState('');
-  const [selectedUserToEdit, setSelectedUserToEdit] = useState<AppUser | null>(null);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [newUserForm, setNewUserForm] = useState<Partial<AppUser>>({
     username: '',
@@ -199,7 +187,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
   // Security Alert State
   const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
-  const [targetAdminEmail, setTargetAdminEmail] = useState(currentUser.email || '');
+  const targetAdminEmail = currentUser.email || '';
 
   // Blacklist IP State
   const [blacklistedIps, setBlacklistedIps] = useState<BlacklistedIpEntry[]>([]);
@@ -483,7 +471,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   const handleTriggerTestSecurityAlert = async () => {
     setIsSendingTestAlert(true);
     try {
-      const alert = await createSecurityAlert({
+      await createSecurityAlert({
         severity: 'critical',
         title: 'CẢNH BÁO KIỂM THỬ: Phát hiện truy vấn bất thường vào cơ sở dữ liệu',
         details: `Cảnh báo kiểm thử bảo mật định kỳ do Super Admin phát động. Địa chỉ IP 113.161.72.19 phát hiện thực hiện 5 lần cập nhật trường đặc biệt không hợp lệ trên bảng "appUsers".`,

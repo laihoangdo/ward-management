@@ -197,7 +197,7 @@ export const mapResidentToDto = (r: Resident, householdId?: number | string): IR
  * 1. Tải danh sách tất cả hộ dân từ PostgreSQL
  */
 
-export async function fetchAllHouseholds(size: number = 1000): Promise<HouseholdFacility[]> {
+export async function fetchAllHouseholds(_size: number = 1000): Promise<HouseholdFacility[]> {
   const res = await fetchAuthorizedPages<IHousehold>('/api/households');
   if (Array.isArray(res.data)) {
     return res.data.map((dto, idx) => mapDtoToHousehold(dto, idx));
@@ -457,7 +457,7 @@ export async function deleteResidentInBackend(residentId: string | number): Prom
 /**
  * 10. Tải danh sách tất cả nhân khẩu từ PostgreSQL
  */
-export async function fetchAllResidents(size: number = 3000): Promise<IResident[]> {
+export async function fetchAllResidents(_size: number = 3000): Promise<IResident[]> {
   const res = await fetchAuthorizedPages<IResident>('/api/residents');
   return Array.isArray(res.data) ? res.data : [];
 }
@@ -465,7 +465,7 @@ export async function fetchAllResidents(size: number = 3000): Promise<IResident[
 /**
  * 11. Tải danh sách hồ sơ giấy tờ từ PostgreSQL
  */
-export async function fetchAllDocumentRecords(size: number = 1000): Promise<DocumentRecord[]> {
+export async function fetchAllDocumentRecords(_size: number = 1000): Promise<DocumentRecord[]> {
   const res = await fetchAuthorizedPages<IDocumentRecord>('/api/document-records');
   if (Array.isArray(res.data)) {
     return res.data.map(dto => mapDocumentDto(dto));

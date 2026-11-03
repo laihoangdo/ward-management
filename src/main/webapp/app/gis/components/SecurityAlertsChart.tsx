@@ -26,10 +26,9 @@ import {
   Layers,
   PieChart as PieIcon,
   BarChart3,
-  Clock,
   Ban,
 } from 'lucide-react';
-import { SecurityAlert, SecurityAlertSeverity } from '../types';
+import { SecurityAlert } from '../types';
 import { buildSecurityTimeline } from '../utils/securityAlertData';
 
 interface SecurityAlertsChartProps {

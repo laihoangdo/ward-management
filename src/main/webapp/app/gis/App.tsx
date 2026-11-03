@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useAppDispatch, useAppSelector } from 'app/config/store';
 import { getSession } from 'app/shared/reducers/authentication';
-import { mapAccountToGisUser, logoutBackendSession } from './services/backendSession';
+import { logoutBackendSession } from './services/backendSession';
 import './index.css';
 import { RenewDocumentDialog } from './components/RenewDocumentDialog';
 import { DocumentHistoryDialog } from './components/DocumentHistoryDialog';
@@ -9,7 +9,7 @@ import { DocumentCommand, saveLegalDocument } from './services/documentLifecycle
 import { matchesHouseholdSearch } from './utils/householdSearch';
 import { loadOperationalData, OPERATIONAL_DATA_LABELS } from './utils/operationalData';
 import { useDeferredOperationalData } from './utils/useDeferredOperationalData';
-import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, AlertTriangle, Database, CloudCheck, MapPin } from 'lucide-react';
+import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, MapPin } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ServerOverviewTab } from './components/ServerOverviewTab';
@@ -26,7 +26,7 @@ import { SettingsTab } from './components/SettingsTab';
 import { HouseholdDetailModal } from './components/HouseholdDetailModal';
 import { AddHouseholdModal } from './components/AddHouseholdModal';
 import { WarningDetailModal } from './components/WarningDetailModal';
-import { normalizeHousehold, normalizeHouseholdList } from './utils/householdUtils';
+import { normalizeHousehold } from './utils/householdUtils';
 import { canViewMapTab } from './utils/mapViewAccess';
 import { useRouteQuery, RECORD_QUERY_KEYS } from './utils/useRouteQuery';
 import { loadHouseholdDetail } from './services/householdBrowse';
@@ -576,41 +576,6 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       status: 'success',
     };
     recordAuditLog(noteLog);
-  };
-
-  const handleHouseholdUpdated = async (updated: HouseholdFacility) => {
-    setHouseholds(prev => prev.map(h => (h.id === updated.id ? updated : h)));
-    setSelectedHousehold(updated);
-
-    try {
-      await updateHouseholdInBackend(updated);
-      showToast(`Đã đồng bộ hồ sơ hộ ${updated.code} vào PostgreSQL.`);
-    } catch (err) {
-      console.error('Lỗi khi đồng bộ OCR vào backend:', err);
-      showToast(`Đã đồng bộ thông tin hồ sơ hộ ${updated.code} từ kết quả quét OCR.`);
-    }
-
-    // Record audit log for OCR scan / profile sync
-    const ocrLog: AuditLogEntry = {
-      id: `LOG-OCR-${Date.now()}`,
-      timestamp: formatDateTime(new Date()),
-      createdAt: Date.now(),
-      actionType: 'ocr_scan',
-      actionLabel: 'Trích xuất OCR CCCD',
-      officerName: currentUser?.fullName || officer.officerName || 'Cán bộ CSKV',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV',
-      targetType: 'household',
-      targetId: updated.id,
-      targetCode: updated.code,
-      targetTitle: `${updated.houseNumber} ${updated.street} (${updated.ownerName})`,
-      details: `Trích xuất dữ liệu thẻ CCCD/giấy phép, đồng bộ nhân khẩu cư trú: ${updated.residentsCount} nhân khẩu.`,
-      newValue: `Chủ hộ: ${updated.ownerName}, SĐT: ${updated.ownerPhone}`,
-      ipAddress: undefined,
-      deviceInfo: 'Camera quét di động thiết bị CSKV',
-      integrityHash: undefined,
-      status: 'info',
-    };
-    recordAuditLog(ocrLog);
   };
 
   const handleUpdateHouseholdFull = async (updated: HouseholdFacility) => {

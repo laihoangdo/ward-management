@@ -150,7 +150,7 @@ export class ThreeBuildingLayer implements CustomLayerInterface {
   }
 
   render(
-    gl: WebGLRenderingContext | WebGL2RenderingContext,
+    _gl: WebGLRenderingContext | WebGL2RenderingContext,
     { modelViewProjectionMatrix }: { modelViewProjectionMatrix: ArrayLike<number> },
   ): void {
     if (!this.visible || !this.renderer || !this.origin || !this.meshes.length) return;

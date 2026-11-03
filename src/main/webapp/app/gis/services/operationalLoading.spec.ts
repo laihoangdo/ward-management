@@ -17,10 +17,18 @@ it('preserves a successful resident response', async () => {
   await expect(fetchAllResidents()).resolves.toEqual([resident]);
 });
 
-it('preserves document mapping on a successful response', async () => {
+it('keeps a legacy status unverified when household linkage and confirmed expiry are missing', async () => {
   vi.mocked(axios.get).mockResolvedValue({ data: [{ id: 12, docName: 'Test document', status: 'EXPIRED' }] });
   await expect(fetchAllDocumentRecords()).resolves.toEqual([
-    expect.objectContaining({ id: '12', title: 'Test document', status: 'expired' }),
+    expect.objectContaining({ id: '12', title: 'Test document', status: 'unverified' }),
+  ]);
+});
+it('maps a linked document using its confirmed expiry instead of a stale status label', async () => {
+  vi.mocked(axios.get).mockResolvedValue({
+    data: [{ id: 12, docName: 'Test document', status: 'VALID', householdId: 42, expiryOn: '2000-01-01' }],
+  });
+  await expect(fetchAllDocumentRecords()).resolves.toEqual([
+    expect.objectContaining({ id: '12', title: 'Test document', status: 'expired', householdId: 42, expiryOn: '2000-01-01' }),
   ]);
 });
 

@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Shield,
   ShieldCheck,
   Users,
   MapPin,
   Check,
-  X,
   Sliders,
   Award,
   FileText,
@@ -19,7 +17,6 @@ import {
   Building,
   Building2,
   Edit3,
-  Filter,
 } from 'lucide-react';
 import { AppUser, SubAdminFeaturePermissions } from '../types';
 import { saveDelegation, fetchRbacAreas, fetchDelegationRoads } from '../services/authService';

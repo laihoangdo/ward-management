@@ -2,7 +2,7 @@ import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, expect, it, vi } from 'vitest';
-import { INITIAL_DYNAMIC_MENUS } from '../data/initialAuthData';
+import { DEFAULT_MENUS as INITIAL_DYNAMIC_MENUS } from '../data/defaultMenus';
 import { DEFAULT_OFFICER, type AppUser } from '../types';
 import { Sidebar } from './Sidebar';
 
