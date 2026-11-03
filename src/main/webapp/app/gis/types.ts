@@ -122,18 +122,18 @@ export interface BlacklistedIpEntry {
   hitCount?: number;
 }
 
-export type HouseholdStatus = 'normal' | 'warning' | 'alert' | 'business';
+export type HouseholdStatus = 'normal' | 'warning' | 'alert' | 'business' | 'unverified';
 
-export type ResidenceType = 'Thường trú' | 'Tạm trú' | 'Lưu trú';
+export type ResidenceType = 'Thường trú' | 'Tạm trú' | 'Lưu trú' | 'Chưa xác minh';
 
 export interface Resident {
   id: string;
   fullName: string;
-  birthYear: number;
-  gender: 'Nam' | 'Nữ';
+  birthYear?: number;
+  gender: 'Nam' | 'Nữ' | 'Khác' | 'Chưa cập nhật';
   relationship: string;
   idCardNumber?: string;
-  residenceType: 'Thường trú' | 'Tạm trú' | 'Lưu trú';
+  residenceType: ResidenceType;
   isMonitored?: boolean;
   phone?: string;
   occupation?: string;
@@ -190,6 +190,7 @@ export interface HouseholdFacility {
   residenceType?: ResidenceType;
   residentsList?: Resident[];
   inspectionPhotos?: InspectionPhoto[];
+  inspectionPhotosError?: string;
 }
 
 export interface DocumentRecord {
@@ -235,15 +236,15 @@ export interface OfficerProfile {
 }
 
 export const DEFAULT_OFFICER: OfficerProfile = {
-  officerName: 'Nguyễn Văn Bình',
-  rank: 'Đại úy — CSKV Xã Bà Điểm',
-  unit: 'Công an Xã Bà Điểm, TP. Hồ Chí Minh (1403 Phan Văn Hớn)',
-  badgeNumber: '284-912',
-  username: 'cskv_binh',
-  permissions: 'Quản lý địa bàn Ấp Bắc Lân & Ấp Đông Lân, Xã Bà Điểm',
-  isOnline: true,
-  phone: '0908.123.456',
-  assignedHamlets: ['Ấp Bắc Lân', 'Ấp Đông Lân'],
+  officerName: '',
+  rank: '',
+  unit: '',
+  badgeNumber: '',
+  username: '',
+  permissions: '',
+  isOnline: false,
+  phone: '',
+  assignedHamlets: [],
 };
 
 export interface OcrExtractedData {

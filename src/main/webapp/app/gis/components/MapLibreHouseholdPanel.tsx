@@ -12,6 +12,7 @@ const STATUS_LABEL: Record<HouseholdFacility['status'], string> = {
   warning: 'Cảnh báo hết hạn',
   alert: 'Đối tượng chú ý ANTT',
   business: 'Cơ sở kinh doanh',
+  unverified: 'Chưa xác minh trạng thái',
 };
 
 export default function MapLibreHouseholdPanel({ household, onClose, onOpenProfile }: Props) {

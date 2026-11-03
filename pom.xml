@@ -1072,7 +1072,7 @@
                                 <goals>
                                     <goal>files</goal>
                                 </goals>
-                                <phase>generate-resources</phase>
+                                <phase>generate-sources</phase>
                             </execution>
                             <execution>
                                 <id>create-compiled-webapp-checksum</id>
@@ -1121,21 +1121,38 @@
                         <executions>
                             <execution>
                                 <id>eval-frontend-checksum</id>
-                                <phase>generate-resources</phase>
+                                <phase>generate-sources</phase>
                                 <goals>
                                     <goal>run</goal>
                                 </goals>
                                 <configuration>
                                     <target>
-                                        <condition property="skip.npm" value="true" else="false">
+                                        <condition property="frontend.checksum.skip" value="true" else="false">
                                             <and>
                                                 <available file="checksums.csv" filepath="${project.build.directory}"/>
                                                 <available file="checksums.csv.old" filepath="${project.build.directory}"/>
                                                 <filesmatch file1="${project.build.directory}/checksums.csv" file2="${project.build.directory}/checksums.csv.old"/>
                                             </and>
                                         </condition>
+                                        <mkdir dir="${project.build.directory}"/>
+                                        <echo file="${project.build.directory}/frontend-checksum.properties">skip.npm=${frontend.checksum.skip}</echo>
                                     </target>
-                                    <exportAntProperties>true</exportAntProperties>
+                                    <exportAntProperties>false</exportAntProperties>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>properties-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>read-frontend-checksum-result</id>
+                                <phase>process-sources</phase>
+                                <goals><goal>read-project-properties</goal></goals>
+                                <configuration>
+                                    <override>false</override>
+                                    <files><file>${project.build.directory}/frontend-checksum.properties</file></files>
                                 </configuration>
                             </execution>
                         </executions>

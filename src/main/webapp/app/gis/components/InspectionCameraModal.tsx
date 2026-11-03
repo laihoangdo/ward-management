@@ -297,16 +297,16 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     };
 
     try {
-      await addInspectionPhotoToHousehold(household.id, newPhoto, household.inspectionPhotos || []);
+      const savedPhoto = await addInspectionPhotoToHousehold(household.id, newPhoto);
 
       if (onPhotoSaved) {
-        onPhotoSaved(newPhoto);
+        onPhotoSaved(savedPhoto);
       }
 
       handleClose();
     } catch (err) {
-      console.error('Lỗi khi lưu ảnh vào Firestore:', err);
-      alert('Không thể lưu ảnh vào Firestore. Vui lòng thử lại.');
+      console.error('Lỗi khi lưu ảnh vào máy chủ:', err);
+      setErrorMessage('Không thể lưu ảnh vào cơ sở dữ liệu. Ảnh chưa được xác nhận lưu; vui lòng thử lại.');
     } finally {
       setIsSaving(false);
     }

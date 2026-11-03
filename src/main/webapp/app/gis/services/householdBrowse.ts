@@ -3,8 +3,14 @@ import { HouseholdFacility, ResidenceType } from '../types';
 import { IHousehold } from 'app/shared/model/household.model';
 import { IResident } from 'app/shared/model/resident.model';
 import { mapDtoToHousehold, mapResidentDtoToResident } from './householdApiService';
+import { fetchInspectionPhotos } from './inspectionPhotos';
 
-const residences: Record<string, ResidenceType> = { permanent: 'Thường trú', temporary: 'Tạm trú', stay: 'Lưu trú' };
+const residences: Record<string, ResidenceType> = {
+  permanent: 'Thường trú',
+  temporary: 'Tạm trú',
+  stay: 'Lưu trú',
+  unknown: 'Chưa xác minh',
+};
 export interface HouseholdBrowsePage {
   items: HouseholdFacility[];
   total: number;
@@ -42,13 +48,23 @@ export async function loadHouseholdDetail(id: string, signal: AbortSignal): Prom
     if (response.data.length < 500) break;
   }
   const result = mapDtoToHousehold(data);
+  try {
+    result.inspectionPhotos = await fetchInspectionPhotos(id, signal);
+  } catch (error) {
+    if (signal.aborted) throw error;
+    result.inspectionPhotosError = 'Chưa tải được danh sách ảnh từ máy chủ. Đây không phải xác nhận hộ chưa có ảnh.';
+  }
   result.residentsList = residents.map(mapResidentDtoToResident);
   if (residents.length) {
     result.residentsCount = residents.length;
     result.maleCount = result.residentsList.filter(r => r.gender === 'Nam').length;
-    result.femaleCount = residents.length - result.maleCount;
-    result.under18Count = result.residentsList.filter(r => 2026 - r.birthYear < 18).length;
-    result.above18Count = residents.length - result.under18Count;
+    result.femaleCount = result.residentsList.filter(r => r.gender === 'Nữ').length;
+    result.under18Count = result.residentsList.filter(
+      r => typeof r.birthYear === 'number' && new Date().getFullYear() - r.birthYear < 18,
+    ).length;
+    result.above18Count = result.residentsList.filter(
+      r => typeof r.birthYear === 'number' && new Date().getFullYear() - r.birthYear >= 18,
+    ).length;
   }
   return result;
 }

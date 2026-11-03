@@ -5,7 +5,7 @@
       "id": 1,
       "ownerName": "Nguyễn Văn An"
     },
-    "expected": [1, 1, 0, 0]
+    "expected": [0, 0, 0, 0]
   },
   {
     "year": 2026,
@@ -13,7 +13,7 @@
       "id": 2,
       "ownerName": "Nguyễn Thị Hoa"
     },
-    "expected": [1, 0, 1, 0]
+    "expected": [0, 0, 0, 0]
   },
   {
     "year": 2026,
@@ -49,7 +49,7 @@
       "femaleCount": 0,
       "under18Count": 5
     },
-    "expected": [3, 2, 1, 2]
+    "expected": [3, 0, 0, 5]
   },
   {
     "year": 2026,
@@ -60,7 +60,7 @@
       "maleCount": 0,
       "femaleCount": 0
     },
-    "expected": [1, 1, 0, 0]
+    "expected": [0, 0, 0, 0]
   },
   {
     "year": 2032,
@@ -72,7 +72,7 @@
       "femaleCount": 2,
       "under18Count": 2
     },
-    "expected": [4, 2, 2, 1]
+    "expected": [4, 2, 2, 2]
   },
   {
     "year": 2026,
@@ -83,6 +83,6 @@
       "residentsCount": 3,
       "femaleCount": 3
     },
-    "expected": [3, 2, 1, 0]
+    "expected": [3, 0, 3, 0]
   }
 ]

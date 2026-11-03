@@ -55,21 +55,8 @@ import {
   HcmAdminUnit,
   SecurityAlert,
 } from './types';
-import { INITIAL_AUDIT_LOGS } from './data/initialAuditLogs';
-import { INITIAL_USERS, INITIAL_DYNAMIC_MENUS, INITIAL_ALLOWED_EMAILS, INITIAL_HCM_ADMIN_UNITS } from './data/initialAuthData';
-import {
-  seedInitialFirestoreData,
-  subscribeHouseholds,
-  subscribeDocuments,
-  subscribeAuditLogs,
-  addHouseholdToFirestore,
-  updateHouseholdNotesInFirestore,
-  updateHouseholdCoordinatesInFirestore,
-  updateHouseholdDataInFirestore,
-  sendDocReminderInFirestore,
-  addAuditLogInFirestore,
-  checkBackendHealth,
-} from './services/firestoreService';
+import { DEFAULT_MENUS as INITIAL_DYNAMIC_MENUS } from './data/defaultMenus';
+import { sendDocReminderInFirestore, checkBackendHealth } from './services/firestoreService';
 import {
   subscribeUsers,
   subscribeAllowedEmails,
@@ -482,7 +469,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         badgeNumber: currentUser.badgeNumber,
         username: currentUser.username,
         permissions: currentUser.position,
-        assignedArea: `${currentUser.assignedWard}${
+        phone: currentUser.phone || '',
+        assignedHamlets: currentUser.assignedHamlets ?? [],
+        isOnline: true,
+        assignedArea: `${currentUser.assignedWard || ''}${
           currentUser.assignedHamlets && currentUser.assignedHamlets.length > 0 ? ` (${currentUser.assignedHamlets.join(', ')})` : ''
         }`,
       }));
@@ -505,19 +495,6 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
 
-  const generateSimpleHash = (seed: string): string => {
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      hash = (hash << 5) - hash + seed.charCodeAt(i);
-      hash |= 0;
-    }
-    const hex = Math.abs(hash).toString(16).padStart(8, '0');
-    const rand = Math.floor(Math.random() * 0xffffff)
-      .toString(16)
-      .padStart(6, '0');
-    return `SHA256: ${hex}${rand}...${hex.slice(0, 4)}`;
-  };
-
   // Record audit log helper with PostgreSQL Backend Persistence
   const recordAuditLog = async (log: AuditLogEntry) => {
     // 2. Lưu trực tiếp vào PostgreSQL backend (/api/patrol-logs)
@@ -535,10 +512,6 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       return false;
     }
 
-    // 3. Phụ trợ đồng bộ Firestore nếu có
-    addAuditLogInFirestore(log).catch(err => {
-      console.warn('Persist audit log firestore notice:', err);
-    });
     return true;
   };
 
@@ -550,15 +523,15 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: partial.actionType || 'profile_update',
       actionLabel: partial.actionLabel || 'Tuần tra thực địa',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: partial.targetType || 'household',
       targetCode: partial.targetCode,
       targetTitle: partial.targetTitle || 'Địa bàn Xã Bà Điểm',
       details: partial.details || 'Ghi nhận tuần tra thực địa',
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Tablet tuần tra chuyên dụng CSKV #01',
-      integrityHash: generateSimpleHash(`MAN-${Date.now()}`),
+      integrityHash: undefined,
       status: partial.status || 'info',
     };
     const saved = await recordAuditLog(newLog);
@@ -597,9 +570,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       details: `Cập nhật kết quả kiểm tra thực địa định kỳ: "${notes}"`,
       previousValue: target?.notes || 'Chưa có ghi chú',
       newValue: notes,
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Tablet tuần tra chuyên dụng CSKV #01',
-      integrityHash: generateSimpleHash(`NOTE-${Date.now()}`),
+      integrityHash: undefined,
       status: 'success',
     };
     recordAuditLog(noteLog);
@@ -632,9 +605,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       targetTitle: `${updated.houseNumber} ${updated.street} (${updated.ownerName})`,
       details: `Trích xuất dữ liệu thẻ CCCD/giấy phép, đồng bộ nhân khẩu cư trú: ${updated.residentsCount} nhân khẩu.`,
       newValue: `Chủ hộ: ${updated.ownerName}, SĐT: ${updated.ownerPhone}`,
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Camera quét di động thiết bị CSKV',
-      integrityHash: generateSimpleHash(`OCR-${Date.now()}`),
+      integrityHash: undefined,
       status: 'info',
     };
     recordAuditLog(ocrLog);
@@ -661,17 +634,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: 'profile_update',
       actionLabel: 'Cập nhật nhân khẩu hộ',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: 'household',
       targetId: updated.id,
       targetCode: updated.code,
       targetTitle: `${updated.houseNumber} ${updated.street} (${updated.ownerName})`,
       details: `Cập nhật danh sách nhân khẩu: ${updated.residentsList?.length || updated.residentsCount} người.`,
       newValue: `Nhân khẩu: ${updated.residentsCount} (Nam: ${updated.maleCount}, Nữ: ${updated.femaleCount})`,
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Thiết bị quản lý nhân khẩu CSKV',
-      integrityHash: generateSimpleHash(`RES-${Date.now()}`),
+      integrityHash: undefined,
       status: 'success',
     };
     recordAuditLog(log);
@@ -703,16 +676,16 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: 'system',
       actionLabel: 'Xóa hộ dân',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: 'household',
       targetId: idStr,
       targetCode: target?.code,
       targetTitle: target ? `${target.houseNumber} ${target.street} (${target.ownerName})` : idStr,
       details: `Xóa hộ dân ${target?.ownerName || idStr} khỏi cơ sở dữ liệu quản lý.`,
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Thiết bị quản lý CSKV',
-      integrityHash: generateSimpleHash(`DEL-${Date.now()}`),
+      integrityHash: undefined,
       status: 'warning',
     };
     recordAuditLog(delLog);
@@ -726,7 +699,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         level: 'warning',
         title: 'Cố gắng sửa đổi tọa độ ngoài thẩm quyền',
         description: `Tài khoản ${currentUser.fullName} (${currentUser.badgeNumber}) đã thử nắn chỉnh tọa độ mà chưa có quyền canEditCoordinates.`,
-        sourceIp: '192.168.1.45',
+        sourceIp: '',
         actorId: currentUser.id,
         actorName: currentUser.fullName,
       }).catch(console.warn);
@@ -773,17 +746,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: 'coordinate_update',
       actionLabel: 'Chỉnh sửa tọa độ GPS',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: 'household',
       targetCode: targetHouses[0]?.code,
       targetTitle: targetTitles,
       details: `Hiệu chỉnh mốc tọa độ thực địa cho ${updates.length} vị trí nhà tại Xã Bà Điểm (${targetTitles}).`,
       previousValue: 'Tọa độ ước lượng ban đầu',
       newValue: updates.map(u => `[${u.coordinates.map(c => c.toFixed(5)).join(', ')}]`).join('; '),
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Tablet tuần tra chuyên dụng CSKV #01',
-      integrityHash: generateSimpleHash(`GEO-${Date.now()}`),
+      integrityHash: undefined,
       status: 'success',
     };
     recordAuditLog(geoLog);
@@ -813,17 +786,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: 'household_add',
       actionLabel: 'Đăng ký hộ dân mới',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: 'household',
       targetId: newH.id,
       targetCode: newH.code,
       targetTitle: `${newH.houseNumber} ${newH.street} (${newH.ownerName})`,
       details: `Lập hồ sơ quản lý cư trú mới cho hộ ${newH.ownerName}, ${newH.residentsCount} nhân khẩu tại ${newH.hamlet}, Xã Bà Điểm.`,
       newValue: `Mã hồ sơ: ${newH.code}, Số nhà: ${newH.houseNumber} ${newH.street}`,
-      ipAddress: '192.168.1.15',
+      ipAddress: undefined,
       deviceInfo: 'Máy trạm CSKV Bà Điểm',
-      integrityHash: generateSimpleHash(`ADD-${Date.now()}`),
+      integrityHash: undefined,
       status: 'success',
     };
     recordAuditLog(addLog);
@@ -936,9 +909,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       targetType: 'officer',
       targetTitle: updated.officerName || officer.officerName,
       details: `Cập nhật thông tin hồ sơ cán bộ phụ trách địa bàn (${updated.rank || officer.rank})`,
-      ipAddress: '192.168.1.15',
+      ipAddress: undefined,
       deviceInfo: 'Máy trạm chuyên dụng CSKV',
-      integrityHash: generateSimpleHash(`OFF-${Date.now()}`),
+      integrityHash: undefined,
       status: 'info',
     };
     recordAuditLog(offLog);
@@ -969,7 +942,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   }, [households, assignedHouseholds, isTerritoryRestricted]);
 
   const assignedResidentsCount = useMemo(() => {
-    return assignedHouseholds.reduce((acc, h) => acc + (h.residentsCount || 1), 0);
+    return assignedHouseholds.reduce((acc, h) => acc + (h.residentsCount ?? 0), 0);
   }, [assignedHouseholds]);
 
   // If user searched in header and pressed or typed, filter scoped view

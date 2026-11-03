@@ -2,34 +2,15 @@ import { HouseholdFacility, ResidenceType } from '../types';
 
 /**
  * Determines the residence type of a household: 'Thường trú' | 'Tạm trú' | 'Lưu trú'
- * Prioritizes explicit residenceType field, then analyzes resident roster and notes.
+ * Use explicit recorded values only; notes/business type do not prove residence status.
  */
 export function getHouseholdResidenceType(household: HouseholdFacility): ResidenceType {
   if (household.residenceType) {
     return household.residenceType;
   }
 
-  // Check resident roster if available
-  if (household.residentsList && household.residentsList.length > 0) {
-    const hasLuuTru = household.residentsList.some(r => r.residenceType === 'Lưu trú');
-    if (hasLuuTru) return 'Lưu trú';
-
-    const hasTamTru = household.residentsList.some(r => r.residenceType === 'Tạm trú');
-    if (hasTamTru) return 'Tạm trú';
-
-    return 'Thường trú';
-  }
-
-  // Check notes or business characteristics
-  const notes = (household.notes || '').toLowerCase();
-  if (notes.includes('lưu trú') || notes.includes('khách sạn') || notes.includes('nhà nghỉ')) {
-    return 'Lưu trú';
-  }
-  if (notes.includes('tạm trú') || notes.includes('thuê trọ') || notes.includes('phòng trọ') || notes.includes('công nhân')) {
-    return 'Tạm trú';
-  }
-
-  return 'Thường trú';
+  const types = new Set(household.residentsList?.map(r => r.residenceType));
+  return types.size === 1 ? [...types][0] : 'Chưa xác minh';
 }
 
 /**
@@ -54,6 +35,22 @@ export const RESIDENCE_TYPE_CONFIG: Record<
     inactiveChipHover: string;
   }
 > = {
+  'Chưa xác minh': {
+    label: 'Chưa xác minh',
+    description: 'Chưa đủ dữ liệu xác định loại cư trú',
+    badgeBg: 'bg-slate-100 dark:bg-slate-800',
+    badgeText: 'text-slate-700 dark:text-slate-300',
+    badgeBorder: 'border-slate-300',
+    dotBg: 'bg-slate-400',
+    activeChipBg: 'bg-slate-700',
+    activeChipText: 'text-white',
+    activeChipBorder: 'border-slate-600',
+    activeChipRing: 'ring-2 ring-slate-400/25',
+    inactiveChipBg: 'bg-slate-50 dark:bg-slate-900',
+    inactiveChipText: 'text-slate-700 dark:text-slate-300',
+    inactiveChipBorder: 'border-slate-300',
+    inactiveChipHover: 'hover:bg-slate-100',
+  },
   'Thường trú': {
     label: 'Thường trú',
     description: 'Hộ dân đăng ký thường trú ổn định lâu dài',

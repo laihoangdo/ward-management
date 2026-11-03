@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { NavigationTab, OfficerProfile, AppUser, DynamicMenuItemConfig } from '../types';
-import { INITIAL_DYNAMIC_MENUS } from '../data/initialAuthData';
+import { DEFAULT_MENUS as INITIAL_DYNAMIC_MENUS } from '../data/defaultMenus';
 import { canViewMapTab } from '../utils/mapViewAccess';
 
 interface SidebarProps {

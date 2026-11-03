@@ -26,7 +26,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { HouseholdFacility, Resident, ResidenceType, AppUser } from '../types';
-import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
+import { getEffectiveResidentsList, residentAge } from '../utils/residentRosterUtils';
 import { Pagination } from './Pagination';
 import { HouseholdSearchSelect } from './HouseholdSearchSelect';
 
@@ -92,18 +92,18 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   // Form State for Adding / Editing
   const [formHouseholdId, setFormHouseholdId] = useState('');
   const [formFullName, setFormFullName] = useState('');
-  const [formBirthYear, setFormBirthYear] = useState<number>(1995);
-  const [formGender, setFormGender] = useState<'Nam' | 'Nữ'>('Nam');
-  const [formRelationship, setFormRelationship] = useState('Chủ hộ');
+  const [formBirthYear, setFormBirthYear] = useState<number | ''>('');
+  const [formGender, setFormGender] = useState<Resident['gender']>('Chưa cập nhật');
+  const [formRelationship, setFormRelationship] = useState('');
   const [formIdCardNumber, setFormIdCardNumber] = useState('');
-  const [formResidenceType, setFormResidenceType] = useState<ResidenceType>('Thường trú');
+  const [formResidenceType, setFormResidenceType] = useState<ResidenceType>('Chưa xác minh');
   const [formIsMonitored, setFormIsMonitored] = useState(false);
   const [formPhone, setFormPhone] = useState('');
   const [formOccupation, setFormOccupation] = useState('');
-  const [formEthnicity, setFormEthnicity] = useState('Kinh');
+  const [formEthnicity, setFormEthnicity] = useState('');
   const [formNotes, setFormNotes] = useState('');
 
-  const currentYear = 2026;
+  const currentYear = new Date().getFullYear();
   const effectiveHouseholds = allHouseholds && allHouseholds.length > 0 ? allHouseholds : households;
 
   // Extract all residents flattened from households with unified effective list for all households
@@ -170,7 +170,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
       if (securityFilter === 'normal' && r.isMonitored) return false;
 
       // Age bracket
-      const age = currentYear - r.birthYear;
+      const age = residentAge(r, currentYear);
+      if (ageGroupFilter !== 'all' && !Number.isFinite(age)) return false;
       if (ageGroupFilter === 'under18' && age >= 18) return false;
       if (ageGroupFilter === 'labor' && (age < 18 || age > 60)) return false;
       if (ageGroupFilter === 'elderly' && age <= 60) return false;
@@ -232,20 +233,20 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   const monitoredCount = allResidents.filter(r => r.isMonitored).length;
   const maleCount = allResidents.filter(r => r.gender === 'Nam').length;
   const femaleCount = allResidents.filter(r => r.gender === 'Nữ').length;
-  const under18Count = allResidents.filter(r => currentYear - r.birthYear < 18).length;
+  const under18Count = allResidents.filter(r => residentAge(r, currentYear) < 18).length;
   const laborCount = allResidents.filter(r => {
-    const age = currentYear - r.birthYear;
+    const age = residentAge(r, currentYear);
     return age >= 18 && age <= 60;
   }).length;
-  const elderlyCount = allResidents.filter(r => currentYear - r.birthYear > 60).length;
+  const elderlyCount = allResidents.filter(r => residentAge(r, currentYear) > 60).length;
 
   // Chart calculation metrics for circular charts
   const totalRes = totalCount > 0 ? totalCount : 1;
   const malePct = totalCount > 0 ? Math.round((maleCount / totalCount) * 100) : 0;
-  const femalePct = totalCount > 0 ? 100 - malePct : 0;
+  const femalePct = totalCount > 0 ? Math.round((femaleCount / totalCount) * 100) : 0;
   const thuongTruPct = totalCount > 0 ? Math.round((thuongTruCount / totalCount) * 100) : 0;
   const tamTruPct = totalCount > 0 ? Math.round((tamTruCount / totalCount) * 100) : 0;
-  const luuTruPct = totalCount > 0 ? Math.max(0, 100 - thuongTruPct - tamTruPct) : 0;
+  const luuTruPct = totalCount > 0 ? Math.round((luuTruCount / totalCount) * 100) : 0;
 
   const circ = 282.743; // Circumference for r=45
   const maleDash = (maleCount / totalRes) * circ;
@@ -292,15 +293,15 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
     }
     setFormHouseholdId(effectiveHouseholds[0].id);
     setFormFullName('');
-    setFormBirthYear(1995);
-    setFormGender('Nam');
-    setFormRelationship('Con');
+    setFormBirthYear('');
+    setFormGender('Chưa cập nhật');
+    setFormRelationship('');
     setFormIdCardNumber('');
-    setFormResidenceType('Thường trú');
+    setFormResidenceType('Chưa xác minh');
     setFormIsMonitored(false);
     setFormPhone('');
     setFormOccupation('');
-    setFormEthnicity('Kinh');
+    setFormEthnicity('');
     setFormNotes('');
     setIsAddModalOpen(true);
   };
@@ -330,15 +331,15 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
       const newResident: Resident = {
         id: `res-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         fullName: formFullName.trim(),
-        birthYear: Number(formBirthYear) || 1995,
+        birthYear: formBirthYear === '' ? undefined : Number(formBirthYear),
         gender: formGender,
-        relationship: formRelationship.trim() || 'Thành viên',
+        relationship: formRelationship.trim(),
         idCardNumber: formIdCardNumber.trim() || undefined,
         residenceType: formResidenceType,
         isMonitored: formIsMonitored,
         phone: formPhone.trim() || undefined,
         occupation: formOccupation.trim() || undefined,
-        ethnicity: formEthnicity.trim() || 'Kinh',
+        ethnicity: formEthnicity.trim() || undefined,
         notes: formNotes.trim() || undefined,
         startDate: new Date().toLocaleDateString('vi-VN'),
       };
@@ -347,7 +348,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
       const existingList = targetH.residentsList || [];
       const updatedResidentsList = [...existingList, newResident];
 
-      const age = currentYear - newResident.birthYear;
+      const age = residentAge(newResident, currentYear);
       const isUnder18 = age < 18;
 
       const updatedHousehold: HouseholdFacility = {
@@ -357,7 +358,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
         maleCount: (targetH.maleCount || 0) + (newResident.gender === 'Nam' ? 1 : 0),
         femaleCount: (targetH.femaleCount || 0) + (newResident.gender === 'Nữ' ? 1 : 0),
         under18Count: (targetH.under18Count || 0) + (isUnder18 ? 1 : 0),
-        above18Count: (targetH.above18Count || 0) + (isUnder18 ? 0 : 1),
+        above18Count: (targetH.above18Count || 0) + (age >= 18 ? 1 : 0),
       };
 
       await onUpdateHousehold(updatedHousehold);
@@ -378,7 +379,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
     setResidentToEdit(r);
     setFormHouseholdId(r.householdId);
     setFormFullName(r.fullName);
-    setFormBirthYear(r.birthYear);
+    setFormBirthYear(r.birthYear ?? '');
     setFormGender(r.gender);
     setFormRelationship(r.relationship);
     setFormIdCardNumber(r.idCardNumber || '');
@@ -386,7 +387,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
     setFormIsMonitored(!!r.isMonitored);
     setFormPhone(r.phone || '');
     setFormOccupation(r.occupation || '');
-    setFormEthnicity(r.ethnicity || 'Kinh');
+    setFormEthnicity(r.ethnicity || '');
     setFormNotes(r.notes || '');
     setIsEditModalOpen(true);
   };
@@ -410,7 +411,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
       const updatedResidentData: Resident = {
         ...residentToEdit,
         fullName: formFullName.trim(),
-        birthYear: Number(formBirthYear) || 1995,
+        birthYear: formBirthYear === '' ? undefined : Number(formBirthYear),
         gender: formGender,
         relationship: formRelationship.trim(),
         idCardNumber: formIdCardNumber.trim() || undefined,
@@ -418,7 +419,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
         isMonitored: formIsMonitored,
         phone: formPhone.trim() || undefined,
         occupation: formOccupation.trim() || undefined,
-        ethnicity: formEthnicity.trim() || 'Kinh',
+        ethnicity: formEthnicity.trim() || undefined,
         notes: formNotes.trim() || undefined,
       };
 
@@ -432,8 +433,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
         // Recalculate demographic counts
         const maleC = updatedList.filter(x => x.gender === 'Nam').length;
         const femaleC = updatedList.filter(x => x.gender === 'Nữ').length;
-        const under18C = updatedList.filter(x => currentYear - x.birthYear < 18).length;
-        const above18C = updatedList.length - under18C;
+        const under18C = updatedList.filter(x => residentAge(x, currentYear) < 18).length;
+        const above18C = updatedList.filter(x => residentAge(x, currentYear) >= 18).length;
 
         const updatedHousehold: HouseholdFacility = {
           ...currentH,
@@ -458,8 +459,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
             maleCount: oldList.filter(x => x.gender === 'Nam').length,
             femaleCount: oldList.filter(x => x.gender === 'Nữ').length,
-            under18Count: oldList.filter(x => currentYear - x.birthYear < 18).length,
-            above18Count: oldList.filter(x => currentYear - x.birthYear >= 18).length,
+            under18Count: oldList.filter(x => residentAge(x, currentYear) < 18).length,
+            above18Count: oldList.filter(x => residentAge(x, currentYear) >= 18).length,
           };
           await onUpdateHousehold(oldH);
 
@@ -471,8 +472,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             residentsCount: (targetH.residentsCount || 0) + 1,
             maleCount: newList.filter(x => x.gender === 'Nam').length,
             femaleCount: newList.filter(x => x.gender === 'Nữ').length,
-            under18Count: newList.filter(x => currentYear - x.birthYear < 18).length,
-            above18Count: newList.filter(x => currentYear - x.birthYear >= 18).length,
+            under18Count: newList.filter(x => residentAge(x, currentYear) < 18).length,
+            above18Count: newList.filter(x => residentAge(x, currentYear) >= 18).length,
           };
           await onUpdateHousehold(newH);
         }
@@ -510,8 +511,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
         residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
         maleCount: updatedList.filter(x => x.gender === 'Nam').length,
         femaleCount: updatedList.filter(x => x.gender === 'Nữ').length,
-        under18Count: updatedList.filter(x => currentYear - x.birthYear < 18).length,
-        above18Count: updatedList.filter(x => currentYear - x.birthYear >= 18).length,
+        under18Count: updatedList.filter(x => residentAge(x, currentYear) < 18).length,
+        above18Count: updatedList.filter(x => residentAge(x, currentYear) >= 18).length,
       };
 
       await onUpdateHousehold(updatedH);
@@ -881,7 +882,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {paginatedResidents.map((r, index) => {
                   const badge = getResidenceBadge(r.residenceType);
-                  const age = currentYear - r.birthYear;
+                  const age = residentAge(r, currentYear);
                   const parentHousehold = effectiveHouseholds.find(h => h.id === r.householdId);
 
                   return (
@@ -914,7 +915,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                             </button>
                             <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                               <span>
-                                Sinh: {r.birthYear} ({age} tuổi)
+                                Sinh: {r.birthYear ?? 'Chưa cập nhật'} {Number.isFinite(age) ? `(${age} tuổi)` : ''}
                               </span>
                               <span>•</span>
                               <span className={r.gender === 'Nam' ? 'text-blue-600' : 'text-rose-600'}>{r.gender}</span>
@@ -1036,7 +1037,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {paginatedResidents.map(r => {
             const badge = getResidenceBadge(r.residenceType);
-            const age = currentYear - r.birthYear;
+            const age = residentAge(r, currentYear);
             const parentHousehold = effectiveHouseholds.find(h => h.id === r.householdId);
 
             return (
@@ -1068,7 +1069,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                         </h4>
                         <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
                           <span>
-                            {r.birthYear} ({age} tuổi)
+                            {r.birthYear ?? 'Chưa cập nhật'} {Number.isFinite(age) ? `(${age} tuổi)` : ''}
                           </span>
                           <span>•</span>
                           <span className={r.gender === 'Nam' ? 'text-blue-600' : 'text-rose-600'}>{r.gender}</span>
@@ -1231,7 +1232,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                   <div>
                     <div className="text-lg font-bold text-slate-900 dark:text-white">{selectedResident.fullName}</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Năm sinh: {selectedResident.birthYear} ({currentYear - selectedResident.birthYear} tuổi) • {selectedResident.gender}
+                      Năm sinh: {selectedResident.birthYear ?? 'Chưa cập nhật'} • {selectedResident.gender}
                     </div>
                   </div>
                 </div>
@@ -1269,7 +1270,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Dân tộc:</span>
-                    <span className="text-slate-700 dark:text-slate-300">{selectedResident.ethnicity || 'Kinh'}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{selectedResident.ethnicity || 'Chưa cập nhật'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Nghề nghiệp:</span>
@@ -1421,6 +1422,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     onChange={e => setFormGender(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   >
+                    <option value="Chưa cập nhật">Chưa cập nhật</option>
+                    <option value="Khác">Khác</option>
                     <option value="Nam">Nam</option>
                     <option value="Nữ">Nữ</option>
                   </select>
@@ -1439,10 +1442,12 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     max={currentYear}
                     required
                     value={formBirthYear}
-                    onChange={e => setFormBirthYear(Number(e.target.value))}
+                    onChange={e => setFormBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   />
-                  <div className="text-[10px] text-slate-400 mt-0.5">Tuổi hiện tại: {currentYear - formBirthYear} tuổi</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Tuổi hiện tại: {formBirthYear === '' ? 'Chưa biết' : currentYear - formBirthYear}
+                  </div>
                 </div>
 
                 <div>
@@ -1478,6 +1483,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     onChange={e => setFormResidenceType(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   >
+                    <option value="Chưa xác minh">Chưa xác minh</option>
                     <option value="Thường trú">Thường trú (Có hộ khẩu)</option>
                     <option value="Tạm trú">Tạm trú (KT3, thuê trọ)</option>
                     <option value="Lưu trú">Lưu trú (Khách sạn, ngắn hạn)</option>
@@ -1629,6 +1635,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     onChange={e => setFormGender(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
                   >
+                    <option value="Chưa cập nhật">Chưa cập nhật</option>
+                    <option value="Khác">Khác</option>
                     <option value="Nam">Nam</option>
                     <option value="Nữ">Nữ</option>
                   </select>
@@ -1644,7 +1652,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     min={1920}
                     max={currentYear}
                     value={formBirthYear}
-                    onChange={e => setFormBirthYear(Number(e.target.value))}
+                    onChange={e => setFormBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
@@ -1679,6 +1687,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     onChange={e => setFormResidenceType(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
                   >
+                    <option value="Chưa xác minh">Chưa xác minh</option>
                     <option value="Thường trú">Thường trú</option>
                     <option value="Tạm trú">Tạm trú</option>
                     <option value="Lưu trú">Lưu trú</option>

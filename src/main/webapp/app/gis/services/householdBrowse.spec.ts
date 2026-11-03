@@ -26,9 +26,19 @@ it('passes bounded page, server filters and cancellation without downloading all
 it('loads the full roster for one household before editing', async () => {
   vi.mocked(axios.get)
     .mockResolvedValueOnce({ data: { id: 1, hamletId: 28 } })
-    .mockResolvedValueOnce({ data: [{ id: 2, fullName: 'Resident', gender: 'FEMALE' }] });
+    .mockResolvedValueOnce({ data: [{ id: 2, fullName: 'Resident', gender: 'FEMALE' }] })
+    .mockResolvedValueOnce({ data: [] });
   const result = await loadHouseholdDetail('1', new AbortController().signal);
   expect(result.hamletId).toBe(28);
   expect(result.residentsList.map(r => r.id)).toEqual(['2']);
   expect(result.residentsCount).toBe(1);
+});
+it('distinguishes unavailable photos from an empty gallery without blocking the complete household roster', async () => {
+  vi.mocked(axios.get)
+    .mockResolvedValueOnce({ data: { id: 1 } })
+    .mockResolvedValueOnce({ data: [] })
+    .mockRejectedValueOnce(new Error('photos unavailable'));
+  const result = await loadHouseholdDetail('1', new AbortController().signal);
+  expect(result.inspectionPhotosError).toContain('Chưa tải được');
+  expect(result.residentsList).toEqual([]);
 });

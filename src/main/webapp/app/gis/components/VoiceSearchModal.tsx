@@ -32,11 +32,9 @@ const QUICK_TACTICAL_KEYWORDS = [
   { label: 'Nguyễn Ảnh Thủ', icon: MapPin, type: 'street' },
   { label: 'Ấp Bắc Lân', icon: MapPin, type: 'hamlet' },
   { label: 'Ấp Tiền Lân', icon: MapPin, type: 'hamlet' },
-  { label: 'Nguyễn Văn Bình', icon: UserCheck, type: 'resident' },
   { label: 'Karaoke', icon: Building, type: 'business' },
   { label: 'Nhà trọ', icon: Building, type: 'business' },
   { label: 'Cảnh báo', icon: AlertTriangle, type: 'warning' },
-  { label: 'Hộ 079', icon: Search, type: 'code' },
 ];
 
 export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({

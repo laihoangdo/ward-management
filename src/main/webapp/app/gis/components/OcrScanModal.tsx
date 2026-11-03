@@ -275,7 +275,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
           id: 'res_' + Date.now(),
           fullName: extractedData.fullName || 'Chưa rõ tên',
           birthYear,
-          gender: extractedData.gender || 'Nam',
+          gender: extractedData.gender!,
           relationship: relationshipWithHead,
           idCardNumber: encryptedCccd,
           residenceType,
@@ -286,8 +286,8 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
         const newTotal = updatedResidents.length;
         const maleCount = updatedResidents.filter(r => r.gender === 'Nam').length;
         const femaleCount = updatedResidents.filter(r => r.gender === 'Nữ').length;
-        const above18 = updatedResidents.filter(r => now.getFullYear() - r.birthYear >= 18).length;
-        const under18 = updatedResidents.filter(r => now.getFullYear() - r.birthYear < 18).length;
+        const above18 = updatedResidents.filter(r => typeof r.birthYear === 'number' && now.getFullYear() - r.birthYear >= 18).length;
+        const under18 = updatedResidents.filter(r => typeof r.birthYear === 'number' && now.getFullYear() - r.birthYear < 18).length;
 
         const partialUpdate: Partial<HouseholdFacility> = {
           residentsList: updatedResidents,
@@ -314,7 +314,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
         // Update Business info
         const partialUpdate: Partial<HouseholdFacility> = {
           businessName: extractedData.businessName || household.businessName || 'Hộ kinh doanh',
-          businessCategory: extractedData.businessLines || household.businessCategory || 'Kinh doanh dịch vụ',
+          businessCategory: extractedData.businessLines || household.businessCategory,
           ownerName: extractedData.legalRepresentative || extractedData.fullName || household.ownerName,
           type: 'business',
           notes:
@@ -340,8 +340,8 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
           category: extractedData.documentType === 'business_license' ? 'business_sign' : 'general',
         };
 
-        await addInspectionPhotoToHousehold(household.id, newPhoto, updatedHousehold.inspectionPhotos || []);
-        updatedHousehold.inspectionPhotos = [newPhoto, ...(updatedHousehold.inspectionPhotos || [])];
+        const savedPhoto = await addInspectionPhotoToHousehold(household.id, newPhoto);
+        updatedHousehold.inspectionPhotos = [savedPhoto, ...(updatedHousehold.inspectionPhotos || [])];
       }
 
       await onHouseholdUpdated(updatedHousehold);

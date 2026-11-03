@@ -30,6 +30,7 @@ import {
   Ban,
 } from 'lucide-react';
 import { SecurityAlert, SecurityAlertSeverity } from '../types';
+import { buildSecurityTimeline } from '../utils/securityAlertData';
 
 interface SecurityAlertsChartProps {
   alerts: SecurityAlert[];
@@ -101,7 +102,7 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
     const low = alerts.filter(a => a.severity === 'low' || a.severity === 'info' || a.severity === 'warning').length;
     const resolved = alerts.filter(a => a.resolved).length;
     const unresolved = total - resolved;
-    const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 100;
+    const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : null;
 
     return { total, critical, high, medium, low, resolved, unresolved, resolutionRate };
   }, [alerts]);
@@ -125,258 +126,25 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
       }
     });
 
-    // If alerts are few, add baseline trend weights for clear representation
-    if (alerts.length <= 3) {
-      counts['Cơ sở dữ liệu'] = Math.max(counts['Cơ sở dữ liệu'], 3);
-      counts['Xác thực / Đăng nhập'] = Math.max(counts['Xác thực / Đăng nhập'], 2);
-      counts['Vi phạm Whitelist'] = Math.max(counts['Vi phạm Whitelist'], 2);
-      counts['Quét lỗ hổng / Leo quyền'] = Math.max(counts['Quét lỗ hổng / Leo quyền'], 1);
-    }
-
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .filter(item => item.value > 0);
   }, [alerts]);
 
-  // Generate Weekly or Monthly Timeline Data
-  const timelineData = useMemo<TimePointData[]>(() => {
-    if (timeRange === 'week') {
-      // 7 days of the week (Thứ 2 to Chủ Nhật)
-      const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
-
-      // Base historical model weighted to current alerts
-      const baseWeek: TimePointData[] = [
-        {
-          timeLabel: 'T2 (14/09)',
-          total: 2,
-          critical: 0,
-          high: 1,
-          medium: 1,
-          low: 0,
-          resolved: 2,
-          unresolved: 0,
-          database: 1,
-          auth: 1,
-          whitelist: 0,
-          other: 0,
-        },
-        {
-          timeLabel: 'T3 (15/09)',
-          total: 1,
-          critical: 0,
-          high: 0,
-          medium: 1,
-          low: 0,
-          resolved: 1,
-          unresolved: 0,
-          database: 0,
-          auth: 1,
-          whitelist: 0,
-          other: 0,
-        },
-        {
-          timeLabel: 'T4 (16/09)',
-          total: 3,
-          critical: 1,
-          high: 1,
-          medium: 1,
-          low: 0,
-          resolved: 3,
-          unresolved: 0,
-          database: 1,
-          auth: 1,
-          whitelist: 1,
-          other: 0,
-        },
-        {
-          timeLabel: 'T5 (17/09)',
-          total: 2,
-          critical: 0,
-          high: 1,
-          medium: 1,
-          low: 0,
-          resolved: 2,
-          unresolved: 0,
-          database: 1,
-          auth: 0,
-          whitelist: 1,
-          other: 0,
-        },
-        {
-          timeLabel: 'T6 (18/09)',
-          total: 4,
-          critical: 1,
-          high: 2,
-          medium: 1,
-          low: 0,
-          resolved: 3,
-          unresolved: 1,
-          database: 1,
-          auth: 2,
-          whitelist: 1,
-          other: 0,
-        },
-        {
-          timeLabel: 'T7 (19/09)',
-          total: 5,
-          critical: 2,
-          high: 2,
-          medium: 1,
-          low: 0,
-          resolved: 2,
-          unresolved: 3,
-          database: 3,
-          auth: 1,
-          whitelist: 1,
-          other: 0,
-        },
-        {
-          timeLabel: 'CN (20/09)',
-          total: 1,
-          critical: 0,
-          high: 0,
-          medium: 1,
-          low: 0,
-          resolved: 1,
-          unresolved: 0,
-          database: 0,
-          auth: 1,
-          whitelist: 0,
-          other: 0,
-        },
-      ];
-
-      // Blend real alerts into the current week days
-      alerts.forEach(a => {
-        if (a.timestamp.includes('19/09') || a.timestamp.includes('19/9')) {
-          const t7 = baseWeek[5];
-          if (a.severity === 'critical') t7.critical++;
-          else if (a.severity === 'high') t7.high++;
-          else t7.medium++;
-          t7.total++;
-          if (a.resolved) t7.resolved++;
-          else t7.unresolved++;
-        } else if (a.timestamp.includes('18/09') || a.timestamp.includes('18/9')) {
-          const t6 = baseWeek[4];
-          if (a.severity === 'critical') t6.critical++;
-          else if (a.severity === 'high') t6.high++;
-          else t6.medium++;
-          t6.total++;
-          if (a.resolved) t6.resolved++;
-          else t6.unresolved++;
-        }
-      });
-
-      return baseWeek;
-    } else {
-      // 6 months timeline (Tháng 4 to Tháng 9 / 2026)
-      const baseMonths: TimePointData[] = [
-        {
-          timeLabel: 'Tháng 4',
-          total: 6,
-          critical: 1,
-          high: 2,
-          medium: 2,
-          low: 1,
-          resolved: 6,
-          unresolved: 0,
-          database: 2,
-          auth: 2,
-          whitelist: 1,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 5',
-          total: 9,
-          critical: 2,
-          high: 3,
-          medium: 3,
-          low: 1,
-          resolved: 9,
-          unresolved: 0,
-          database: 3,
-          auth: 3,
-          whitelist: 2,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 6',
-          total: 12,
-          critical: 3,
-          high: 4,
-          medium: 4,
-          low: 1,
-          resolved: 11,
-          unresolved: 1,
-          database: 4,
-          auth: 4,
-          whitelist: 3,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 7',
-          total: 8,
-          critical: 1,
-          high: 3,
-          medium: 3,
-          low: 1,
-          resolved: 8,
-          unresolved: 0,
-          database: 2,
-          auth: 3,
-          whitelist: 2,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 8',
-          total: 14,
-          critical: 4,
-          high: 5,
-          medium: 4,
-          low: 1,
-          resolved: 13,
-          unresolved: 1,
-          database: 5,
-          auth: 5,
-          whitelist: 3,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 9',
-          total: 18,
-          critical: 5,
-          high: 7,
-          medium: 5,
-          low: 1,
-          resolved: 14,
-          unresolved: 4,
-          database: 7,
-          auth: 5,
-          whitelist: 4,
-          other: 2,
-        },
-      ];
-
-      return baseMonths;
-    }
-  }, [timeRange, alerts]);
-
-  // Filter timeline points based on selected severity filter
-  const filteredTimeline = useMemo(() => {
-    if (selectedSeverity === 'all') return timelineData;
-    return timelineData.map(pt => {
-      if (selectedSeverity === 'critical') {
-        return { ...pt, total: pt.critical, high: 0, medium: 0, low: 0 };
-      }
-      if (selectedSeverity === 'high') {
-        return { ...pt, total: pt.high, critical: 0, medium: 0, low: 0 };
-      }
-      if (selectedSeverity === 'medium') {
-        return { ...pt, total: pt.medium, critical: 0, high: 0, low: 0 };
-      }
-      return pt;
-    });
-  }, [timelineData, selectedSeverity]);
+  const filteredTimeline = useMemo<TimePointData[]>(
+    () =>
+      buildSecurityTimeline(
+        alerts.filter(
+          alert =>
+            selectedSeverity === 'all' ||
+            alert.severity === selectedSeverity ||
+            (selectedSeverity === 'low' && ['info', 'warning'].includes(alert.severity)),
+        ),
+        timeRange,
+        categorizeAlert,
+      ),
+    [alerts, timeRange, selectedSeverity],
+  );
 
   // Custom Tooltip Component
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -417,7 +185,7 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Phân tích tự động tần suất nguy cơ an ninh theo thời gian thực (tuần/tháng), cơ cấu loại hình xâm nhập & hiệu suất xử lý sự cố.
+            Thống kê các cảnh báo đã tải từ máy chủ trong 7 ngày hoặc 6 tháng gần nhất. Nhóm cảnh báo được phân loại từ nội dung bản ghi.
           </p>
         </div>
 
@@ -534,7 +302,9 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
             <span className="text-[11px] text-emerald-300 font-medium">Tỷ lệ xử lý xong</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-400">{stats.resolutionRate}%</div>
+          <div className="text-2xl font-bold font-mono text-emerald-400">
+            {stats.resolutionRate === null ? 'Chưa có dữ liệu' : `${stats.resolutionRate}%`}
+          </div>
           <div className="text-[10px] text-emerald-400/70">
             Đã lưu Audit Log an ninh ({stats.resolved}/{stats.total})
           </div>

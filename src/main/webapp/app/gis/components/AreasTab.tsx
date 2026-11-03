@@ -11,10 +11,10 @@ interface AreasTabProps {
 export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehold }) => {
   const hamletList = useMemo(() => {
     const list = Array.from(new Set(households.map(h => h.hamlet).filter(Boolean))).sort();
-    return list.length > 0 ? list : ['Ấp Bắc Lân', 'Ấp Nam Lân', 'Ấp Tây Lân', 'Ấp Đông Lân', 'Ấp Hậu Lân', 'Ấp Tiền Lân'];
+    return list;
   }, [households]);
 
-  const [selectedHamlet, setSelectedHamlet] = useState<string>(() => hamletList[0] || 'Ấp Bắc Lân');
+  const [selectedHamlet, setSelectedHamlet] = useState<string>(() => hamletList[0] || '');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
 

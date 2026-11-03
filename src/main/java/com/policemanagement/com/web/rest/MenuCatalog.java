@@ -29,7 +29,11 @@ public class MenuCatalog {
         this.rbac = rbac;
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    // Startup seeding writes settings even if an enclosing listener uses a read-only transaction.
+    @org.springframework.transaction.annotation.Transactional(
+        readOnly = false,
+        propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
+    )
     @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
         var labels = Map.ofEntries(

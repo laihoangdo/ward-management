@@ -677,8 +677,8 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({
     const list = Array.from(buildings.values());
     localStorage.setItem('ba_diem_3d_buildings_custom', JSON.stringify(list));
     setHasUnsavedChanges(false);
-    setStatusMessage('Đã lưu thành công toàn bộ dữ liệu công trình 3D!');
-    onShowToast?.('Đã lưu thành công toàn bộ dữ liệu công trình 3D!');
+    setStatusMessage('Đã lưu bản nháp công trình trên thiết bị này; chưa đồng bộ vào cơ sở dữ liệu.');
+    onShowToast?.('Đã lưu bản nháp cục bộ, không phải dữ liệu đã lưu trên máy chủ.');
     setTimeout(() => setStatusMessage(null), 3500);
   };
 
@@ -876,7 +876,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({
             className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>Lưu thay đổi</span>
+            <span>Lưu bản nháp trên thiết bị</span>
           </button>
 
           <button

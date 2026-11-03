@@ -89,6 +89,10 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
   const [isOcrModalOpen, setIsOcrModalOpen] = useState(false);
   const [selectedPhotoForView, setSelectedPhotoForView] = useState<InspectionPhoto | null>(null);
   const [isDeletingPhotoId, setIsDeletingPhotoId] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<InspectionPhoto[]>(household.inspectionPhotos || []);
+  useEffect(() => {
+    setPhotos(household.inspectionPhotos || []);
+  }, [household.inspectionPhotos]);
 
   const handleTriggerCamera = () => {
     if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canUpdateInspection !== true) {
@@ -311,6 +315,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
   };
 
   const handlePhotoSaved = (newPhoto: InspectionPhoto) => {
+    setPhotos(previous => [newPhoto, ...previous]);
     setSavedAlert('Đã lưu ảnh hiện trạng thành công!');
     setTimeout(() => setSavedAlert(null), 3000);
     if (onPhotoAdded) {
@@ -327,10 +332,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
     try {
       setIsDeletingPhotoId(photoId);
       await deleteInspectionPhotoFromHousehold(household.id, photoId, household.inspectionPhotos || []);
-      if (onHouseholdUpdated) {
-        const remaining = (household.inspectionPhotos || []).filter(p => p.id !== photoId);
-        await onHouseholdUpdated({ ...household, inspectionPhotos: remaining });
-      }
+      setPhotos(previous => previous.filter(p => p.id !== photoId));
       setSavedAlert('Đã xóa ảnh kiểm tra khỏi hồ sơ.');
       setTimeout(() => setSavedAlert(null), 2500);
     } catch (err) {
@@ -341,7 +343,6 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
     }
   };
 
-  const photos = household.inspectionPhotos || [];
   const effectiveResidents = useMemo(() => getEffectiveResidentsList(household), [household]);
 
   const dialogRef = useDialogFocus(true, () => requestDiscard('close'), isSaving);
@@ -390,7 +391,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                   {household.code}
                 </span>
                 <span className="text-[11px] sm:text-xs text-slate-300 font-semibold">
-                  {household.hamlet} • {household.neighborhoodGroup || 'Tổ 1'} • Xã Bà Điểm, TP. Hồ Chí Minh
+                  {household.hamlet || 'Chưa có địa bàn'} • {household.neighborhoodGroup || 'Chưa có tổ dân phố'} • Xã Bà Điểm, TP. Hồ Chí
+                  Minh
                 </span>
                 {household.alley && <span className={ALLEY_BADGE_CLASS}>{household.alley}</span>}
                 {(() => {
@@ -544,7 +546,10 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
             </div>
 
             <div className="text-[11px] text-slate-500 font-mono">
-              ID: {household.id} | GPS: [{household.coordinates[0].toFixed(4)}, {household.coordinates[1].toFixed(4)}]
+              ID: {household.id} | GPS:{' '}
+              {household.coordinatesEstimated
+                ? 'Vị trí tạm / chưa xác minh'
+                : `[${household.coordinates[0].toFixed(4)}, ${household.coordinates[1].toFixed(4)}]`}
             </div>
           </div>
 
@@ -814,7 +819,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                   <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                     <span>Ảnh chụp hiện trạng thực tế</span>
                     <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
-                      {photos.length} ảnh
+                      {household.inspectionPhotosError ? 'Chưa tải đầy đủ' : `${photos.length} ảnh`}
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500">Minh chứng kiểm tra thực địa lưu trữ đồng bộ</div>
@@ -833,6 +838,11 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
             </div>
 
             {/* Photo Gallery Grid */}
+            {household.inspectionPhotosError && (
+              <p role="alert" className="text-sm text-amber-800">
+                {household.inspectionPhotosError}
+              </p>
+            )}
             {photos.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
                 {photos.map(photo => (
@@ -868,7 +878,9 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
             ) : (
               <div className="p-6 bg-white rounded-xl border border-dashed border-slate-300 text-center space-y-1.5">
                 <ImageIcon className="w-8 h-8 text-slate-300 mx-auto stroke-1" />
-                <div className="text-slate-600 font-bold text-xs">Chưa có ảnh chụp thực tế</div>
+                <div className="text-slate-600 font-bold text-xs">
+                  {household.inspectionPhotosError ? 'Danh sách ảnh chưa tải được' : 'Chưa có ảnh trong cơ sở dữ liệu'}
+                </div>
                 <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
                   Cán bộ CSKV có thể bật Camera thiết bị để lưu lại minh chứng kiểm tra số nhà, bảng hiệu hoặc an toàn PCCC.
                 </p>
@@ -888,7 +900,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                   <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                     <span>Danh sách nhân khẩu cư trú</span>
                     <span className="px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
-                      {household.residentsCount} nhân khẩu ({household.maleCount} Nam, {household.femaleCount} Nữ)
+                      {effectiveResidents.length} nhân khẩu đã ghi nhận ({effectiveResidents.filter(r => r.gender === 'Nam').length} Nam,{' '}
+                      {effectiveResidents.filter(r => r.gender === 'Nữ').length} Nữ)
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500">Dữ liệu cư dân quản lý tại địa bàn Xã Bà Điểm</div>
@@ -909,6 +922,13 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
+                  {effectiveResidents.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-2.5 text-slate-600">
+                        Chưa có danh sách nhân khẩu từ cơ sở dữ liệu. Không tự tạo nhân khẩu từ số liệu tổng hợp.
+                      </td>
+                    </tr>
+                  )}
                   {effectiveResidents.map((r, idx) => {
                     const isEncrypted = isEncryptedAes(r.idCardNumber);
                     const isDecrypted = showCccdMap[r.id];
@@ -916,7 +936,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       ? decryptedCccds[r.id]
                       : isEncrypted
                         ? maskCccd(r.idCardNumber)
-                        : r.idCardNumber || 'Chưa nộp';
+                        : r.idCardNumber || 'Chưa có dữ liệu';
 
                     return (
                       <tr key={r.id || idx} className="hover:bg-slate-50/80 transition-colors">
@@ -926,8 +946,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                             <span className="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.2 rounded">Chủ hộ</span>
                           )}
                         </td>
-                        <td className="p-2.5 text-slate-600">{r.relationship}</td>
-                        <td className="p-2.5 font-mono text-slate-700">{r.birthYear}</td>
+                        <td className="p-2.5 text-slate-600">{r.relationship || 'Chưa xác minh'}</td>
+                        <td className="p-2.5 font-mono text-slate-700">{r.birthYear ?? 'Chưa cập nhật'}</td>
                         <td className="p-2.5">
                           <span
                             className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${r.gender === 'Nam' ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}
@@ -952,7 +972,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                         </td>
                         <td className="p-2.5">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                            {r.residenceType || 'Thường trú'}
+                            {r.residenceType || 'Chưa xác minh'}
                           </span>
                         </td>
                       </tr>

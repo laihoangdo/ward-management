@@ -54,7 +54,13 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       ? allResidents.filter(r => r.birthYear != null && new Date().getFullYear() - r.birthYear < 18).length
       : households.reduce((sum, h) => sum + (h.under18Count || 0), 0));
 
-  const totalAbove18 = Math.max(0, totalResidents - totalUnder18);
+  const totalAbove18 =
+    summary?.above18 ??
+    (allResidents.length > 0
+      ? allResidents.filter(r => r.birthYear != null && new Date().getFullYear() - r.birthYear >= 18).length
+      : households.reduce((sum, h) => sum + (h.above18Count ?? 0), 0));
+  const unknownAge = Math.max(0, totalResidents - totalAbove18 - totalUnder18);
+  const unknownGender = Math.max(0, totalResidents - totalMale - totalFemale);
 
   const femalePercent = totalResidents > 0 ? Math.round((totalFemale / totalResidents) * 100) : 0;
   const malePercent = totalResidents > 0 ? Math.round((totalMale / totalResidents) * 100) : 0;
@@ -405,17 +411,22 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Tổng số{' '}
-              <span className="font-bold text-slate-800 dark:text-slate-200">{totalResidents.toLocaleString('vi-VN')} nhân khẩu</span> đang
-              cư trú tại <strong className="text-slate-800 dark:text-slate-200">{totalCount} hộ & cơ sở</strong>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{totalResidents.toLocaleString('vi-VN')} nhân khẩu</span> có hồ
+              sơ tại <strong className="text-slate-800 dark:text-slate-200">{totalCount} hộ & cơ sở</strong>
               {hamletNames.length > 0
                 ? ` thuộc ${hamletNames.slice(0, 3).join(', ')}${hamletNames.length > 3 ? ` và ${hamletNames.length - 3} ấp khác` : ''}`
                 : ' thuộc địa bàn quản lý'}
             </p>
+            {(unknownAge > 0 || unknownGender > 0) && (
+              <p className="text-xs text-slate-500">
+                Chưa đủ dữ liệu phân loại tuổi: {unknownAge}; chưa có giới tính: {unknownGender}. Không tự suy đoán từ họ tên hoặc địa chỉ.
+              </p>
+            )}
           </div>
           <div className="self-start sm:self-auto">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-full text-xs font-bold">
               <CheckCircle className="w-3.5 h-3.5" />
-              Đã số hóa định danh VNeID
+              Theo dữ liệu đã ghi nhận
             </span>
           </div>
         </div>

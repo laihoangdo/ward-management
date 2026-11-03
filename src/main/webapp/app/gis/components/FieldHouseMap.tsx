@@ -34,8 +34,14 @@ interface Props {
   onToggleFullscreen?: () => void;
 }
 const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
-const STATUS: Record<HouseholdStatus, string> = { normal: 'Bình thường', warning: 'Chú ý', alert: 'Cảnh báo', business: 'Kinh doanh' };
-const COLORS = { normal: '#10b981', warning: '#f59e0b', alert: '#ef4444', business: '#38bdf8' };
+const STATUS: Record<HouseholdStatus, string> = {
+  normal: 'Bình thường',
+  warning: 'Chú ý',
+  alert: 'Cảnh báo',
+  business: 'Kinh doanh',
+  unverified: 'Chưa xác minh',
+};
+const COLORS = { normal: '#10b981', warning: '#f59e0b', alert: '#ef4444', business: '#38bdf8', unverified: '#94a3b8' };
 const COMPACT_MAP_QUERY = '(max-width: 760px), (max-height: 600px) and (pointer: coarse)';
 type FieldEffects = ReturnType<typeof import('../three/field-effects.js').attachFieldEffects>;
 function territoryPolygons(value: unknown): (GeoJSON.Polygon | GeoJSON.MultiPolygon)[] {
@@ -367,7 +373,9 @@ export default function FieldHouseMap({
             COLORS.warning,
             'business',
             COLORS.business,
+            'normal',
             COLORS.normal,
+            COLORS.unverified,
           ],
           'circle-stroke-width': 1,
           'circle-stroke-color': '#fff',
@@ -499,13 +507,16 @@ export default function FieldHouseMap({
           ? 'warning'
           : residents.some(r => r.status === 'business')
             ? 'business'
-            : 'normal';
+            : residents.some(r => r.status === 'normal')
+              ? 'normal'
+              : 'unverified';
       return {
         ...h,
         properties: {
           ...h.properties,
           occupied: residents.length > 0,
           normal: residents.some(r => r.status === 'normal'),
+          unverified: residents.some(r => r.status === 'unverified'),
           warning: residents.some(r => r.status === 'warning'),
           alert: residents.some(r => r.status === 'alert'),
           business: residents.some(r => r.status === 'business'),
@@ -577,7 +588,9 @@ export default function FieldHouseMap({
             ? 'warning'
             : residents.some(r => r.status === 'business')
               ? 'business'
-              : 'normal';
+              : residents.some(r => r.status === 'normal')
+                ? 'normal'
+                : 'unverified';
         return {
           id: String(house.id ?? house.properties.buildingId ?? index),
           visible,

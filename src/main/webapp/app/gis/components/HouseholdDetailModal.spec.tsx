@@ -25,6 +25,33 @@ const household = {
 } as unknown as HouseholdFacility;
 
 describe('Household save feedback', () => {
+  it('shows missing relationship as unverified instead of labelling every resident as household head', () => {
+    const view = render(
+      <HouseholdDetailModal
+        household={{
+          ...household,
+          neighborhoodGroup: '',
+          residentsList: [
+            {
+              id: 'resident-synthetic',
+              fullName: 'Người kiểm thử',
+              gender: 'Chưa cập nhật',
+              relationship: '',
+              residenceType: 'Chưa xác minh',
+            },
+          ],
+        }}
+        currentUser={{ role: 'superadmin' } as AppUser}
+        onClose={vi.fn()}
+        onUpdateNotes={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('Chủ hộ', { exact: true })).toBeNull();
+    expect(screen.getAllByText('Chưa xác minh').length).toBeGreaterThan(0);
+    expect(view.container.textContent).toContain('Chưa có tổ dân phố');
+    expect(view.container.textContent).not.toContain('Tổ 1');
+    view.unmount();
+  });
   it.each([false, true])('opens the exact GIS household in the roster menu (edit=%s)', edit => {
     const openRoster = vi.fn();
     const selected = { ...household, id: '123', code: 'TC2-SYNTHETIC', locationStatus: 'PROVISIONAL' };

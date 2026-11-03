@@ -35,8 +35,9 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
   }
 
   // Chuyển đổi SecurityStatus
-  let status: 'normal' | 'warning' | 'alert' | 'business' = 'normal';
-  if (dto.status === 'WARNING') {
+  let status: HouseholdFacility['status'] = 'unverified';
+  if (dto.status === 'NORMAL') status = type === 'business' ? 'business' : 'normal';
+  else if (dto.status === 'WARNING') {
     status = 'warning';
   } else if (dto.status === 'CRITICAL' || dto.status === 'DANGER') {
     status = 'alert';
@@ -52,14 +53,14 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
 
   return {
     id: idStr,
-    code: dto.code || `HK-BD-${String(dto.id || index + 1).padStart(3, '0')}`,
+    code: dto.code || '',
     houseNumber: dto.houseNumber || '',
-    street: dto.street || dto.rawAddress || dto.legacyAddress || 'Chưa tách địa chỉ',
+    street: dto.street || dto.rawAddress || dto.legacyAddress || '',
     hamlet: dto.hamlet || '',
     hamletId: dto.hamletId || undefined,
     neighborhoodGroup: dto.neighborhoodGroup || '',
     alley: dto.alley || '',
-    ownerName: dto.ownerName || 'Chưa cập nhật',
+    ownerName: dto.ownerName || '',
     ownerPhone: dto.ownerPhone || '',
     type,
     businessName: dto.businessName || undefined,
@@ -80,9 +81,9 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
       row: Math.floor(index / 10),
       col: index % 10,
     },
-    notes: dto.notes || 'Hồ sơ quản lý địa bàn Xã Bà Điểm.',
-    lastCheckedDate: dto.lastCheckedDate || 'Chưa kiểm tra',
-    officerInCharge: dto.officerInCharge || 'Cán bộ CSKV Xã Bà Điểm',
+    notes: dto.notes || '',
+    lastCheckedDate: dto.lastCheckedDate || '',
+    officerInCharge: dto.officerInCharge || '',
     residentsList: [],
     inspectionPhotos: [],
   };
@@ -103,27 +104,28 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
   }
 
   // Mapping status sang SecurityStatus enum
-  let status: 'NORMAL' | 'WARNING' | 'DANGER' | 'CRITICAL' = 'NORMAL';
-  if (h.status === 'warning') {
+  let status: IHousehold['status'];
+  if (h.status === 'normal' || h.status === 'business') status = 'NORMAL';
+  else if (h.status === 'warning') {
     status = 'WARNING';
   } else if (h.status === 'alert') {
     status = 'CRITICAL';
   }
 
-  const lat = Array.isArray(h.coordinates) && h.coordinates.length >= 2 ? h.coordinates[0] : 10.854;
-  const lng = Array.isArray(h.coordinates) && h.coordinates.length >= 2 ? h.coordinates[1] : 106.612;
+  const lat = !h.coordinatesEstimated && Array.isArray(h.coordinates) ? h.coordinates[0] : undefined;
+  const lng = !h.coordinatesEstimated && Array.isArray(h.coordinates) ? h.coordinates[1] : undefined;
 
   return {
     id: numericId,
-    code: h.code || `HK-BD-${Date.now().toString().slice(-4)}`,
-    houseNumber: h.houseNumber || '1',
-    street: h.street || 'Đường Phan Văn Hớn',
+    code: h.code || (numericId ? undefined : `HK-BD-${crypto.randomUUID()}`),
+    houseNumber: h.houseNumber || '',
+    street: h.street || '',
     hamlet: h.hamlet || '',
     hamletId: h.hamletId,
     administrativeHamlet: h.hamletId ? { id: h.hamletId } : undefined,
     neighborhoodGroup: h.neighborhoodGroup ?? '',
     alley: h.alley ?? '',
-    ownerName: h.ownerName || 'Chưa cập nhật',
+    ownerName: h.ownerName || '',
     ownerPhone: h.ownerPhone ?? '',
     type,
     businessName: h.businessName || null,
@@ -139,9 +141,9 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
     licenseType: h.licenseType || null,
     latitude: lat,
     longitude: lng,
-    notes: h.notes || 'Hồ sơ quản lý địa bàn Xã Bà Điểm.',
-    lastCheckedDate: h.lastCheckedDate || new Date().toISOString().split('T')[0],
-    officerInCharge: h.officerInCharge || 'Cán bộ CSKV Xã Bà Điểm',
+    notes: h.notes ?? '',
+    lastCheckedDate: h.lastCheckedDate || undefined,
+    officerInCharge: h.officerInCharge ?? '',
   };
 };
 
@@ -149,16 +151,17 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
  * Chuyển đổi từ IResident DTO sang Resident
  */
 export const mapResidentDtoToResident = (dto: IResident): Resident => {
-  let resType: 'Thường trú' | 'Tạm trú' | 'Lưu trú' = 'Thường trú';
+  let resType: Resident['residenceType'] = 'Chưa xác minh';
+  if (dto.residenceType === 'PERMANENT') resType = 'Thường trú';
   if (dto.residenceType === 'TEMPORARY') resType = 'Tạm trú';
   else if (dto.residenceType === 'STAY') resType = 'Lưu trú';
 
   return {
     id: String(dto.id),
     fullName: dto.fullName || 'Chưa đặt tên',
-    birthYear: dto.birthYear || 1990,
-    gender: dto.gender === 'FEMALE' ? 'Nữ' : 'Nam',
-    relationship: dto.relationship || 'Chủ hộ',
+    birthYear: dto.birthYear ?? undefined,
+    gender: dto.gender === 'FEMALE' ? 'Nữ' : dto.gender === 'MALE' ? 'Nam' : dto.gender === 'OTHER' ? 'Khác' : 'Chưa cập nhật',
+    relationship: dto.relationship || '',
     idCardNumber: dto.idCardNumber || undefined,
     residenceType: resType,
     notes: dto.notes || undefined,
@@ -170,7 +173,8 @@ export const mapResidentDtoToResident = (dto: IResident): Resident => {
  * Chuyển đổi từ Resident sang IResident DTO
  */
 export const mapResidentToDto = (r: Resident, householdId?: number | string): IResident => {
-  let residenceType: 'PERMANENT' | 'TEMPORARY' | 'STAY' = 'PERMANENT';
+  let residenceType: IResident['residenceType'] = 'UNVERIFIED';
+  if (r.residenceType === 'Thường trú') residenceType = 'PERMANENT';
   if (r.residenceType === 'Tạm trú') residenceType = 'TEMPORARY';
   else if (r.residenceType === 'Lưu trú') residenceType = 'STAY';
 
@@ -181,7 +185,7 @@ export const mapResidentToDto = (r: Resident, householdId?: number | string): IR
     fullName: r.fullName,
     idCardNumber: r.idCardNumber || null,
     birthYear: r.birthYear,
-    gender: r.gender === 'Nữ' ? 'FEMALE' : 'MALE',
+    gender: r.gender === 'Nữ' ? 'FEMALE' : r.gender === 'Nam' ? 'MALE' : r.gender === 'Khác' ? 'OTHER' : null,
     relationship: r.relationship,
     residenceType,
     notes: r.notes || null,
@@ -251,22 +255,7 @@ export async function createHouseholdInBackend(newH: HouseholdCreateInput): Prom
   const createdHouseholdId = res.data.id;
 
   if (createdHouseholdId) {
-    // Chuẩn bị danh sách nhân khẩu khởi tạo (nếu không có thì tạo mặc định 1 chủ hộ)
-    const listToSave: Resident[] =
-      Array.isArray(newH.residentsList) && newH.residentsList.length > 0
-        ? newH.residentsList
-        : [
-            {
-              id: `res-${Date.now()}-1`,
-              fullName: newH.ownerName || 'Chủ hộ',
-              birthYear: 1980,
-              gender: 'Nam',
-              relationship: 'Chủ hộ',
-              residenceType: newH.residenceType || 'Thường trú',
-              phone: newH.ownerPhone,
-              notes: `Chủ hộ mới đăng ký tại ${newH.hamlet || 'Xã Bà Điểm'}`,
-            },
-          ];
+    const listToSave: Resident[] = Array.isArray(newH.residentsList) ? newH.residentsList : [];
 
     const savedResidents: Resident[] = [];
     for (const r of listToSave) {
@@ -503,18 +492,20 @@ export async function fetchPatrolLogsFromBackend(size: number = 200): Promise<Au
   if (!Array.isArray(res.data)) throw new Error('Dữ liệu nhật ký từ máy chủ không hợp lệ.');
   if (Array.isArray(res.data) && res.data.length > 0) {
     return res.data.map(dto => {
-      const d = dto.timestamp ? new Date(dto.timestamp) : new Date();
+      const d = new Date(dto.timestamp ?? NaN);
       const pad = (n: number) => String(n).padStart(2, '0');
-      const formattedDate = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      const formattedDate = Number.isFinite(d.getTime())
+        ? `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+        : '';
 
-      let detailsText = dto.details || 'Ghi nhận kiểm tra thực địa.';
+      let detailsText = dto.details || '';
       let actionType: AuditActionType = inferActionType(dto.action);
       let targetType: 'household' | 'document' | 'officer' | 'system' = 'household';
       let targetCode: string | undefined = undefined;
       let previousValue: string | undefined = undefined;
       let newValue: string | undefined = undefined;
-      let deviceInfo: string | undefined = 'Thiết bị nghiệp vụ tuần tra CSKV';
-      let integrityHash: string | undefined = `SHA256:${String(dto.id).padStart(8, '0')}...OK`;
+      let deviceInfo: string | undefined;
+      let integrityHash: string | undefined;
       let status: 'success' | 'warning' | 'info' = 'success';
 
       // Nếu details được lưu dưới dạng JSON metadata
@@ -528,7 +519,8 @@ export async function fetchPatrolLogsFromBackend(size: number = 200): Promise<Au
           if (meta.previousValue) previousValue = meta.previousValue;
           if (meta.newValue) newValue = meta.newValue;
           if (meta.deviceInfo) deviceInfo = meta.deviceInfo;
-          if (meta.integrityHash) integrityHash = meta.integrityHash;
+          if (typeof meta.integrityHash === 'string' && /^SHA256:\s*[a-f\d]{64}$/i.test(meta.integrityHash))
+            integrityHash = meta.integrityHash;
           if (meta.status) status = meta.status;
         } catch {
           // Giữ nguyên detailsText nếu không parse được JSON
@@ -536,7 +528,7 @@ export async function fetchPatrolLogsFromBackend(size: number = 200): Promise<Au
       }
 
       // Tách targetCode nếu có dạng "[CODE] Title"
-      let targetTitle = dto.target || 'Địa bàn Xã Bà Điểm';
+      let targetTitle = dto.target || '';
       if (targetTitle.startsWith('[') && targetTitle.includes('] ')) {
         const closeIdx = targetTitle.indexOf('] ');
         if (!targetCode) {
@@ -548,11 +540,11 @@ export async function fetchPatrolLogsFromBackend(size: number = 200): Promise<Au
       return {
         id: `LOG-DB-${dto.id}`,
         timestamp: formattedDate,
-        createdAt: d.getTime(),
+        createdAt: Number.isFinite(d.getTime()) ? d.getTime() : 0,
         actionType,
         actionLabel: dto.action || 'Nhật ký công tác',
-        officerName: dto.officerName || 'Cán bộ CSKV',
-        officerBadge: dto.badgeNumber || 'CSKV-BADIEM',
+        officerName: dto.officerName || '',
+        officerBadge: dto.badgeNumber || '',
         targetType,
         targetCode,
         targetTitle,
@@ -582,12 +574,11 @@ export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promi
       targetCode: log.targetCode,
       previousValue: log.previousValue,
       newValue: log.newValue,
-      deviceInfo: log.deviceInfo || 'Máy trạm CSKV Bà Điểm',
-      integrityHash: log.integrityHash || `SHA256:${Date.now()}...OK`,
+      deviceInfo: log.deviceInfo,
       status: log.status || 'success',
     };
 
-    let targetStr = log.targetTitle || 'Địa bàn Xã Bà Điểm';
+    let targetStr = log.targetTitle || '';
     if (log.targetCode && !targetStr.includes(log.targetCode)) {
       targetStr = `[${log.targetCode}] ${targetStr}`;
     }
@@ -596,9 +587,8 @@ export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promi
       action: log.actionLabel || 'Nhật ký công tác',
       target: targetStr,
       details: JSON.stringify(metadata),
-      officerName: log.officerName || 'Cán bộ CSKV',
-      badgeNumber: log.officerBadge || 'CSKV-BADIEM',
-      ipAddress: log.ipAddress || '192.168.1.45',
+      officerName: log.officerName || '',
+      badgeNumber: log.officerBadge || '',
       timestamp: new Date(log.createdAt || Date.now()).toISOString(),
     };
 
@@ -615,17 +605,16 @@ export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promi
         createdAt: d.getTime(),
         actionType: log.actionType || 'profile_update',
         actionLabel: dto.action || 'Nhật ký công tác',
-        officerName: dto.officerName || 'Cán bộ CSKV',
-        officerBadge: dto.badgeNumber || 'CSKV-BADIEM',
+        officerName: dto.officerName || '',
+        officerBadge: dto.badgeNumber || '',
         targetType: log.targetType || 'household',
         targetCode: log.targetCode,
         targetTitle: log.targetTitle || dto.target || 'Địa bàn Xã Bà Điểm',
         details: rawDetails,
         previousValue: log.previousValue,
         newValue: log.newValue,
-        ipAddress: dto.ipAddress || '192.168.1.45',
-        deviceInfo: log.deviceInfo || 'Máy trạm CSKV Bà Điểm',
-        integrityHash: log.integrityHash || `SHA256:${String(dto.id).padStart(8, '0')}...OK`,
+        ipAddress: dto.ipAddress || undefined,
+        deviceInfo: log.deviceInfo,
         status: log.status || 'success',
       };
     }
@@ -653,14 +642,14 @@ export async function fetchSecurityAlertsFromBackend(size: number = 100): Promis
 
       return {
         id: `ALERT-DB-${dto.id}`,
-        timestamp: dto.reportedAt ? new Date(dto.reportedAt).toLocaleDateString('vi-VN') : '27/09/2026',
+        timestamp: dto.reportedAt ? new Date(dto.reportedAt).toLocaleDateString('vi-VN') : '',
         severity: sevMap[dto.severity] || 'medium',
         title: dto.title || 'Cảnh báo an ninh trật tự',
         details: dto.description || '',
-        sourceIp: dto.location || 'Xã Bà Điểm',
+        sourceIp: '',
         targetResource: '/api/security-alerts',
         emailNotified: false,
-        adminEmailTarget: 'cong-an-ba-diem@tphcm.gov.vn',
+        adminEmailTarget: '',
         resolved: !!dto.isResolved,
         resolvedAt: dto.resolvedAt ? new Date(dto.resolvedAt).toLocaleDateString('vi-VN') : undefined,
       };

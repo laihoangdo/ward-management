@@ -667,16 +667,16 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                       </div>
                       <div>
                         <span className="font-semibold text-slate-800 dark:text-slate-200">Địa chỉ IP trạm:</span>{' '}
-                        <span>{log.ipAddress || '192.168.1.45 (Cục mạng nội bộ CAND)'}</span>
+                        <span>{log.ipAddress || 'Chưa ghi nhận'}</span>
                       </div>
                       <div>
                         <span className="font-semibold text-slate-800 dark:text-slate-200">Loại đối tượng quản lý:</span>{' '}
                         <span className="capitalize">{log.targetType}</span>
                       </div>
                       <div>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">Xác thực chuỗi khối:</span>{' '}
+                        <span className="font-semibold text-slate-800 dark:text-slate-200">Xác minh toàn vẹn:</span>{' '}
                         <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                          Hợp lệ (SHA-256 Verifier OK)
+                          Chưa được máy chủ xác minh
                         </span>
                       </div>
                     </div>

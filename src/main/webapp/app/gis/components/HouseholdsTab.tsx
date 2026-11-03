@@ -231,15 +231,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700 shadow-2xs">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-          GPKD hợp lệ
+          Cơ sở kinh doanh
         </span>
       );
     }
 
+    if (item.status === 'unverified') return <span className="text-xs text-slate-600">Chưa xác minh</span>;
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 shadow-2xs">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-        Hợp lệ
+        Không có cảnh báo đã ghi nhận
       </span>
     );
   };

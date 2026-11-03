@@ -188,10 +188,10 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   }>({
     district: 'TP. Hồ Chí Minh',
     ward: 'Xã Bà Điểm',
-    hamlet: 'Ấp Bắc Lân',
-    streetsAndAlleys: 'Đường Phan Văn Hớn, Hẻm 1403 Phan Văn Hớn, Đường Bà Điểm 4',
-    officerInChargeName: 'Đại úy Nguyễn Văn Bình',
-    totalHouseholds: 520,
+    hamlet: '',
+    streetsAndAlleys: '',
+    officerInChargeName: '',
+    totalHouseholds: 0,
   });
   const [isAddUnitOpen, setIsAddUnitOpen] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
@@ -439,7 +439,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
       hamlet: newUnitForm.hamlet,
       streetsAndAlleys: streetsArr,
       officerInChargeName: newUnitForm.officerInChargeName,
-      totalHouseholds: Number(newUnitForm.totalHouseholds) || 100,
+      totalHouseholds: Number(newUnitForm.totalHouseholds),
       updatedAt: new Date().toLocaleDateString('vi-VN'),
     };
 
@@ -463,10 +463,10 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
           id: item.id || `HCM-IMP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           district: item.district || 'TP. Hồ Chí Minh',
           ward: item.ward || 'Xã Bà Điểm',
-          hamlet: item.hamlet || 'Ấp Bắc Lân',
-          streetsAndAlleys: Array.isArray(item.streetsAndAlleys) ? item.streetsAndAlleys : ['Đường chính'],
-          officerInChargeName: item.officerInChargeName || 'Chưa phân công',
-          totalHouseholds: item.totalHouseholds || 120,
+          hamlet: item.hamlet || '',
+          streetsAndAlleys: Array.isArray(item.streetsAndAlleys) ? item.streetsAndAlleys : [],
+          officerInChargeName: item.officerInChargeName || '',
+          totalHouseholds: item.totalHouseholds ?? 0,
           updatedAt: new Date().toLocaleDateString('vi-VN'),
         };
         await saveHcmAdminUnitInFirestore(u);
