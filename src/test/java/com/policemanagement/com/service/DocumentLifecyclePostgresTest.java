@@ -32,7 +32,10 @@ class DocumentLifecyclePostgresTest {
         String database = System.getenv("DOCUMENT_TEST_DATABASE");
         assertNotNull(database);
         assertTrue(database.matches("tc2_restore_[A-Za-z0-9_]+"), "Test database must be an isolated restore");
-        var source = new DriverManagerDataSource("jdbc:postgresql://localhost:5432/" + database, "Monolithic", "");
+        String port = System.getenv().getOrDefault("DOCUMENT_TEST_PORT", "5432");
+        assertTrue(port.matches("[0-9]{1,5}"));
+        assertTrue(Integer.parseInt(port) > 0 && Integer.parseInt(port) <= 65535);
+        var source = new DriverManagerDataSource("jdbc:postgresql://localhost:" + port + "/" + database, "Monolithic", "");
         db = new JdbcTemplate(source);
         assertEquals(database, db.queryForObject("select current_database()", String.class));
         tx = new TransactionTemplate(new DataSourceTransactionManager(source));

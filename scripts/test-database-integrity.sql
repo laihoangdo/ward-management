@@ -27,20 +27,21 @@ BEGIN
     RAISE NOTICE 'PASS: zero dangling links and relational projection matches JSON';
 
     SELECT household_id,building_id INTO STRICT house_id,building FROM public.gis_field_building_household LIMIT 1;
+    SELECT feature_json INTO STRICT original_feature FROM public.gis_field_building WHERE id=building;
     BEGIN
         INSERT INTO public.gis_field_building(id,feature_json) VALUES ('__integrity_duplicate__',
-            jsonb_build_object('properties',jsonb_build_object('householdIds',jsonb_build_array(house_id::text)))::text);
+            jsonb_set(original_feature::jsonb,'{properties,householdIds}',jsonb_build_array(house_id::text))::text);
         RAISE EXCEPTION 'Duplicate household link was accepted';
     EXCEPTION WHEN unique_violation THEN RAISE NOTICE 'PASS: household cannot link two buildings'; END;
     BEGIN
         INSERT INTO public.gis_field_building(id,feature_json) VALUES ('__integrity_orphan__',
-            jsonb_build_object('properties',jsonb_build_object('householdIds',jsonb_build_array((SELECT max(id)+1 FROM household))))::text);
+            jsonb_set(original_feature::jsonb,'{properties,householdIds}',jsonb_build_array((SELECT max(id)+1 FROM household)))::text);
         RAISE EXCEPTION 'Orphan household link was accepted';
     EXCEPTION WHEN foreign_key_violation THEN RAISE NOTICE 'PASS: dangling feature link rejected by FK'; END;
 
     rejected:=false;
     BEGIN
-        INSERT INTO public.gis_field_building(id,feature_json) VALUES ('__integrity_bad_array__','{"properties":{"householdIds":{}}}');
+        INSERT INTO public.gis_field_building(id,feature_json) VALUES ('__integrity_bad_array__',jsonb_set(original_feature::jsonb,'{properties,householdIds}','{}'::jsonb)::text);
     EXCEPTION WHEN raise_exception THEN rejected:=true; END;
     IF NOT rejected THEN RAISE EXCEPTION 'Invalid householdIds type was accepted'; END IF;
     RAISE NOTICE 'PASS: invalid householdIds type rejected';

@@ -70,6 +70,20 @@ class GisSecurityTest {
     }
 
     @Test
+    void inspectionPhotoEndpointsRequireAuthenticationAndCsrfForSessionWrites() throws Exception {
+        String path = "/api/gis/households/1/inspection-photos";
+        mvc.perform(get(path).accept(MediaType.APPLICATION_JSON)).andExpect(status().isUnauthorized());
+        mvc.perform(post(path).with(csrf()).accept(MediaType.APPLICATION_JSON)).andExpect(status().isUnauthorized());
+        mvc.perform(
+            delete(path + "/1")
+                .with(csrf())
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().isUnauthorized());
+        mvc.perform(post(path).with(user("officer").roles("USER"))).andExpect(status().isForbidden());
+        mvc.perform(delete(path + "/1").with(user("officer").roles("USER"))).andExpect(status().isForbidden());
+    }
+
+    @Test
     void anonymousCannotOpenTheSseEndpoint() throws Exception {
         mvc.perform(get("/api/rbac/events").accept(MediaType.TEXT_EVENT_STREAM)).andExpect(status().isUnauthorized());
     }

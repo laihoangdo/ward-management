@@ -1,6 +1,15 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { migrationArguments } = require('./database-release.cjs');
+const fs = require('node:fs');
+const path = require('node:path');
+
+test('Maven migration execution excludes both test and faker contexts', () => {
+  const pom = fs.readFileSync(path.join(__dirname, '..', 'pom.xml'), 'utf8');
+  const plugin = pom.match(/<artifactId>liquibase-maven-plugin<\/artifactId>[\s\S]*?<\/configuration>/)?.[0];
+  assert.ok(plugin);
+  assert.match(plugin, /<contexts>!test and !faker<\/contexts>/);
+});
 
 test('status and migrate retain the existing Liquibase upgrade chain', () => {
   for (const action of ['status', 'migrate']) {

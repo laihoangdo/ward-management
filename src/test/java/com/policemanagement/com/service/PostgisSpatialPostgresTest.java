@@ -23,7 +23,10 @@ class PostgisSpatialPostgresTest {
         String database = System.getenv("POSTGIS_TEST_DATABASE");
         assertNotNull(database);
         assertTrue(database.matches("tc2_restore_[A-Za-z0-9_]+"));
-        var source = new DriverManagerDataSource("jdbc:postgresql://localhost:5433/" + database, "Monolithic", "");
+        String port = System.getenv().getOrDefault("POSTGIS_TEST_PORT", "5433");
+        assertTrue(port.matches("[0-9]{1,5}"));
+        assertTrue(Integer.parseInt(port) > 0 && Integer.parseInt(port) <= 65535);
+        var source = new DriverManagerDataSource("jdbc:postgresql://localhost:" + port + "/" + database, "Monolithic", "");
         db = new JdbcTemplate(source);
         assertEquals(database, db.queryForObject("select current_database()", String.class));
         spatial = new PostgisSpatialService(db, new ObjectMapper(), true);
