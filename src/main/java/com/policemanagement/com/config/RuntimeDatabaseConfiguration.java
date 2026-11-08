@@ -9,7 +9,7 @@ import org.springframework.core.env.Environment;
 
 /** Fail closed if external configuration accidentally restores an administrative connection. */
 @Configuration
-@Profile("db-runtime")
+@Profile({ "db-runtime", "vps" })
 public class RuntimeDatabaseConfiguration {
 
     @Bean

@@ -380,6 +380,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               canSendReminders: false,
               canUpdateInspection: false,
               canManageStreets: false,
+              canRevealIdentity: false,
             }
           : undefined),
       status: newUserForm.status || 'active',

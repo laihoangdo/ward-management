@@ -67,6 +67,8 @@ public class HouseholdBrowseResource {
             !Set.of("all", "household", "business", "special_monitoring").contains(type) ||
             !Set.of("all", "permanent", "temporary", "stay").contains(residence)
         ) throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        // The term itself is never logged: it may be a full identity number.
+        if (!search.isBlank()) rbac.auditIndependent("residents-search", "gis-browse", Map.of());
         var query = query(search, hamlet, type, residence);
         var params = query.params();
         String base = query.base();

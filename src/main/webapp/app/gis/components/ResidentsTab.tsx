@@ -1,5 +1,6 @@
 import { normalizeSearch } from '../utils/householdSearch';
 import { exportRbacCsv } from '../services/rbacApiService';
+import axios from 'axios';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
@@ -7,6 +8,7 @@ import {
   UserPlus,
   Search,
   Eye,
+  EyeOff,
   Edit,
   Trash2,
   Phone,
@@ -66,6 +68,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   allHouseholds,
   onSelectHousehold,
   onUpdateHousehold,
+  currentUser,
   onShowToast,
 }) => {
   const [isSavingResident, setIsSavingResident] = useState(false);
@@ -79,6 +82,29 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>('all');
   const [ageGroupFilter, setAgeGroupFilter] = useState<'all' | 'under18' | 'labor' | 'elderly'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  // Full identity numbers come only from the audited backend reveal endpoint.
+  const [revealedCccds, setRevealedCccds] = useState<Record<string, string>>({});
+  const [revealingCccd, setRevealingCccd] = useState<string | null>(null);
+  const canReveal = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canRevealIdentity === true;
+  const revealCccd = async (residentId: string) => {
+    if (revealedCccds[residentId]) {
+      setRevealedCccds(prev => {
+        const next = { ...prev };
+        delete next[residentId];
+        return next;
+      });
+      return;
+    }
+    setRevealingCccd(residentId);
+    try {
+      const { data } = await axios.post<{ idCardNumber: string }>(`/api/residents/${residentId}/reveal-id`, {});
+      setRevealedCccds(prev => ({ ...prev, [residentId]: data.idCardNumber }));
+    } catch {
+      onShowToast?.('Không thể xem số CCCD. Cần quyền xem số định danh đầy đủ.');
+    } finally {
+      setRevealingCccd(null);
+    }
+  };
 
   // Modals
   const [selectedResident, setSelectedResident] = useState<ResidentRecord | null>(null);
@@ -928,7 +954,18 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                         {r.idCardNumber ? (
                           <div className="font-mono text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5">
                             <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{r.idCardNumber}</span>
+                            <span>{revealedCccds[r.id] ?? r.idCardNumber}</span>
+                            {canReveal && (
+                              <button
+                                type="button"
+                                onClick={() => revealCccd(r.id)}
+                                disabled={revealingCccd === r.id}
+                                className="p-0.5 text-blue-600 hover:text-blue-800 cursor-pointer"
+                                title={revealedCccds[r.id] ? 'Ẩn số CCCD' : 'Xem số CCCD đầy đủ (ghi nhật ký)'}
+                              >
+                                {revealedCccds[r.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium italic">Chưa có CCCD</span>

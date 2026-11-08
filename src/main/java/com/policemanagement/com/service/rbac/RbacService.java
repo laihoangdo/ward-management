@@ -29,7 +29,8 @@ public class RbacService {
         "canExportReports",
         "canSendReminders",
         "canUpdateInspection",
-        "canManageStreets"
+        "canManageStreets",
+        "canRevealIdentity"
     );
     private static final Set<String> MAP_VIEW_PERMISSIONS = Set.of("canViewAdvancedMap", "canViewField3DMap");
     private final JdbcTemplate db;
@@ -490,6 +491,14 @@ public class RbacService {
     @org.springframework.transaction.annotation.Transactional
     public void audit(String action, String target, Object details) {
         db.update("insert into rbac_audit(actor,action,target,details) values (?,?,?,?)", subject(), action, target, encode(details));
+    }
+
+    /** Audit entry that must survive inside read-only transactions (search/list endpoints). */
+    @org.springframework.transaction.annotation.Transactional(
+        propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW
+    )
+    public void auditIndependent(String action, String target, Object details) {
+        audit(action, target, details);
     }
 
     public List<Map<String, Object>> settings(String kind) {

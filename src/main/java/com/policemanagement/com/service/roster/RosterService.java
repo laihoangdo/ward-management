@@ -1,5 +1,6 @@
 package com.policemanagement.com.service.roster;
 
+import com.policemanagement.com.service.CccdProtection;
 import com.policemanagement.com.service.rbac.RbacService;
 import com.policemanagement.com.service.rbac.TerritoryGeometry;
 import java.nio.charset.StandardCharsets;
@@ -248,6 +249,7 @@ public class RosterService {
             hamlet()
         );
         rbac.permission("canUpdateInspection"); // originals contain sensitive identities; never return them in lists
+        rbac.audit("read-source", "roster-source:" + id, Map.of());
         row.put("raw", decode(crypto.decrypt(row.remove("raw_ciphertext").toString())));
         row.put("parsed", decode(crypto.decrypt(row.remove("parsed_ciphertext").toString())));
         row.remove("resolution_ciphertext");
@@ -731,6 +733,7 @@ public class RosterService {
 
     public Map<String, Object> household(UUID id) {
         authorize(null);
+        rbac.audit("read", "roster-household:" + id, Map.of());
         var h = get("household", id);
         h.put(
             "members",
@@ -758,6 +761,7 @@ public class RosterService {
 
     public Map<String, Object> resident(UUID id) {
         authorize(null);
+        rbac.audit("read", "roster-resident:" + id, Map.of());
         var r = get("resident", id);
         r.put(
             "memberships",
@@ -770,7 +774,8 @@ public class RosterService {
             "select id,document_type,verified,active,valid_from,valid_to,source_row_id,number_ciphertext from tc2_roster.resident_identity where resident_id=?",
             id
         );
-        for (var identity : identities) identity.put("number", crypto.decrypt(identity.remove("number_ciphertext").toString()));
+        for (var identity : identities)
+            identity.put("number", CccdProtection.mask(crypto.decrypt(identity.remove("number_ciphertext").toString())));
         r.put("identities", identities);
         var records = db.queryForList(
             "select *, case when valid_to is null then 'UNKNOWN' when valid_to<current_date then 'EXPIRED' else 'WITHIN_TERM' end expiry_status from tc2_roster.residence_record where resident_id=? order by created_at",
@@ -1062,6 +1067,26 @@ public class RosterService {
             Boolean.TRUE.equals(d.get("verified"))
         );
         return resident(resident);
+    }
+
+    /** Audited, permission-gated disclosure of one full identity number. */
+    public Map<String, Object> revealIdentity(UUID resident, UUID identityId) {
+        authorize("canRevealIdentity");
+        var rows = db.queryForList(
+            "select id,document_type,verified,active,number_ciphertext from tc2_roster.resident_identity where id=? and resident_id=?",
+            identityId,
+            resident
+        );
+        if (rows.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy giấy tờ");
+        var identity = rows.getFirst();
+        String number = crypto.decrypt(identity.remove("number_ciphertext").toString());
+        rbac.audit(
+            "identity-revealed",
+            "roster-resident:" + resident + "/identity:" + identityId,
+            Map.of("documentType", identity.get("document_type"))
+        );
+        identity.put("number", number);
+        return identity;
     }
 
     public Map<String, Object> updateRecord(UUID id, Map<String, Object> d) {

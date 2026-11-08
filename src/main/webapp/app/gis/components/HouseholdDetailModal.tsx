@@ -3,6 +3,7 @@ import { DiscardChangesDialog } from './DiscardChangesDialog';
 import { useUnsavedPageGuard } from '../utils/useUnsavedPageGuard';
 import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -29,7 +30,6 @@ import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
 import { InspectionCameraModal } from './InspectionCameraModal';
 import { OcrScanModal } from './OcrScanModal';
 import { deleteInspectionPhotoFromHousehold } from '../services/firestoreService';
-import { decryptCccd, maskCccd, isEncryptedAes } from '../utils/cryptoUtils';
 import { BADIEM_51_HAMLETS } from '../data/baDiemHamlets';
 
 const ALLEY_BADGE_CLASS =
@@ -185,11 +185,13 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
   };
   const canInspect = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canUpdateInspection === true;
   const canScan = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canScanOcr === true;
+  const canReveal = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canRevealIdentity === true;
   useEffect(() => {
     if (!isEditingNotes) setNotesText(household.notes || '');
   }, [household.notes, isEditingNotes]);
 
-  const toggleDecryptCccd = async (residentId: string, rawEncryptedVal?: string) => {
+  // Full identity numbers come only from the audited backend endpoint; the client never holds the key.
+  const revealCccd = async (residentId: string) => {
     if (showCccdMap[residentId]) {
       setShowCccdMap(prev => ({ ...prev, [residentId]: false }));
       return;
@@ -200,15 +202,13 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
       return;
     }
 
-    if (!rawEncryptedVal) return;
-
     setIsDecryptingId(residentId);
     try {
-      const decrypted = await decryptCccd(rawEncryptedVal);
-      setDecryptedCccds(prev => ({ ...prev, [residentId]: decrypted }));
+      const { data } = await axios.post<{ idCardNumber: string }>(`/api/residents/${residentId}/reveal-id`, {});
+      setDecryptedCccds(prev => ({ ...prev, [residentId]: data.idCardNumber }));
       setShowCccdMap(prev => ({ ...prev, [residentId]: true }));
     } catch {
-      setSavedAlert('Không thể giải mã CCCD!');
+      setSavedAlert('Không thể xem số CCCD. Cần quyền xem số định danh đầy đủ.');
     } finally {
       setIsDecryptingId(null);
     }
@@ -930,13 +930,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                     </tr>
                   )}
                   {effectiveResidents.map((r, idx) => {
-                    const isEncrypted = isEncryptedAes(r.idCardNumber);
                     const isDecrypted = showCccdMap[r.id];
-                    const displayedCccd = isDecrypted
-                      ? decryptedCccds[r.id]
-                      : isEncrypted
-                        ? maskCccd(r.idCardNumber)
-                        : r.idCardNumber || 'Chưa có dữ liệu';
+                    const displayedCccd = isDecrypted ? decryptedCccds[r.id] : r.idCardNumber || 'Chưa có dữ liệu';
 
                     return (
                       <tr key={r.id || idx} className="hover:bg-slate-50/80 transition-colors">
@@ -958,12 +953,12 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                         <td className="p-2.5 font-mono text-slate-600">
                           <div className="flex items-center gap-1">
                             <span>{displayedCccd}</span>
-                            {isEncrypted && (
+                            {canReveal && r.idCardNumber && (
                               <button
-                                onClick={() => toggleDecryptCccd(r.id, r.idCardNumber)}
+                                onClick={() => revealCccd(r.id)}
                                 disabled={isDecryptingId === r.id}
                                 className="p-0.5 text-blue-600 hover:text-blue-800 cursor-pointer"
-                                title={isDecrypted ? 'Ẩn số CCCD' : 'Xem số CCCD đầy đủ'}
+                                title={isDecrypted ? 'Ẩn số CCCD' : 'Xem số CCCD đầy đủ (ghi nhật ký)'}
                               >
                                 {isDecrypted ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                               </button>

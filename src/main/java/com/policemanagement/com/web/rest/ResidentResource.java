@@ -1,16 +1,20 @@
 package com.policemanagement.com.web.rest;
 
+import com.policemanagement.com.domain.Resident;
 import com.policemanagement.com.repository.ResidentRepository;
+import com.policemanagement.com.service.CccdProtection;
 import com.policemanagement.com.service.ResidentQueryService;
 import com.policemanagement.com.service.ResidentService;
 import com.policemanagement.com.service.criteria.ResidentCriteria;
 import com.policemanagement.com.service.dto.ResidentDTO;
+import com.policemanagement.com.service.rbac.RbacService;
 import com.policemanagement.com.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -19,8 +23,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.PaginationUtil;
@@ -46,14 +52,18 @@ public class ResidentResource {
 
     private final ResidentQueryService residentQueryService;
 
+    private final RbacService rbac;
+
     public ResidentResource(
         ResidentService residentService,
         ResidentRepository residentRepository,
-        ResidentQueryService residentQueryService
+        ResidentQueryService residentQueryService,
+        RbacService rbac
     ) {
         this.residentService = residentService;
         this.residentRepository = residentRepository;
         this.residentQueryService = residentQueryService;
+        this.rbac = rbac;
     }
 
     /**
@@ -68,6 +78,9 @@ public class ResidentResource {
         LOG.debug("REST request to save Resident : {}", residentDTO);
         if (residentDTO.getId() != null) {
             throw new BadRequestAlertException("A new resident cannot already have an ID", ENTITY_NAME, "idexists");
+        }
+        if (CccdProtection.isMasked(residentDTO.getIdCardNumber())) {
+            throw new BadRequestAlertException("Số CCCD đã bị che; nhập số đầy đủ hoặc bỏ trống", ENTITY_NAME, "maskedcccd");
         }
         residentDTO = residentService.save(residentDTO);
         return ResponseEntity.created(new URI("/api/residents/" + residentDTO.getId()))
@@ -102,6 +115,7 @@ public class ResidentResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        preserveMaskedIdentity(id, residentDTO);
         residentDTO = residentService.update(residentDTO);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, residentDTO.getId().toString()))
@@ -136,6 +150,7 @@ public class ResidentResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        preserveMaskedIdentity(id, residentDTO);
         Optional<ResidentDTO> result = residentService.partialUpdate(residentDTO);
 
         return ResponseUtil.wrapOrNotFound(
@@ -158,7 +173,9 @@ public class ResidentResource {
     ) {
         LOG.debug("REST request to get Residents by criteria: {}", criteria);
 
+        rbac.audit("read", "residents:list", Map.of());
         Page<ResidentDTO> page = residentQueryService.findByCriteria(criteria, pageable);
+        page.getContent().forEach(dto -> dto.setIdCardNumber(CccdProtection.display(dto.getIdCardNumber())));
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
@@ -184,8 +201,32 @@ public class ResidentResource {
     @GetMapping("/{id}")
     public ResponseEntity<ResidentDTO> getResident(@PathVariable("id") Long id) {
         LOG.debug("REST request to get Resident : {}", id);
+        rbac.audit("read", "resident:" + id, Map.of());
         Optional<ResidentDTO> residentDTO = residentService.findOne(id);
+        residentDTO.ifPresent(dto -> dto.setIdCardNumber(CccdProtection.display(dto.getIdCardNumber())));
         return ResponseUtil.wrapOrNotFound(residentDTO);
+    }
+
+    /**
+     * {@code POST  /residents/:id/reveal-id} : audited disclosure of the full identity number.
+     * Requires the {@code canRevealIdentity} permission; every disclosure is written to rbac_audit.
+     */
+    @PostMapping("/{id}/reveal-id")
+    public ResponseEntity<Map<String, Object>> revealIdCard(@PathVariable("id") Long id) {
+        rbac.permission("canRevealIdentity");
+        ResidentDTO residentDTO = residentService
+            .findOne(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy nhân khẩu"));
+        String full = CccdProtection.reveal(residentDTO.getIdCardNumber());
+        rbac.audit("identity-revealed", "resident:" + id, Map.of("source", "legacy"));
+        return ResponseEntity.ok(Map.of("idCardNumber", full == null ? "" : full));
+    }
+
+    /** A masked round-trip (edited screens load masked values) must never overwrite the stored number. */
+    private void preserveMaskedIdentity(Long id, ResidentDTO residentDTO) {
+        if (CccdProtection.isMasked(residentDTO.getIdCardNumber())) {
+            residentDTO.setIdCardNumber(residentRepository.findById(id).map(Resident::getIdCardNumber).orElse(null));
+        }
     }
 
     /**

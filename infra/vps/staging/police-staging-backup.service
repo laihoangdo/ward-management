@@ -1,0 +1,17 @@
+[Unit]
+Description=Encrypted local and GCS recovery snapshot for synthetic police staging
+Requires=docker.service
+Wants=network-online.target
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+User=root
+UMask=0077
+ExecStart=/opt/police-management/staging/backup-offsite.sh
+TimeoutStartSec=1800
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=yes
+PrivateTmp=yes

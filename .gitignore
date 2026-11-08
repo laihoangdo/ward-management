@@ -173,3 +173,7 @@ coverage/
 /DSNK*.xlsx
 /.tc2-private/
 /backups/tc2-roster-*/
+
+# Python bytecode cache
+__pycache__/
+*.pyc

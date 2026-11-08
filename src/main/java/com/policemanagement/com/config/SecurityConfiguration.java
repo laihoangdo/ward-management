@@ -16,6 +16,7 @@ import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -89,6 +90,9 @@ public class SecurityConfiguration {
                     .requestMatchers("/*.ico", "/*.png", "/*.svg", "/*.webapp").permitAll()
                     .requestMatchers("/assets/**").permitAll()
                     .requestMatchers("/ocr/**").permitAll()
+                    // Shared reference geometry/raster only; operational household data stay behind scoped APIs.
+                    .requestMatchers(HttpMethod.GET, "/content/data/badiem-houses.geojson", "/content/assets/badiem_satellite/**", "/content/assets/badiem_map/**").authenticated()
+                    .requestMatchers(HttpMethod.HEAD, "/content/data/badiem-houses.geojson", "/content/assets/badiem_satellite/**", "/content/assets/badiem_map/**").authenticated()
                     .requestMatchers("/swagger-ui/**").permitAll()
                     .requestMatchers("/api/authenticate").permitAll()
                     .requestMatchers("/api/auth-info").permitAll()

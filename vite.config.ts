@@ -3,7 +3,7 @@ import { URL, fileURLToPath } from 'node:url';
 
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, normalizePath, type ProxyOptions } from 'vite';
+import { defineConfig, normalizePath, type ProxyOptions, type Plugin } from 'vite';
 import { proxyOrigin } from './src/main/webapp/app/config/proxy-origin.ts';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { postcssBrowserCompat } from './scripts/postcss-browser-compat.ts';
@@ -14,9 +14,30 @@ const swaggerUiPath = getAbsoluteFSPath();
 const webappDir = fileURLToPath(new URL('./src/main/webapp/', import.meta.url));
 
 const development = process.env.NODE_ENV !== 'production';
+// Explicit synthetic VPS build only; operational assets remain untouched for normal builds.
+const syntheticStage = process.env.POLICE_STAGING_SYNTHETIC === 'true';
 
 const config = defineConfig({
   plugins: [
+    ...(syntheticStage
+      ? [
+          {
+            name: 'synthetic-staging-marker',
+            generateBundle() {
+              const excluded = ['apTc2Schematic.json', 'apTc2DxfLinework.json', 'baDiemBoundaryGis.json', 'baDiemBuildingsGis.backup.json'];
+              const unsafe = [...this.getModuleIds()]
+                .map(id => id.replace(/\\/g, '/').split('?')[0])
+                .filter(id => id.includes('/src/main/webapp/app/gis/data/') && excluded.some(name => id.endsWith('/' + name)));
+              if (unsafe.length) this.error('Synthetic staging attempted to bundle excluded operational/legacy GIS datasets.');
+              this.emitFile({
+                type: 'asset' as const,
+                fileName: 'staging-manifest.json',
+                source: JSON.stringify({ syntheticOnly: true, excludedDatasets: ['apTc2Schematic', 'apTc2DxfLinework'] }),
+              });
+            },
+          } satisfies Plugin,
+        ]
+      : []),
     { ...postcssBrowserCompat(), enforce: 'pre' },
     tailwindcss(),
     react(),
@@ -107,6 +128,18 @@ const config = defineConfig({
   },
   resolve: {
     tsconfigPaths: true,
+    alias: syntheticStage
+      ? [
+          {
+            find: /^.*\/apTc2Schematic\.json$/,
+            replacement: fileURLToPath(new URL('./infra/vps/staging/assets/apTc2Schematic.json', import.meta.url)),
+          },
+          {
+            find: /^.*\/apTc2DxfLinework\.json$/,
+            replacement: fileURLToPath(new URL('./infra/vps/staging/assets/apTc2DxfLinework.json', import.meta.url)),
+          },
+        ]
+      : [],
   },
   optimizeDeps: {
     rolldownOptions: {

@@ -288,6 +288,22 @@ class RosterPostgresTest {
         assertEquals(1L, tx.execute(s -> service.residents("", "", "MANUAL", 0)).get("total"));
     }
 
+    @Test
+    void residentDetailMasksIdentitiesAndRevealIsAudited() throws Exception {
+        stageAndApply();
+        UUID person = db.queryForObject("select id from tc2_roster.resident", UUID.class);
+        var detail = tx.execute(s -> service.resident(person));
+        assertFalse(detail.toString().contains("001079000001"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> identities = (List<Map<String, Object>>) detail.get("identities");
+        assertEquals("001••••••001", identities.getFirst().get("number"));
+        verify(rbac).audit(eq("read"), eq("roster-resident:" + person), any());
+        UUID identity = db.queryForObject("select id from tc2_roster.resident_identity", UUID.class);
+        var revealed = tx.execute(s -> service.revealIdentity(person, identity));
+        assertEquals("001079000001", revealed.get("number"));
+        verify(rbac).audit(eq("identity-revealed"), eq("roster-resident:" + person + "/identity:" + identity), any());
+    }
+
     private Map<String, Object> stage(String rows) throws Exception {
         byte[] bytes = RosterWorkbookTest.workbook(rows);
         return tx.execute(s -> service.stage(List.of(new RosterService.Upload("source63.xlsx", "63", bytes)), "Test source", null));

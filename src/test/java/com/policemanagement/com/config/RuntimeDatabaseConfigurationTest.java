@@ -14,6 +14,12 @@ import org.springframework.mock.env.MockEnvironment;
 class RuntimeDatabaseConfigurationTest {
 
     @Test
+    void alsoGuardsTheVpsProfileWithoutImportingLocalRuntimeCredentials() {
+        var profile = RuntimeDatabaseConfiguration.class.getAnnotation(org.springframework.context.annotation.Profile.class);
+        assertTrue(java.util.Arrays.asList(profile.value()).contains("vps"));
+    }
+
+    @Test
     void refusesLiquibaseBeforeOpeningConnection() {
         var source = mock(DataSource.class);
         var guard = new RuntimeDatabaseConfiguration().runtimeDatabaseGuard(source, new MockEnvironment());

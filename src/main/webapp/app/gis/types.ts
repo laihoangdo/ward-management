@@ -26,6 +26,7 @@ export interface SubAdminFeaturePermissions {
   canSendReminders: boolean; // Được phát hành thông báo đôn đốc
   canUpdateInspection: boolean; // Được ghi nhận kết quả kiểm tra thực địa
   canManageStreets: boolean; // Được phân tuyến đường hẻm phụ trách
+  canRevealIdentity: boolean; // Được xem số CCCD đầy đủ (mỗi lần xem đều ghi nhật ký)
 }
 
 export interface AppUser {

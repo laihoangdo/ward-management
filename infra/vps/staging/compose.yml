@@ -1,0 +1,112 @@
+name: police-staging
+
+x-logging: &bounded-logging
+  driver: local
+  options:
+    max-size: '10m'
+    max-file: '5'
+
+services:
+  database:
+    image: postgis/postgis@sha256:60f6ad1d21ea86a67d47780b9a0d1e1d200500f62b19293fa834d0dea80b8677
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: Monolithic
+      POSTGRES_DB: Monolithic
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_owner
+      POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256 --auth-local=scram-sha-256'
+    secrets:
+      - database_owner
+      - keycloak_database
+    volumes:
+      - database_data:/var/lib/postgresql
+      - ./init-identity-db.sh:/docker-entrypoint-initdb.d/20-identity-db.sh:ro
+    networks:
+      - database
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U Monolithic -d Monolithic']
+      interval: 10s
+      timeout: 5s
+      retries: 18
+    shm_size: 256m
+    mem_limit: 1536m
+    security_opt:
+      - no-new-privileges:true
+    logging: *bounded-logging
+
+  keycloak:
+    image: police-keycloak-staging:26.7.4
+    build:
+      context: .
+      dockerfile: Keycloak.Dockerfile
+    restart: unless-stopped
+    entrypoint: ['/bin/bash', '/opt/police/keycloak-entrypoint.sh']
+    command: ['start', '--optimized', '--import-realm']
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://database:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_HOSTNAME: https://sunnytech.cloud
+      KC_HOSTNAME_STRICT: 'true'
+      KC_HTTP_ENABLED: 'true'
+      KC_PROXY_HEADERS: xforwarded
+      KC_PROXY_TRUSTED_ADDRESSES: 172.29.40.1/32
+      KC_HEALTH_ENABLED: 'true'
+      KC_LOG_LEVEL: INFO
+      KC_HTTP_ACCESS_LOG_ENABLED: 'false'
+      KC_BOOTSTRAP_ADMIN_USERNAME: staging-bootstrap
+      JAVA_OPTS_KC_HEAP: '-Xms256m -Xmx768m'
+    secrets:
+      - keycloak_database
+      - keycloak_bootstrap
+    volumes:
+      - ./keycloak-entrypoint.sh:/opt/police/keycloak-entrypoint.sh:ro
+      - /etc/police-management/secrets/staging/realm.json:/opt/keycloak/data/import/realm.json:ro
+      - /etc/police-management/secrets/production/realm.json:/opt/keycloak/data/import/realm-production.json:ro
+    ports:
+      - '127.0.0.1:18080:8080'
+    networks:
+      - database
+      - proxy
+    depends_on:
+      database:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m,mode=1777
+      - /opt/keycloak/data:rw,nosuid,size=128m,uid=1000,gid=0,mode=0750
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1280m
+    logging: *bounded-logging
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9000; printf \"GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3; grep -q UP <&3'",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+secrets:
+  database_owner:
+    file: /etc/police-management/secrets/staging/database_owner
+  keycloak_database:
+    file: /etc/police-management/secrets/staging/keycloak_database
+  keycloak_bootstrap:
+    file: /etc/police-management/secrets/staging/keycloak_bootstrap
+
+volumes:
+  database_data:
+
+networks:
+  database:
+    internal: true
+  proxy:
+    ipam:
+      config:
+        - subnet: 172.29.40.0/24

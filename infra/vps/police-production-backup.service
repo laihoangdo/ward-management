@@ -1,0 +1,8 @@
+[Unit]
+Description=Police production encrypted backup with offsite delivery
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/police-management/production/backup-production-offsite.sh

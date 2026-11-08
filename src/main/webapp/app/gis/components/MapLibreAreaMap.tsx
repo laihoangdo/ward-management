@@ -3,7 +3,10 @@ import { Maximize2, Minimize2, Layers } from 'lucide-react';
 import { matchesHouseholdSearch } from '../utils/householdSearch';
 import axios from 'axios';
 import html2canvas from 'html2canvas-pro';
-import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+// Registers the MapLibre worker URL before any map instance is created.
+import '../utils/maplibreWorkerUrl';
+import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './MapLibreAreaMap.css';
 import { HouseholdFacility } from '../types';

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily synthetic staging local encrypted backup (not offsite DR)
+
+[Timer]
+OnCalendar=*-*-* 17:30:00 UTC
+RandomizedDelaySec=300
+Persistent=true
+Unit=police-staging-backup.service
+
+[Install]
+WantedBy=timers.target

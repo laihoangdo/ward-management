@@ -1,4 +1,5 @@
-import maplibregl, { CustomLayerInterface, Map as MapLibreMap } from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+import type { CustomLayerInterface, Map as MapLibreMap } from 'maplibre-gl';
 import * as THREE from 'three';
 
 export interface ThreeBuilding {

@@ -1,7 +1,9 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+// Registers the MapLibre worker URL before any map instance is created.
+import '../utils/maplibreWorkerUrl';
 import { HouseholdFacility, HouseholdStatus } from '../types';
 import { baDiemCommuneBoundary as boundary, baDiemCommuneBounds } from '../data/baDiemCommuneBoundary';
 import {

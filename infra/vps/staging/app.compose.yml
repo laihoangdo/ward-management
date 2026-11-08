@@ -1,0 +1,73 @@
+# Explicit opt-in override: only synthetic staging. No public backend port.
+services:
+  app:
+    image: police-app-staging:20261105-3
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod,vps
+      SPRING_OUTPUT_ANSI_ENABLED: NEVER
+      LOGGING_LEVEL_ROOT: WARN
+      LOGGING_LEVEL_COM_POLICEMANAGEMENT_COM: WARN
+    volumes:
+      - /etc/police-management/secrets/staging/app:/run/secrets/app:ro
+    ports:
+      - '127.0.0.1:18081:8080'
+    extra_hosts:
+      - 'sunnytech.cloud:172.29.40.1'
+    networks:
+      database: {}
+      proxy:
+        ipv4_address: 172.29.40.10
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,size=256m,uid=1000,gid=1000,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1536m
+    depends_on:
+      database:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    logging:
+      driver: local
+      options:
+        max-size: '10m'
+        max-file: '5'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080; printf \"GET /management/health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3; grep -q UP <&3'",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  migrate:
+    image: police-app-staging:20261105-3
+    profiles: [tools]
+    entrypoint:
+      [
+        'java',
+        '-Dloader.main=liquibase.integration.commandline.Main',
+        '-cp',
+        '/app/release.jar',
+        'org.springframework.boot.loader.launch.PropertiesLauncher',
+      ]
+    command: ['--defaultsFile=/run/secrets/migration.properties', 'update']
+    volumes:
+      - /etc/police-management/secrets/staging/migration.properties:/run/secrets/migration.properties:ro
+    networks:
+      - database
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,size=128m,uid=1000,gid=1000,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1024m

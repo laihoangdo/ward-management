@@ -160,6 +160,11 @@ public class RosterResource {
         return service.addIdentity(id, data);
     }
 
+    @PostMapping("/residents/{id}/identities/{identityId}/reveal")
+    public Map<String, Object> revealIdentity(@PathVariable UUID id, @PathVariable UUID identityId) {
+        return service.revealIdentity(id, identityId);
+    }
+
     @PutMapping("/residents/{id}")
     public Map<String, Object> updateResident(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         return service.updateResident(id, data);

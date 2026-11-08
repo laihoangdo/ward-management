@@ -1,10 +1,10 @@
-import maplibregl from 'maplibre-gl';
+import { MercatorCoordinate } from 'maplibre-gl';
 import * as THREE from 'three';
 import { HALF_WORLD } from './geo.js';
 
 /** Anchored east/up/south meters -> MapLibre east/south/up Mercator units. */
 export function localToMercatorMatrix(anchor) {
-  const origin = maplibregl.MercatorCoordinate.fromLngLat(anchor, 0);
+  const origin = MercatorCoordinate.fromLngLat(anchor, 0);
   // Worker XY uses EPSG:3857's radius; MapLibre's altitude helper uses mean Earth radius.
   const s = 1 / (2 * HALF_WORLD * Math.cos((anchor[1] * Math.PI) / 180));
   const elevationScale = origin.meterInMercatorCoordinateUnits();

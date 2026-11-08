@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router';
 import { useRouteQuery, RECORD_QUERY_KEYS } from '../gis/utils/useRouteQuery';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+// Registers the MapLibre worker URL before any map instance is created.
+import '../gis/utils/maplibreWorkerUrl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './roster.css';
 import { displayDate } from './dateDisplay';
@@ -389,6 +391,10 @@ export default function RosterPage({
   const [household, setHousehold] = useState<Row | null>(null);
   const [pendingHouseEdit, setPendingHouseEdit] = useState<string | null>(null);
   const [person, setPerson] = useState<Row | null>(null);
+  const [revealedIds, setRevealedIds] = useState<Record<string, string>>({});
+  useEffect(() => {
+    setRevealedIds({});
+  }, [person?.id]);
   const [collections, setCollections] = useState<Row[]>([]);
   const [collection, setCollection] = useState<Row | null>(null);
   const [status, setStatus] = useState('REVIEW');
@@ -708,6 +714,20 @@ export default function RosterPage({
     setDetailEvents(data);
     setDetailHistoryPage(n);
   };
+  // Full identity numbers are only disclosed through the audited backend endpoint.
+  const revealIdentity = async (identityId: string) => {
+    if (revealedIds[identityId]) {
+      setRevealedIds(prev => {
+        const next = { ...prev };
+        delete next[identityId];
+        return next;
+      });
+      return;
+    }
+    if (!person) return;
+    const { data } = await axios.post(`${api}/residents/${person.id}/identities/${identityId}/reveal`, {});
+    setRevealedIds(prev => ({ ...prev, [identityId]: data.number }));
+  };
   const transfer = (m: Row) => {
     setTransferMembership(m);
     setHouseChoices([]);
@@ -811,7 +831,11 @@ export default function RosterPage({
         <summary>Giấy tờ định danh ({person.identities.length})</summary>
         {person.identities.map((i: Row) => (
           <p key={i.id}>
-            {i.document_type} · {i.number} · {i.verified ? 'Đã đối chiếu' : 'Chưa xác minh'} · {i.active ? 'Đang dùng' : 'Đã thay thế'}
+            {i.document_type} · {revealedIds[i.id] ?? i.number} · {i.verified ? 'Đã đối chiếu' : 'Chưa xác minh'} ·{' '}
+            {i.active ? 'Đang dùng' : 'Đã thay thế'}{' '}
+            {i.number && (
+              <button onClick={() => run(() => revealIdentity(i.id))}>{revealedIds[i.id] ? 'Ẩn số' : 'Xem số đầy đủ (ghi nhật ký)'}</button>
+            )}
           </p>
         ))}
       </details>

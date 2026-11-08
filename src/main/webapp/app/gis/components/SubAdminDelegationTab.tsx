@@ -17,6 +17,7 @@ import {
   Building,
   Building2,
   Edit3,
+  Eye,
 } from 'lucide-react';
 import { AppUser, SubAdminFeaturePermissions } from '../types';
 import { saveDelegation, fetchRbacAreas, fetchDelegationRoads } from '../services/authService';
@@ -90,6 +91,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       canSendReminders: false,
       canUpdateInspection: false,
       canManageStreets: false,
+      canRevealIdentity: false,
     },
   );
 
@@ -127,6 +129,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
         canSendReminders: false,
         canUpdateInspection: false,
         canManageStreets: false,
+        canRevealIdentity: false,
       },
     );
     setAssignedHamletsInput(officer.assignedHamlets?.join(', ') || '');
@@ -240,6 +243,12 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       title: 'Tự phân chia Tuyến đường & Đường hẻm phụ trách',
       desc: 'Cán bộ được phép tự gắn tuyến đường hoặc hẻm mới vào danh mục theo dõi',
       icon: Building,
+    },
+    {
+      key: 'canRevealIdentity',
+      title: 'Xem số CCCD đầy đủ (có kiểm soát)',
+      desc: 'Cho phép mở số định danh đầy đủ của nhân khẩu; mỗi lần xem đều được ghi nhật ký kiểm tra',
+      icon: Eye,
     },
   ];
 

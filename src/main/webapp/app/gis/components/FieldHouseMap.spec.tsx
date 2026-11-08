@@ -29,48 +29,47 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../three/field-effects.js', () => ({ attachFieldEffects: mocks.effectsAttach }));
 vi.mock('axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), isAxiosError: vi.fn(() => false) } }));
 vi.mock('maplibre-gl', () => ({
-  default: {
-    Map: class {
-      addControl = vi.fn();
-      addSource = mocks.addSource;
-      addLayer = vi.fn();
-      remove = mocks.mapRemove;
-      resize = vi.fn();
-      easeTo = vi.fn();
-      doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
-      scrollZoom = { setWheelZoomRate: vi.fn(), setZoomRate: vi.fn() };
-      setPaintProperty = mocks.setPaintProperty;
-      setLayoutProperty = mocks.setLayoutProperty;
-      setFilter = mocks.setFilter;
-      queryRenderedFeatures = mocks.queryRenderedFeatures;
-      fitBounds = mocks.fitBounds;
-      constructor(options: unknown) {
-        mocks.mapOptions(options);
-      }
-      on = (name: string, handler: (event?: unknown) => void) => {
-        mocks.handlers.set(name, handler);
-        return this;
-      };
-      getCanvas = () => ({ style: {} });
-      getLayer = () => ({});
-      getSource = (id: string) =>
-        mocks.missingSources.has(id)
-          ? undefined
-          : {
-              setData:
-                id === 'temporary-households'
-                  ? mocks.setTemporaryData
-                  : id === 'households'
-                    ? mocks.setHouseholdData
-                    : id === 'hamlets'
-                      ? mocks.setHamletData
-                      : id === 'assigned-territories'
-                        ? mocks.setTerritoryData
-                        : mocks.setData,
-            };
-    },
-    NavigationControl: class {},
+  Map: class {
+    addControl = vi.fn();
+    addSource = mocks.addSource;
+    addLayer = vi.fn();
+    remove = mocks.mapRemove;
+    resize = vi.fn();
+    easeTo = vi.fn();
+    doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
+    scrollZoom = { setWheelZoomRate: vi.fn(), setZoomRate: vi.fn() };
+    setPaintProperty = mocks.setPaintProperty;
+    setLayoutProperty = mocks.setLayoutProperty;
+    setFilter = mocks.setFilter;
+    queryRenderedFeatures = mocks.queryRenderedFeatures;
+    fitBounds = mocks.fitBounds;
+    constructor(options: unknown) {
+      mocks.mapOptions(options);
+    }
+    on = (name: string, handler: (event?: unknown) => void) => {
+      mocks.handlers.set(name, handler);
+      return this;
+    };
+    getCanvas = () => ({ style: {} });
+    getLayer = () => ({});
+    getSource = (id: string) =>
+      mocks.missingSources.has(id)
+        ? undefined
+        : {
+            setData:
+              id === 'temporary-households'
+                ? mocks.setTemporaryData
+                : id === 'households'
+                  ? mocks.setHouseholdData
+                  : id === 'hamlets'
+                    ? mocks.setHamletData
+                    : id === 'assigned-territories'
+                      ? mocks.setTerritoryData
+                      : mocks.setData,
+          };
   },
+  NavigationControl: class {},
+  setWorkerUrl: vi.fn(),
 }));
 const house: FieldHouse = {
   type: 'Feature',

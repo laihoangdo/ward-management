@@ -79,6 +79,7 @@ it('shows each map only when its separate view permission is granted', () => {
       canSendReminders: false,
       canUpdateInspection: false,
       canManageStreets: false,
+      canRevealIdentity: false,
     },
   };
   const menus = INITIAL_DYNAMIC_MENUS.filter(menu => ['advanced-map', 'field-3d-map'].includes(menu.id));

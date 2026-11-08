@@ -81,6 +81,34 @@ describe('Real roster workflows', () => {
       expect.objectContaining({ params: expect.objectContaining({ page: 2 }) }),
     );
   });
+  it('shows masked identity numbers and reveals only through the audited endpoint', async () => {
+    const original = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation(async (url, config) => {
+      if (String(url).endsWith('/residents/r1'))
+        return {
+          data: {
+            id: 'r1',
+            full_name: 'Người kiểm thử tổng hợp',
+            identities: [{ id: 'i1', document_type: 'CCCD', number: '001••••••002', verified: true, active: true }],
+            records: [],
+            sources: [],
+            verifications: [],
+          },
+        };
+      return original(url, config);
+    });
+    vi.mocked(axios.post).mockResolvedValue({ data: { number: '001079000002' } });
+    render(
+      <MemoryRouter initialEntries={['/roster?tab=residents&resident=r1']}>
+        <RosterPage />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { name: 'Người kiểm thử tổng hợp' });
+    expect(screen.getByText(/001••••••002/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Xem số đầy đủ (ghi nhật ký)' }));
+    await screen.findByText(/001079000002/);
+    expect(axios.post).toHaveBeenCalledWith('/api/roster/residents/r1/identities/i1/reveal', {});
+  });
   it('restores an embedded roster subpage and makes its tab changes navigable', async () => {
     render(
       <MemoryRouter initialEntries={['/dashboard?tab=households&rosterTab=history']}>

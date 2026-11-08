@@ -29,6 +29,7 @@ import { WarningDetailModal } from './components/WarningDetailModal';
 import { normalizeHousehold } from './utils/householdUtils';
 import { canViewMapTab } from './utils/mapViewAccess';
 import { useRouteQuery, RECORD_QUERY_KEYS } from './utils/useRouteQuery';
+import { useIdleSessionTimeout } from './utils/useIdleSessionTimeout';
 import { loadHouseholdDetail } from './services/householdBrowse';
 import {
   createHouseholdInBackend,
@@ -488,6 +489,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     }
   };
   const handleSwitchAccount = handleLogout;
+  // Sign an unattended console out before the 15-minute server session expires.
+  const idleSession = useIdleSessionTimeout(handleLogout);
 
   // Helper date-time and integrity hash generators for audit logs
   const formatDateTime = (d: Date): string => {
@@ -922,6 +925,21 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       id="__page-root"
       className={`flex h-screen h-[100dvh] w-full bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 font-sans overflow-hidden ${isMapFullscreen ? 'p-0' : ''}`}
     >
+      {idleSession.secondsLeft !== null && (
+        <div
+          role="alert"
+          className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-3 bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950"
+        >
+          <span>Không có hoạt động — phiên sẽ kết thúc sau {idleSession.secondsLeft} giây.</span>
+          <button
+            type="button"
+            onClick={idleSession.extend}
+            className="rounded border border-slate-950/40 px-2 py-0.5 hover:bg-slate-950/10"
+          >
+            Tiếp tục phiên
+          </button>
+        </div>
+      )}
       {/* Left Sidebar (Desktop + Mobile Drawer) */}
       {!isMapFullscreen && (
         <Sidebar
