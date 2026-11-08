@@ -203,7 +203,7 @@ test('master console window is loopback-only and rolls back to staging maintenan
   assert.match(script, /Keycloak must be healthy/);
   assert.match(script, /location \^~ \/admin\//);
   assert.match(script, /location \^~ \/realms\/master\//);
-  assert.match(script, /admin_stub = '    location \^~ \/admin\/ \{ return 404; \}'/);
+  assert.match(script, /admin_stub = ' {4}location \^~ \/admin\/ \{ return 404; \}'/);
   assert.match(script, /source\.replace\(admin_stub, admin_route\)/);
   assert.equal((script.match(/allow 127\.0\.0\.1;/g) || []).length, 2);
   assert.equal((script.match(/deny all;/g) || []).length, 2);
@@ -438,10 +438,7 @@ test('audit exporter covers both databases with namespaced delivered IDs', () =>
 });
 
 test('application CSP allows maplibre data and blob fetches', () => {
-  const config = fs.readFileSync(
-    path.join(__dirname, '..', 'src', 'main', 'resources', 'config', 'application.yml'),
-    'utf8',
-  );
+  const config = fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'resources', 'config', 'application.yml'), 'utf8');
   assert.match(config, /connect-src 'self' https: ws: wss: data: blob:;/);
   assert.doesNotMatch(config, /connect-src 'self' https: ws: wss:;/);
 });

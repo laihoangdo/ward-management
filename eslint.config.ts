@@ -16,6 +16,13 @@ export default defineConfig(
   },
   { ignores: ['src/main/docker/'] },
   { ignores: ['target/classes/static/', 'target/'] },
+  // Local, git-ignored probe scripts (see .gitignore); not part of the shipped code.
+  { ignores: ['.tc2-private/'] },
+  {
+    // Static data scripts loaded by the browser through a <script> tag.
+    files: ['src/main/webapp/content/**/*.js'],
+    languageOptions: { globals: { ...globals.browser } },
+  },
   eslint.configs.recommended,
   {
     files: ['**/*.{js,cjs,mjs}'],
@@ -82,12 +89,16 @@ export default defineConfig(
       'default-case': 'error',
       complexity: ['warn', 40],
       'no-invalid-this': 'off',
+      // Same convention as the JS config above: a leading underscore marks an intentionally unused parameter.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
   {
-    files: ['src/main/webapp/**/*.spec.ts'],
+    files: ['src/main/webapp/**/*.spec.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-empty-function': 'off',
+      // Async mocks and `act(async () => …)` without an inner await are idiomatic in tests.
+      '@typescript-eslint/require-await': 'off',
     },
   },
   // jhipster-needle-eslint-add-config - JHipster will add additional config here

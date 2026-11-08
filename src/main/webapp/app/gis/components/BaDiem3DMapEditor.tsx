@@ -711,7 +711,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
   };
 
   // Sync to Blender via local API / prompt
-  const handleSyncToBlender = async () => {
+  const handleSyncToBlender = () => {
     setIsSyncingBlender(true);
     setStatusMessage('Đang đồng bộ dữ liệu khối nhà 3D sang ứng dụng Blender...');
 
@@ -726,7 +726,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
         setStatusMessage('Đồng bộ với Blender hoàn tất! Khối nhà 3D đã được căn chỉnh chính xác.');
         setTimeout(() => setStatusMessage(null), 4000);
       }, 1500);
-    } catch (err) {
+    } catch {
       setIsSyncingBlender(false);
       setStatusMessage('Lỗi đồng bộ Blender.');
     }
@@ -1163,7 +1163,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                     step="1"
                     value={currentSelected.floors}
                     onChange={e => {
-                      const fl = parseInt(e.target.value);
+                      const fl = parseInt(e.target.value, 10);
                       updateBuilding(currentSelected.id, { floors: fl, height_m: fl * 3.5 }, 'Chỉnh số tầng');
                     }}
                     className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
@@ -1288,7 +1288,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                       max="360"
                       step="5"
                       value={currentSelected.rotationY}
-                      onChange={e => updateBuilding(currentSelected.id, { rotationY: parseInt(e.target.value) }, 'Xoay hướng nhà')}
+                      onChange={e => updateBuilding(currentSelected.id, { rotationY: parseInt(e.target.value, 10) }, 'Xoay hướng nhà')}
                       className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
                     />
                   </div>

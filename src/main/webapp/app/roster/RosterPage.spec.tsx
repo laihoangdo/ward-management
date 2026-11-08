@@ -6,7 +6,7 @@ import axios from 'axios';
 import RosterPage from './RosterPage';
 
 vi.mock('axios', () => ({ default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), isCancel: () => false, isAxiosError: () => false } }));
-vi.mock('maplibre-gl', () => ({ default: {} }));
+vi.mock('maplibre-gl', () => ({ default: {}, setWorkerUrl: vi.fn() }));
 function RouteProbe() {
   const location = useLocation();
   const navigate = useNavigate();

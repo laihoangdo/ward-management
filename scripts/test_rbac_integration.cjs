@@ -24,7 +24,7 @@ function kc(args) {
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
   } catch (error) {
-    throw new Error('Keycloak test setup failed: ' + String(error.stderr || '').slice(0, 500));
+    throw new Error('Keycloak test setup failed: ' + String(error.stderr || '').slice(0, 500), { cause: error });
   }
 }
 function kcBody(args, body) {
@@ -101,7 +101,6 @@ async function call(session, method, url, body, expected = 200) {
 async function main() {
   let root;
   try {
-    const scopes = JSON.parse(kc(['get', 'client-scopes', '-r', 'jhipster']));
     clientId = kcBody(['create', 'clients', '-r', 'jhipster', '-i'], {
       clientId: prefix,
       publicClient: true,
@@ -288,17 +287,23 @@ async function main() {
       for (const id of documentIds) {
         try {
           await call(root, 'DELETE', '/api/document-records/' + id, undefined, 204);
-        } catch {}
+        } catch {
+          // Best-effort cleanup: the record may already be gone.
+        }
       }
       for (const id of residentIds) {
         try {
           await call(root, 'DELETE', '/api/residents/' + id, undefined, 204);
-        } catch {}
+        } catch {
+          // Best-effort cleanup: the record may already be gone.
+        }
       }
       for (const id of householdIds) {
         try {
           await call(root, 'DELETE', '/api/households/' + id, undefined, 204);
-        } catch {}
+        } catch {
+          // Best-effort cleanup: the record may already be gone.
+        }
       }
       for (const id of ids) {
         try {
@@ -317,23 +322,31 @@ async function main() {
             ],
             { stdio: 'pipe' },
           );
-        } catch {}
+        } catch {
+          // Best-effort cleanup: the record may already be gone.
+        }
       }
       for (const id of areaIds) {
         try {
           await call(root, 'DELETE', '/api/area-zones/' + id, undefined, 204);
-        } catch {}
+        } catch {
+          // Best-effort cleanup: the record may already be gone.
+        }
       }
     }
     for (const id of ids) {
       try {
         kc(['delete', 'users/' + id, '-r', 'jhipster']);
-      } catch {}
+      } catch {
+        // Best-effort cleanup: the record may already be gone.
+      }
     }
     if (clientId) {
       try {
         kc(['delete', 'clients/' + clientId, '-r', 'jhipster']);
-      } catch {}
+      } catch {
+        // Best-effort cleanup: the record may already be gone.
+      }
     }
     for (const filename of fs.readdirSync(temporary)) fs.unlinkSync(path.join(temporary, filename));
     fs.rmdirSync(temporary);

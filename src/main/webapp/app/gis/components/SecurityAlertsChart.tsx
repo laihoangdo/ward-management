@@ -87,6 +87,30 @@ function categorizeAlert(alert: SecurityAlert): string {
   return 'Cảnh báo an ninh khác';
 }
 
+// Chart tooltip; defined at module level so Recharts keeps one stable component type.
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-950/95 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs space-y-1.5 backdrop-blur-md">
+        <div className="font-bold text-white flex items-center gap-1.5 border-b border-slate-800 pb-1">
+          <Calendar className="w-3.5 h-3.5 text-amber-400" />
+          <span>Thời điểm: {label}</span>
+        </div>
+        {payload.map((entry: any, index: number) => (
+          <div key={`item-${index}`} className="flex items-center justify-between gap-4 text-[11px]">
+            <span className="flex items-center gap-1.5" style={{ color: entry.color }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+              {entry.name}:
+            </span>
+            <strong className="font-mono text-white">{entry.value} vụ</strong>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts = [], blacklistedCount = 0 }) => {
   const [timeRange, setTimeRange] = useState<TimeRangeMode>('week');
   const [viewMode, setViewMode] = useState<MetricViewMode>('severity');
@@ -144,30 +168,6 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
       ),
     [alerts, timeRange, selectedSeverity],
   );
-
-  // Custom Tooltip Component
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-slate-950/95 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs space-y-1.5 backdrop-blur-md">
-          <div className="font-bold text-white flex items-center gap-1.5 border-b border-slate-800 pb-1">
-            <Calendar className="w-3.5 h-3.5 text-amber-400" />
-            <span>Thời điểm: {label}</span>
-          </div>
-          {payload.map((entry: any, index: number) => (
-            <div key={`item-${index}`} className="flex items-center justify-between gap-4 text-[11px]">
-              <span className="flex items-center gap-1.5" style={{ color: entry.color }}>
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
-                {entry.name}:
-              </span>
-              <strong className="font-mono text-white">{entry.value} vụ</strong>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-6 shadow-xl">

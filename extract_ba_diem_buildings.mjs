@@ -93,7 +93,7 @@ async function queryOverpass(query) {
               if (res.statusCode === 200) {
                 try {
                   resolve(JSON.parse(body));
-                } catch (e) {
+                } catch {
                   reject(new Error('JSON parse error'));
                 }
               } else {
