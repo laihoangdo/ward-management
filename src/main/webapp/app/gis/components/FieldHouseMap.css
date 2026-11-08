@@ -200,6 +200,31 @@
   margin: 5px 0;
   text-align: left;
 }
+/* A saved link: the household on the left, its unlink control (two-step) on the right. */
+.field-linked-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.field-linked-row .field-household {
+  flex: 1;
+  min-width: 0;
+}
+.field-linked-row small {
+  color: var(--field-muted);
+  font-size: 12px;
+  flex: none;
+}
+.field-unlink {
+  flex: none;
+  min-height: 36px;
+  color: #9f1239;
+}
+.field-unlink-confirm {
+  background: #9f1239;
+  border-color: #9f1239;
+  color: #ffffff;
+}
 .field-error,
 .field-notice {
   padding: 10px 14px;

@@ -160,6 +160,35 @@ describe('field map controls', () => {
     selectHouse();
     expect(screen.queryByText('Sửa thuộc tính khối nhà')).toBeNull();
   });
+  it('removes a manual household link after an inline confirmation, but not a link kept by verified coordinates', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/badiem-houses.geojson')
+        ? Promise.resolve({
+            data: { type: 'FeatureCollection', features: [{ ...house, properties: { ...house.properties, householdIds: ['1', '2'] } }] },
+          })
+        : originalGet(url, config),
+    );
+    const insideFootprint = {
+      ...household,
+      id: '2',
+      code: 'HK-2',
+      ownerName: 'Trần B',
+      coordinates: [10.0002, 106.0008],
+    } as HouseholdFacility;
+    await mount([household, insideFootprint], true);
+    selectHouse();
+
+    expect(screen.queryByRole('button', { name: 'Gỡ liên kết hộ HK-2' })).toBeNull();
+    expect(screen.getByText('Khớp theo tọa độ đã xác minh')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Gỡ liên kết hộ HK-1' }));
+    expect(axios.put).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gỡ liên kết hộ HK-1' }));
+    await waitFor(() => expect(axios.put).toHaveBeenCalledOnce());
+    expect((vi.mocked(axios.put).mock.calls[0][1] as FieldHouse).properties.householdIds).toEqual(['2']);
+    expect(await screen.findByText('Đã gỡ liên kết hộ HK-1 khỏi công trình.')).toBeDefined();
+  });
   it('keeps synthetic appearance out of household-link persistence', async () => {
     const originalGet = vi.mocked(axios.get).getMockImplementation()!;
     vi.mocked(axios.get).mockImplementation((url, config) =>

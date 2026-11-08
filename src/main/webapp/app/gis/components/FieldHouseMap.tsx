@@ -117,6 +117,9 @@ export default function FieldHouseMap({
   const [moveLng, setMoveLng] = useState('');
   const [search, setSearch] = useState('');
   const [linkId, setLinkId] = useState('');
+  // Household whose removal from the selected building awaits a second click (inline confirmation).
+  const [unlinkId, setUnlinkId] = useState('');
+  useEffect(() => setUnlinkId(''), [selectedId]);
   const [status, setStatus] = useState<'all' | HouseholdStatus>('all');
   const [representation, setRepresentation] = useState<'3d' | 'point'>('3d');
   const [layers, setLayers] = useState({
@@ -1115,11 +1118,51 @@ export default function FieldHouseMap({
             {canManageSelected && (
               <>
                 <p>{savedLinked.length ? `${savedLinked.length} hộ dân đã liên kết` : 'Chưa có liên kết hộ dân đã lưu'}</p>
-                {savedLinked.map(h => (
-                  <button type="button" key={h.id} className="field-household" onClick={() => onSelect(h)}>
-                    {h.ownerName} · {h.code} · {STATUS[h.status]}
-                  </button>
-                ))}
+                {savedLinked.map(h => {
+                  // A verified point inside this footprint is re-linked automatically, so removing it would not last:
+                  // that link is fixed by correcting the household's coordinates, not here.
+                  const matchedByPoint =
+                    !h.coordinatesEstimated &&
+                    h.coordinateMethod !== 'RANDOM_WITHIN_TC2' &&
+                    h.coordinates?.every(Number.isFinite) &&
+                    containsHousePoint(selected.geometry, [h.coordinates[1], h.coordinates[0]]);
+                  return (
+                    <div key={h.id} className="field-linked-row">
+                      <button type="button" className="field-household" onClick={() => onSelect(h)}>
+                        {h.ownerName} · {h.code} · {STATUS[h.status]}
+                      </button>
+                      {canLink && matchedByPoint && <small>Khớp theo tọa độ đã xác minh</small>}
+                      {canLink && !matchedByPoint && (
+                        <button
+                          type="button"
+                          className={unlinkId === h.id ? 'field-unlink field-unlink-confirm' : 'field-unlink'}
+                          disabled={busy}
+                          aria-label={unlinkId === h.id ? `Xác nhận gỡ liên kết hộ ${h.code}` : `Gỡ liên kết hộ ${h.code}`}
+                          onClick={() => {
+                            if (unlinkId !== h.id) {
+                              setUnlinkId(h.id);
+                              return;
+                            }
+                            void act(async () => {
+                              const next = {
+                                ...selected,
+                                properties: {
+                                  ...selected.properties,
+                                  householdIds: (selected.properties.householdIds ?? []).filter(id => id !== h.id),
+                                },
+                              };
+                              await persist(next);
+                              setUnlinkId('');
+                              setNotice(`Đã gỡ liên kết hộ ${h.code} khỏi công trình.`);
+                            });
+                          }}
+                        >
+                          {unlinkId === h.id ? 'Xác nhận gỡ' : 'Gỡ liên kết'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
                 {canManageSelected && pendingLinked.length > 0 && (
                   <>
                     <p>
