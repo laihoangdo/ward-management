@@ -44,49 +44,226 @@ const ALLEY_VALUE_TEXT = 'font-bold text-purple-800 text-xs truncate block'; // 
 const ALLEY_ISOLATE_BUTTON =
   'flex-1 py-1 px-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center'; // taste-skill-ignore: màu phân loại tuyến hẻm
 
-/**
- * Trích xuất hoặc chuẩn hóa Tổ dân phố của hộ dân
- */
-export const getHouseholdNeighborhoodGroup = (h: HouseholdFacility): string => {
-  if (h.neighborhoodGroup && h.neighborhoodGroup.trim()) {
-    return h.neighborhoodGroup.trim();
-  }
-  if (h.notes && /Tổ\s*\d+/i.test(h.notes)) {
-    const match = h.notes.match(/Tổ\s*(\d+)/i);
-    if (match) return `Tổ ${match[1]}`;
-  }
-  // Mặc định phân chia đồng đều theo Ấp và Số nhà
-  const num = parseInt(h.houseNumber.replace(/\D/g, '') || '1', 10);
-  if (h.hamlet === 'Ấp 1') {
-    const groupNum = ((num - 1) % 4) + 1; // Tổ 1 - Tổ 4
-    return `Tổ ${groupNum}`;
-  } else {
-    const groupNum = ((num - 1) % 4) + 5; // Tổ 5 - Tổ 8
-    return `Tổ ${groupNum}`;
-  }
-};
+export const UNGROUPED = 'Chưa phân tổ';
+export const UNKNOWN_LEGACY_HAMLET = 'Không rõ ấp cũ';
+export const UNKNOWN_LOCATION = 'Chưa rõ vị trí';
 
 /**
- * Trích xuất hoặc chuẩn hóa Tuyến Hẻm / Vị trí mặt tiền của hộ dân
+ * Tổ dân phố đã ghi trên hồ sơ hộ. Không suy đoán từ số nhà hay ghi chú: hộ chưa có dữ liệu tổ là "Chưa phân tổ".
+ */
+export const getHouseholdNeighborhoodGroup = (h: HouseholdFacility): string => h.neighborhoodGroup?.trim() || UNGROUPED;
+
+/**
+ * Ấp cũ trước sáp nhập (61/62/63/69…) theo nguồn nhập dữ liệu; hộ thêm thủ công hoặc không rõ nguồn là "Không rõ ấp cũ".
+ */
+export const getHouseholdLegacyHamlet = (h: HouseholdFacility): string =>
+  h.legacyHamlet?.trim() ? `Ấp ${h.legacyHamlet.trim()} (cũ)` : UNKNOWN_LEGACY_HAMLET;
+
+/** Tên đường thật của hộ; trống khi địa chỉ nguồn chưa được tách tên đường. */
+export const getHouseholdStreet = (h: HouseholdFacility): string => h.streetName?.trim() || '';
+
+/**
+ * Tuyến hẻm / vị trí mặt tiền: ưu tiên dữ liệu hẻm đã ghi, sau đó suy từ số nhà và tên đường thật.
+ * Không ghép địa chỉ nguồn nguyên văn vào nhãn hẻm; thiếu dữ liệu thì là "Chưa rõ vị trí".
  */
 export const getHouseholdAlley = (h: HouseholdFacility): string => {
-  if (h.alley && h.alley.trim()) {
-    return h.alley.trim();
-  }
-  if (h.houseNumber && h.houseNumber.includes('/')) {
-    const alleyNum = h.houseNumber.split('/')[0];
-    return `Hẻm ${alleyNum} ${h.street || ''}`;
-  }
-  if (h.street && h.street.toLowerCase().includes('hẻm')) {
-    return h.street;
-  }
-  if (h.notes && /Hẻm\s*\d+/i.test(h.notes)) {
-    const match = h.notes.match(/Hẻm\s*(\d+)/i);
-    if (match) return `Hẻm ${match[1]} ${h.street || ''}`;
-  }
-  // Vị trí mặc định
-  return `Mặt tiền ${h.street || ''}`;
+  if (h.alley?.trim()) return h.alley.trim();
+  const street = getHouseholdStreet(h);
+  const houseNumber = String(h.houseNumber ?? '').trim();
+  if (houseNumber.includes('/')) return `Hẻm ${houseNumber.split('/')[0]} ${street}`.trim();
+  if (street.toLowerCase().includes('hẻm')) return street;
+  const noted = h.notes?.match(/Hẻm\s*(\d+)/i);
+  if (noted) return `Hẻm ${noted[1]} ${street}`.trim();
+  if (houseNumber && street) return `Mặt tiền ${street}`;
+  return UNKNOWN_LOCATION;
 };
+
+/** Tìm theo số nhà, chủ hộ, địa chỉ, cơ sở, ấp cũ, tổ, hẻm, mã hộ và ghi chú (query đã chuẩn hóa chữ thường). */
+const matchesSearch = (h: HouseholdFacility, query: string): boolean =>
+  [
+    h.houseNumber,
+    h.ownerName,
+    h.street,
+    h.businessName,
+    h.legacyHamlet ? getHouseholdLegacyHamlet(h) : '',
+    h.neighborhoodGroup,
+    getHouseholdAlley(h),
+    h.code,
+    h.notes,
+  ].some(value => !!value && value.toLowerCase().includes(query));
+
+/** Đếm số hộ theo nhãn, giữ nhãn "chưa có dữ liệu" ở cuối danh sách. */
+const countBy = (items: HouseholdFacility[], label: (h: HouseholdFacility) => string, unknown: string) => {
+  const map = new Map<string, number>();
+  items.forEach(h => {
+    const value = label(h);
+    if (value) map.set(value, (map.get(value) || 0) + 1);
+  });
+  return Array.from(map, ([name, count]) => ({ name, count })).sort((a, b) => {
+    if (a.name === unknown || b.name === unknown) return a.name === unknown ? 1 : -1;
+    return a.name.localeCompare(b.name, 'vi', { numeric: true });
+  });
+};
+
+/** Chọn tuyến đường lấy từ dữ liệu hộ; báo rõ khi địa chỉ nguồn chưa tách tên đường. */
+const StreetFilter: React.FC<{
+  streets: { name: string; count: number }[];
+  selected: string;
+  onSelect: (value: string) => void;
+}> = ({ streets, selected, onSelect }) =>
+  streets.length === 0 ? (
+    <span id="filter-street-empty" className="text-slate-500">
+      Chưa có dữ liệu tên đường (địa chỉ nguồn chưa tách tên đường)
+    </span>
+  ) : (
+    <>
+      {[{ name: 'all', count: 0 }, ...streets].map(({ name, count }) => (
+        <button
+          key={name}
+          id={`filter-street-${name}`}
+          aria-pressed={selected === name}
+          onClick={() => onSelect(name)}
+          className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer shrink-0 ${
+            selected === name
+              ? 'bg-slate-800 text-white shadow-xs'
+              : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          {name === 'all' ? 'Tất cả đường' : `${name} (${count})`}
+        </button>
+      ))}
+    </>
+  );
+
+/** Nhãn ấp cũ và tổ dân phố trên thẻ hộ; chỉ hiện khi có dữ liệu thật. */
+const HouseholdCardTags: React.FC<{ household: HouseholdFacility }> = ({ household }) => (
+  <>
+    {household.legacyHamlet && (
+      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-50 text-slate-700 font-semibold border border-slate-200">
+        {getHouseholdLegacyHamlet(household)}
+      </span>
+    )}
+    {household.neighborhoodGroup?.trim() && (
+      <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-extrabold border border-blue-200">
+        {household.neighborhoodGroup.trim()}
+      </span>
+    )}
+  </>
+);
+
+/** Hàng lọc ấp cũ (nguồn nhập trước sáp nhập). */
+const LegacyHamletFilter: React.FC<{
+  options: { name: string; count: number }[];
+  selected: string;
+  onSelect: (value: string) => void;
+}> = ({ options, selected, onSelect }) => (
+  <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-2">
+    <div className="flex items-center gap-1.5 shrink-0">
+      <span className="w-2 h-2 rounded-full bg-slate-500" />
+      <span className="text-xs font-bold text-slate-700" title="Ấp trước sáp nhập, theo file nguồn của cán bộ quản lý ấp">
+        Ấp cũ (nguồn):
+      </span>
+    </div>
+
+    <div role="group" aria-label="Lọc theo ấp cũ" className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1">
+      <button
+        id="filter-legacy-all"
+        aria-pressed={selected === 'all'}
+        onClick={() => onSelect('all')}
+        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
+          selected === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+        }`}
+      >
+        Tất cả ấp cũ
+      </button>
+      {options.map(({ name, count }) => (
+        <button
+          key={name}
+          id={`filter-legacy-${name.replace(/\W+/g, '-').toLowerCase()}`}
+          aria-pressed={selected === name}
+          aria-label={`${name}, ${count} hộ`}
+          onClick={() => onSelect(name)}
+          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+            selected === name
+              ? 'bg-slate-800 text-white font-bold shadow-xs'
+              : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+          }`}
+        >
+          <span>{name}</span>
+          <span className="text-[10px] tabular-nums font-bold opacity-80">{count}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+/** Phân cấp quản lý địa bàn của hộ đang xem: ấp cũ, tổ dân phố, tuyến hẻm và nút lọc nhanh tương ứng. */
+const HouseholdClassification: React.FC<{
+  household: HouseholdFacility;
+  onIsolateLegacy: (value: string) => void;
+  onIsolateGroup: (value: string) => void;
+  onIsolateAlley: (value: string) => void;
+}> = ({ household, onIsolateLegacy, onIsolateGroup, onIsolateAlley }) => (
+  <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-xl space-y-2">
+    <div className="text-xs font-semibold text-blue-900 flex items-center gap-1.5">
+      <Home className="w-3.5 h-3.5 text-blue-700" />
+      <span>Phân cấp quản lý địa bàn</span>
+    </div>
+
+    <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="bg-white/90 p-2 rounded-lg border border-blue-100 col-span-2">
+        <span className="text-[10px] text-slate-500 block font-semibold">Ấp cũ (theo nguồn nhập):</span>
+        <span className="font-bold text-slate-800 text-sm">{getHouseholdLegacyHamlet(household)}</span>
+      </div>
+      <div className="bg-white/90 p-2 rounded-lg border border-blue-100">
+        <span className="text-[10px] text-slate-500 block font-semibold">Tổ dân phố:</span>
+        <span className={`font-extrabold text-sm ${household.neighborhoodGroup?.trim() ? 'text-blue-700' : 'text-slate-500'}`}>
+          {getHouseholdNeighborhoodGroup(household)}
+        </span>
+      </div>
+      <div className="bg-white/90 p-2 rounded-lg border border-blue-100">
+        <span className="text-[10px] text-slate-500 block font-semibold">Vị trí / Tuyến hẻm:</span>
+        <span className={ALLEY_VALUE_TEXT} title={getHouseholdAlley(household)}>
+          {getHouseholdAlley(household)}
+        </span>
+      </div>
+    </div>
+
+    {/* Quick Isolation Buttons for this Legacy Hamlet, Group or Alley */}
+    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+      {household.legacyHamlet && (
+        <button
+          id="btn-isolate-legacy"
+          onClick={() => onIsolateLegacy(getHouseholdLegacyHamlet(household))}
+          className="flex-1 py-1 px-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center"
+          title="Chỉ hiển thị các nhà cùng ấp cũ này"
+        >
+          Chỉ xem {getHouseholdLegacyHamlet(household)}
+        </button>
+      )}
+      {household.neighborhoodGroup?.trim() && (
+        <button
+          id="btn-isolate-group"
+          onClick={() => onIsolateGroup(getHouseholdNeighborhoodGroup(household))}
+          className="flex-1 py-1 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center"
+          title="Chỉ hiển thị các nhà cùng Tổ này trên bản đồ"
+        >
+          Chỉ xem {getHouseholdNeighborhoodGroup(household)}
+        </button>
+      )}
+      {getHouseholdAlley(household) !== UNKNOWN_LOCATION && (
+        <button
+          id="btn-isolate-alley"
+          onClick={() => onIsolateAlley(getHouseholdAlley(household))}
+          className={ALLEY_ISOLATE_BUTTON}
+          title="Chỉ hiển thị các nhà cùng Tuyến Hẻm này trên bản đồ"
+        >
+          Chỉ xem Hẻm này
+        </button>
+      )}
+    </div>
+  </div>
+);
 
 export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHousehold, onRefresh, onNavigateTab }) => {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -94,6 +271,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
   const [selectedHamlet, setSelectedHamlet] = useState<string>('all');
   const [activeStreet, setActiveStreet] = useState<string>('all');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [selectedLegacyHamlet, setSelectedLegacyHamlet] = useState<string>('all');
   const [selectedAlley, setSelectedAlley] = useState<string>('all');
   const [filterMode, setFilterMode] = useState<'all' | 'group' | 'alley'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -122,63 +300,43 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
     }
   }, [households, inspectedHousehold]);
 
-  const streets = ['all', 'Phan Văn Hớn', 'Nguyễn Ảnh Thủ', 'Quốc Lộ 22', 'Bà Điểm 4', 'Nguyễn Thị Sóc'];
+  const hamletHouseholds = useMemo(
+    () => (selectedHamlet === 'all' ? households : households.filter(h => h.hamlet === selectedHamlet)),
+    [households, selectedHamlet],
+  );
 
-  // Danh sách Tổ dân phố kèm thống kê số hộ
-  const availableGroups = useMemo(() => {
-    const map = new Map<string, number>();
-    households.forEach(h => {
-      if (selectedHamlet !== 'all' && h.hamlet !== selectedHamlet) return;
-      const g = getHouseholdNeighborhoodGroup(h);
-      map.set(g, (map.get(g) || 0) + 1);
-    });
+  // Ấp cũ trước sáp nhập, lấy từ nguồn nhập; chỉ hiện khi có ít nhất một hộ có dữ liệu này
+  const availableLegacyHamlets = useMemo(
+    () => countBy(hamletHouseholds, getHouseholdLegacyHamlet, UNKNOWN_LEGACY_HAMLET),
+    [hamletHouseholds],
+  );
+  const hasLegacyData = availableLegacyHamlets.some(({ name }) => name !== UNKNOWN_LEGACY_HAMLET);
 
-    const list = Array.from(map.entries()).map(([name, count]) => ({
-      name,
-      count,
-    }));
+  // Tuyến đường lấy từ dữ liệu hộ (cột tên đường), không dùng danh sách ghi cứng
+  const streets = useMemo(() => countBy(hamletHouseholds, getHouseholdStreet, ''), [hamletHouseholds]);
 
-    // Sắp xếp theo số thứ tự Tổ
-    list.sort((a, b) => {
-      const numA = parseInt(a.name.replace(/\D/g, '') || '0', 10);
-      const numB = parseInt(b.name.replace(/\D/g, '') || '0', 10);
-      return numA - numB;
-    });
-
-    return list;
-  }, [households, selectedHamlet]);
+  // Danh sách Tổ dân phố kèm thống kê số hộ; chỉ có tổ thật khi hồ sơ hộ đã ghi tổ
+  const availableGroups = useMemo(() => countBy(hamletHouseholds, getHouseholdNeighborhoodGroup, UNGROUPED), [hamletHouseholds]);
+  const hasGroupData = availableGroups.some(({ name }) => name !== UNGROUPED);
 
   // Danh sách Tuyến Hẻm kèm thống kê số hộ
-  const availableAlleys = useMemo(() => {
-    const map = new Map<string, number>();
-    households.forEach(h => {
-      if (selectedHamlet !== 'all' && h.hamlet !== selectedHamlet) return;
-      if (activeStreet !== 'all' && h.street !== activeStreet) return;
-      const a = getHouseholdAlley(h);
-      map.set(a, (map.get(a) || 0) + 1);
-    });
-
-    const list = Array.from(map.entries()).map(([name, count]) => ({
-      name,
-      count,
-    }));
-
-    // Đưa 'Mặt tiền' lên trước, sau đó sắp xếp theo tên
-    list.sort((a, b) => {
-      if (a.name.startsWith('Mặt tiền') && !b.name.startsWith('Mặt tiền')) return -1;
-      if (!a.name.startsWith('Mặt tiền') && b.name.startsWith('Mặt tiền')) return 1;
-      return a.name.localeCompare(b.name, 'vi');
-    });
-
-    return list;
-  }, [households, selectedHamlet, activeStreet]);
+  const availableAlleys = useMemo(
+    () =>
+      countBy(
+        activeStreet === 'all' ? hamletHouseholds : hamletHouseholds.filter(h => getHouseholdStreet(h) === activeStreet),
+        getHouseholdAlley,
+        UNKNOWN_LOCATION,
+      ),
+    [hamletHouseholds, activeStreet],
+  );
 
   // Lọc dữ liệu hộ dân theo các tiêu chí kết hợp
   const filteredHouseholds = useMemo(() => {
     return households.filter(h => {
       if (onlyWarnings && h.status !== 'warning' && h.status !== 'alert') return false;
       if (selectedHamlet !== 'all' && h.hamlet !== selectedHamlet) return false;
-      if (activeStreet !== 'all' && h.street !== activeStreet) return false;
+      if (activeStreet !== 'all' && getHouseholdStreet(h) !== activeStreet) return false;
+      if (selectedLegacyHamlet !== 'all' && getHouseholdLegacyHamlet(h) !== selectedLegacyHamlet) return false;
 
       // Lọc theo Tổ dân phố
       if (selectedGroup !== 'all') {
@@ -192,30 +350,24 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
         if (alley !== selectedAlley) return false;
       }
 
-      // Tìm kiếm từ khóa (số nhà, chủ hộ, tổ, hẻm, ghi chú)
-      if (searchQuery.trim()) {
-        const query = searchQuery.trim().toLowerCase();
-        const group = getHouseholdNeighborhoodGroup(h).toLowerCase();
-        const alley = getHouseholdAlley(h).toLowerCase();
-        const match =
-          (h.houseNumber && h.houseNumber.toLowerCase().includes(query)) ||
-          (h.ownerName && h.ownerName.toLowerCase().includes(query)) ||
-          (h.street && h.street.toLowerCase().includes(query)) ||
-          (h.businessName && h.businessName.toLowerCase().includes(query)) ||
-          (group && group.includes(query)) ||
-          (alley && alley.includes(query)) ||
-          (h.code && h.code.toLowerCase().includes(query)) ||
-          (h.notes && h.notes.toLowerCase().includes(query));
-        if (!match) return false;
-      }
+      // Tìm kiếm từ khóa (số nhà, chủ hộ, địa chỉ, ấp cũ, tổ, hẻm, ghi chú)
+      if (searchQuery.trim() && !matchesSearch(h, searchQuery.trim().toLowerCase())) return false;
 
       return true;
     });
-  }, [households, onlyWarnings, selectedHamlet, activeStreet, selectedGroup, selectedAlley, searchQuery]);
+  }, [households, onlyWarnings, selectedHamlet, activeStreet, selectedLegacyHamlet, selectedGroup, selectedAlley, searchQuery]);
 
   // Xóa toàn bộ bộ lọc về mặc định
   const pageSize = 48;
-  const filterKey = JSON.stringify([onlyWarnings, selectedHamlet, activeStreet, selectedGroup, selectedAlley, searchQuery]);
+  const filterKey = JSON.stringify([
+    onlyWarnings,
+    selectedHamlet,
+    activeStreet,
+    selectedLegacyHamlet,
+    selectedGroup,
+    selectedAlley,
+    searchQuery,
+  ]);
   const pageCount = Math.max(1, Math.ceil(filteredHouseholds.length / pageSize));
   const currentPage = pagination.key === filterKey ? Math.min(pagination.page, pageCount) : 1;
   const pageHouseholds = filteredHouseholds.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -228,6 +380,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
     setOnlyWarnings(false);
     setSelectedHamlet('all');
     setActiveStreet('all');
+    setSelectedLegacyHamlet('all');
     setSelectedGroup('all');
     setSelectedAlley('all');
     setFilterMode('all');
@@ -245,12 +398,9 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
   }, [households.length, filteredHouseholds.length]);
 
   const hasActiveFilters =
-    selectedHamlet !== 'all' ||
-    activeStreet !== 'all' ||
-    selectedGroup !== 'all' ||
-    selectedAlley !== 'all' ||
     onlyWarnings ||
-    searchQuery.trim() !== '';
+    searchQuery.trim() !== '' ||
+    [selectedHamlet, activeStreet, selectedLegacyHamlet, selectedGroup, selectedAlley].some(value => value !== 'all');
 
   const getStatusDetails = (status: string) => {
     switch (status) {
@@ -361,7 +511,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 Sơ đồ địa bàn tương tác
               </h2>
               <p id="map-description" className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
-                Lọc nhanh theo Tổ dân phố hoặc Tuyến Hẻm để quan sát khu vực phụ trách rõ nét, loại bỏ dữ liệu dư thừa.
+                Lọc nhanh theo ấp cũ, tổ dân phố hoặc tuyến hẻm để quan sát khu vực phụ trách rõ nét, loại bỏ dữ liệu dư thừa.
               </p>
             </div>
 
@@ -515,6 +665,8 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 onClick={() => {
                   setSelectedHamlet(hamlet);
                   setSelectedGroup('all');
+                  setSelectedLegacyHamlet('all');
+                  setActiveStreet('all');
                 }}
                 className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer shrink-0 ${
                   selectedHamlet === hamlet ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -527,20 +679,14 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             <span className="text-slate-300 mx-1 hidden sm:inline">|</span>
 
             <span className="font-bold text-slate-600 shrink-0">Đường:</span>
-            {streets.map(st => (
-              <button
-                key={st}
-                id={`filter-street-${st}`}
-                onClick={() => setActiveStreet(st)}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer shrink-0 ${
-                  activeStreet === st
-                    ? 'bg-slate-800 text-white shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                {st === 'all' ? 'Tất cả đường' : st}
-              </button>
-            ))}
+            <StreetFilter
+              streets={streets}
+              selected={activeStreet}
+              onSelect={name => {
+                setActiveStreet(name);
+                setSelectedAlley('all');
+              }}
+            />
           </div>
 
           {/* Quick Stats on density */}
@@ -549,52 +695,63 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
           </div>
         </div>
 
-        {/* Granular Filter Row 2: TỔ DÂN PHỐ SELECTOR */}
+        {/* Granular Filter Row 2: ẤP CŨ (nguồn nhập dữ liệu trước sáp nhập) */}
+        {hasLegacyData && (
+          <LegacyHamletFilter options={availableLegacyHamlets} selected={selectedLegacyHamlet} onSelect={setSelectedLegacyHamlet} />
+        )}
+
+        {/* Granular Filter Row 3: TỔ DÂN PHỐ SELECTOR */}
         <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="w-2 h-2 rounded-full bg-blue-500" />
             <span className="text-xs font-bold text-slate-700">Tổ dân phố:</span>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1">
-            <button
-              id="filter-group-all"
-              onClick={() => setSelectedGroup('all')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
-                selectedGroup === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Tất cả các tổ
-            </button>
-
-            {availableGroups.map(({ name, count }) => (
+          {!hasGroupData ? (
+            <p id="filter-group-empty" className="m-0 text-xs text-slate-500">
+              Chưa có dữ liệu tổ dân phố — cập nhật trường Tổ trên hồ sơ hộ khi có danh sách tổ chính thức.
+            </p>
+          ) : (
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1">
               <button
-                key={name}
-                id={`filter-group-${name.replace(/\s+/g, '-').toLowerCase()}`}
-                onClick={() => {
-                  setSelectedGroup(name);
-                  setFilterMode('group');
-                }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                  selectedGroup === name
-                    ? 'bg-blue-600 text-white font-bold shadow-xs'
-                    : 'bg-blue-50/70 text-blue-900 border border-blue-200 hover:bg-blue-100'
+                id="filter-group-all"
+                onClick={() => setSelectedGroup('all')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
+                  selectedGroup === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                <span>{name}</span>
-                <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    selectedGroup === name ? 'bg-blue-800 text-white' : 'bg-blue-200/80 text-blue-800'
+                Tất cả các tổ
+              </button>
+
+              {availableGroups.map(({ name, count }) => (
+                <button
+                  key={name}
+                  id={`filter-group-${name.replace(/\s+/g, '-').toLowerCase()}`}
+                  onClick={() => {
+                    setSelectedGroup(name);
+                    setFilterMode('group');
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                    selectedGroup === name
+                      ? 'bg-blue-600 text-white font-bold shadow-xs'
+                      : 'bg-blue-50/70 text-blue-900 border border-blue-200 hover:bg-blue-100'
                   }`}
                 >
-                  {count}
-                </span>
-              </button>
-            ))}
-          </div>
+                  <span>{name}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      selectedGroup === name ? 'bg-blue-800 text-white' : 'bg-blue-200/80 text-blue-800'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Granular Filter Row 3: HẺM / VỊ TRÍ NHÀ SELECTOR */}
+        {/* Granular Filter Row 4: HẺM / VỊ TRÍ NHÀ SELECTOR */}
         <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-2">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className={ALLEY_LEGEND_DOT} />
@@ -656,6 +813,15 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[11px] font-bold">
                   {selectedHamlet}
                   <button onClick={() => setSelectedHamlet('all')} className="hover:text-blue-950">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+
+              {selectedLegacyHamlet !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-white text-[11px] font-bold">
+                  {selectedLegacyHamlet}
+                  <button onClick={() => setSelectedLegacyHamlet('all')} className="hover:text-slate-300" aria-label="Bỏ lọc ấp cũ">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -765,7 +931,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
         >
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
-              <h3 id="map-results-title" className="text-xs sm:text-sm font-bold text-slate-800">
+              <h3 id="map-results-title" className="gis-panel-title text-slate-800">
                 Sơ đồ vị trí các hộ dân
               </h3>
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold border border-blue-100">
@@ -780,7 +946,6 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             {pageHouseholds.map(item => {
               const status = getStatusDetails(item.status);
               const isSelected = inspectedHousehold?.id === item.id;
-              const group = getHouseholdNeighborhoodGroup(item);
               const alley = getHouseholdAlley(item);
 
               return (
@@ -799,9 +964,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                         <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-bold">
                           {item.hamlet}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-extrabold border border-blue-200">
-                          {group}
-                        </span>
+                        <HouseholdCardTags household={item} />
                       </div>
                       <span
                         className={`w-2.5 h-2.5 rounded-full shrink-0 ${status.dot} ${item.status === 'warning' ? 'animate-pulse' : ''}`}
@@ -810,8 +973,18 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
                     {/* House Number and Street */}
                     <div className="mt-1">
-                      <div className="text-base font-extrabold text-slate-900 leading-tight">Số {item.houseNumber}</div>
-                      <div className="text-xs font-semibold text-slate-600 truncate mt-0.5">Đ. {item.street}</div>
+                      {String(item.houseNumber ?? '').trim() ? (
+                        <>
+                          <div className="text-base font-extrabold text-slate-900 leading-tight">Số {item.houseNumber}</div>
+                          <div className="text-xs font-semibold text-slate-600 truncate mt-0.5" title={item.street}>
+                            Đ. {item.street}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm font-bold text-slate-900 leading-snug line-clamp-2 break-words" title={item.street}>
+                          {item.street || 'Chưa có địa chỉ'}
+                        </div>
+                      )}
                     </div>
 
                     {/* Alley / Location Badge */}
@@ -907,14 +1080,14 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
         {/* Selected House Inspector Drawer */}
         <div className="lg:col-span-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4 sticky top-20">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 id="map-summary-title" className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
-              <Building className="w-4 h-4 text-blue-600" />
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <h3 id="map-summary-title" className="gis-panel-title text-slate-900 flex items-center gap-2 whitespace-nowrap">
+              <Building className="w-4 h-4 text-slate-500" aria-hidden="true" />
               <span>Chi tiết khối nhà</span>
             </h3>
             {inspectedHousehold && (
               <span
-                className={`text-[11px] px-2 py-0.5 rounded-full font-bold border ${getStatusDetails(inspectedHousehold.status).badge}`}
+                className={`shrink-0 whitespace-nowrap text-xs px-2 py-0.5 rounded-full font-semibold border ${getStatusDetails(inspectedHousehold.status).badge}`}
               >
                 {getStatusDetails(inspectedHousehold.status).label}
               </span>
@@ -925,8 +1098,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             <div className="space-y-4 text-xs">
               {/* Basic address */}
               <div>
-                <div className="text-lg font-extrabold text-slate-900">
-                  Số {inspectedHousehold.houseNumber} {inspectedHousehold.street}
+                <div className="text-base font-bold text-slate-900 break-words">
+                  {[
+                    String(inspectedHousehold.houseNumber ?? '').trim() && `Số ${inspectedHousehold.houseNumber}`,
+                    inspectedHousehold.street,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || 'Chưa có địa chỉ'}
                 </div>
                 <div className="text-slate-500 font-medium mt-0.5 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
@@ -934,54 +1112,18 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 </div>
               </div>
 
-              {/* Administrative Classification (Tổ dân phố & Hẻm) */}
-              <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-xl space-y-2">
-                <div className="text-[11px] font-bold text-blue-900 flex items-center gap-1.5 uppercase tracking-wide">
-                  <Home className="w-3.5 h-3.5 text-blue-700" />
-                  <span>Phân cấp quản lý địa bàn</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-white/90 p-2 rounded-lg border border-blue-100">
-                    <span className="text-[10px] text-slate-500 block font-semibold">Tổ dân phố:</span>
-                    <span className="font-extrabold text-blue-700 text-sm">{getHouseholdNeighborhoodGroup(inspectedHousehold)}</span>
-                  </div>
-                  <div className="bg-white/90 p-2 rounded-lg border border-blue-100">
-                    <span className="text-[10px] text-slate-500 block font-semibold">Vị trí / Tuyến hẻm:</span>
-                    <span className={ALLEY_VALUE_TEXT} title={getHouseholdAlley(inspectedHousehold)}>
-                      {getHouseholdAlley(inspectedHousehold)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Quick Isolation Buttons for this Group or Alley */}
-                <div className="flex items-center gap-1.5 pt-1">
-                  <button
-                    id="btn-isolate-group"
-                    onClick={() => {
-                      const grp = getHouseholdNeighborhoodGroup(inspectedHousehold);
-                      setSelectedGroup(grp);
-                      setFilterMode('group');
-                    }}
-                    className="flex-1 py-1 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center"
-                    title="Chỉ hiển thị các nhà cùng Tổ này trên bản đồ"
-                  >
-                    Chỉ xem {getHouseholdNeighborhoodGroup(inspectedHousehold)}
-                  </button>
-                  <button
-                    id="btn-isolate-alley"
-                    onClick={() => {
-                      const al = getHouseholdAlley(inspectedHousehold);
-                      setSelectedAlley(al);
-                      setFilterMode('alley');
-                    }}
-                    className={ALLEY_ISOLATE_BUTTON}
-                    title="Chỉ hiển thị các nhà cùng Tuyến Hẻm này trên bản đồ"
-                  >
-                    Chỉ xem Hẻm này
-                  </button>
-                </div>
-              </div>
+              <HouseholdClassification
+                household={inspectedHousehold}
+                onIsolateLegacy={setSelectedLegacyHamlet}
+                onIsolateGroup={group => {
+                  setSelectedGroup(group);
+                  setFilterMode('group');
+                }}
+                onIsolateAlley={alley => {
+                  setSelectedAlley(alley);
+                  setFilterMode('alley');
+                }}
+              />
 
               {/* Business Details if applicable */}
               {inspectedHousehold.businessName && (

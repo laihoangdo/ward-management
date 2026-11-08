@@ -12,6 +12,7 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface HouseholdMapper extends EntityMapper<HouseholdDTO, Household> {
     @Mapping(target = "administrativeHamlet", source = "administrativeHamlet", qualifiedByName = "administrativeHamletName")
+    @Mapping(target = "legacyHamlet", ignore = true)
     HouseholdDTO toDto(Household s);
 
     @Mapping(target = "administrativeHamlet", ignore = true)

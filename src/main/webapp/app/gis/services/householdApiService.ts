@@ -56,7 +56,10 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
     code: dto.code || '',
     houseNumber: dto.houseNumber || '',
     street: dto.street || dto.rawAddress || dto.legacyAddress || '',
+    streetName: dto.street?.trim() || undefined,
+    rawAddress: dto.rawAddress || dto.legacyAddress || undefined,
     hamlet: dto.hamlet || '',
+    legacyHamlet: dto.legacyHamlet?.trim() || undefined,
     hamletId: dto.hamletId || undefined,
     neighborhoodGroup: dto.neighborhoodGroup || '',
     alley: dto.alley || '',
@@ -92,6 +95,9 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
 /**
  * Chuyển đổi từ Frontend HouseholdFacility sang Backend IHousehold (JHipster DTO)
  */
+/** street đang là địa chỉ nguồn dùng để hiển thị (hộ chưa có tên đường thật và người dùng chưa chọn đường mới). */
+export const showsSourceAddress = (h: Partial<HouseholdFacility>): boolean => !h.streetName && !!h.rawAddress && h.street === h.rawAddress;
+
 export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => {
   const numericId = h.id && !isNaN(Number(h.id)) ? Number(h.id) : undefined;
 
@@ -119,7 +125,8 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
     id: numericId,
     code: h.code || (numericId ? undefined : `HK-BD-${crypto.randomUUID()}`),
     houseNumber: h.houseNumber || '',
-    street: h.street || '',
+    // Khi chưa có tên đường, street đang hiển thị địa chỉ nguồn: không gửi lại để PATCH giữ nguyên cột street.
+    street: showsSourceAddress(h) ? undefined : h.street || '',
     hamlet: h.hamlet || '',
     hamletId: h.hamletId,
     administrativeHamlet: h.hamletId ? { id: h.hamletId } : undefined,

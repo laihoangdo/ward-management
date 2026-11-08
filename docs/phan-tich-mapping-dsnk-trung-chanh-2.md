@@ -1,5 +1,7 @@
 # Phân tích và mapping bốn file DSNK Trung Chánh 2
 
+> Cập nhật 08/11/2026: phân tích địa chỉ, các lớp tên ấp cũ (ấp 10/11/12 ↔ 61/62/63), tổ dân phố và số nhà trùng sau gộp nằm ở [phan-tich-dia-chi-ap-cu-tc2.md](phan-tich-dia-chi-ap-cu-tc2.md).
+>
 > Cập nhật 20/10/2026: đã triển khai module và nhập nguồn thật vào schema riêng `tc2_roster`. Xem [kết quả triển khai, hướng dẫn sử dụng và recovery](tc2-roster-implementation.md). Các số liệu dưới đây là khảo sát nguồn trước nhập; các dòng bất đồng vẫn được giữ để đối soát.
 
 Khảo sát ngày **19/10/2026**, mở rộng [thiết kế database ban đầu](ke-hoach-database-dsnk-tc2-ap62.md). Tài liệu này là nguồn ưu tiên cho phạm vi bốn file, mapping địa bàn và tổng số liệu; thiết kế bảng/luồng chuyển đổi ở tài liệu ban đầu tiếp tục áp dụng cùng các bổ sung dưới đây. Đã đọc mọi sheet, phân tích dòng nghiệp vụ, sheet phụ, định danh, ngày sinh, HSCT và đối chiếu PostgreSQL local chỉ đọc. Chưa nhập hồ sơ hoặc sửa schema.

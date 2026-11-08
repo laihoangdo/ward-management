@@ -153,15 +153,18 @@ export interface InspectionPhoto {
 }
 
 export type HamletName =
-  'Ấp Bắc Lân' | 'Ấp Nam Lân' | 'Ấp Tây Lân' | 'Ấp Đông Lân' | 'Ấp Hậu Lân' | 'Ấp Tiền Lân' | 'Ấp 1' | 'Ấp 2' | string;
+  'Ấp Bắc Lân' | 'Ấp Nam Lân' | 'Ấp Tây Lân' | 'Ấp Đông Lân' | 'Ấp Hậu Lân' | 'Ấp Tiền Lân' | 'Ấp 1' | 'Ấp 2' | (string & {}); // Known names stay as editor hints; any server hamlet name is accepted.
 
 export interface HouseholdFacility {
   hamletId?: number;
   id: string;
   code: string;
   houseNumber: string;
-  street: string;
+  street: string; // Địa chỉ hiển thị: tên đường hoặc, khi chưa tách được, địa chỉ nguồn nguyên văn
+  streetName?: string; // Chỉ tên đường thật (cột street); trống khi địa chỉ nguồn chưa tách tên đường
+  rawAddress?: string; // Chỉ đọc: địa chỉ nguồn nguyên văn dùng để hiển thị khi chưa có tên đường; không bao giờ ghi vào cột street
   hamlet: HamletName;
+  legacyHamlet?: string; // Ấp cũ trước sáp nhập (61/62/63/69…), lấy từ nguồn nhập, không suy từ địa chỉ
   neighborhoodGroup?: string; // Tổ dân phố (e.g. 'Tổ 1', 'Tổ 2', 'Tổ 3', 'Tổ 4'...)
   alley?: string; // Tuyến hẻm (e.g. 'Mặt tiền đường', 'Hẻm 418', 'Hẻm 432'...)
   ownerName: string;

@@ -137,6 +137,17 @@ public class HouseholdDTO implements Serializable {
 
     private String legacyAddress;
 
+    /** Read-only: pre-merger hamlet from import provenance; filled for list responses, ignored on writes. */
+    private String legacyHamlet;
+
+    public String getLegacyHamlet() {
+        return legacyHamlet;
+    }
+
+    public void setLegacyHamlet(String legacyHamlet) {
+        this.legacyHamlet = legacyHamlet;
+    }
+
     public Long getHamletId() {
         return hamletId;
     }

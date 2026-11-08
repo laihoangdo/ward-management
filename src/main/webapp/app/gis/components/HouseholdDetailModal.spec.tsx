@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { HouseholdDetailModal } from './HouseholdDetailModal';
 import { HouseholdFacility, AppUser } from '../types';
 import { MemoryRouter } from 'react-router';
+import { mapHouseholdToDto } from '../services/householdApiService';
 
 vi.mock('./InspectionCameraModal', () => ({ InspectionCameraModal: () => null }));
 vi.mock('./OcrScanModal', () => ({ OcrScanModal: () => null }));
@@ -85,6 +86,28 @@ describe('Household save feedback', () => {
     expect((screen.getByLabelText('Tổng nhân khẩu cư trú:') as HTMLInputElement).value).toBe('0');
     expect((screen.getByLabelText('Tổ dân phố / Tổ nhân dân:') as HTMLInputElement).value).toBe('');
     expect((screen.getByLabelText('Tổng nhân khẩu cư trú:') as HTMLInputElement).max).toBe('');
+  });
+  it('does not offer or write the source address as a street when the household has no parsed street', async () => {
+    const onHouseholdUpdated = vi.fn().mockResolvedValue(undefined);
+    const raw = '12/3A ấp 62, xã Bà Điểm';
+    render(
+      <HouseholdDetailModal
+        household={{ ...household, street: raw, rawAddress: raw, streetName: undefined }}
+        currentUser={{ role: 'superadmin' } as AppUser}
+        onClose={vi.fn()}
+        onUpdateNotes={vi.fn()}
+        onHouseholdUpdated={onHouseholdUpdated}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Chỉnh sửa thông tin hộ' }));
+    const street = screen.getByLabelText('Tuyến đường:') as HTMLSelectElement;
+    expect(street.value).toBe('');
+    expect([...street.options].some(option => option.value === raw)).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin' }));
+    await waitFor(() => expect(onHouseholdUpdated).toHaveBeenCalled());
+    const saved = onHouseholdUpdated.mock.calls[0][0] as HouseholdFacility;
+    expect(JSON.parse(JSON.stringify(mapHouseholdToDto(saved)))).not.toHaveProperty('street');
   });
   it('confirms before closing a changed note and locks both close buttons during saving', async () => {
     let resolve: () => void;

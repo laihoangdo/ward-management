@@ -30,6 +30,7 @@ import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
 import { InspectionCameraModal } from './InspectionCameraModal';
 import { OcrScanModal } from './OcrScanModal';
 import { deleteInspectionPhotoFromHousehold } from '../services/firestoreService';
+import { showsSourceAddress } from '../services/householdApiService';
 import { BADIEM_51_HAMLETS } from '../data/baDiemHamlets';
 
 const ALLEY_BADGE_CLASS =
@@ -133,7 +134,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
     ownerName: household.ownerName || '',
     ownerPhone: household.ownerPhone || '',
     houseNumber: household.houseNumber || '',
-    street: household.street || '',
+    // Hộ chưa có tên đường: không đưa địa chỉ nguồn vào ô chọn tuyến đường.
+    street: showsSourceAddress(household) ? '' : household.street || '',
     hamlet: household.hamlet || '',
     hamletId: household.hamletId,
     neighborhoodGroup: household.neighborhoodGroup || '',
@@ -270,7 +272,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
       ownerName: editForm.ownerName.trim(),
       ownerPhone: editForm.ownerPhone.trim(),
       houseNumber: editForm.houseNumber.trim(),
-      street: editForm.street,
+      // Không chọn đường mới thì giữ địa chỉ nguồn để hiển thị; mapper sẽ không ghi nó vào cột street.
+      street: editForm.street || (showsSourceAddress(household) ? household.street : ''),
       hamlet: editForm.hamlet,
       hamletId: editForm.hamletId,
       neighborhoodGroup: editForm.neighborhoodGroup,

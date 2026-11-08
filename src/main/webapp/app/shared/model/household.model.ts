@@ -6,6 +6,8 @@ export interface IHousehold {
   id?: number;
   rosterId?: string;
   rawAddress?: string;
+  /** Read-only: pre-merger hamlet ("ấp cũ") from import provenance, e.g. "62". */
+  legacyHamlet?: string | null;
   coordinateMethod?: string;
   origin?: string;
   verificationStatus?: string;
