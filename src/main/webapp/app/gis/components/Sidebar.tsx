@@ -39,6 +39,18 @@ interface SidebarProps {
   onSwitchAccount: () => void;
 }
 
+/** Assigned territory: a short list is shown in full; a commune-wide list folds behind a count. */
+const TerritorySummary: React.FC<{ ward?: string; hamlets: string[] }> = ({ ward, hamlets }) => {
+  const label = [ward, hamlets.length > 3 ? `${hamlets.length} ấp được giao` : hamlets.join(', ')].filter(Boolean).join(' · ');
+  if (hamlets.length <= 3) return <span className="min-w-0 break-words">{label}</span>;
+  return (
+    <details className="min-w-0">
+      <summary className="cursor-pointer">{label}</summary>
+      <p className="m-0 mt-1 break-words">{hamlets.join(', ')}</p>
+    </details>
+  );
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({
   backendStatus = 'checking',
   activeTab,
@@ -118,26 +130,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
     switch (currentUser.role) {
       case 'superadmin':
         return {
-          label: 'QUẢN TRỊ HỆ THỐNG',
+          label: 'Quản trị hệ thống',
           bg: 'bg-red-950/80 text-red-300 border-red-700/60',
           indicator: 'bg-red-500',
         };
       case 'admin':
         return {
-          label: 'TRƯỞNG CÔNG AN XÃ',
+          label: 'Trưởng Công an xã',
           bg: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
           indicator: 'bg-amber-500',
         };
       case 'sub-admin':
         return {
-          label: 'CÔNG AN PHỤ TRÁCH ẤP',
+          label: 'Công an phụ trách ấp',
           bg: 'bg-blue-950/80 text-blue-300 border-blue-700/60',
           indicator: 'bg-blue-500',
         };
       case 'officer':
       default:
         return {
-          label: 'CÔNG AN VIÊN ĐỊA BÀN',
+          label: 'Công an viên địa bàn',
           bg: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
           indicator: 'bg-emerald-500',
         };
@@ -192,9 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div id="account-card" className="p-3 sm:p-4 mx-3 my-2.5 rounded-xl border border-slate-750">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <span
-              className={`gis-role-badge inline-block text-[11px] font-bold px-1.5 py-0.5 rounded border uppercase mb-1 ${roleInfo.bg}`}
-            >
+            <span className={`gis-role-badge inline-block text-[11px] font-bold px-1.5 py-0.5 rounded border mb-1 ${roleInfo.bg}`}>
               {roleInfo.label}
             </span>
             <div id="officer-name" className="text-sm font-semibold text-white leading-relaxed break-words">
@@ -206,36 +216,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onLogout}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition shrink-0"
+            aria-label="Đăng xuất khỏi hệ thống"
+            className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors shrink-0"
             title="Đăng xuất khỏi hệ thống"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut aria-hidden="true" className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="mt-2 pt-2 border-t border-slate-750 flex items-center justify-between text-[10px]">
-          <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${roleInfo.indicator}`} />
-            <span className="text-slate-300 tabular-nums">SH: {currentUser.badgeNumber}</span>
-          </div>
+        <div className="mt-2 pt-2 border-t border-slate-750 flex items-center justify-between gap-2 text-xs">
+          {/* Only facts the profile actually has: no empty "SH:" or bare location pin. */}
+          {currentUser.badgeNumber ? (
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span aria-hidden="true" className={`w-2 h-2 rounded-full shrink-0 ${roleInfo.indicator}`} />
+              <span className="text-slate-300 tabular-nums truncate">Số hiệu: {currentUser.badgeNumber}</span>
+            </div>
+          ) : (
+            <span />
+          )}
           <button
             type="button"
             onClick={onSwitchAccount}
-            className="text-[10px] text-amber-400 hover:underline flex items-center gap-1"
+            className="min-h-[32px] text-xs text-amber-400 hover:underline flex items-center gap-1 shrink-0"
             title="Chuyển tài khoản khác"
           >
-            <RefreshCw className="w-2.5 h-2.5" />
+            <RefreshCw aria-hidden="true" className="w-3 h-3" />
             Đổi tài khoản
           </button>
         </div>
 
         {/* Assigned Ward / Hamlets */}
-        <div className="gis-sidebar-territory mt-2 text-xs text-slate-400 flex items-start gap-1.5">
-          <MapPin aria-hidden="true" className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          <span className="min-w-0 break-words">
-            {currentUser.assignedWard} {currentUser.assignedHamlets?.length > 0 ? `(${currentUser.assignedHamlets.join(', ')})` : ''}
-          </span>
-        </div>
+        {(currentUser.assignedWard || currentUser.assignedHamlets?.length > 0) && (
+          <div className="gis-sidebar-territory mt-2 text-xs text-slate-400 flex items-start gap-1.5">
+            <MapPin aria-hidden="true" className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <TerritorySummary ward={currentUser.assignedWard} hamlets={currentUser.assignedHamlets ?? []} />
+          </div>
+        )}
       </div>
 
       {/* Navigation Links */}

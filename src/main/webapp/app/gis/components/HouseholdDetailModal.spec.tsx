@@ -109,6 +109,27 @@ describe('Household save feedback', () => {
     const saved = onHouseholdUpdated.mock.calls[0][0] as HouseholdFacility;
     expect(JSON.parse(JSON.stringify(mapHouseholdToDto(saved)))).not.toHaveProperty('street');
   });
+  it('sends roster-managed households to the roster to update notes and hides an empty call link', () => {
+    const openRoster = vi.fn();
+    const onUpdateNotes = vi.fn();
+    const roster = { ...household, code: 'TC2-R-1', ownerPhone: '' };
+    render(
+      <MemoryRouter>
+        <HouseholdDetailModal
+          household={roster}
+          currentUser={{ role: 'superadmin' } as AppUser}
+          onClose={vi.fn()}
+          onUpdateNotes={onUpdateNotes}
+          onOpenRoster={openRoster}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('button', { name: 'Sửa ghi chú' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Cập nhật trong hồ sơ hộ' }));
+    expect(openRoster).toHaveBeenCalledWith(roster, false);
+    expect(onUpdateNotes).not.toHaveBeenCalled();
+    expect(screen.queryByRole('link', { name: /^Gọi/ })).toBeNull();
+  });
   it('confirms before closing a changed note and locks both close buttons during saving', async () => {
     let resolve: () => void;
     const close = vi.fn();

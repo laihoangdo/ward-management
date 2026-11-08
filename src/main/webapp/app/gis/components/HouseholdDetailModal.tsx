@@ -998,7 +998,22 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                 </div>
               </div>
 
-              {!isEditingNotes && (
+              {/* Roster-managed (TC2) households are written only through the audited roster workflow; the legacy
+                  notes API refuses every write, so send the officer there instead of typing a note that cannot save. */}
+              {!isEditingNotes && unified && (
+                <button
+                  disabled={isSaving || !canInspect}
+                  onClick={() => {
+                    if (onOpenRoster) onOpenRoster(household, false);
+                    else window.location.assign(`/dashboard?tab=households&legacyHousehold=${encodeURIComponent(household.id)}`);
+                  }}
+                  className="px-2.5 py-1 text-blue-700 hover:bg-blue-50 rounded-lg font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <Edit3 aria-hidden="true" className="w-3.5 h-3.5" />
+                  <span>Cập nhật trong hồ sơ hộ</span>
+                </button>
+              )}
+              {!isEditingNotes && !unified && (
                 <button
                   disabled={isSaving || !canInspect}
                   onClick={handleTriggerEditNotes}
@@ -1050,13 +1065,16 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
         {/* Modal Footer */}
         <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 shrink-0">
           <div className="flex items-center gap-2">
-            <a
-              href={`tel:${household.ownerPhone}`}
-              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs min-h-[40px]"
-            >
-              <Phone className="w-3.5 h-3.5 text-blue-600" />
-              <span>Gọi ({household.ownerPhone})</span>
-            </a>
+            {/* No number on file: no empty "Gọi ()" link that dials nothing. */}
+            {household.ownerPhone?.trim() && (
+              <a
+                href={`tel:${household.ownerPhone}`}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs min-h-[40px]"
+              >
+                <Phone aria-hidden="true" className="w-3.5 h-3.5 text-blue-600" />
+                <span>Gọi ({household.ownerPhone})</span>
+              </a>
+            )}
 
             <button
               disabled={isSaving || !canInspect}

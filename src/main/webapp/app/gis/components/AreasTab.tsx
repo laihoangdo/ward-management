@@ -46,9 +46,6 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
       {/* Banner */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div>
-          <div id="area-eyebrow" className="text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
-            Phân quyền địa bàn xã Bà Điểm
-          </div>
           <h2 id="area-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Quản lý khu vực dân cư các Ấp thuộc Xã Bà Điểm
           </h2>
@@ -98,7 +95,12 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
                   <dd className="m-0 text-lg font-semibold tabular-nums text-slate-900 dark:text-white">{hamletHouseholds.length}</dd>
                 </div>
                 <div className="px-2">
-                  <dt className="text-xs text-slate-500 dark:text-slate-400">Nhân khẩu</dt>
+                  <dt
+                    className="text-xs text-slate-500 dark:text-slate-400"
+                    title="Cộng số nhân khẩu ghi trên từng hộ; một người thuộc nhiều hộ được tính ở mỗi hộ"
+                  >
+                    Nhân khẩu theo hộ
+                  </dt>
                   <dd className="m-0 text-lg font-semibold tabular-nums text-slate-900 dark:text-white">{totalResidents}</dd>
                 </div>
                 <div className="px-2">
@@ -120,9 +122,9 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
                   <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 font-medium">
                     <span className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Tình trạng:</span>
+                      <span>Cảnh báo:</span>
                     </span>
-                    <span>An toàn ANTT</span>
+                    <span>Không có vị trí cần kiểm tra</span>
                   </div>
                 )}
               </div>

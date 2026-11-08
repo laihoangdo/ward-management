@@ -547,12 +547,16 @@ html.dark :is(#__page-root, .gis-login) {
   border-radius: 6px;
 }
 #__page-root .gis-header-search {
-  width: clamp(144px, 19cqw, 256px);
+  width: clamp(160px, 22cqw, 288px);
 }
 #__page-root .gis-header-search input {
   height: 40px;
   font-size: 14px;
   border-color: var(--gis-control-border);
+  /* Room for the voice button only; the clear button appears once there is text. */
+  padding-inline-end: 40px;
+}
+#__page-root .gis-header-search input:not(:placeholder-shown) {
   padding-inline-end: 72px;
 }
 #__page-root :is(.gis-header, .gis-records) input::placeholder {
@@ -824,6 +828,30 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
   font-size: 16px;
   line-height: 1.4;
   font-weight: 600;
+}
+/* Checkbox + text row inside a <label>: Bootstrap makes labels inline-block, which breaks Tailwind flex. */
+#__page-root .gis-check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+#__page-root .gis-check-row input {
+  margin: 0;
+}
+/* Title of a page section that holds several panels (e.g. "Cơ cấu nhân khẩu"). */
+#__page-root .gis-section-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+/* Title of one item inside a list card (a document, a record): one step above body text. */
+#__page-root .gis-item-title {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
 }
 #__page-root .gis-area-card :is(dt, dd) {
   margin: 0;

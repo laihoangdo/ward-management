@@ -455,9 +455,15 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                         </span>
                       </div>
                       <div className="text-xs text-slate-400 mt-0.5">{off.position}</div>
-                      <div className="text-[11px] text-slate-400 mt-1 font-mono">
-                        Số hiệu: <strong className="text-amber-400">{off.badgeNumber}</strong> • {off.assignedWard} (
-                        {off.assignedHamlets?.join(', ') || 'Chưa gán ấp'})
+                      {/* Only the facts the profile has: no empty "Số hiệu:" or bare separators. */}
+                      <div className="text-xs text-slate-400 mt-1">
+                        {[
+                          off.badgeNumber && `Số hiệu ${off.badgeNumber}`,
+                          off.assignedWard,
+                          off.assignedHamlets?.length ? off.assignedHamlets.join(', ') : 'Chưa gán ấp',
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </div>
                       {off.assignedStreets && off.assignedStreets.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
@@ -497,9 +503,11 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                   <h2 className="text-lg font-bold text-white flex items-center gap-2 mt-1">
                     <Award className="w-5 h-5 text-amber-400" />
                     {selectedOfficer.rank} {selectedOfficer.fullName}
-                    <span className="text-xs px-2 py-0.5 rounded bg-slate-950 border border-slate-700 text-slate-300 font-mono">
-                      SH: {selectedOfficer.badgeNumber}
-                    </span>
+                    {selectedOfficer.badgeNumber && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-slate-950 border border-slate-700 text-slate-300">
+                        Số hiệu {selectedOfficer.badgeNumber}
+                      </span>
+                    )}
                   </h2>
                 </div>
 

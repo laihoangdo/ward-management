@@ -41,6 +41,16 @@ describe('Real roster workflows', () => {
         <RosterPage />
       </MemoryRouter>,
     );
+  it('opens the audited create-household form from a ?newHousehold=true link and clears the flag', async () => {
+    render(
+      <MemoryRouter initialEntries={['/roster?tab=households&newHousehold=true']}>
+        <RouteProbe />
+        <RosterPage />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('dialog', { name: 'Tạo hộ mới' });
+    await waitFor(() => expect(screen.getByTestId('route').textContent).not.toContain('newHousehold'));
+  });
   it('keeps household detail and edit mode on the URL across Back and Forward', async () => {
     render(
       <MemoryRouter initialEntries={['/roster?tab=households', '/roster?tab=households&household=h1']}>
@@ -48,17 +58,17 @@ describe('Real roster workflows', () => {
         <RosterPage />
       </MemoryRouter>,
     );
-    await screen.findByRole('heading', { name: /TC2-TEST ·/ });
+    await screen.findByRole('heading', { name: 'Địa chỉ thử nghiệm' });
     fireEvent.click(screen.getByRole('button', { name: 'Sửa hộ' }));
     await screen.findByRole('dialog', { name: 'Sửa thông tin hộ' });
     expect(screen.getByTestId('route').textContent).toContain('edit=true');
     fireEvent.click(screen.getByText('Browser Back'));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    await screen.findByRole('heading', { name: /TC2-TEST ·/ });
+    await screen.findByRole('heading', { name: 'Địa chỉ thử nghiệm' });
     fireEvent.click(screen.getByText('Browser Back'));
-    await waitFor(() => expect(screen.queryByRole('heading', { name: /TC2-TEST ·/ })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Địa chỉ thử nghiệm' })).toBeNull());
     fireEvent.click(screen.getByText('Browser Forward'));
-    await screen.findByRole('heading', { name: /TC2-TEST ·/ });
+    await screen.findByRole('heading', { name: 'Địa chỉ thử nghiệm' });
     fireEvent.click(screen.getByRole('button', { name: 'Đóng chi tiết' }));
     await waitFor(() => expect(screen.getByTestId('route').textContent).not.toContain('household='));
   });
@@ -144,7 +154,8 @@ describe('Real roster workflows', () => {
         <RosterPage embedded householdTarget={{ legacyId: '123', edit }} />
       </MemoryRouter>,
     );
-    await screen.findByRole('heading', { name: /TC2-SYNTHETIC · Địa chỉ tổng hợp/ });
+    await screen.findByRole('heading', { name: 'Địa chỉ tổng hợp' });
+    expect(screen.getByText('Mã hộ TC2-SYNTHETIC')).toBeDefined();
     expect(axios.get).toHaveBeenCalledWith(
       '/api/roster/legacy-households/123',
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
@@ -210,6 +221,24 @@ describe('Real roster workflows', () => {
     await waitFor(() => expect(axios.post).toHaveBeenCalledOnce());
     expect(vi.mocked(axios.post).mock.calls[0][1]).toMatchObject({ rawAddress: 'Địa chỉ thử nghiệm', requestId: expect.any(String) });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+  it('summarises empty required fields in Vietnamese and marks each one until it is filled', async () => {
+    open();
+    await screen.findByText(/62 dòng chờ đối soát/);
+    fireEvent.click(screen.getByRole('button', { name: '+ Thêm hộ' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xem lại →' }));
+    const summary = await screen.findByText(/thông tin bắt buộc chưa nhập/);
+    const box = summary.closest('[role="alert"]') as HTMLElement;
+    expect(box.textContent).toContain('Địa chỉ nguyên bản');
+    expect(box.textContent).toContain('Lý do / nguồn kiểm chứng');
+    const address = screen.getByLabelText('Địa chỉ nguyên bản *');
+    expect(address.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(address.getAttribute('aria-describedby') as string)?.textContent).toMatch(/Vui lòng nhập/);
+    expect(screen.queryByText('Kiểm tra trước khi lưu')).toBeNull();
+    fireEvent.change(address, { target: { value: 'Địa chỉ thử nghiệm' } });
+    expect(address.getAttribute('aria-invalid')).toBeNull();
+    expect(box.textContent).not.toContain('Địa chỉ nguyên bản');
+    expect(axios.post).not.toHaveBeenCalled();
   });
   it('keeps form data and the same request ID after a failed save', async () => {
     vi.mocked(axios.post)

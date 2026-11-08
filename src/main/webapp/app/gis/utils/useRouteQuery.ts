@@ -45,4 +45,5 @@ export const RECORD_QUERY_KEYS = {
   resident: null,
   edit: null,
   collection: null,
+  newHousehold: null,
 };

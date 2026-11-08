@@ -117,3 +117,85 @@ it('shows each map only when its separate view permission is granted', () => {
   );
   expect(screen.getByRole('button', { name: name => name.startsWith(menus[1].label) })).toBeTruthy();
 });
+
+it('shows only the profile facts the account has and names the logout control', () => {
+  const base: AppUser = {
+    id: 'synthetic-officer',
+    username: 'synthetic-officer',
+    fullName: 'Cán bộ thử nghiệm',
+    role: 'officer',
+    rank: '',
+    position: '',
+    unit: '',
+    badgeNumber: '',
+    phone: '',
+    assignedWard: '',
+    assignedHamlets: [],
+    assignedStreets: [],
+    status: 'active',
+    createdAt: '2026-10-12',
+  };
+  const view = (user: AppUser) =>
+    render(
+      <MemoryRouter>
+        <Sidebar
+          activeTab="overview"
+          onTabChange={vi.fn()}
+          officer={DEFAULT_OFFICER}
+          currentUser={user}
+          dynamicMenus={INITIAL_DYNAMIC_MENUS}
+          warningCount={0}
+          onLogout={vi.fn()}
+          onSwitchAccount={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+  const empty = view(base);
+  expect(screen.queryByText(/Số hiệu:/)).toBeNull();
+  expect(document.querySelector('.gis-sidebar-territory')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Đăng xuất khỏi hệ thống' })).toBeDefined();
+  expect(screen.getByText('Công an viên địa bàn')).toBeDefined();
+  empty.unmount();
+
+  view({ ...base, badgeNumber: '123-456', assignedWard: 'Xã Bà Điểm', assignedHamlets: ['Trung Chánh 2'] });
+  expect(screen.getByText('Số hiệu: 123-456')).toBeDefined();
+  expect(document.querySelector('.gis-sidebar-territory')?.textContent).toContain('Trung Chánh 2');
+});
+
+it('folds a commune-wide hamlet list behind a count', () => {
+  const hamlets = Array.from({ length: 51 }, (_, i) => `Ấp thử ${i + 1}`);
+  render(
+    <MemoryRouter>
+      <Sidebar
+        activeTab="overview"
+        onTabChange={vi.fn()}
+        officer={DEFAULT_OFFICER}
+        currentUser={{
+          id: 'synthetic-commune',
+          username: 'synthetic-commune',
+          fullName: 'Trưởng Công an xã thử nghiệm',
+          role: 'admin',
+          rank: '',
+          position: '',
+          unit: '',
+          badgeNumber: '',
+          phone: '',
+          assignedWard: '',
+          assignedHamlets: hamlets,
+          assignedStreets: [],
+          status: 'active',
+          createdAt: '2026-10-12',
+        }}
+        dynamicMenus={INITIAL_DYNAMIC_MENUS}
+        warningCount={0}
+        onLogout={vi.fn()}
+        onSwitchAccount={vi.fn()}
+      />
+    </MemoryRouter>,
+  );
+  const territory = document.querySelector('.gis-sidebar-territory') as HTMLElement;
+  const summary = territory.querySelector('summary') as HTMLElement;
+  expect(summary.textContent).toBe('51 ấp được giao');
+  expect((territory.querySelector('details') as HTMLDetailsElement).open).toBe(false);
+  expect(territory.textContent).not.toMatch(/^\(/);
+});

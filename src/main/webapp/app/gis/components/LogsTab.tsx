@@ -26,6 +26,36 @@ interface LogsTabProps {
   onAddManualLog?: (log: Partial<AuditLogEntry>) => Promise<boolean>;
 }
 
+/** Raw JSON (map geometry, records) is folded away; plain values are shown in full instead of truncated. */
+const isStructured = (value?: string) => !!value && /^\s*[[{]/.test(value);
+const ValueChange: React.FC<{ before?: string; after?: string }> = ({ before, after }) => {
+  const rows = (
+    <>
+      {before && (
+        <div className="text-slate-600 dark:text-slate-400 flex items-start gap-1.5">
+          <span className="font-semibold text-rose-700 dark:text-rose-400 shrink-0">Cũ:</span>
+          <span className="min-w-0 break-words whitespace-pre-wrap">{before}</span>
+        </div>
+      )}
+      {after && (
+        <div className="text-emerald-800 dark:text-emerald-300 flex items-start gap-1.5">
+          <span className="font-semibold shrink-0">Mới:</span>
+          <span className="min-w-0 break-words whitespace-pre-wrap">{after}</span>
+        </div>
+      )}
+    </>
+  );
+  const box =
+    'mt-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-xs space-y-1';
+  if (!isStructured(before) && !isStructured(after)) return <div className={box}>{rows}</div>;
+  return (
+    <details className={box}>
+      <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-300">Xem dữ liệu thay đổi</summary>
+      <div className="mt-1.5 space-y-1 font-mono text-[11px] max-h-60 overflow-auto">{rows}</div>
+    </details>
+  );
+};
+
 export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHousehold, onAddManualLog }) => {
   const [savingManualLog, setSavingManualLog] = useState(false);
   const [manualSaveError, setManualSaveError] = useState('');
@@ -271,7 +301,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
     label: 'text-[11px] font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5', // taste-skill-ignore: màu phân loại loại hành động
     icon: 'w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400', // taste-skill-ignore: màu phân loại loại hành động
     value: 'text-xl sm:text-2xl font-bold text-indigo-900 dark:text-indigo-100 mt-1', // taste-skill-ignore: màu phân loại loại hành động
-    caption: 'text-[10px] text-indigo-600/70 dark:text-indigo-400/70 mt-0.5', // taste-skill-ignore: màu phân loại loại hành động
+    caption: 'hidden sm:block text-[11px] text-indigo-700 dark:text-indigo-400/70 mt-0.5', // taste-skill-ignore: màu phân loại loại hành động
   };
 
   return (
@@ -279,29 +309,14 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
       {/* Tab Header Banner */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-12 h-12 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
-              <History className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 id="logs-title" className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  Nhật ký thao tác & minh bạch quản lý
-                </h2>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Thời gian thực
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  <ShieldCheck className="w-3 h-3 text-blue-500" />
-                  Mã hóa kiểm toán
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
-                Lưu vết toàn bộ lịch sử chỉnh sửa tọa độ bản đồ, cập nhật hồ sơ kiểm tra thực địa, đôn đốc gia hạn giấy phép và trích xuất
-                dữ liệu của các tài khoản CSKV trên địa bàn quản lý.
-              </p>
-            </div>
+          {/* Loaded when the tab opens; no "real-time" or "encrypted" claim the data does not back. */}
+          <div>
+            <h2 id="logs-title" className="gis-panel-title text-slate-900 dark:text-white">
+              Nhật ký thao tác & minh bạch quản lý
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 mb-0 max-w-3xl">
+              Thao tác đã lưu trên máy chủ trong phạm vi quản lý: sửa tọa độ, cập nhật hồ sơ, đôn đốc gia hạn.
+            </p>
           </div>
 
           {/* Action buttons */}
@@ -329,14 +344,14 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
         </div>
 
         {/* 4 Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-5 pt-5 border-t border-slate-200 dark:border-slate-800">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
           <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70">
             <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <History className="w-3.5 h-3.5 text-blue-500" />
               <span>Tổng số lượt thao tác</span>
             </div>
             <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.total}</div>
-            <div className="text-[10px] text-slate-400 mt-0.5">Tất cả tài khoản hệ thống</div>
+            <div className="hidden sm:block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Trong phạm vi bạn được xem</div>
           </div>
 
           <div className={COORDINATE_STAT_STYLES.card}>
@@ -354,7 +369,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
               <span>Cập nhật hồ sơ & OCR</span>
             </div>
             <div className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">{stats.profileUpdates}</div>
-            <div className="text-[10px] text-blue-600/70 dark:text-blue-400/70 mt-0.5">Ghi chú & nhân khẩu thực tế</div>
+            <div className="hidden sm:block text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">Ghi chú & nhân khẩu thực tế</div>
           </div>
 
           <div className="p-3 sm:p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40">
@@ -363,7 +378,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
               <span>Đôn đốc & Gia hạn</span>
             </div>
             <div className="text-xl sm:text-2xl font-bold text-amber-900 dark:text-amber-100 mt-1">{stats.reminders}</div>
-            <div className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-0.5">Văn bản & thông báo ANTT</div>
+            <div className="hidden sm:block text-[11px] text-amber-800 dark:text-amber-400 mt-0.5">Văn bản & thông báo ANTT</div>
           </div>
         </div>
       </div>
@@ -575,29 +590,14 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                       <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-normal">{log.details}</p>
 
                       {/* Value Diff (Before -> After) if present */}
-                      {(log.previousValue || log.newValue) && (
-                        <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-[11px] sm:text-xs font-mono space-y-1">
-                          {log.previousValue && (
-                            <div className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                              <span className="font-semibold text-rose-500">Cũ:</span>
-                              <span className="truncate">{log.previousValue}</span>
-                            </div>
-                          )}
-                          {log.newValue && (
-                            <div className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">Mới:</span>
-                              <span className="font-semibold truncate">{log.newValue}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {(log.previousValue || log.newValue) && <ValueChange before={log.previousValue} after={log.newValue} />}
 
                       {/* Meta Footer: Officer, Device, Hash */}
                       <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 pt-1 flex-wrap">
                         <div className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                           <UserCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                          <span>{log.officerName}</span>
-                          <span className="text-slate-400">({log.officerBadge})</span>
+                          <span>{log.officerName || 'Chưa rõ cán bộ'}</span>
+                          {log.officerBadge && <span className="text-slate-500">({log.officerBadge})</span>}
                         </div>
 
                         <span>•</span>

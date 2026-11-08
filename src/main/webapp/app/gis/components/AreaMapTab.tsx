@@ -14,7 +14,6 @@ import {
   Maximize2,
   Minimize2,
   Compass,
-  Layers,
   Home,
   SlidersHorizontal,
   X,
@@ -503,21 +502,17 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
         <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             <div>
-              <div id="map-eyebrow" className="text-[11px] sm:text-xs font-semibold text-blue-600 mb-1 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5" />
-                <span>Bản đồ dân cư & phân vùng quản lý</span>
-              </div>
               <h2 id="map-title" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                 Sơ đồ địa bàn tương tác
               </h2>
-              <p id="map-description" className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1">
+              <p id="map-description" className="hidden sm:block text-sm text-slate-500 mt-1 mb-0">
                 Lọc nhanh theo ấp cũ, tổ dân phố hoặc tuyến hẻm để quan sát khu vực phụ trách rõ nét, loại bỏ dữ liệu dư thừa.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
               {/* Toggle Only Warnings */}
-              <label className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors min-h-[40px]">
+              <label className="gis-check-row px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors min-h-[40px]">
                 <input
                   type="checkbox"
                   id="map-alert-toggle"
@@ -547,8 +542,8 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition-colors flex items-center gap-1.5 min-h-[40px] cursor-pointer"
                 title="Xóa toàn bộ bộ lọc"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset</span>
+                <RotateCcw aria-hidden="true" className="w-3.5 h-3.5" />
+                <span>Xóa lọc</span>
               </button>
 
               {/* Navigate to GIS Advanced Map */}
@@ -577,7 +572,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             </div>
           </div>
 
-          <p id="map-help" className="text-[11px] sm:text-xs text-slate-500 mt-2.5 pt-2.5 border-t border-slate-100 italic">
+          <p id="map-help" className="hidden sm:block text-xs text-slate-500 mt-2.5 mb-0 pt-2.5 border-t border-slate-100">
             Sơ đồ phân tổ và hẻm giúp cán bộ CSKV tập trung vào từng cụm dân cư phụ trách mà không bị rối mắt bởi lượng lớn dữ liệu.
           </p>
         </div>
@@ -588,7 +583,11 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
         {/* Mode Selector & Search Row */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           {/* Filter Mode Selector Pills */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl w-fit">
+          <div
+            role="group"
+            aria-label="Chế độ lọc"
+            className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl w-fit max-w-full overflow-x-auto"
+          >
             <button
               id="mode-filter-all"
               onClick={() => {
@@ -596,7 +595,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 setSelectedGroup('all');
                 setSelectedAlley('all');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                 filterMode === 'all' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -606,7 +605,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             <button
               id="mode-filter-group"
               onClick={() => setFilterMode('group')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                 filterMode === 'group' || selectedGroup !== 'all'
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -614,18 +613,18 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             >
               <Users className="w-3.5 h-3.5" />
               <span>Lọc theo Tổ dân phố</span>
-              {selectedGroup !== 'all' && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+              {selectedGroup !== 'all' && <span aria-hidden="true" className="w-2 h-2 rounded-full bg-white" />}
             </button>
             <button
               id="mode-filter-alley"
               onClick={() => setFilterMode('alley')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
                 filterMode === 'alley' || selectedAlley !== 'all' ? ALLEY_ACTIVE_PILL : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Navigation className="w-3.5 h-3.5" />
               <span>Lọc theo Hẻm / Tuyến</span>
-              {selectedAlley !== 'all' && <span className="w-2 h-2 rounded-full bg-white animate-pulse" />}
+              {selectedAlley !== 'all' && <span aria-hidden="true" className="w-2 h-2 rounded-full bg-white" />}
             </button>
           </div>
 

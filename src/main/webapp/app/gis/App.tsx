@@ -9,12 +9,13 @@ import { DocumentCommand, saveLegalDocument } from './services/documentLifecycle
 import { matchesHouseholdSearch } from './utils/householdSearch';
 import { loadOperationalData, OPERATIONAL_DATA_LABELS } from './utils/operationalData';
 import { useDeferredOperationalData } from './utils/useDeferredOperationalData';
-import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, MapPin } from 'lucide-react';
+import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ServerOverviewTab } from './components/ServerOverviewTab';
 import { fetchOverviewSummary, OverviewScope } from './services/overviewApi';
 import { AreaMapTab } from './components/AreaMapTab';
+import { TerritoryScopeBar } from './components/TerritoryScopeBar';
 import { BaDiem3DMapEditor } from './components/BaDiem3DMapEditor';
 const FieldHouseMap = React.lazy(() => import('./components/FieldHouseMap'));
 const MapLibreAreaMap = React.lazy(() => import('./components/MapLibreAreaMap'));
@@ -909,10 +910,6 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     return assignedHouseholds;
   }, [households, assignedHouseholds, isTerritoryRestricted]);
 
-  const assignedResidentsCount = useMemo(() => {
-    return assignedHouseholds.reduce((acc, h) => acc + (h.residentsCount ?? 0), 0);
-  }, [assignedHouseholds]);
-
   // If user searched in header and pressed or typed, filter scoped view
   const displayedHouseholds = useMemo(() => {
     if (activeTab === 'households') return scopedHouseholds;
@@ -1063,41 +1060,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
               {/* Territory Scope Control Bar for Sub-Admin and Officer */}
               {isTerritoryRestricted && !isMapFullscreen && (
-                <div className="mb-4 p-3.5 sm:p-4 bg-slate-900 border border-slate-700 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-start sm:items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 sm:mt-0">
-                      <MapPin className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-white text-sm">
-                          {currentUser?.assignedHamlets?.join(', ') || 'Địa bàn phân công'}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                          {currentUser?.role === 'sub-admin' ? 'Sub-Admin Quản Lý Ấp' : 'Công An Viên Tuyến'}
-                        </span>
-                        <span className="text-slate-400 text-[11px]">
-                          • {currentUser?.rank} {currentUser?.fullName}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
-                        <span>
-                          Tuyến phụ trách:{' '}
-                          <strong className="text-slate-100 font-medium">
-                            {currentUser?.assignedStreets && currentUser.assignedStreets.length > 0
-                              ? currentUser.assignedStreets.join(', ')
-                              : 'Toàn bộ địa bàn ấp'}
-                          </strong>
-                        </span>
-                        <span>•</span>
-                        <span className="text-emerald-400 font-semibold">
-                          {(hasCompleteHouseholds ? assignedHouseholds.length : overviewScope?.total) ?? '...'} hộ dân /{' '}
-                          {(hasCompleteHouseholds ? assignedResidentsCount : overviewScope?.residents) ?? '...'} nhân khẩu
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <TerritoryScopeBar
+                  user={currentUser}
+                  householdCount={hasCompleteHouseholds ? assignedHouseholds.length : overviewScope?.total}
+                />
               )}
               {activeTab === 'overview' && (
                 <ServerOverviewTab
@@ -1166,9 +1132,16 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                       canAdd={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
                       canLink={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canEditCoordinates === true}
                       onSelect={openHousehold}
-                      onAdd={coordinates => {
-                        setSelectedMapCoordinates(coordinates);
-                        setIsAddModalOpen(true);
+                      onAdd={() => {
+                        // The legacy household API is read-only (409 on every write); create through the audited roster
+                        // flow instead, then link the new household to this building with the map's link action.
+                        if (!canOpenMenu('households')) {
+                          showToast('Bạn không có quyền mở danh sách hộ.');
+                          return;
+                        }
+                        showToast('Tạo hộ trong Hồ sơ dân cư, sau đó liên kết hộ với công trình trên bản đồ.');
+                        setIsMapFullscreen(false);
+                        updateQuery({ ...RECORD_QUERY_KEYS, tab: 'households', newHousehold: 'true', page: null, rosterTab: null });
                       }}
                       isFullscreen={isMapFullscreen}
                       onToggleFullscreen={handleToggleMapFullscreen}

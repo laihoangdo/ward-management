@@ -105,6 +105,17 @@ const labels: Record<string, string> = {
   residence_record_address: 'Địa chỉ hồ sơ',
 };
 
+/** Plain wording for where a household sits on the map (tc2_roster.household.coordinate_method). */
+const coordinateLabel = (method: unknown) =>
+  method === 'RANDOM_WITHIN_TC2'
+    ? 'tạm đặt trong địa bàn Trung Chánh 2, chưa xác minh tại thực địa'
+    : method === 'VERIFIED'
+      ? 'đã xác minh'
+      : 'chưa có vị trí';
+const caseSuffix = (caseNumber?: string | null) => (caseNumber ? ` · HSCT ${caseNumber}` : '');
+/** Officers recognise a household by its address; the code is the fallback. */
+const householdTitle = (h: Row) => (h.raw_address as string) || (h.code as string);
+
 function Editor({
   title,
   fields,
@@ -130,6 +141,14 @@ function Editor({
   const [review, setReview] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  // Required fields left empty on "continue"; shown as a summary plus a message under each field.
+  const [missing, setMissing] = useState<string[]>([]);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const isMissing = (f: Field) => f.required && f.type !== 'checkbox' && !text(data[f.key]).trim();
+  const change = (key: string, value: unknown) => {
+    setData({ ...data, [key]: value });
+    if (missing.includes(key)) setMissing(missing.filter(k => k !== key));
+  };
   const save = async () => {
     setBusy(true);
     setError('');
@@ -153,38 +172,73 @@ function Editor({
           </div>
         )}
         <form
+          noValidate
           onSubmit={e => {
             e.preventDefault();
+            const empty = fields.filter(isMissing).map(f => f.key);
+            setMissing(empty);
+            if (empty.length) {
+              requestAnimationFrame(() => summaryRef.current?.focus());
+              return;
+            }
             setReview(true);
           }}
         >
+          {missing.length > 0 && !review && (
+            <div ref={summaryRef} tabIndex={-1} role="alert" className="roster-error roster-error-summary">
+              <strong>Còn {missing.length} thông tin bắt buộc chưa nhập:</strong>
+              <ul>
+                {fields
+                  .filter(f => missing.includes(f.key))
+                  .map(f => (
+                    <li key={f.key}>{f.label}</li>
+                  ))}
+              </ul>
+            </div>
+          )}
           {!review ? (
             <div className="roster-fields">
               {fields.map(f => (
-                <label key={f.key}>
-                  {f.label}
-                  {f.required && ' *'}
-                  {f.options ? (
-                    <select disabled={readOnly} value={text(data[f.key])} onChange={e => setData({ ...data, [f.key]: e.target.value })}>
-                      {f.options.map(([v, l]) => (
-                        <option key={v} value={v}>
-                          {l}
-                        </option>
-                      ))}
-                    </select>
-                  ) : f.type === 'checkbox' ? (
-                    <input type="checkbox" checked={Boolean(data[f.key])} onChange={e => setData({ ...data, [f.key]: e.target.checked })} />
-                  ) : (
-                    <input
-                      required={f.required}
-                      readOnly={readOnly}
-                      type={f.type ?? 'text'}
-                      value={text(data[f.key])}
-                      maxLength={2000}
-                      onChange={e => setData({ ...data, [f.key]: e.target.value })}
-                    />
+                <div key={f.key} className="roster-field">
+                  <label>
+                    {f.label}
+                    {f.required && ' *'}
+                    {f.options ? (
+                      <select
+                        disabled={readOnly}
+                        required={f.required}
+                        aria-invalid={missing.includes(f.key) || undefined}
+                        aria-describedby={missing.includes(f.key) ? `editor-error-${f.key}` : undefined}
+                        value={text(data[f.key])}
+                        onChange={e => change(f.key, e.target.value)}
+                      >
+                        {f.options.map(([v, l]) => (
+                          <option key={v} value={v}>
+                            {l}
+                          </option>
+                        ))}
+                      </select>
+                    ) : f.type === 'checkbox' ? (
+                      <input type="checkbox" checked={Boolean(data[f.key])} onChange={e => change(f.key, e.target.checked)} />
+                    ) : (
+                      <input
+                        required={f.required}
+                        readOnly={readOnly}
+                        aria-invalid={missing.includes(f.key) || undefined}
+                        aria-describedby={missing.includes(f.key) ? `editor-error-${f.key}` : undefined}
+                        type={f.type ?? 'text'}
+                        value={text(data[f.key])}
+                        maxLength={2000}
+                        onChange={e => change(f.key, e.target.value)}
+                      />
+                    )}
+                  </label>
+                  {missing.includes(f.key) && (
+                    <span id={`editor-error-${f.key}`} className="roster-field-error">
+                      Vui lòng nhập {f.label.toLowerCase()}
+                    </span>
                   )}
-                </label>
+                </div>
               ))}
             </div>
           ) : (
@@ -623,6 +677,24 @@ export default function RosterPage({
       });
     return () => controller.abort();
   }, [collection, status, sourcePage]);
+  // The audited create flow; also opened from the map ("Thêm hộ dân tại công trình") through ?newHousehold=true.
+  const openNewHousehold = () =>
+    setEditor({
+      title: 'Tạo hộ mới',
+      fields: [...householdFields, { key: 'caseNumber', label: 'HSCT (nếu có)' }, reason],
+      initial: {},
+      async save(r) {
+        const { data } = await axios.post(`${api}/households`, r);
+        await loadHouse(data.id);
+        await done('Đã tạo hộ');
+      },
+    });
+  const newHouseholdRequested = urlParams.get('newHousehold') === 'true';
+  useEffect(() => {
+    if (!newHouseholdRequested || tab !== 'households') return;
+    openNewHousehold();
+    updateQuery({ newHousehold: null }, true);
+  }, [newHouseholdRequested, tab]);
   const done = async (msg: string) => {
     setMessage(`${msg} · ${new Date().toLocaleTimeString()}`);
     await refresh();
@@ -735,13 +807,13 @@ export default function RosterPage({
   };
   const householdDetail = household && (
     <section className="roster-detail">
-      <h2>
-        {household.code} · {household.raw_address}
-      </h2>
-      <p>
-        Vị trí: {household.coordinate_method === 'RANDOM_WITHIN_TC2' ? 'Random tạm trong TC2 — chưa xác minh' : household.coordinate_method}
-        . Tên đại diện nguồn chưa mặc nhiên là chủ hộ đã xác minh.
+      {/* Officers recognise a household by its address; the code is the reference beneath it. */}
+      <h2>{householdTitle(household)}</h2>
+      <p className="roster-subline">
+        Mã hộ {household.code}
+        {caseSuffix(household.source_case_number)}
       </p>
+      <p>Vị trí trên bản đồ: {coordinateLabel(household.coordinate_method)}. Tên đại diện nguồn chưa mặc nhiên là chủ hộ đã xác minh.</p>
       <button onClick={() => editHouse()}>Sửa hộ</button>
       <button onClick={() => run(() => showHistory('household', household.id, 0))}>Lịch sử hộ</button>
       <p>
@@ -1253,8 +1325,10 @@ export default function RosterPage({
       )}
     </>
   );
+  // Embedded in the dashboard: its shell already owns <main> and the page <h1>.
+  const [Root, Title] = embedded ? (['div', 'h2'] as const) : (['main', 'h1'] as const);
   return (
-    <main className={`roster-page ${embedded ? 'roster-embedded' : ''}`}>
+    <Root className={`roster-page ${embedded ? 'roster-embedded' : ''}`}>
       <div className="roster-heading">
         <div className="roster-heading-icon" aria-hidden="true">
           {tab === 'households' ? <House size={23} /> : <Users size={23} />}
@@ -1262,11 +1336,13 @@ export default function RosterPage({
         <div>
           {!embedded && <Link to="/dashboard">← Về dashboard</Link>}
           <div className="roster-eyebrow">Quản lý dân cư</div>
-          <h1>{tab === 'households' ? 'Danh sách hộ dân' : tab === 'residents' ? 'Quản lý nhân khẩu' : 'Hồ sơ dân cư'} · Trung Chánh 2</h1>
+          <Title className="roster-title">
+            {tab === 'households' ? 'Danh sách hộ dân' : tab === 'residents' ? 'Quản lý nhân khẩu' : 'Hồ sơ dân cư'} · Trung Chánh 2
+          </Title>
           <p>Dữ liệu gốc từ ấp Trung Chánh 2 · Có nguồn và lịch sử thay đổi</p>
         </div>
       </div>
-      <nav className="roster-tabs">
+      <nav className="roster-tabs" aria-label="Chức năng hồ sơ dân cư">
         {[
           ['households', 'Danh sách hộ dân'],
           ['residents', 'Quản lý nhân khẩu'],
@@ -1318,6 +1394,8 @@ export default function RosterPage({
                   <label>
                     Tìm họ tên hoặc ĐDCN / CCCD / CMND
                     <input
+                      type="search"
+                      placeholder="Họ tên hoặc số giấy tờ"
                       value={search}
                       onChange={e => {
                         setSearch(e.target.value);
@@ -1380,24 +1458,30 @@ export default function RosterPage({
                       <tr>
                         <th>Họ tên</th>
                         <th>Ngày / năm sinh</th>
-                        <th>Hộ hiện hành</th>
-                        <th>Hồ sơ cư trú</th>
+                        <th className="roster-num">Hộ hiện hành</th>
+                        <th className="roster-num">Hồ sơ cư trú</th>
                         <th>Nguồn</th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.map(r => (
                         <tr key={r.id} data-selected={detailOpen && person?.id === r.id}>
-                          <td>
-                            <button onClick={() => run(() => loadPerson(r.id))}>{r.full_name}</button>
+                          <td className="roster-cell-identity">
+                            <button className="roster-row-link" onClick={() => run(() => loadPerson(r.id))}>
+                              {r.full_name}
+                            </button>
                           </td>
-                          <td>
+                          <td data-label="Ngày / năm sinh">
                             {displayDate(r.birth_date) || r.birth_year || 'Chưa rõ'}
                             {r.birth_date_precision === 'YEAR' && ' (chỉ biết năm)'}
                           </td>
-                          <td>{r.household_count}</td>
-                          <td>{r.record_count}</td>
-                          <td>{r.origin === 'EXCEL' ? 'Excel gốc' : 'Nhập trực tiếp'}</td>
+                          <td data-label="Hộ hiện hành" className="roster-num">
+                            {r.household_count}
+                          </td>
+                          <td data-label="Hồ sơ cư trú" className="roster-num">
+                            {r.record_count}
+                          </td>
+                          <td data-label="Nguồn">{r.origin === 'EXCEL' ? 'Excel gốc' : 'Nhập trực tiếp'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1423,6 +1507,8 @@ export default function RosterPage({
                   <label>
                     Tìm hộ theo địa chỉ, tên đại diện, mã hoặc HSCT
                     <input
+                      type="search"
+                      placeholder="Ví dụ: 34/6 ấp 62 hoặc tên chủ hộ"
                       value={search}
                       onChange={e => {
                         setPage(0);
@@ -1458,21 +1544,7 @@ export default function RosterPage({
                       <option value="MANUAL">Nhập trực tiếp</option>
                     </select>
                   </label>
-                  <button
-                    className="roster-primary"
-                    onClick={() =>
-                      setEditor({
-                        title: 'Tạo hộ mới',
-                        fields: [...householdFields, { key: 'caseNumber', label: 'HSCT (nếu có)' }, reason],
-                        initial: {},
-                        async save(r) {
-                          const { data } = await axios.post(`${api}/households`, r);
-                          await loadHouse(data.id);
-                          await done('Đã tạo hộ');
-                        },
-                      })
-                    }
-                  >
+                  <button className="roster-primary" onClick={openNewHousehold}>
                     + Thêm hộ
                   </button>
                 </div>
@@ -1483,15 +1555,15 @@ export default function RosterPage({
                         <th>Mã / HSCT</th>
                         <th>Chủ hộ / đại diện nguồn</th>
                         <th>Địa chỉ</th>
-                        <th>Thành viên đã nhập</th>
+                        <th className="roster-num">Thành viên đã nhập</th>
                         <th>Nguồn</th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.map(h => (
                         <tr key={h.id} data-selected={detailOpen && household?.id === h.id}>
-                          <td>
-                            <button onClick={() => run(() => loadHouse(h.id))}>
+                          <td className="roster-cell-identity">
+                            <button className="roster-row-link" onClick={() => run(() => loadHouse(h.id))}>
                               {h.source_case_number ||
                                 (typeof h.code !== 'string' || !h.code
                                   ? 'Chưa có mã hộ'
@@ -1499,12 +1571,14 @@ export default function RosterPage({
                                     ? h.code
                                     : `Nhóm ${h.code.slice(-8)}`)}
                             </button>
-                            <div>{h.source_case_number ? 'HSCT nguồn' : 'Chưa có HSCT'}</div>
+                            <div className="roster-subline">{h.source_case_number ? 'HSCT nguồn' : 'Chưa có HSCT'}</div>
                           </td>
-                          <td>{h.representative_name || 'Chưa rõ'}</td>
-                          <td>{h.raw_address}</td>
-                          <td>{h.member_count}</td>
-                          <td>
+                          <td data-label="Chủ hộ / đại diện">{h.representative_name || 'Chưa rõ'}</td>
+                          <td data-label="Địa chỉ">{h.raw_address}</td>
+                          <td data-label="Thành viên đã nhập" className="roster-num">
+                            {h.member_count}
+                          </td>
+                          <td data-label="Nguồn">
                             {h.origin === 'EXCEL' ? 'Excel' : 'Nhập trực tiếp'} ·{' '}
                             {h.verification_status === 'HEAD_CONFLICT'
                               ? 'Cần đối soát tên chủ hộ'
@@ -1870,6 +1944,6 @@ export default function RosterPage({
           readOnly={editor.readOnly}
         />
       )}
-    </main>
+    </Root>
   );
 }

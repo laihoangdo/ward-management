@@ -70,6 +70,28 @@ Skill `design-taste-frontend` chạy ở chế độ `--app` (dashboard/admin), 
 - Modal mobile: giới hạn chiều cao theo viewport, nội dung cuộn được và nút đóng/xác nhận nằm trong vùng thao tác. Callback chạy thành công không chứng minh nút thực sự nhìn thấy; smoke phải kiểm tra bounding rectangle.
 - Chỉnh skill hoặc bỏ qua chỉ số đo đều không chấp nhận; nếu một WARN không sửa được thì bảo lưu bằng lý do ghi trong tài liệu kiểm thử.
 
+## Ưu tiên người dùng tuyến cơ sở (công an viên, cán bộ ấp/xã)
+
+Rút ra từ đợt rà soát 11/2026, áp dụng khi sửa các màn hình dùng hằng ngày:
+
+- **Việc thường làm nằm trong màn hình đầu**, nhất là trên điện thoại 390 px: ô tìm kiếm và dòng kết quả đầu tiên của danh sách hộ/nhân khẩu phải thấy được mà không cuộn. Tab chức năng nằm một hàng, cuộn ngang trong chính nó.
+- **Dưới 640 px, bảng thành danh sách dòng hai tầng**: dòng 1 là định danh (mã hộ/họ tên, dạng liên kết chữ), các trường còn lại có nhãn cột (`data-label`). Không bỏ trường, không bắt cuộn ngang trang.
+- **Khối cảnh báo chỉ đứng đầu khi có việc cần xử lý**; khi trống thì là một dòng trạng thái trung tính sau các số liệu chính. Màu cảnh báo, nhãn đếm và bộ lọc "sắp hết hạn" chỉ mang màu khi số lượng > 0.
+- **Một `h1` mỗi màn hình** (tiêu đề ở header). Nội dung nhúng trong dashboard dùng `h2` và không lồng `<main>`.
+- **Không hiển thị nhãn trống**: thông tin hồ sơ (số hiệu, địa bàn) chỉ hiện khi có dữ liệu.
+- Dòng phụ dưới tiêu đề nói về dữ liệu (phạm vi đang xem), không hướng dẫn cách dùng giao diện.
+- Tiêu đề trong card dùng `.gis-panel-title` (16 px) và tiêu đề từng mục `.gis-item-title` (15 px) vì Bootstrap ghi đè cỡ `h3/h4` của Tailwind.
+- Nút chỉ có icon luôn có `aria-label`; icon trang trí đặt `aria-hidden`.
+- **Form:** không dựa vào bong bóng lỗi của trình duyệt. Khi bấm tiếp mà còn trường bắt buộc trống: tóm tắt lỗi tiếng Việt ở đầu form (được focus), mỗi trường có `aria-invalid` và dòng báo nằm ngoài `label` (nối bằng `aria-describedby`), tự xóa khi đã nhập. Áp dụng cả cho `select` bắt buộc.
+- **Dải phạm vi địa bàn** của công an viên/cán bộ ấp là một dòng nền sáng: ấp, vai trò, tuyến, số hộ. Không hiện tổng nhân khẩu ở đó vì cách đếm khác giữa các màn hình; con số đó thuộc trang Tổng quan.
+- **Kiểm tra theo vai trò thật:** dùng tài khoản thử có tiền tố tạo qua `/api/rbac/users` trên Keycloak/DB local, xóa bằng `DELETE /api/rbac/users/{id}` và kiểm tra còn 0 bản ghi sau khi chụp. Không xem giao diện cán bộ chỉ bằng tài khoản quản trị.
+- **Cấp xã (Trưởng Công an xã):** danh sách hơn 3 ấp được giao gập sau dòng "N ấp được giao"; không để thông tin hồ sơ đẩy menu xuống dưới màn hình đầu.
+- **Nhật ký:** dữ liệu JSON (hình học, bản ghi) gập trong "Xem dữ liệu thay đổi"; giá trị thường hiện đầy đủ, không cắt. Không gắn nhãn "thời gian thực" hay "mã hóa" khi dữ liệu không như vậy.
+- **Nhãn trạng thái nói đúng điều dữ liệu biết:** không có cảnh báo trong dữ liệu ghi "Không có vị trí cần kiểm tra", không ghi "An toàn ANTT". Số nhân khẩu cộng theo hộ phải ghi rõ "theo hộ".
+- Ô chọn trong `label` dùng `.gis-check-row` (Bootstrap làm `label` inline-block, phá `flex` của Tailwind).
+- **Không đưa control ghi dữ liệu mà server luôn từ chối.** API cũ `/api/households`, `/api/residents` chỉ cho đọc (`UnifiedRosterWebConfiguration` trả 409 cho mọi lệnh ghi); với hộ TC2, sửa thông tin và cập nhật ghi chú phải dẫn sang hồ sơ hộ trong roster.
+- Trang Cài đặt chỉ hiện sự thật kiểm chứng được (trạng thái kết nối); không hiện danh mục API, phiên bản hay huy hiệu "đã xác thực" không có nguồn.
+
 ## Kiểm tra hồi quy
 
 - Kiểm tra light/dark ở 375, 768, 1024 và 1440 px, nội dung đơn vị/label dài, không overflow toàn trang.

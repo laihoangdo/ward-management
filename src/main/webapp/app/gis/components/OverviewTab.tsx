@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Building, Store, AlertTriangle, Users, ArrowRight, FileCheck, CheckCircle, UserCheck } from 'lucide-react';
+import { Building, Store, AlertTriangle, Users, ArrowRight, FileCheck, CheckCircle, CheckCircle2, UserCheck } from 'lucide-react';
 import { HouseholdFacility, NavigationTab } from '../types';
 import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
 import { Pagination } from './Pagination';
@@ -88,6 +88,53 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
     return summary ? warningHouseholds : warningHouseholds.slice(start, start + warningPageSize);
   }, [warningHouseholds, warningCurrentPage, warningPageSize, summary]);
 
+  // "Cần chú ý" leads the screen only when there is something to act on; otherwise it is one quiet line after the figures.
+  const attention = (
+    <section aria-labelledby="work-queue-title" className="rounded-xl border border-slate-200 bg-white dark:bg-slate-900 p-4 sm:p-5">
+      <h3 id="work-queue-title" className="gis-panel-title text-slate-900 dark:text-white">
+        Cần chú ý
+      </h3>
+      {warningCount === 0 ? (
+        <p className="m-0 mt-1 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+          <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+          <span>Không có hộ mang trạng thái cảnh báo trong phạm vi đang xem.</span>
+        </p>
+      ) : (
+        <ul className="m-0 p-0 list-none divide-y divide-slate-100">
+          {(summary?.attentionItems ?? warningHouseholds.slice(0, 5)).map(household => (
+            <li key={household.id}>
+              <button
+                type="button"
+                onClick={() => onSelectHousehold(household)}
+                className="w-full py-3 text-left flex items-center gap-3 hover:bg-slate-50 rounded-lg"
+              >
+                <AlertTriangle aria-hidden="true" className="h-4 w-4 text-amber-600 shrink-0" />
+                <span className="flex-1 min-w-0">
+                  <strong className="block text-sm">
+                    {household.ownerName || household.businessName} · {household.code}
+                  </strong>
+                  <span className="text-xs text-slate-500">
+                    {household.houseNumber} {household.street} · {household.hamlet}
+                  </span>
+                </span>
+                <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {canNavigate('documents') && (
+        <button
+          type="button"
+          onClick={onOpenExpiringDocuments || (() => onNavigateTab('documents'))}
+          className="mt-3 min-h-[40px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          Xem hồ sơ sắp hết hạn
+        </button>
+      )}
+    </section>
+  );
+
   return (
     <div className="gis-overview space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Overview Title Banner */}
@@ -98,7 +145,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               Tổng quan địa bàn
             </h2>
             <p id="overview-description" className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-              Theo dõi nhanh tình hình an ninh, dân cư và cơ sở kinh doanh.
+              {hamletNames.length > 0 ? `Phạm vi đang xem: ${hamletNames.join(', ')}` : 'Chưa có địa bàn trong phạm vi được giao.'}
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
@@ -119,47 +166,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
       </div>
 
-      <section aria-labelledby="work-queue-title" className="rounded-xl border border-slate-200 bg-white dark:bg-slate-900 p-4 sm:p-5">
-        <h3 id="work-queue-title" className="text-base font-bold text-slate-900 dark:text-white">
-          Cần chú ý
-        </h3>
-        <p className="text-sm text-slate-500">Kiểm tra các hộ có cảnh báo và hồ sơ sắp hết hạn trong phạm vi đang xem.</p>
-        {warningCount === 0 ? (
-          <p className="text-sm text-slate-600">Chưa có hộ dân mang trạng thái cảnh báo trong dữ liệu đã tải.</p>
-        ) : (
-          <ul className="m-0 p-0 list-none divide-y divide-slate-100">
-            {(summary?.attentionItems ?? warningHouseholds.slice(0, 5)).map(household => (
-              <li key={household.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelectHousehold(household)}
-                  className="w-full py-3 text-left flex items-center gap-3 hover:bg-slate-50 rounded-lg"
-                >
-                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-                  <span className="flex-1 min-w-0">
-                    <strong className="block text-sm">
-                      {household.ownerName || household.businessName} · {household.code}
-                    </strong>
-                    <span className="text-xs text-slate-500">
-                      {household.houseNumber} {household.street} · {household.hamlet}
-                    </span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 shrink-0" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {canNavigate('documents') && (
-          <button
-            type="button"
-            onClick={onOpenExpiringDocuments || (() => onNavigateTab('documents'))}
-            className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white"
-          >
-            Xem hồ sơ sắp hết hạn
-          </button>
-        )}
-      </section>
+      {warningCount > 0 && attention}
 
       {/* Top 4 Key Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
@@ -331,6 +338,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
       </div>
 
+      {warningCount === 0 && attention}
+
       {/* Warning Box Banner */}
       {warningCount > 0 && (
         <div
@@ -406,7 +415,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
-            <h3 id="demographic-stats-title" className="text-xl font-bold text-[#1e293b] dark:text-white tracking-tight">
+            <h3 id="demographic-stats-title" className="gis-section-title text-[#1e293b] dark:text-white">
               Cơ cấu nhân khẩu
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -438,7 +447,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             className="p-5 rounded-2xl bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700"
           >
             <div className="flex items-center justify-between mb-4">
-              <h4 id="gender-orb-title" className="text-base font-bold text-[#1e293b] dark:text-white flex items-center gap-2">
+              <h4 id="gender-orb-title" className="gis-panel-title text-[#1e293b] dark:text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-600" />
                 <span>Tỷ lệ nam nữ</span>
               </h4>
@@ -491,7 +500,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             className="p-5 rounded-2xl bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700"
           >
             <div className="flex items-center justify-between mb-4">
-              <h4 id="age-orb-title" className="text-base font-bold text-[#1e293b] dark:text-white flex items-center gap-2">
+              <h4 id="age-orb-title" className="gis-panel-title text-[#1e293b] dark:text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-600" />
                 <span>Cơ cấu độ tuổi</span>
               </h4>

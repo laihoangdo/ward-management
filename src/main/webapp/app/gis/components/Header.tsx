@@ -98,7 +98,10 @@ export const Header: React.FC<HeaderProps> = ({
       case 'documents':
         return 'Hồ Sơ & Giấy Tờ An Ninh';
       case 'areas':
-        return 'Phân Quyền & Tuyến Quản Lý';
+        return 'Quản Lý Khu Vực & Tuyến';
+      case 'field-3d-map':
+      case 'bando-3d':
+        return 'Bản Đồ Không Gian 3D Thực Địa';
       case 'logs':
         return 'Nhật Ký Thao Tác & Minh Bạch Quản Lý';
       case 'subadmin-delegation':
@@ -168,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {getTabTitle()}
           </h1>
-          <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden md:flex items-center gap-1.5 truncate leading-tight mt-0.5">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 hidden md:flex items-center gap-1.5 truncate leading-tight mt-0.5">
             <span className="font-medium">{currentUser?.unit || currentUser?.assignedWard || 'Quản lý địa bàn'}</span>
           </div>
         </div>
@@ -182,16 +185,17 @@ export const Header: React.FC<HeaderProps> = ({
           <input
             type="search"
             aria-label="Tìm hộ dân, số nhà hoặc số điện thoại"
-            placeholder="Tìm tên, số nhà, SĐT..."
+            placeholder="Tên, số nhà, SĐT"
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            className="w-full h-9 pl-8 pr-14 text-xs bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-400 transition-colors"
+            className="w-full h-9 pl-8 pr-14 text-xs bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-500 transition-colors"
           />
           <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => onSearchChange('')}
+                aria-label="Xóa tìm kiếm"
                 className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors cursor-pointer"
                 title="Xóa tìm kiếm"
               >
@@ -202,6 +206,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               id="btn-header-voice-search-desktop"
               onClick={() => setIsVoiceModalOpen(true)}
+              aria-label="Tìm kiếm bằng giọng nói"
               title="Tìm kiếm bằng giọng nói Tiếng Việt"
               className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors cursor-pointer group flex items-center justify-center"
             >

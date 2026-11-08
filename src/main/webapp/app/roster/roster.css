@@ -183,7 +183,7 @@
 .roster-heading a:hover {
   text-decoration: underline;
 }
-.roster-heading h1 {
+.roster-heading :is(h1, h2).roster-title {
   font-size: 22px;
   font-weight: 700;
   line-height: 1.3;
@@ -222,7 +222,7 @@
     border-color 150ms;
   font-weight: 600;
 }
-.roster-page button:hover:not(:disabled):not([aria-pressed='true']):not(.roster-primary) {
+.roster-page button:hover:not(:disabled):not([aria-pressed='true']):not(.roster-primary):not(.roster-row-link) {
   background: var(--roster-soft);
   border-color: var(--roster-primary);
 }
@@ -410,4 +410,133 @@
   .roster-dialog {
     padding: 14px;
   }
+}
+/* List rows: the record name/code is a text link, numbers line up digit for digit. */
+.roster-page button.roster-row-link {
+  min-height: 36px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--roster-accent);
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.roster-page button.roster-row-link:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.roster-subline {
+  color: var(--roster-muted);
+  font-size: 12px;
+}
+.roster-page .roster-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.roster-cell-identity {
+  min-width: 11rem;
+}
+@media (max-width: 640px) {
+  /* Phone: search first, list visible early, no sideways page scroll. */
+  .roster-page :is(input, select) {
+    font-size: 16px;
+  }
+  .roster-heading {
+    padding: 12px 14px;
+  }
+  .roster-heading :is(h1, h2).roster-title {
+    font-size: 18px;
+    margin: 2px 0 0;
+  }
+  .roster-heading p,
+  .roster-eyebrow {
+    display: none;
+  }
+  .roster-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .roster-tabs button {
+    flex: none;
+    white-space: nowrap;
+  }
+  .roster-summary {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .roster-list-pane {
+    padding: 12px;
+  }
+  .roster-list-pane .roster-actions:has(label) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 0;
+  }
+  .roster-list-pane .roster-actions:has(label) > :is(label:first-child, button) {
+    grid-column: 1 / -1;
+  }
+  /* Tables become two-line rows: identity first, each other field labelled. */
+  .roster-list-pane .roster-table table {
+    min-width: 0;
+  }
+  .roster-list-pane .roster-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .roster-list-pane .roster-table tbody tr {
+    display: block;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--roster-border);
+  }
+  .roster-list-pane .roster-table td {
+    display: flex;
+    gap: 8px;
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+  }
+  .roster-list-pane .roster-table td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 8.5rem;
+    color: var(--roster-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .roster-list-pane .roster-table td.roster-cell-identity {
+    display: block;
+    font-size: 15px;
+  }
+}
+/* Form validation: a focused summary above the fields and a message under each empty required field. */
+.roster-error-summary ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+.roster-error-summary:focus-visible {
+  outline: 2px solid var(--roster-primary);
+  outline-offset: 2px;
+}
+.roster-page .roster-field-error,
+.roster-dialog .roster-field-error {
+  color: #9f1239;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dark .roster-field-error {
+  color: #fecdd3;
+}
+.roster-page :is(input, select)[aria-invalid='true'] {
+  border-color: #be123c;
+}
+.roster-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
