@@ -152,21 +152,36 @@
   border-radius: 6px;
   box-shadow: 0 1px 2px #0f172a08;
 }
+/* A plain icon beside the title; no tinted tile (MASTER: no icon in a coloured box). */
 .roster-heading-icon {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 46px;
-  height: 46px;
-  border-radius: 6px;
-  background: var(--roster-selected);
+  width: 28px;
+  height: 28px;
   color: var(--roster-accent);
 }
+@media (max-width: 640px) {
+  .roster-heading-icon {
+    display: none;
+  }
+}
 .roster-eyebrow {
+  color: var(--roster-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.roster-heading a {
+  display: inline-block;
+  margin-bottom: 4px;
   color: var(--roster-accent);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.roster-heading a:hover {
+  text-decoration: underline;
 }
 .roster-heading h1 {
   font-size: 22px;

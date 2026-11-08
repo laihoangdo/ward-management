@@ -718,6 +718,130 @@ html.dark :is(#__page-root, .gis-login) {
   line-height: 1.35;
   font-weight: 700;
 }
+/*
+ * Admin tabs (Trung tâm Quản trị, Phân quyền CB & CAV) are authored with dark slate utilities.
+ * In light mode they follow the shared administrative surface instead of forming a dark island.
+ * Mapping only; dark mode keeps the authored classes. Status hues stay, at light-surface contrast.
+ */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) {
+  --admin-tint-red: #fef2f2;
+  --admin-tint-blue: #eff6ff;
+  --admin-tint-green: #ecfdf5;
+  --admin-tint-amber: #fffbeb;
+  color: var(--gis-text);
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-slate-900, [class*='bg-slate-900/']) {
+  background-color: var(--gis-surface) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-slate-950, [class*='bg-slate-950/'], .bg-slate-800, [class*='bg-slate-800/']) { /* taste-skill-ignore: nền phụ một bậc, không shadow */
+  background-color: var(--gis-surface-soft) !important;
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(input, textarea, select) {
+  background-color: var(--gis-surface) !important;
+  border-color: var(--gis-control-border) !important;
+  color: var(--gis-text) !important;
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(input, textarea)::placeholder {
+  color: var(--gis-muted) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='hover:bg-slate-7']:hover, [class*='hover:bg-slate-8']:hover, [class*='hover:bg-slate-9']:hover) { /* taste-skill-ignore: hover đổi tông nền */
+  background-color: var(--gis-selected) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='border-slate-7'], [class*='border-slate-8'], [class*='border-slate-9']) { /* taste-skill-ignore: viền 1px theo token */
+  border-color: var(--gis-border) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.text-white, .text-slate-100, .text-slate-200, .text-slate-300, h2, h3, h4) { /* taste-skill-ignore: chữ chính trên nền sáng */
+  color: var(--gis-text) !important;
+}
+/* Kept at the same specificity as the filled-control rule below, which follows it and wins. */
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='hover:text-white'], [class*='hover:text-slate-200']):not(.bg-blue-600):hover { /* taste-skill-ignore: hover chữ chính */
+  color: var(--gis-text) !important;
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.text-slate-400, .text-slate-500, .text-slate-600) {
+  color: var(--gis-muted) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='text-amber-2'], [class*='text-amber-3'], [class*='text-amber-4']) { /* taste-skill-ignore: giữ hue cảnh báo, đủ tương phản */
+  color: #92400e !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='text-blue-2'], [class*='text-blue-3'], [class*='text-blue-4']) { /* taste-skill-ignore: giữ hue thông tin, đủ tương phản */
+  color: var(--gis-info) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='text-red-2'], [class*='text-red-3'], [class*='text-red-4'], [class*='text-rose-2'], [class*='text-rose-3'], [class*='text-rose-4']) { /* taste-skill-ignore: giữ hue lỗi, đủ tương phản */
+  color: var(--gis-error) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='text-emerald-2'], [class*='text-emerald-3'], [class*='text-emerald-4']) { /* taste-skill-ignore: giữ hue thành công, đủ tương phản */
+  color: var(--gis-success) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='bg-red-9'], [class*='bg-red-95'], [class*='bg-rose-9']) { /* taste-skill-ignore: pill nhạt cùng hue */
+  background-color: var(--admin-tint-red) !important;
+  border-color: #fecaca !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) [class*='bg-blue-9'] { /* taste-skill-ignore: pill nhạt cùng hue */
+  background-color: var(--admin-tint-blue) !important;
+  border-color: #bfdbfe !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) [class*='bg-emerald-9'] { /* taste-skill-ignore: pill nhạt cùng hue */
+  background-color: var(--admin-tint-green) !important;
+  border-color: #a7f3d0 !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) [class*='bg-amber-9'] { /* taste-skill-ignore: pill nhạt cùng hue */
+  background-color: var(--admin-tint-amber) !important;
+  border-color: #fde68a !important;
+}
+/* Filled controls keep white text over their own fill, including icons and nested labels. */
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-blue-600, .bg-emerald-600, .bg-rose-600, .bg-red-600, .bg-emerald-400, .bg-amber-400, .bg-amber-500), /* taste-skill-ignore: chữ trắng trên nút đặc */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-blue-600, .bg-emerald-600, .bg-rose-600, .bg-red-600) * {
+  color: #ffffff !important;
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-emerald-400, .bg-amber-400, .bg-amber-500) {
+  color: #172c35 !important;
+}
+/* IDs keep a monospace; labels, badges and headings use the text face in sentence case. */
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) .font-mono:not(code, kbd, [data-id]) {
+  font-family: inherit;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) .uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* Bootstrap sets h3 to 1.75rem; area cards and the list title use the app scale. */
+#__page-root :is(.gis-area-card-title, .gis-area-list-title, .gis-panel-title) {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+#__page-root .gis-area-card :is(dt, dd) {
+  margin: 0;
+}
+#__page-root .gis-area-card dt {
+  font-weight: 400;
+}
+/* Bootstrap's unlayered label/checkbox rules outrank Tailwind utilities; the checklist states its layout here. */
+#__page-root .gis-assignment-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+}
+#__page-root .gis-assignment-option input {
+  margin: 0;
+}
 #__page-root .gis-voice-footer {
   flex-wrap: wrap;
 }

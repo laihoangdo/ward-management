@@ -29,6 +29,58 @@ interface SubAdminDelegationTabProps {
   onShowToast: (msg: string) => void;
 }
 
+interface AssignmentOption {
+  value: string;
+  label: string;
+}
+
+/** Multi-choice list with visible checkboxes; the result keeps the option order, like a multi-select. */
+const AssignmentChecklist: React.FC<{
+  label: string;
+  options: AssignmentOption[];
+  selected: string[];
+  onChange: (values: string[]) => void;
+  disabled?: boolean;
+  emptyText: string;
+}> = ({ label, options, selected, onChange, disabled, emptyText }) => {
+  const chosen = new Set(selected);
+  const toggle = (value: string, checked: boolean) => {
+    const next = new Set(chosen);
+    if (checked) next.add(value);
+    else next.delete(value);
+    onChange(options.filter(option => next.has(option.value)).map(option => option.value));
+  };
+  const count = options.filter(option => chosen.has(option.value)).length;
+  return (
+    <fieldset disabled={disabled} className="min-w-0">
+      <legend className="sr-only">{label}</legend>
+      <div className="mb-1 text-xs text-slate-400 tabular-nums">
+        Đã chọn {count}/{options.length}
+      </div>
+      <div className="max-h-56 overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-1">
+        {options.length === 0 ? (
+          <p className="px-2 py-2 text-xs text-slate-400">{emptyText}</p>
+        ) : (
+          options.map(option => (
+            <label
+              key={option.value}
+              className="gis-assignment-option min-h-[36px] cursor-pointer rounded-md px-2 py-1.5 text-sm text-slate-200 transition-colors hover:bg-slate-800"
+            >
+              <input
+                type="checkbox"
+                className="h-4 w-4 shrink-0 accent-[#1c4e3a]"
+                checked={chosen.has(option.value)}
+                onChange={e => toggle(option.value, e.target.checked)}
+              />
+              <span className="min-w-0 break-words">{option.label}</span>
+            </label>
+          ))
+        )}
+      </div>
+    </fieldset>
+  );
+};
+
 export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ currentUser, usersList, onShowToast }) => {
   const [areas, setAreas] = useState<{ id: number; hamletId: number; communeId: number; name: string; hamletName: string }[]>([]);
   const [selectedHamletIds, setSelectedHamletIds] = useState<number[]>([]);
@@ -267,8 +319,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 {isAdmin
                   ? 'TRƯỞNG CÔNG AN XÃ / PHƯỜNG ĐIỀU HÀNH'
                   : isSubAdmin
-                    ? 'CÁN BỘ QUẢN LÝ ẤP ĐIỀU HÀNH'
-                    : 'QUẢN TRỊ VIÊN TỐI CAO ĐIỀU HÀNH'}
+                    ? 'Cán bộ quản lý ấp điều hành'
+                    : 'Quản trị viên tối cao điều hành'}
               </span>
               <span className="text-xs text-slate-400 font-mono">
                 {currentUser.position} • {currentUser.fullName}
@@ -342,19 +394,22 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
               </div>
 
               {/* Filter by Hamlet */}
-              <div className="flex flex-wrap gap-1 p-1 bg-slate-900/60 rounded-xl border border-slate-800 text-[11px]">
+              <div
+                role="group"
+                aria-label="Lọc theo ấp"
+                className="flex max-h-40 flex-wrap gap-1 overflow-y-auto p-1 bg-slate-900/60 rounded-xl border border-slate-800 text-xs"
+              >
                 {[
-                  { id: 'all', label: 'All' },
+                  { id: 'all', label: 'Tất cả ấp' },
                   ...Array.from(new Set(areas.map(a => a.hamletName).filter(Boolean))).map(name => ({ id: name, label: name })),
                 ].map(h => (
                   <button
                     key={h.id}
                     type="button"
                     onClick={() => setHamletDelegationFilter(h.id)}
-                    className={`px-2 py-0.5 rounded-md font-medium transition cursor-pointer ${
-                      hamletDelegationFilter === h.id
-                        ? 'bg-amber-500 text-slate-950 font-bold'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    aria-pressed={hamletDelegationFilter === h.id}
+                    className={`px-2 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                      hamletDelegationFilter === h.id ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'
                     }`}
                   >
                     {h.label}
@@ -396,7 +451,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                               : 'bg-emerald-900/80 text-emerald-200 border border-emerald-700'
                           }`}
                         >
-                          {isSubAdminRole ? 'CÁN BỘ QL ẤP' : 'CÔNG AN VIÊN'}
+                          {isSubAdminRole ? 'Cán bộ QL ấp' : 'Công an viên'}
                         </span>
                       </div>
                       <div className="text-xs text-slate-400 mt-0.5">{off.position}</div>
@@ -428,7 +483,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono text-blue-400 font-bold uppercase">ĐANG THIẾT LẬP THẨM QUYỀN CHO:</span>
+                    <span className="text-[11px] font-mono text-blue-400 font-bold uppercase">Đang thiết lập thẩm quyền cho</span>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase font-mono ${
                         selectedOfficer.role === 'sub-admin'
@@ -436,7 +491,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                           : 'bg-emerald-900/80 text-emerald-200 border border-emerald-700'
                       }`}
                     >
-                      {selectedOfficer.role === 'sub-admin' ? 'CÁN BỘ QUẢN LÝ ẤP (SUB-ADMIN)' : 'CÔNG AN VIÊN (OFFICER)'}
+                      {selectedOfficer.role === 'sub-admin' ? 'Cán bộ quản lý ấp (sub-admin)' : 'Công an viên (officer)'}
                     </span>
                   </div>
                   <h2 className="text-lg font-bold text-white flex items-center gap-2 mt-1">
@@ -463,24 +518,18 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 </label>
                 <p className="text-[11px] text-slate-400">
                   {selectedOfficer.role === 'sub-admin'
-                    ? 'Chỉ định các ấp do cán bộ này trực tiếp quản lý dân cư và giám sát công an viên (ngăn cách bằng dấu phẩy):'
-                    : 'Chỉ định ấp mà công an viên này thực hiện tuần tra kiểm soát (ngăn cách bằng dấu phẩy):'}
+                    ? 'Chỉ định các ấp do cán bộ này trực tiếp quản lý dân cư và giám sát công an viên:'
+                    : 'Chỉ định ấp mà công an viên này thực hiện tuần tra kiểm soát:'}
                 </p>
-                <select
-                  multiple
-                  value={selectedHamletIds.map(String)}
-                  onChange={e => setSelectedHamletIds(Array.from(e.target.selectedOptions, option => Number(option.value)))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
-                  aria-label="Area assignments"
-                >
-                  {areas
+                <AssignmentChecklist
+                  label="Area assignments"
+                  options={areas
                     .filter(area => selectedCommuneId === null || area.communeId === selectedCommuneId)
-                    .map(area => (
-                      <option key={area.id} value={area.id}>
-                        {area.hamletName} (ID ?p {area.hamletId})
-                      </option>
-                    ))}
-                </select>
+                    .map(area => ({ value: String(area.id), label: `${area.hamletName} (ID ấp ${area.hamletId})` }))}
+                  selected={selectedHamletIds.map(String)}
+                  onChange={values => setSelectedHamletIds(values.map(Number))}
+                  emptyText="Chưa có ấp nào trong đơn vị đã chọn."
+                />
               </div>
 
               {/* Assignment of Streets and Alleys */}
@@ -492,22 +541,16 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                     : 'Tuyến Đường, Đoạn Phố & Tuyến Hẻm Phụ Trách Tuần Tra Trực Tiếp:'}
                 </label>
                 <p className="text-[11px] text-slate-400">
-                  Giao cụ thể các tuyến đường hoặc hẻm thuộc ấp để thực hiện tuần tra, giám sát an ninh trật tự (ngăn cách bằng dấu phẩy):
+                  Giao cụ thể các tuyến đường hoặc hẻm thuộc ấp để thực hiện tuần tra, giám sát an ninh trật tự:
                 </p>
-                <select
-                  multiple
-                  aria-label="Road assignments from database"
+                <AssignmentChecklist
+                  label="Road assignments from database"
                   disabled={roadsLoading || roadsError}
-                  value={assignedRoads}
-                  onChange={e => setAssignedStreetsInput(Array.from(e.target.selectedOptions, option => option.value).join(', '))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
-                >
-                  {roadOptions.map(name => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
+                  options={roadOptions.map(name => ({ value: name, label: name }))}
+                  selected={assignedRoads}
+                  onChange={values => setAssignedStreetsInput(values.join(', '))}
+                  emptyText="Chưa có tuyến đường/hẻm trong các ấp đã chọn."
+                />
                 <p className="text-xs text-slate-400" role="status">
                   {roadsLoading
                     ? 'Đang tải tuyến đường từ DB...'

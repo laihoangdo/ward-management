@@ -1445,110 +1445,110 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
 
   return (
     <section ref={sectionRef} className="tc2-map-section mx-auto max-w-7xl space-y-3 rounded-xl bg-white p-3 shadow-sm">
-      <div className="tc2-map-header flex flex-wrap items-center gap-3">
-        <h2 className="mr-auto text-lg font-bold text-slate-900">Bản đồ địa bàn MapLibre</h2>
-        <button
-          type="button"
-          aria-pressed={mapMode === 'schematic'}
-          onClick={() => {
-            cancelCoordinateEdit();
-            setMapMode('schematic');
-          }}
-          className={`rounded px-3 py-2 text-sm ${mapMode === 'schematic' ? 'bg-amber-700 text-white' : 'bg-slate-100'}`}
-        >
-          Sơ đồ TC2 · {apTc2DxfLinework.addressBlocks.length} địa chỉ
-        </button>
-        {mapMode === 'geographic' && (
-          <>
+      <div className="tc2-map-header space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="gis-map-panel-title mr-auto text-slate-900">Bản đồ địa bàn MapLibre</h2>
+          <button
+            type="button"
+            onClick={() => void toggleFullscreen()}
+            className="tc2-map-tool rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50"
+          >
+            {fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+          </button>
+          <label className="tc2-map-tool cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-blue-600">
+            Nạp GeoJSON địa bàn
+            <input
+              type="file"
+              accept=".geojson,.json,application/geo+json,application/json"
+              className="sr-only"
+              onChange={event => {
+                void importGeoJson(event.target.files?.[0]);
+                event.target.value = '';
+              }}
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div role="group" aria-label="Nguồn bản đồ" className="tc2-map-segment">
             <button
               type="button"
-              aria-pressed={editingCoordinates}
-              onClick={() => (editingCoordinates ? cancelCoordinateEdit() : setEditingCoordinates(true))}
-              className={`rounded px-3 py-2 text-sm ${editingCoordinates ? 'bg-amber-500 text-white' : 'bg-slate-100'}`}
+              aria-pressed={mapMode === 'schematic'}
+              onClick={() => {
+                cancelCoordinateEdit();
+                setMapMode('schematic');
+              }}
             >
-              {editingCoordinates ? `Đang đổi tọa độ (${Object.keys(pendingCoordinates).length})` : 'Đổi tọa độ nhà'}
+              Sơ đồ TC2 · {apTc2DxfLinework.addressBlocks.length} địa chỉ
             </button>
-            {editingCoordinates && (
-              <>
-                <button
-                  type="button"
-                  disabled={savingCoordinates}
-                  onClick={() => void saveCoordinates()}
-                  className="rounded bg-blue-700 px-3 py-2 text-sm text-white"
-                >
-                  Hoàn thành
-                </button>
-                <button
-                  type="button"
-                  disabled={savingCoordinates}
-                  onClick={cancelCoordinateEdit}
-                  className="rounded bg-slate-200 px-3 py-2 text-sm"
-                >
-                  Hủy
-                </button>
-              </>
-            )}
-          </>
-        )}
-        <button
-          type="button"
-          aria-pressed={mapMode === 'geographic'}
-          onClick={() => setMapMode('geographic')}
-          className={`rounded px-3 py-2 text-sm ${mapMode === 'geographic' ? 'bg-amber-700 text-white' : 'bg-slate-100'}`}
-        >
-          Bản đồ tọa độ
-        </button>
-        {mapMode === 'schematic' && (
-          <button
-            type="button"
-            aria-pressed={showDxfLinework}
-            onClick={() => setShowDxfLinework(value => !value)}
-            className={`rounded px-3 py-2 text-sm ${showDxfLinework ? 'bg-slate-700 text-white' : 'bg-slate-100'}`}
-          >
-            Nét DXF {showDxfLinework ? 'đang hiện' : 'đang ẩn'}
-          </button>
-        )}
-        <button
-          type="button"
-          aria-pressed={!is3D}
-          onClick={() => setIs3D(false)}
-          className={`rounded px-3 py-2 text-sm ${!is3D ? 'bg-blue-700 text-white' : 'bg-slate-100'}`}
-        >
-          2D
-        </button>
-        <button
-          type="button"
-          aria-pressed={is3D}
-          onClick={() => setIs3D(true)}
-          className={`rounded px-3 py-2 text-sm ${is3D ? 'bg-blue-700 text-white' : 'bg-slate-100'}`}
-        >
-          3D
-        </button>
-        <button type="button" onClick={() => void toggleFullscreen()} className="rounded bg-slate-800 px-3 py-2 text-sm text-white">
-          {fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
-        </button>
-        {is3D && (
-          <button
-            type="button"
-            aria-pressed={useThreeBuildings}
-            onClick={() => setUseThreeBuildings(value => !value)}
-            className={`rounded px-3 py-2 text-sm ${useThreeBuildings ? 'bg-blue-700 text-white' : 'bg-slate-100'}`}
-          >
-            Khối nhà {useThreeBuildings ? 'Three.js' : 'cơ bản'}
-          </button>
-        )}
-        <label className="cursor-pointer rounded bg-slate-800 px-3 py-2 text-sm text-white">
-          Nạp GeoJSON địa bàn
-          <input
-            type="file"
-            accept=".geojson,.json,application/geo+json,application/json"
-            className="sr-only"
-            onChange={event => {
-              void importGeoJson(event.target.files?.[0]);
-              event.target.value = '';
-            }}
-          />
-        </label>
+            <button type="button" aria-pressed={mapMode === 'geographic'} onClick={() => setMapMode('geographic')}>
+              Bản đồ tọa độ
+            </button>
+          </div>
+          <div role="group" aria-label="Chế độ xem" className="tc2-map-segment">
+            <button type="button" aria-pressed={!is3D} onClick={() => setIs3D(false)}>
+              2D
+            </button>
+            <button type="button" aria-pressed={is3D} onClick={() => setIs3D(true)}>
+              3D
+            </button>
+          </div>
+          {mapMode === 'schematic' && (
+            <button
+              type="button"
+              aria-pressed={showDxfLinework}
+              onClick={() => setShowDxfLinework(value => !value)}
+              className="tc2-map-toggle rounded-md border px-3 py-2 text-sm"
+            >
+              Nét DXF {showDxfLinework ? 'đang hiện' : 'đang ẩn'}
+            </button>
+          )}
+          {is3D && (
+            <button
+              type="button"
+              aria-pressed={useThreeBuildings}
+              onClick={() => setUseThreeBuildings(value => !value)}
+              className="tc2-map-toggle rounded-md border px-3 py-2 text-sm"
+            >
+              Khối nhà {useThreeBuildings ? 'Three.js' : 'cơ bản'}
+            </button>
+          )}
+          {mapMode === 'geographic' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                aria-pressed={editingCoordinates}
+                onClick={() => (editingCoordinates ? cancelCoordinateEdit() : setEditingCoordinates(true))}
+                className={`rounded-md border px-3 py-2 text-sm ${
+                  editingCoordinates
+                    ? 'border-amber-600 bg-amber-50 text-amber-900'
+                    : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                {editingCoordinates ? `Đang đổi tọa độ (${Object.keys(pendingCoordinates).length})` : 'Đổi tọa độ nhà'}
+              </button>
+              {editingCoordinates && (
+                <>
+                  <button
+                    type="button"
+                    disabled={savingCoordinates}
+                    onClick={() => void saveCoordinates()}
+                    className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white"
+                  >
+                    Hoàn thành
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingCoordinates}
+                    onClick={cancelCoordinateEdit}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
+                  >
+                    Hủy
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <p role="status" className="tc2-map-status text-sm text-slate-600">
         {mapMode === 'schematic'

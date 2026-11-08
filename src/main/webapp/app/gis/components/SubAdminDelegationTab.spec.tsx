@@ -30,10 +30,10 @@ it('offers DB roads only in assigned areas and preserves an existing legacy assi
   render(
     <SubAdminDelegationTab currentUser={{ ...officer, id: 'actor', role: 'superadmin' }} usersList={[officer]} onShowToast={vi.fn()} />,
   );
-  await waitFor(() => expect(screen.getByRole('option', { name: 'DB road' })).toBeTruthy());
-  expect(screen.queryByRole('option', { name: 'Other area road' })).toBeNull();
-  expect((screen.getByRole('option', { name: 'Legacy road' }) as HTMLOptionElement).selected).toBe(true);
-  expect(screen.getByRole('option', { name: /DB hamlet/ })).toBeTruthy();
+  await waitFor(() => expect(screen.getByRole('checkbox', { name: 'DB road' })).toBeTruthy());
+  expect(screen.queryByRole('checkbox', { name: 'Other area road' })).toBeNull();
+  expect((screen.getByRole('checkbox', { name: 'Legacy road' }) as HTMLInputElement).checked).toBe(true);
+  expect(screen.getByRole('checkbox', { name: /DB hamlet/ })).toBeTruthy();
   vi.mocked(saveDelegation).mockResolvedValue(officer);
   fireEvent.click(screen.getByRole('button', { name: /Lưu Cấu Hình Phân Quyền/ }));
   await waitFor(() => expect(saveDelegation).toHaveBeenCalledWith(expect.objectContaining({ hamletIds: [7] })));
@@ -59,4 +59,31 @@ it('exposes permission state and lets the keyboard toggle the same permission wi
   fireEvent.keyDown(permission, { key: 'Enter' });
   expect(permission.getAttribute('aria-checked')).toBe('false');
   expect(saveDelegation).not.toHaveBeenCalled();
+});
+
+it('saves the hamlets and roads chosen through the checklists', async () => {
+  const officer = {
+    id: 'officer',
+    role: 'officer',
+    fullName: 'Synthetic officer',
+    assignedHamlets: [],
+    hamletIds: [],
+    assignedStreets: [],
+  } as AppUser;
+  vi.mocked(fetchRbacAreas).mockResolvedValue([
+    { id: 7, hamletId: 7, communeId: 1, name: 'Area A', hamletName: 'Hamlet A' },
+    { id: 8, hamletId: 8, communeId: 1, name: 'Area B', hamletName: 'Hamlet B' },
+  ]);
+  vi.mocked(fetchDelegationRoads).mockResolvedValue([{ hamletId: 8, name: 'Road B' }]);
+  render(
+    <SubAdminDelegationTab currentUser={{ ...officer, id: 'actor', role: 'superadmin' }} usersList={[officer]} onShowToast={vi.fn()} />,
+  );
+  fireEvent.click(await screen.findByRole('checkbox', { name: /Hamlet B/ }));
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Road B' }));
+  expect(screen.getByText('Đã chọn 1/2')).toBeTruthy();
+  vi.mocked(saveDelegation).mockResolvedValue(officer);
+  fireEvent.click(screen.getByRole('button', { name: /Lưu Cấu Hình Phân Quyền/ }));
+  await waitFor(() =>
+    expect(saveDelegation).toHaveBeenCalledWith(expect.objectContaining({ hamletIds: [8], assignedStreets: ['Road B'] })),
+  );
 });

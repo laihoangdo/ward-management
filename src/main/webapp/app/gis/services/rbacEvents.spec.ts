@@ -113,3 +113,20 @@ it('drops an old authentication-session stream and creates a fresh one', async (
   old.send('change', { topics: ['me'] });
   expect(listener).not.toHaveBeenCalled();
 });
+it('releases the stream when the page enters the back/forward cache and resyncs when restored', async () => {
+  const listener = vi.fn();
+  stops.push(subscribeRbacEvents(listener));
+  const first = FakeSource.instances[0];
+  first.send('ready', { revision: 'i:1', accessRevision: 'i:1' });
+  listener.mockClear();
+  window.dispatchEvent(new Event('pagehide'));
+  expect(first.close).toHaveBeenCalledOnce();
+  await vi.advanceTimersByTimeAsync(120000);
+  expect(FakeSource.instances).toHaveLength(1);
+  const shown = Object.assign(new Event('pageshow'), { persisted: true });
+  window.dispatchEvent(shown);
+  expect(FakeSource.instances).toHaveLength(2);
+  expect(listener).toHaveBeenCalledWith(expect.objectContaining({ type: 'resync', topics: ['me'] }));
+  first.send('change', { topics: ['me'] });
+  expect(listener).toHaveBeenCalledTimes(1);
+});

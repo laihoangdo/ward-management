@@ -600,3 +600,59 @@
     left: 0.5rem;
   }
 }
+
+/* Toolbar: segmented pairs for map source and 2D/3D; one neutral style for toggles and utilities. */
+#__page-root .gis-map-panel-title {
+  margin: 0 auto 0 0; /* keeps the utilities pushed to the right; Bootstrap would reset it */
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+.tc2-map-segment {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 8px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  padding: 2px;
+  gap: 2px;
+}
+.tc2-map-segment > button {
+  min-height: 36px;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: var(--gis-text, #172c35);
+  background: transparent;
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+.tc2-map-segment > button:hover {
+  background: var(--gis-surface, #fff);
+}
+.tc2-map-segment > button[aria-pressed='true'] {
+  background: var(--gis-primary, #1c4e3a);
+  color: var(--gis-on-primary, #fff);
+  font-weight: 600;
+}
+.tc2-map-toggle {
+  border-color: var(--gis-border, #cbd2d9);
+  background: var(--gis-surface, #fff);
+  color: var(--gis-text, #172c35);
+}
+.tc2-map-toggle[aria-pressed='true'] {
+  border-color: var(--gis-primary, #1c4e3a);
+  background: var(--gis-selected, #e8f1ec);
+  color: var(--gis-on-selected, #153c2c);
+  font-weight: 600;
+}
+:is(.tc2-map-segment > button, .tc2-map-toggle, .tc2-map-tool):focus-visible {
+  outline: 2px solid var(--gis-focus, #2563eb);
+  outline-offset: 2px;
+}
+html.dark .tc2-map-tool {
+  border-color: var(--gis-border);
+  background: var(--gis-surface);
+  color: var(--gis-text);
+}

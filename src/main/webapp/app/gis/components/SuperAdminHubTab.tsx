@@ -77,7 +77,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   hcmUnitsList,
   securityAlerts,
   securityAlertsList,
-  onShowToast = (_msg: string) => {},
+  onShowToast = () => {},
 }) => {
   const [rbacAreas, setRbacAreas] = useState<{ id: number; name: string; hamletName: string }[]>([]);
   const [whitelistEnabled, setWhitelistEnabled] = useState(false);
@@ -547,7 +547,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2.5 py-0.5 rounded-md bg-red-900/60 text-red-300 border border-red-700/60 text-xs font-mono font-bold flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-amber-400" />
-                SUPER ADMIN EXCLUSIVE
+                Chỉ dành cho Super Admin
               </span>
               <span className="text-xs text-slate-400 font-mono">
                 {currentUser.rank} {currentUser.fullName} • Số hiệu: {currentUser.badgeNumber}
@@ -566,7 +566,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               id="btn-test-security-alert"
               onClick={handleTriggerTestSecurityAlert}
               disabled={isSendingTestAlert}
-              className="py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-lg shadow-red-900/40 flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+              className="py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-950/60 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
             >
               <BellRing className="w-4 h-4 text-amber-300" />
               {isSendingTestAlert ? 'Đang lưu...' : 'Tạo cảnh báo kiểm thử'}
@@ -581,7 +581,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             onClick={() => setActiveSubTab('menus')}
             className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
               activeSubTab === 'menus'
-                ? 'bg-red-600 text-white shadow-md'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
@@ -594,7 +594,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             onClick={() => setActiveSubTab('hcm-units')}
             className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
               activeSubTab === 'hcm-units'
-                ? 'bg-red-600 text-white shadow-md'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
@@ -607,7 +607,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             onClick={() => setActiveSubTab('users')}
             className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
               activeSubTab === 'users'
-                ? 'bg-red-600 text-white shadow-md'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
@@ -620,7 +620,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             onClick={() => setActiveSubTab('whitelist')}
             className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
               activeSubTab === 'whitelist'
-                ? 'bg-red-600 text-white shadow-md'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
@@ -633,7 +633,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             onClick={() => setActiveSubTab('security')}
             className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
               activeSubTab === 'security'
-                ? 'bg-red-600 text-white shadow-md'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
@@ -756,7 +756,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               <button
                 type="button"
                 onClick={() => setIsAddUnitOpen(true)}
-                className="py-2 px-3 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold flex items-center gap-2 transition"
+                className="py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Thêm Đơn Vị & Tuyến Hẻm Mới
@@ -893,7 +893,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 });
                 setIsAddUserOpen(true);
               }}
-              className="py-2 px-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold flex items-center gap-2 transition"
+              className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition"
             >
               <Plus className="w-3.5 h-3.5" />
               Tạo Mới Tài Khoản Cán Bộ
@@ -1052,7 +1052,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <button
               type="button"
               onClick={() => setIsAddEmailOpen(true)}
-              className="py-2 px-3.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-2 transition"
+              className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition"
             >
               <Plus className="w-3.5 h-3.5" />
               Thêm Email Vào Whitelist
@@ -1362,7 +1362,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                           <div>
                             <div className="font-mono text-sm font-bold text-rose-300">{entry.ipAddress}</div>
                             <span className="text-[10px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-800/40">
-                              CHẶN TRUY CẬP API & WEB
+                              Chặn truy cập API & web
                             </span>
                           </div>
                         </div>
@@ -1672,7 +1672,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 >
                   Hủy Bỏ
                 </button>
-                <button type="submit" className="py-2 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold">
+                <button type="submit" className="py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold">
                   Thêm Whitelist
                 </button>
               </div>
@@ -1775,7 +1775,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 >
                   Hủy Bỏ
                 </button>
-                <button type="submit" className="py-2 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold">
+                <button type="submit" className="py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold">
                   Lưu Đơn Vị Hành Chính
                 </button>
               </div>

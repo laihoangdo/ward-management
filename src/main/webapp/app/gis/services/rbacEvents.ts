@@ -92,6 +92,20 @@ function visible() {
 function online() {
   visible();
 }
+/**
+ * A page kept in the back/forward cache must not hold its stream open: browsers limit HTTP/1.1
+ * connections per host, so a few cached pages would stall the next page's permission request.
+ */
+function pageHidden() {
+  if (!source) return;
+  source.close();
+  source = null;
+  clearTimers();
+  disconnected = true;
+}
+function pageShown(event: PageTransitionEvent) {
+  if (event.persisted) visible();
+}
 
 /** One SSE stream for all consumers in this tab; no periodic GET for data or permissions. */
 export function subscribeRbacEvents(listener: (event: RbacInvalidation) => void) {
@@ -99,6 +113,8 @@ export function subscribeRbacEvents(listener: (event: RbacInvalidation) => void)
   if (listeners.size === 1) {
     document.addEventListener('visibilitychange', visible);
     window.addEventListener('online', online);
+    window.addEventListener('pagehide', pageHidden);
+    window.addEventListener('pageshow', pageShown);
     connect();
   }
   return () => {
@@ -113,6 +129,8 @@ export function subscribeRbacEvents(listener: (event: RbacInvalidation) => void)
       lastAccessRevision = undefined;
       document.removeEventListener('visibilitychange', visible);
       window.removeEventListener('online', online);
+      window.removeEventListener('pagehide', pageHidden);
+      window.removeEventListener('pageshow', pageShown);
     }
   };
 }

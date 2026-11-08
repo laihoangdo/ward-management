@@ -289,9 +289,14 @@
   }
   .field-layers:not([open]) {
     width: auto;
+    padding-block: 0;
   }
+  /* 44px touch target with the label centred; the collapsed card is no taller than its summary. */
   .field-layers summary {
-    min-height: 40px;
+    min-height: 44px;
+    padding-block: 12px;
+    line-height: 20px;
+    box-sizing: border-box;
     margin-bottom: 0;
   }
   .field-layers[open] summary {

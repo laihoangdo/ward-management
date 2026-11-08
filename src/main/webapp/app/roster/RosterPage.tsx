@@ -1261,7 +1261,7 @@ export default function RosterPage({
         </div>
         <div>
           {!embedded && <Link to="/dashboard">← Về dashboard</Link>}
-          <div className="roster-eyebrow">QUẢN LÝ DÂN CƯ</div>
+          <div className="roster-eyebrow">Quản lý dân cư</div>
           <h1>{tab === 'households' ? 'Danh sách hộ dân' : tab === 'residents' ? 'Quản lý nhân khẩu' : 'Hồ sơ dân cư'} · Trung Chánh 2</h1>
           <p>Dữ liệu gốc từ ấp Trung Chánh 2 · Có nguồn và lịch sử thay đổi</p>
         </div>
