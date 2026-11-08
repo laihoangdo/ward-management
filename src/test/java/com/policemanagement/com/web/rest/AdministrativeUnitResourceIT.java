@@ -33,6 +33,9 @@ class AdministrativeUnitResourceIT {
     @Autowired
     private MockMvc restMockMvc;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     @Autowired
     private HamletRepository hamletRepository;
 
@@ -41,6 +44,7 @@ class AdministrativeUnitResourceIT {
 
     @BeforeEach
     void initTest() {
+        RbacTestSupport.communeWide(rbac);
         if (hamletRepository.count() == 0) {
             Hamlet h = new Hamlet();
             h.setCode("27592-BACLAN");

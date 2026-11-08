@@ -62,6 +62,12 @@ class RbacNotificationIntegrationTest {
             return mock(RbacService.class);
         }
 
+        // RbacService autowires the spatial service through a setter, which Spring also applies to this mock.
+        @Bean
+        com.policemanagement.com.service.PostgisSpatialService spatial() {
+            return mock(com.policemanagement.com.service.PostgisSpatialService.class);
+        }
+
         @Bean
         RbacFailureAudit failureAudit() {
             return mock(RbacFailureAudit.class);

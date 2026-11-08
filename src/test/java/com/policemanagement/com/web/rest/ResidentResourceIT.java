@@ -54,9 +54,10 @@ class ResidentResourceIT {
     private static final String DEFAULT_ID_CARD_NUMBER = "AAAAAAAAAA";
     private static final String UPDATED_ID_CARD_NUMBER = "BBBBBBBBBB";
 
-    private static final Integer DEFAULT_BIRTH_YEAR = 1;
-    private static final Integer UPDATED_BIRTH_YEAR = 2;
-    private static final Integer SMALLER_BIRTH_YEAR = 1 - 1;
+    // resident.birth_year is constrained to 1850..2200.
+    private static final Integer DEFAULT_BIRTH_YEAR = 1990;
+    private static final Integer UPDATED_BIRTH_YEAR = 1991;
+    private static final Integer SMALLER_BIRTH_YEAR = 1990 - 1;
 
     private static final Gender DEFAULT_GENDER = Gender.MALE;
     private static final Gender UPDATED_GENDER = Gender.FEMALE;
@@ -99,7 +100,15 @@ class ResidentResourceIT {
     private EntityManager em;
 
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    private Long hamletId;
+
+    @Autowired
     private MockMvc restResidentMockMvc;
+
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
 
     private Resident resident;
 
@@ -141,102 +150,113 @@ class ResidentResourceIT {
             .notes(UPDATED_NOTES);
     }
 
+    /** Inserts the fixture as the roster schema requires (real writes go through RosterService over JDBC). */
+    private Resident persistResident(Resident r) {
+        em.flush();
+        Long id = jdbc.queryForObject(
+            "insert into resident (full_name, id_card_number, birth_year, birth_date_precision, gender, relationship, residence_type," +
+                " temporary_registered_at, notes, household_id, hamlet_id) values (?,?,?,?,?,?,?,?,?,?,?) returning id",
+            Long.class,
+            r.getFullName(),
+            r.getIdCardNumber(),
+            r.getBirthYear(),
+            r.getBirthYear() == null ? "UNKNOWN" : "YEAR",
+            r.getGender() == null ? null : r.getGender().name(),
+            r.getRelationship(),
+            r.getResidenceType() == null ? null : r.getResidenceType().name(),
+            r.getTemporaryRegisteredAt(),
+            r.getNotes(),
+            r.getHousehold() == null ? null : r.getHousehold().getId(),
+            hamletId
+        );
+        r.setId(id);
+        return em.find(Resident.class, id);
+    }
+
     @BeforeEach
     void initTest() {
+        RbacTestSupport.communeWide(rbac);
+        // resident rows need an audited actor (audit_core trigger) and a hamlet (hamlet_id NOT NULL, not mapped by the entity).
+        jdbc.queryForObject("select set_config('tc2.actor', 'integration-test', true)", String.class);
+        com.policemanagement.com.domain.Hamlet hamlet = HamletResourceIT.createEntity();
+        em.persist(hamlet);
+        em.flush();
+        hamletId = hamlet.getId();
         resident = createEntity();
     }
 
     @AfterEach
     void cleanup() {
-        if (insertedResident != null) {
-            residentRepository.delete(insertedResident);
-            insertedResident = null;
-        }
+        // Residents are never deleted (audit_core trigger); every test is @Transactional and rolls back.
+        insertedResident = null;
     }
 
+    /*
+     * The legacy resident API is read-only: UnifiedRosterWebConfiguration answers 409 to every POST, PUT, PATCH and
+     * DELETE, so changes go through the audited roster workflow (/api/roster) with actor, reason and history.
+     */
     @Test
     @Transactional
-    void createResident() throws Exception {
+    void legacyCreateIsRejected() throws Exception {
         long databaseSizeBeforeCreate = getRepositoryCount();
-        // Create the Resident
         ResidentDTO residentDTO = residentMapper.toDto(resident);
-        var returnedResidentDTO = om.readValue(
-            restResidentMockMvc
-                .perform(
-                    post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(residentDTO))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString(),
-            ResidentDTO.class
-        );
-
-        // Validate the Resident in the database
-        assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
-        var returnedResident = residentMapper.toEntity(returnedResidentDTO);
-        assertResidentUpdatableFieldsEquals(returnedResident, getPersistedResident(returnedResident));
-
-        insertedResident = returnedResident;
-    }
-
-    @Test
-    @Transactional
-    void createResidentWithExistingId() throws Exception {
-        // Create the Resident with an existing ID
-        resident.setId(1L);
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
-        long databaseSizeBeforeCreate = getRepositoryCount();
-
-        // An entity with an existing ID cannot be created, so this API call must fail
         restResidentMockMvc
             .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(residentDTO)))
-            .andExpect(status().isBadRequest());
-
-        // Validate the Resident in the database
+            .andExpect(status().isConflict());
         assertSameRepositoryCount(databaseSizeBeforeCreate);
     }
 
     @Test
     @Transactional
-    void checkFullNameIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        resident.setFullName(null);
-
-        // Create the Resident, which fails.
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
+    void legacyUpdateIsRejected() throws Exception {
+        insertedResident = persistResident(resident);
+        ResidentDTO residentDTO = residentMapper.toDto(insertedResident);
+        residentDTO.setFullName(UPDATED_FULL_NAME);
         restResidentMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(residentDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
+            .perform(
+                put(ENTITY_API_URL_ID, insertedResident.getId())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(om.writeValueAsBytes(residentDTO))
+            )
+            .andExpect(status().isConflict());
+        assertThat(getPersistedResident(insertedResident).getFullName()).isEqualTo(DEFAULT_FULL_NAME);
     }
 
     @Test
     @Transactional
-    void checkResidenceTypeIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        resident.setResidenceType(null);
-
-        // Create the Resident, which fails.
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
+    void legacyPatchIsRejected() throws Exception {
+        insertedResident = persistResident(resident);
+        ResidentDTO patch = new ResidentDTO();
+        patch.setId(insertedResident.getId());
+        patch.setNotes(UPDATED_NOTES);
         restResidentMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(residentDTO)))
-            .andExpect(status().isBadRequest());
+            .perform(
+                patch(ENTITY_API_URL_ID, insertedResident.getId())
+                    .with(csrf())
+                    .contentType("application/merge-patch+json")
+                    .content(om.writeValueAsBytes(patch))
+            )
+            .andExpect(status().isConflict());
+        assertThat(getPersistedResident(insertedResident).getNotes()).isEqualTo(DEFAULT_NOTES);
+    }
 
-        assertSameRepositoryCount(databaseSizeBeforeTest);
+    @Test
+    @Transactional
+    void legacyDeleteIsRejected() throws Exception {
+        insertedResident = persistResident(resident);
+        long databaseSizeBeforeDelete = getRepositoryCount();
+        restResidentMockMvc
+            .perform(delete(ENTITY_API_URL_ID, insertedResident.getId()).with(csrf()).accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict());
+        assertSameRepositoryCount(databaseSizeBeforeDelete);
     }
 
     @Test
     @Transactional
     void getAllResidents() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList
         restResidentMockMvc
@@ -245,7 +265,11 @@ class ResidentResourceIT {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.[*].id").value(hasItem(resident.getId().intValue())))
             .andExpect(jsonPath("$.[*].fullName").value(hasItem(DEFAULT_FULL_NAME)))
-            .andExpect(jsonPath("$.[*].idCardNumber").value(hasItem(DEFAULT_ID_CARD_NUMBER)))
+            .andExpect(
+                jsonPath("$.[*].idCardNumber").value(
+                    hasItem(com.policemanagement.com.service.CccdProtection.display(DEFAULT_ID_CARD_NUMBER))
+                )
+            )
             .andExpect(jsonPath("$.[*].birthYear").value(hasItem(DEFAULT_BIRTH_YEAR)))
             .andExpect(jsonPath("$.[*].gender").value(hasItem(DEFAULT_GENDER.toString())))
             .andExpect(jsonPath("$.[*].relationship").value(hasItem(DEFAULT_RELATIONSHIP)))
@@ -275,7 +299,12 @@ class ResidentResourceIT {
     @Transactional
     void getResident() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        // A resident is readable only through its household (RbacBusinessAspect): link one, as real residents are.
+        com.policemanagement.com.domain.Household household = HouseholdResourceIT.createRosterEntity(em);
+        em.persist(household);
+        em.flush();
+        resident.setHousehold(household);
+        insertedResident = persistResident(resident);
 
         // Get the resident
         restResidentMockMvc
@@ -284,7 +313,7 @@ class ResidentResourceIT {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.id").value(resident.getId().intValue()))
             .andExpect(jsonPath("$.fullName").value(DEFAULT_FULL_NAME))
-            .andExpect(jsonPath("$.idCardNumber").value(DEFAULT_ID_CARD_NUMBER))
+            .andExpect(jsonPath("$.idCardNumber").value(com.policemanagement.com.service.CccdProtection.display(DEFAULT_ID_CARD_NUMBER)))
             .andExpect(jsonPath("$.birthYear").value(DEFAULT_BIRTH_YEAR))
             .andExpect(jsonPath("$.gender").value(DEFAULT_GENDER.toString()))
             .andExpect(jsonPath("$.relationship").value(DEFAULT_RELATIONSHIP))
@@ -297,7 +326,7 @@ class ResidentResourceIT {
     @Transactional
     void getResidentsByIdFiltering() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         Long id = resident.getId();
 
@@ -312,7 +341,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByFullNameIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where fullName equals to
         defaultResidentFiltering("fullName.equals=" + DEFAULT_FULL_NAME, "fullName.equals=" + UPDATED_FULL_NAME);
@@ -322,7 +351,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByFullNameIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where fullName in
         defaultResidentFiltering("fullName.in=" + DEFAULT_FULL_NAME + "," + UPDATED_FULL_NAME, "fullName.in=" + UPDATED_FULL_NAME);
@@ -332,7 +361,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByFullNameIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where fullName is not null
         defaultResidentFiltering("fullName.specified=true", "fullName.specified=false");
@@ -342,7 +371,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByFullNameContainsSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where fullName contains
         defaultResidentFiltering("fullName.contains=" + DEFAULT_FULL_NAME, "fullName.contains=" + UPDATED_FULL_NAME);
@@ -352,7 +381,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByFullNameNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where fullName does not contain
         defaultResidentFiltering("fullName.doesNotContain=" + UPDATED_FULL_NAME, "fullName.doesNotContain=" + DEFAULT_FULL_NAME);
@@ -362,7 +391,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByIdCardNumberIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where idCardNumber equals to
         defaultResidentFiltering("idCardNumber.equals=" + DEFAULT_ID_CARD_NUMBER, "idCardNumber.equals=" + UPDATED_ID_CARD_NUMBER);
@@ -372,7 +401,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByIdCardNumberIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where idCardNumber in
         defaultResidentFiltering(
@@ -385,7 +414,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByIdCardNumberIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where idCardNumber is not null
         defaultResidentFiltering("idCardNumber.specified=true", "idCardNumber.specified=false");
@@ -395,7 +424,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByIdCardNumberContainsSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where idCardNumber contains
         defaultResidentFiltering("idCardNumber.contains=" + DEFAULT_ID_CARD_NUMBER, "idCardNumber.contains=" + UPDATED_ID_CARD_NUMBER);
@@ -405,7 +434,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByIdCardNumberNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where idCardNumber does not contain
         defaultResidentFiltering(
@@ -418,7 +447,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByBirthYearIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where birthYear equals to
         defaultResidentFiltering("birthYear.equals=" + DEFAULT_BIRTH_YEAR, "birthYear.equals=" + UPDATED_BIRTH_YEAR);
@@ -428,7 +457,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByBirthYearIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where birthYear in
         defaultResidentFiltering("birthYear.in=" + DEFAULT_BIRTH_YEAR + "," + UPDATED_BIRTH_YEAR, "birthYear.in=" + UPDATED_BIRTH_YEAR);
@@ -438,7 +467,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByBirthYearIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where birthYear is not null
         defaultResidentFiltering("birthYear.specified=true", "birthYear.specified=false");
@@ -448,7 +477,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByBirthYearIsGreaterThanOrEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where birthYear is greater than or equal to
         defaultResidentFiltering(
@@ -461,7 +490,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByBirthYearIsLessThanOrEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where birthYear is less than or equal to
         defaultResidentFiltering("birthYear.lessThanOrEqual=" + DEFAULT_BIRTH_YEAR, "birthYear.lessThanOrEqual=" + SMALLER_BIRTH_YEAR);
@@ -471,7 +500,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByBirthYearIsLessThanSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where birthYear is less than
         defaultResidentFiltering("birthYear.lessThan=" + UPDATED_BIRTH_YEAR, "birthYear.lessThan=" + DEFAULT_BIRTH_YEAR);
@@ -481,7 +510,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByBirthYearIsGreaterThanSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where birthYear is greater than
         defaultResidentFiltering("birthYear.greaterThan=" + SMALLER_BIRTH_YEAR, "birthYear.greaterThan=" + DEFAULT_BIRTH_YEAR);
@@ -491,7 +520,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByGenderIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where gender equals to
         defaultResidentFiltering("gender.equals=" + DEFAULT_GENDER, "gender.equals=" + UPDATED_GENDER);
@@ -501,7 +530,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByGenderIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where gender in
         defaultResidentFiltering("gender.in=" + DEFAULT_GENDER + "," + UPDATED_GENDER, "gender.in=" + UPDATED_GENDER);
@@ -511,7 +540,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByGenderIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where gender is not null
         defaultResidentFiltering("gender.specified=true", "gender.specified=false");
@@ -521,7 +550,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByRelationshipIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where relationship equals to
         defaultResidentFiltering("relationship.equals=" + DEFAULT_RELATIONSHIP, "relationship.equals=" + UPDATED_RELATIONSHIP);
@@ -531,7 +560,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByRelationshipIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where relationship in
         defaultResidentFiltering(
@@ -544,7 +573,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByRelationshipIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where relationship is not null
         defaultResidentFiltering("relationship.specified=true", "relationship.specified=false");
@@ -554,7 +583,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByRelationshipContainsSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where relationship contains
         defaultResidentFiltering("relationship.contains=" + DEFAULT_RELATIONSHIP, "relationship.contains=" + UPDATED_RELATIONSHIP);
@@ -564,7 +593,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByRelationshipNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where relationship does not contain
         defaultResidentFiltering(
@@ -577,7 +606,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByResidenceTypeIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where residenceType equals to
         defaultResidentFiltering("residenceType.equals=" + DEFAULT_RESIDENCE_TYPE, "residenceType.equals=" + UPDATED_RESIDENCE_TYPE);
@@ -587,7 +616,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByResidenceTypeIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where residenceType in
         defaultResidentFiltering(
@@ -600,7 +629,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByResidenceTypeIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where residenceType is not null
         defaultResidentFiltering("residenceType.specified=true", "residenceType.specified=false");
@@ -610,7 +639,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByTemporaryRegisteredAtIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where temporaryRegisteredAt equals to
         defaultResidentFiltering(
@@ -623,7 +652,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByTemporaryRegisteredAtIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where temporaryRegisteredAt in
         defaultResidentFiltering(
@@ -636,7 +665,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByTemporaryRegisteredAtIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where temporaryRegisteredAt is not null
         defaultResidentFiltering("temporaryRegisteredAt.specified=true", "temporaryRegisteredAt.specified=false");
@@ -646,7 +675,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByTemporaryRegisteredAtIsGreaterThanOrEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where temporaryRegisteredAt is greater than or equal to
         defaultResidentFiltering(
@@ -659,7 +688,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByTemporaryRegisteredAtIsLessThanOrEqualToSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where temporaryRegisteredAt is less than or equal to
         defaultResidentFiltering(
@@ -672,7 +701,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByTemporaryRegisteredAtIsLessThanSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where temporaryRegisteredAt is less than
         defaultResidentFiltering(
@@ -685,7 +714,7 @@ class ResidentResourceIT {
     @Transactional
     void getAllResidentsByTemporaryRegisteredAtIsGreaterThanSomething() throws Exception {
         // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
+        insertedResident = persistResident(resident);
 
         // Get all the residentList where temporaryRegisteredAt is greater than
         defaultResidentFiltering(
@@ -699,15 +728,14 @@ class ResidentResourceIT {
     void getAllResidentsByHouseholdIsEqualToSomething() throws Exception {
         Household household;
         if (TestUtil.findAll(em, Household.class).isEmpty()) {
-            residentRepository.saveAndFlush(resident);
-            household = HouseholdResourceIT.createEntity();
+            household = HouseholdResourceIT.createRosterEntity(em);
         } else {
             household = TestUtil.findAll(em, Household.class).getFirst();
         }
         em.persist(household);
         em.flush();
         resident.setHousehold(household);
-        residentRepository.saveAndFlush(resident);
+        persistResident(resident);
         Long householdId = household.getId();
         // Get all the residentList where household equals to householdId
         defaultResidentShouldBeFound("householdId.equals=" + householdId);
@@ -731,7 +759,11 @@ class ResidentResourceIT {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.[*].id").value(hasItem(resident.getId().intValue())))
             .andExpect(jsonPath("$.[*].fullName").value(hasItem(DEFAULT_FULL_NAME)))
-            .andExpect(jsonPath("$.[*].idCardNumber").value(hasItem(DEFAULT_ID_CARD_NUMBER)))
+            .andExpect(
+                jsonPath("$.[*].idCardNumber").value(
+                    hasItem(com.policemanagement.com.service.CccdProtection.display(DEFAULT_ID_CARD_NUMBER))
+                )
+            )
             .andExpect(jsonPath("$.[*].birthYear").value(hasItem(DEFAULT_BIRTH_YEAR)))
             .andExpect(jsonPath("$.[*].gender").value(hasItem(DEFAULT_GENDER.toString())))
             .andExpect(jsonPath("$.[*].relationship").value(hasItem(DEFAULT_RELATIONSHIP)))
@@ -770,263 +802,7 @@ class ResidentResourceIT {
     @Transactional
     void getNonExistingResident() throws Exception {
         // Get the resident
-        restResidentMockMvc.perform(get(ENTITY_API_URL_ID, Long.MAX_VALUE)).andExpect(status().isNotFound());
-    }
-
-    @Test
-    @Transactional
-    void putExistingResident() throws Exception {
-        // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the resident
-        Resident updatedResident = residentRepository.findById(resident.getId()).orElseThrow();
-        // Disconnect from session so that the updates on updatedResident are not directly saved in db
-        em.detach(updatedResident);
-        updatedResident
-            .fullName(UPDATED_FULL_NAME)
-            .idCardNumber(UPDATED_ID_CARD_NUMBER)
-            .birthYear(UPDATED_BIRTH_YEAR)
-            .gender(UPDATED_GENDER)
-            .relationship(UPDATED_RELATIONSHIP)
-            .residenceType(UPDATED_RESIDENCE_TYPE)
-            .temporaryRegisteredAt(UPDATED_TEMPORARY_REGISTERED_AT)
-            .notes(UPDATED_NOTES);
-        ResidentDTO residentDTO = residentMapper.toDto(updatedResident);
-
-        restResidentMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, residentDTO.getId())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(residentDTO))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the Resident in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertPersistedResidentToMatchAllProperties(updatedResident);
-    }
-
-    @Test
-    @Transactional
-    void putNonExistingResident() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        resident.setId(longCount.incrementAndGet());
-
-        // Create the Resident
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException
-        restResidentMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, residentDTO.getId())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(residentDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the Resident in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void putWithIdMismatchResident() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        resident.setId(longCount.incrementAndGet());
-
-        // Create the Resident
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restResidentMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, longCount.incrementAndGet())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(residentDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the Resident in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void putWithMissingIdPathParamResident() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        resident.setId(longCount.incrementAndGet());
-
-        // Create the Resident
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restResidentMockMvc
-            .perform(put(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(residentDTO)))
-            .andExpect(status().isMethodNotAllowed());
-
-        // Validate the Resident in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void partialUpdateResidentWithPatch() throws Exception {
-        // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the resident using partial update
-        Resident partialUpdatedResident = new Resident();
-        partialUpdatedResident.setId(resident.getId());
-
-        partialUpdatedResident
-            .idCardNumber(UPDATED_ID_CARD_NUMBER)
-            .birthYear(UPDATED_BIRTH_YEAR)
-            .gender(UPDATED_GENDER)
-            .relationship(UPDATED_RELATIONSHIP)
-            .residenceType(UPDATED_RESIDENCE_TYPE)
-            .temporaryRegisteredAt(UPDATED_TEMPORARY_REGISTERED_AT);
-
-        restResidentMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, partialUpdatedResident.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(partialUpdatedResident))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the Resident in the database
-
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertResidentUpdatableFieldsEquals(createUpdateProxyForBean(partialUpdatedResident, resident), getPersistedResident(resident));
-    }
-
-    @Test
-    @Transactional
-    void fullUpdateResidentWithPatch() throws Exception {
-        // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the resident using partial update
-        Resident partialUpdatedResident = new Resident();
-        partialUpdatedResident.setId(resident.getId());
-
-        partialUpdatedResident
-            .fullName(UPDATED_FULL_NAME)
-            .idCardNumber(UPDATED_ID_CARD_NUMBER)
-            .birthYear(UPDATED_BIRTH_YEAR)
-            .gender(UPDATED_GENDER)
-            .relationship(UPDATED_RELATIONSHIP)
-            .residenceType(UPDATED_RESIDENCE_TYPE)
-            .temporaryRegisteredAt(UPDATED_TEMPORARY_REGISTERED_AT)
-            .notes(UPDATED_NOTES);
-
-        restResidentMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, partialUpdatedResident.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(partialUpdatedResident))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the Resident in the database
-
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertResidentUpdatableFieldsEquals(partialUpdatedResident, getPersistedResident(partialUpdatedResident));
-    }
-
-    @Test
-    @Transactional
-    void patchNonExistingResident() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        resident.setId(longCount.incrementAndGet());
-
-        // Create the Resident
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException
-        restResidentMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, residentDTO.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(residentDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the Resident in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void patchWithIdMismatchResident() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        resident.setId(longCount.incrementAndGet());
-
-        // Create the Resident
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restResidentMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, longCount.incrementAndGet())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(residentDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the Resident in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void patchWithMissingIdPathParamResident() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        resident.setId(longCount.incrementAndGet());
-
-        // Create the Resident
-        ResidentDTO residentDTO = residentMapper.toDto(resident);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restResidentMockMvc
-            .perform(
-                patch(ENTITY_API_URL).with(csrf()).contentType("application/merge-patch+json").content(om.writeValueAsBytes(residentDTO))
-            )
-            .andExpect(status().isMethodNotAllowed());
-
-        // Validate the Resident in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void deleteResident() throws Exception {
-        // Initialize the database
-        insertedResident = residentRepository.saveAndFlush(resident);
-
-        long databaseSizeBeforeDelete = getRepositoryCount();
-
-        // Delete the resident
-        restResidentMockMvc
-            .perform(delete(ENTITY_API_URL_ID, resident.getId()).with(csrf()).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNoContent());
-
-        // Validate the database contains one less item
-        assertDecrementedRepositoryCount(databaseSizeBeforeDelete);
+        restResidentMockMvc.perform(get(ENTITY_API_URL_ID, Long.MAX_VALUE)).andExpect(status().isForbidden()); // unknown ids are refused like unauthorised ones, revealing nothing
     }
 
     protected long getRepositoryCount() {

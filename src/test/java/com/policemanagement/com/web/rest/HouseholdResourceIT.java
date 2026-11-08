@@ -200,6 +200,34 @@ class HouseholdResourceIT {
     }
 
     /**
+     * A household that the unified roster schema accepts: public.household writes need an audited actor (audit_core
+     * trigger), a roster id with its required defaults, and a real hamlet from which the sync_legacy trigger derives
+     * household.hamlet. Writes it the way RosterService does, inside the caller's transaction; not persisted here.
+     */
+    public static Household createRosterEntity(EntityManager em) {
+        em.createNativeQuery("select set_config('tc2.actor', 'integration-test', true)").getSingleResult();
+        // hamlet.code is unique: reuse the test hamlet when the calling suite already created it.
+        Hamlet hamlet = em
+            .createQuery("select h from Hamlet h where h.code = :code", Hamlet.class)
+            .setParameter("code", HamletResourceIT.createEntity().getCode())
+            .getResultStream()
+            .findFirst()
+            .orElseGet(HamletResourceIT::createEntity);
+        hamlet.setHamletName(DEFAULT_HAMLET);
+        if (hamlet.getId() == null) em.persist(hamlet);
+        em.flush();
+        Household household = createEntity();
+        household.setAdministrativeHamlet(hamlet);
+        household.setHamletId(hamlet.getId());
+        household.setRosterId(java.util.UUID.randomUUID());
+        household.setRawAddress("");
+        household.setOrigin("MANUAL");
+        household.setVerificationStatus("UNVERIFIED");
+        household.setCoordinateMethod("UNLOCATED");
+        return household;
+    }
+
+    /**
      * Create an updated entity for this test.
      *
      * This is a static method, as tests for other entities might also need it,
@@ -236,26 +264,8 @@ class HouseholdResourceIT {
 
     @BeforeEach
     void initTest() {
-        doReturn(java.util.Map.of("role", "superadmin")).when(rbac).current();
-        doReturn(true).when(rbac).global();
-        org.springframework.data.jpa.domain.Specification<Household> unrestricted = (root, query, cb) -> cb.conjunction();
-        doReturn(unrestricted).when(rbac).householdScope(anyBoolean());
-        // public.household is the unified roster table: writes need an audited actor (audit_core trigger), a roster id,
-        // and a real hamlet, from which the sync_legacy trigger derives household.hamlet. Tests write it the way
-        // RosterService does, inside the test transaction.
-        em.createNativeQuery("select set_config('tc2.actor', 'household-it', true)").getSingleResult();
-        Hamlet hamlet = HamletResourceIT.createEntity();
-        hamlet.setHamletName(DEFAULT_HAMLET);
-        em.persist(hamlet);
-        em.flush();
-        household = createEntity();
-        household.setAdministrativeHamlet(hamlet);
-        household.setHamletId(hamlet.getId());
-        household.setRosterId(java.util.UUID.randomUUID());
-        household.setRawAddress("");
-        household.setOrigin("MANUAL");
-        household.setVerificationStatus("UNVERIFIED");
-        household.setCoordinateMethod("UNLOCATED");
+        RbacTestSupport.communeWide(rbac);
+        household = createRosterEntity(em);
     }
 
     @AfterEach

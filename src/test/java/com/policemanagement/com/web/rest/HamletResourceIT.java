@@ -80,6 +80,9 @@ class HamletResourceIT {
     @Autowired
     private MockMvc restHamletMockMvc;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private Hamlet administrativeHamlet;
 
     private Hamlet insertedHamlet;
@@ -128,6 +131,7 @@ class HamletResourceIT {
 
     @BeforeEach
     void initTest() {
+        RbacTestSupport.communeWide(rbac);
         administrativeHamlet = createEntity();
     }
 

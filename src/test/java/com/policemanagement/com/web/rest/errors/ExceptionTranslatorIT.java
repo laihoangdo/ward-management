@@ -26,6 +26,15 @@ class ExceptionTranslatorIT {
     @Autowired
     private MockMvc mockMvc;
 
+    /** Every /api, /management and /v3/api-docs request passes RbacWebConfiguration, which needs an RBAC identity. */
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
+    @org.junit.jupiter.api.BeforeEach
+    void grantRbacIdentity() {
+        com.policemanagement.com.web.rest.RbacTestSupport.communeWide(rbac);
+    }
+
     @Test
     void testConcurrencyFailure() throws Exception {
         mockMvc
@@ -73,7 +82,7 @@ class ExceptionTranslatorIT {
             .perform(get("/api/exception-translator-test/access-denied").with(csrf()))
             .andExpect(status().isForbidden())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-            .andExpect(jsonPath("$.message").value("error.http.403"))
+            // RbacExceptionAdvice audits every denial and answers before ExceptionTranslator, without a message key.
             .andExpect(jsonPath("$.detail").value("test access denied!"));
     }
 

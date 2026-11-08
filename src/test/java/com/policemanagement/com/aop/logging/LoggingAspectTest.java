@@ -65,10 +65,8 @@ class LoggingAspectTest {
         Object result = aspect.logAround(joinPoint);
 
         assertThat(result).isEqualTo("result");
-        assertThat(messages()).containsExactly(
-            "Enter: loggedMethod() with argument[s] = [arg]",
-            "Exit: loggedMethod() with result = result"
-        );
+        // Results are not logged on exit: they can carry personal data (identity numbers, names).
+        assertThat(messages()).containsExactly("Enter: loggedMethod() with argument[s] = [arg]");
     }
 
     @Test
