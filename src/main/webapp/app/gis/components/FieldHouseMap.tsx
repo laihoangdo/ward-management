@@ -20,6 +20,7 @@ import {
 } from '../utils/fieldHouseGeometry';
 import { containsHousePoint } from '../utils/houseFootprints';
 import { localRasterRequest } from '../utils/localRasterRequest';
+import { prepareVectorBasemap, VECTOR_BASEMAP_STYLE_URL } from '../utils/vectorBasemap';
 import './FieldHouseMap.css';
 import { frameMapCapture, MapCaptureOfficer } from '../utils/mapCapture';
 import { MapCapturePreview } from './MapCapturePreview';
@@ -105,6 +106,8 @@ export default function FieldHouseMap({
   const effectsRef = useRef<FieldEffects | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [vectorStreetIds, setVectorStreetIds] = useState<string[]>([]);
+  const vectorStreetRequestRef = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState(false);
   const [autoLinkError, setAutoLinkError] = useState(false);
   const [autoLinkRetry, setAutoLinkRetry] = useState(0);
@@ -129,6 +132,7 @@ export default function FieldHouseMap({
   const [layers, setLayers] = useState({
     satellite: true,
     map: false,
+    darkStreets: false,
     buildings: true,
     empty: true,
     occupied: true,
@@ -310,11 +314,21 @@ export default function FieldHouseMap({
       style: {
         version: 8,
         sources: {
-          satellite: {
+          // Surrounding imagery stops at z15; capping the source lets MapLibre enlarge it where no z16-18 tile exists.
+          'satellite-context': {
             type: 'raster',
             tiles: [`${location.origin}/content/assets/badiem_satellite/{z}/{x}/{y}.jpg`],
             tileSize: 256,
             minzoom: 5,
+            maxzoom: 15,
+            bounds: [106.4, 10.72, 106.75, 10.98],
+            attribution: 'Ảnh vệ tinh hiện có của dự án',
+          },
+          satellite: {
+            type: 'raster',
+            tiles: [`${location.origin}/content/assets/badiem_satellite/{z}/{x}/{y}.jpg`],
+            tileSize: 256,
+            minzoom: 16,
             maxzoom: 18,
             bounds: [106.5, 10.79, 106.63, 10.91],
             attribution: 'Ảnh vệ tinh hiện có của dự án',
@@ -330,7 +344,9 @@ export default function FieldHouseMap({
           },
         },
         layers: [
-          { id: 'ground', type: 'background', paint: { 'background-color': '#14212b' } },
+          // Earth tone: the area beyond the imagery should recede, not read as a hole in the map.
+          { id: 'ground', type: 'background', paint: { 'background-color': '#3a4036' } },
+          { id: 'satellite-context', type: 'raster', source: 'satellite-context', paint: { 'raster-fade-duration': 0 } },
           { id: 'satellite', type: 'raster', source: 'satellite', paint: { 'raster-fade-duration': 0 } },
           { id: 'streets', type: 'raster', source: 'streets', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0 } },
         ],
@@ -498,6 +514,33 @@ export default function FieldHouseMap({
     };
   }, []);
 
+  // The offline street tiles cover only part of the map; online streets fill the rest, requested only when the layer is on.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!(layers.map || layers.darkStreets) || !ready || !map || initializedMapRef.current !== map) return;
+    if (vectorStreetIds.length || vectorStreetRequestRef.current) return;
+    const request = new AbortController();
+    vectorStreetRequestRef.current = request;
+    void (async () => {
+      try {
+        const response = await fetch(VECTOR_BASEMAP_STYLE_URL, { signal: request.signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const basemap = prepareVectorBasemap((await response.json()) as maplibregl.StyleSpecification);
+        if (mapRef.current !== map) return;
+        map.setGlyphs(basemap.glyphs);
+        if (typeof basemap.sprite === 'string') map.setSprite(basemap.sprite);
+        Object.entries(basemap.sources).forEach(([id, source]) => map.addSource(id, source));
+        basemap.layers.forEach(layer => map.addLayer(layer, 'streets'));
+        setVectorStreetIds(basemap.layers.map(layer => layer.id));
+      } catch {
+        if (!request.signal.aborted) setNotice('Không tải được nền đường phố trực tuyến; phần ngoài khu vực có sẵn tạm để trống.');
+      } finally {
+        vectorStreetRequestRef.current = null;
+      }
+    })();
+  }, [ready, layers.map, layers.darkStreets, vectorStreetIds.length]);
+  useEffect(() => () => vectorStreetRequestRef.current?.abort(), []);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || initializedMapRef.current !== map) return;
@@ -650,8 +693,13 @@ export default function FieldHouseMap({
     map.setFilter('houses-3d', filter);
     map.setFilter('house-points', filter);
     const show = (id: string, visible: boolean) => map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
-    show('satellite', layers.satellite);
-    show('streets', layers.map);
+    // The dark street view replaces every other backdrop so the whole map keeps one style.
+    show('satellite-context', layers.satellite && !layers.darkStreets);
+    show('satellite', layers.satellite && !layers.darkStreets);
+    show('streets', layers.map && !layers.darkStreets);
+    vectorStreetIds.forEach(id => show(id, layers.map || layers.darkStreets));
+    // Online streets have no land fill of their own; match the light land of the offline street tiles.
+    map.setPaintProperty('ground', 'background-color', layers.map && !layers.satellite && !layers.darkStreets ? '#f2efe9' : '#3a4036');
     show('boundary', layers.boundary);
     show('hamlet-boundaries', layers.hamlets);
     show('assigned-territories', layers.hamlets);
@@ -662,7 +710,7 @@ export default function FieldHouseMap({
     show('temporary-households', layers.temporaryHouseholds);
     map.setFilter('temporary-households', status === 'all' ? null : ['==', ['get', 'status'], status]);
     map.setFilter('households', status === 'all' ? null : ['==', ['get', 'status'], status]);
-  }, [ready, layers, representation, status]);
+  }, [ready, layers, representation, status, vectorStreetIds]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -845,7 +893,7 @@ export default function FieldHouseMap({
         const center = map.getCenter();
         const canvas = frameMapCapture(map.getCanvas(), captureOfficer, [
           `Trích xuất: ${new Date().toLocaleString('vi-VN')} · Tâm bản đồ: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`,
-          `Zoom: ${map.getZoom().toFixed(1)} · ${houses.length.toLocaleString('vi-VN')} công trình · ${layers.map ? 'Bản đồ nền và ảnh vệ tinh hiện có của dự án' : 'Ảnh vệ tinh hiện có của dự án'}`,
+          `Zoom: ${map.getZoom().toFixed(1)} · ${houses.length.toLocaleString('vi-VN')} công trình · ${layers.darkStreets ? 'OpenFreeMap © OpenMapTiles, dữ liệu OpenStreetMap' : layers.map ? 'Bản đồ nền và ảnh vệ tinh hiện có của dự án' : 'Ảnh vệ tinh hiện có của dự án'}`,
           ...(layers.temporaryHouseholds && temporaryHouseholds.length
             ? ['Điểm cam: vị trí hộ tạm, chưa xác minh; chưa liên kết công trình.']
             : []),
@@ -973,6 +1021,7 @@ export default function FieldHouseMap({
             [
               ['satellite', 'Ảnh vệ tinh'],
               ['map', 'Bản đồ đường phố (trên vệ tinh)'],
+              ['darkStreets', 'Đường phố nền tối (cần Internet)'],
               ['boundary', 'Ranh giới xã'],
               ['hamlets', 'Ranh giới ấp / phạm vi được giao'],
               ['buildings', 'Công trình'],

@@ -33,6 +33,8 @@ vi.mock('maplibre-gl', () => ({
     addControl = vi.fn();
     addSource = mocks.addSource;
     addLayer = vi.fn();
+    setGlyphs = vi.fn();
+    setSprite = vi.fn();
     remove = mocks.mapRemove;
     resize = vi.fn();
     easeTo = vi.fn();
@@ -141,6 +143,75 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('field map controls', () => {
+  const streetsLabel = 'Bản đồ đường phố (trên vệ tinh)';
+  it('replaces every backdrop with the dark street view and restores them when turned off', async () => {
+    const fetchStyle = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          version: 8,
+          sources: { streets: { type: 'vector', url: 'https://example.test/planet' } },
+          layers: [{ id: 'road', type: 'line', source: 'streets', 'source-layer': 'transportation' }],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchStyle);
+    await mount([]);
+    const darkLabel = 'Đường phố nền tối (cần Internet)';
+
+    fireEvent.click(screen.getByRole('checkbox', { name: darkLabel }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('basemap-road', 'visibility', 'visible'));
+    expect(fetchStyle).toHaveBeenCalledTimes(1);
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite', 'visibility', 'none');
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('streets', 'visibility', 'none');
+    expect(mocks.setPaintProperty).toHaveBeenCalledWith('ground', 'background-color', '#3a4036');
+
+    mocks.setLayoutProperty.mockClear();
+    fireEvent.click(screen.getByRole('checkbox', { name: darkLabel }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite', 'visibility', 'visible'));
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('basemap-road', 'visibility', 'none');
+  });
+
+  it('loads online streets only after the street layer is turned on', async () => {
+    const fetchStyle = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          version: 8,
+          sources: { streets: { type: 'vector', url: 'https://example.test/planet' } },
+          layers: [{ id: 'road', type: 'line', source: 'streets', 'source-layer': 'transportation' }],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchStyle);
+    await mount([]);
+    expect(fetchStyle).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: streetsLabel }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('basemap-road', 'visibility', 'visible'));
+    expect(fetchStyle).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Ảnh vệ tinh' }));
+    await waitFor(() => expect(mocks.setPaintProperty).toHaveBeenCalledWith('ground', 'background-color', '#f2efe9'));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Ảnh vệ tinh' }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: streetsLabel }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('basemap-road', 'visibility', 'none'));
+  });
+
+  it('keeps the offline map working when online streets are unreachable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    await mount([]);
+    fireEvent.click(screen.getByRole('checkbox', { name: streetsLabel }));
+    expect(await screen.findByText(/Không tải được nền đường phố trực tuyến/)).toBeTruthy();
+    expect(screen.getByText('1 công trình')).toBeTruthy();
+  });
+
+  it('toggles the surrounding imagery together with the satellite layer', async () => {
+    await mount([]);
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite-context', 'visibility', 'visible'));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Ảnh vệ tinh' }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite-context', 'visibility', 'none'));
+  });
+
   const mountFramed = async (territories: unknown[], communeOverview: boolean) => {
     vi.mocked(axios.get).mockImplementation(url =>
       Promise.resolve({

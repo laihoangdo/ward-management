@@ -37,7 +37,7 @@ describe('offline raster tile requests', () => {
   });
   it('covers missing street tiles and tiles at unavailable zoom levels', () => {
     expect(localRasterRequest('/content/assets/badiem_map/18/0/0.png').url).toBe(EMPTY_RASTER_TILE);
-    expect(localRasterRequest('/content/assets/badiem_satellite/9/407/240.jpg').url).toBe(EMPTY_RASTER_TILE);
+    expect(localRasterRequest('/content/assets/badiem_satellite/9/0/0.jpg').url).toBe(EMPTY_RASTER_TILE);
   });
   it('preserves all catalogued files and leaves module, API and boundary requests unchanged', () => {
     for (const [kind, keys] of Object.entries(catalog)) {
