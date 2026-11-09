@@ -44,6 +44,54 @@ public class GisFieldBuildingResource {
         return scopedView(features);
     }
 
+    /** Approximate household positions from linked footprints for the advanced map, limited to households the caller may see. */
+    @GetMapping("/household-positions")
+    public List<Map<String, Object>> householdPositions() {
+        rbac.permission("canViewAdvancedMap");
+        var features = db.query(
+            "select feature_json from gis_field_building where id in (select building_id from gis_field_building_household) order by id",
+            (rs, row) -> json.readTree(rs.getString(1))
+        );
+        var visible = rbac.global() ? null : rbac.visibleMapHouseholds();
+        var positions = new ArrayList<Map<String, Object>>();
+        for (JsonNode feature : features) {
+            double[] centre = footprintCentre(feature.path("geometry"));
+            if (centre == null) continue;
+            for (JsonNode link : feature.path("properties").path("householdIds")) {
+                if (visible == null || visible.contains(link.asText())) positions.add(
+                    Map.of(
+                        "householdId",
+                        link.asText(),
+                        "buildingId",
+                        feature.path("id").asText(),
+                        "latitude",
+                        centre[1],
+                        "longitude",
+                        centre[0]
+                    )
+                );
+            }
+        }
+        return positions;
+    }
+
+    /** Vertex average of the first outer ring as [longitude, latitude]; null when the geometry has no usable ring. */
+    static double[] footprintCentre(JsonNode geometry) {
+        JsonNode rings = "MultiPolygon".equals(geometry.path("type").asText())
+            ? geometry.path("coordinates").path(0)
+            : geometry.path("coordinates");
+        JsonNode ring = rings.path(0);
+        int vertices = ring.size() - 1; // The closing point repeats the first vertex.
+        if (vertices < 3) return null;
+        double longitude = 0;
+        double latitude = 0;
+        for (int i = 0; i < vertices; i++) {
+            longitude += ring.get(i).get(0).asDouble();
+            latitude += ring.get(i).get(1).asDouble();
+        }
+        return new double[] { longitude / vertices, latitude / vertices };
+    }
+
     @GetMapping("/access")
     public Map<String, Object> access() {
         rbac.permission("canViewField3DMap");

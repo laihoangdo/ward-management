@@ -141,6 +141,43 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 describe('field map controls', () => {
+  const mountFramed = async (territories: unknown[], communeOverview: boolean) => {
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories }
+          : { type: 'FeatureCollection', features: String(url).includes('/api/') ? [] : [house] },
+      }),
+    );
+    render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} communeOverview={communeOverview} />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('1 công trình');
+  };
+
+  it('opens on the assigned hamlet in 3D for a hamlet-level user', async () => {
+    await mountFramed([house], false);
+    await waitFor(() => expect(mocks.fitBounds).toHaveBeenCalledTimes(1));
+    expect(mocks.fitBounds).toHaveBeenCalledWith(
+      [
+        [106, 10],
+        [106.001, 10.001],
+      ],
+      expect.objectContaining({ pitch: 55 }),
+    );
+  });
+
+  it('opens on the whole commune from above for a commune-level user, even with an assigned hamlet', async () => {
+    await mountFramed([house], true);
+    await waitFor(() => expect(mocks.fitBounds).toHaveBeenCalledTimes(1));
+    expect(mocks.fitBounds.mock.calls[0][0]).not.toEqual([
+      [106, 10],
+      [106.001, 10.001],
+    ]);
+    expect(mocks.fitBounds).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ pitch: 0, bearing: 0 }));
+  });
+
   it('saves selected building properties through the existing permission-checked endpoint', async () => {
     await mount([], true);
     selectHouse();

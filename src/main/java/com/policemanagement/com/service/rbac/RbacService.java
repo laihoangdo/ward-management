@@ -138,8 +138,21 @@ public class RbacService {
         // During cutover both engines must approve; enabling PostGIS must never widen access.
         return (
             (spatial == null || !spatial.enabled() || spatial.covered(geometry, areas())) &&
-            TerritoryGeometry.covered(geometry, mapTerritories())
+            TerritoryGeometry.coveredByPrepared(geometry, preparedMapTerritories())
         );
+    }
+
+    private List<java.awt.geom.Area> preparedMapTerritories() {
+        var request = RequestContextHolder.getRequestAttributes();
+        String key = "rbac.preparedMapTerritories";
+        if (request != null && request.getAttribute(key, RequestAttributes.SCOPE_REQUEST) instanceof List<?> cached) {
+            @SuppressWarnings("unchecked")
+            var areas = (List<java.awt.geom.Area>) cached;
+            return areas;
+        }
+        var prepared = TerritoryGeometry.prepare(mapTerritories());
+        if (request != null) request.setAttribute(key, prepared, RequestAttributes.SCOPE_REQUEST);
+        return prepared;
     }
 
     public void mapGeometry(JsonNode geometry) {

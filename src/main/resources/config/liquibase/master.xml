@@ -44,4 +44,6 @@
     <include file="config/liquibase/changelog/20261029000000_postgis_operational.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261029010000_postgis_restore_safe.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261102000000_inspection_photos.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261108000000_tc2_drawing_household_links.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261108010000_tc2_drawing_household_links_estimated.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

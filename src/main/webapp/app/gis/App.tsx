@@ -1129,6 +1129,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                       }}
                       key={`${currentUser.id}:${currentUser.version ?? 0}`}
                       households={displayedHouseholds}
+                      communeOverview={currentUser.role === 'superadmin' || currentUser.role === 'admin'}
                       canAdd={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
                       canLink={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canEditCoordinates === true}
                       onSelect={openHousehold}

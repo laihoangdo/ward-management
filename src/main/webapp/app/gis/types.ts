@@ -183,6 +183,7 @@ export interface HouseholdFacility {
   licenseType?: string;
   coordinates: [number, number]; // Latitude, Longitude in An Lac, Binh Tan
   coordinatesEstimated?: boolean; // Missing/fallback or explicitly temporary coordinates.
+  coordinatesFromBuilding?: boolean; // Display-only position taken from the linked building; never saved.
   coordinateMethod?: string;
   gridPosition: {
     row: number;

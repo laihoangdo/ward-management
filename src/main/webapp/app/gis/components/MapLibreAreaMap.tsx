@@ -10,6 +10,8 @@ import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './MapLibreAreaMap.css';
 import { HouseholdFacility } from '../types';
+import { prepareVectorBasemap, VECTOR_BASEMAP_STYLE_URL } from '../utils/vectorBasemap';
+import { placeHouseholdsAtBuildings, type HouseholdBuildingPosition } from '../utils/householdBuildingPositions';
 import apTc2Schematic from '../data/apTc2Schematic.json';
 import apTc2DxfLinework from '../data/apTc2DxfLinework.json';
 import { baDiemCommuneBoundary as baDiemBoundaryGis } from '../data/baDiemCommuneBoundary';
@@ -144,13 +146,6 @@ const SCHEMATIC_LINEWORK: MapFeatures = {
 const BASE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: '© OpenStreetMap contributors',
-    },
     satellite: {
       type: 'raster',
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
@@ -160,7 +155,6 @@ const BASE_STYLE: maplibregl.StyleSpecification = {
   },
   layers: [
     { id: 'ground', type: 'background', paint: { 'background-color': '#f3f4ef' } },
-    { id: 'osm', type: 'raster', source: 'osm', layout: { visibility: 'none' } },
     { id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } },
   ],
 };
@@ -266,7 +260,24 @@ interface Props {
   onUpdateCoordinates?: (updates: { id: string; coordinates: [number, number] }[]) => Promise<void> | void;
 }
 
-export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdateCoordinates }: Props) {
+export default function MapLibreAreaMap({ households: sourceHouseholds, onSelectHousehold: openHousehold, onUpdateCoordinates }: Props) {
+  const [buildingPositions, setBuildingPositions] = useState<HouseholdBuildingPosition[]>([]);
+  const households = useMemo(() => placeHouseholdsAtBuildings(sourceHouseholds, buildingPositions), [sourceHouseholds, buildingPositions]);
+  const sourceHouseholdsRef = useRef(sourceHouseholds);
+  sourceHouseholdsRef.current = sourceHouseholds;
+  // The profile can be saved, so it must receive the stored record, not the display-only building position.
+  const onSelectHousehold = (household: HouseholdFacility) =>
+    openHousehold(sourceHouseholdsRef.current.find(item => item.id === household.id) ?? household);
+  useEffect(() => {
+    const request = new AbortController();
+    axios
+      .get<HouseholdBuildingPosition[]>('/api/gis/field-buildings/household-positions', { signal: request.signal })
+      .then(response => setBuildingPositions(response.data))
+      .catch(() => {
+        /* Without building positions the map still shows households that have real coordinates. */
+      });
+    return () => request.abort();
+  }, []);
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -275,7 +286,8 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
   const labelMarkersRef = useRef<maplibregl.Marker[]>([]);
   const geoLabelMarkersRef = useRef<maplibregl.Marker[]>([]);
   const editMarkersRef = useRef<maplibregl.Marker[]>([]);
-  const [baseLayer, setBaseLayer] = useState<'osm' | 'satellite'>('osm');
+  const [baseLayer, setBaseLayer] = useState<'streets' | 'satellite'>('streets');
+  const [basemapLayerIds, setBasemapLayerIds] = useState<string[]>([]);
   const [editingCoordinates, setEditingCoordinates] = useState(false);
   const [pendingCoordinates, setPendingCoordinates] = useState<Record<string, [number, number]>>({});
   const [savingCoordinates, setSavingCoordinates] = useState(false);
@@ -545,9 +557,25 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       attributionControl: {},
     });
     mapRef.current = map;
+    const basemapRequest = new AbortController();
     map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: false }), 'top-right');
     map.on('zoomend', () => setZoom(map.getZoom()));
     map.on('load', () => {
+      // Loaded after the operational layers exist, so an unreachable tile host costs only the street backdrop.
+      void (async () => {
+        try {
+          const response = await fetch(VECTOR_BASEMAP_STYLE_URL, { signal: basemapRequest.signal });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const basemap = prepareVectorBasemap((await response.json()) as maplibregl.StyleSpecification);
+          map.setGlyphs(basemap.glyphs);
+          if (typeof basemap.sprite === 'string') map.setSprite(basemap.sprite);
+          Object.entries(basemap.sources).forEach(([id, source]) => map.addSource(id, source));
+          basemap.layers.forEach(layer => map.addLayer(layer, 'satellite'));
+          setBasemapLayerIds(basemap.layers.map(layer => layer.id));
+        } catch {
+          if (!basemapRequest.signal.aborted) setMessage('Không tải được nền đường phố OpenFreeMap. Lớp dữ liệu địa bàn vẫn dùng được.');
+        }
+      })();
       map.addSource('area', { type: 'geojson', data: EMPTY_FEATURES });
       map.addSource('geo-buildings', { type: 'geojson', data: EMPTY_FEATURES, promoteId: 'hoverId' });
       map.addSource('road-surfaces', { type: 'geojson', data: EMPTY_FEATURES });
@@ -862,6 +890,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       labelMarkersRef.current = [];
       geoLabelMarkersRef.current.forEach(marker => marker.remove());
       geoLabelMarkersRef.current = [];
+      basemapRequest.abort();
       // MapLibre 5 removes the style without calling custom layer onRemove.
       // Detach Three.js first, before map.remove deliberately loses the shared GL context.
       const threeLayer = threeLayerRef.current;
@@ -1073,7 +1102,6 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     labelMarkersRef.current.forEach(marker => {
       marker.getElement().style.display = schematic ? '' : 'none';
     });
-    map.setLayoutProperty('osm', 'visibility', !schematic && baseLayer === 'osm' ? 'visible' : 'none');
     map.setLayoutProperty('satellite', 'visibility', !schematic && baseLayer === 'satellite' ? 'visible' : 'none');
     map.setLayoutProperty(
       'roads',
@@ -1123,6 +1151,14 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     ]);
     map.setLayoutProperty('schematic-dxf-linework', 'visibility', schematic && showDxfLinework ? 'visible' : 'none');
   }, [ready, is3D, mapMode, baseLayer, showDxfLinework, tilt, layers, useThreeBuildings]);
+
+  // Separate from the view effect above: the street layers arrive late and must not restart its camera animation.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const visibility = mapMode === 'geographic' && baseLayer === 'streets' ? 'visible' : 'none';
+    basemapLayerIds.forEach(id => map.setLayoutProperty(id, 'visibility', visibility));
+  }, [ready, mapMode, baseLayer, basemapLayerIds]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1181,6 +1217,19 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     setPendingCoordinates({});
     setEditingCoordinates(false);
   };
+
+  const framedOnPositionsRef = useRef(false);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !buildingPositions.length || framedOnPositionsRef.current || mapMode !== 'geographic') return;
+    // Positions and households load independently; wait until both have arrived before using up the one automatic fit.
+    if (!householdPoints.features.length) return;
+    framedOnPositionsRef.current = true;
+    if (appliedSearch) return;
+    const bounds = new maplibregl.LngLatBounds();
+    householdPoints.features.forEach(feature => bounds.extend(feature.geometry.coordinates as [number, number]));
+    map.fitBounds(bounds, { padding: 60, maxZoom: 18, duration: 700 });
+  }, [ready, buildingPositions, householdPoints, mapMode, appliedSearch]);
 
   const saveCoordinates = async () => {
     const updates = Object.entries(pendingCoordinates).map(([id, coordinates]) => ({ id, coordinates }));
@@ -1630,7 +1679,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
                   </span>
                   <small>
                     {h.ownerName}
-                    {h.coordinatesEstimated ? ' · Chưa có tọa độ' : ''}
+                    {h.coordinatesEstimated ? ' · Chưa có tọa độ' : h.coordinatesFromBuilding ? ' · Vị trí tạm theo ô nhà' : ''}
                   </small>
                 </button>
               ))}
@@ -1689,8 +1738,9 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           </div>
           <small>
             Zoom {zoom.toFixed(1)} · {geoBuildings.features.length} khối nhà; {households.filter(h => !h.coordinatesEstimated).length} hộ có
-            tọa độ. Khối từ điểm hộ dân có footprint và chiều cao minh họa, không phải ranh/số tầng đã khảo sát.{' '}
-            {roadSurfaces.features.length} đoạn đường có hình học nhập; {zones.features.length} khu vực có ranh giới.
+            vị trí, trong đó {households.filter(h => h.coordinatesFromBuilding).length} hộ là vị trí tạm theo ô nhà đã gắn. Khối từ điểm hộ
+            dân có footprint và chiều cao minh họa, không phải ranh/số tầng đã khảo sát. {roadSurfaces.features.length} đoạn đường có hình
+            học nhập; {zones.features.length} khu vực có ranh giới.
           </small>
           {!zonesFromApi && (
             <small>Ranh khu vực hiện dùng dữ liệu tham khảo trong project; chưa xác nhận ranh hành chính chính thức.</small>
@@ -1734,10 +1784,10 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
                 Lớp nền
                 <select
                   value={baseLayer}
-                  onChange={event => setBaseLayer(event.target.value as 'osm' | 'satellite')}
+                  onChange={event => setBaseLayer(event.target.value as 'streets' | 'satellite')}
                   aria-label="Lớp bản đồ nền"
                 >
-                  <option value="osm">Đường phố</option>
+                  <option value="streets">Đường phố</option>
                   <option value="satellite">Ảnh vệ tinh</option>
                 </select>
               </label>

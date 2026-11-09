@@ -3,6 +3,7 @@ package com.policemanagement.com.service.rbac;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.util.Collection;
+import java.util.List;
 import tools.jackson.databind.JsonNode;
 
 /** Exact polygon-area subtraction: vertices alone do not detect holes or concave boundaries. */
@@ -39,17 +40,28 @@ public final class TerritoryGeometry {
     }
 
     public static boolean covered(JsonNode geometry, Collection<JsonNode> territories) {
+        return coveredByPrepared(geometry, prepare(territories));
+    }
+
+    /** Parses boundaries once: for many footprints, parsing a hamlet outline costs far more than testing a house. */
+    public static List<Area> prepare(Collection<JsonNode> territories) {
+        return territories.stream().map(TerritoryGeometry::area).toList();
+    }
+
+    public static boolean coveredByPrepared(JsonNode geometry, List<Area> territories) {
         Area footprint = area(geometry);
         if (footprint.isEmpty()) return false;
+        var bounds = footprint.getBounds2D();
         // Avoid an extra Area.add(empty, complexPolygon) normalization: it can
         // perturb coincident edges and make a polygon fail coverage by itself.
         Area allowed = null;
-        for (JsonNode territory : territories) {
-            Area next = area(territory);
+        for (Area next : territories) {
+            // A territory whose box misses the footprint cannot cover any of it.
+            if (!next.getBounds2D().intersects(bounds)) continue;
             Area remaining = (Area) footprint.clone();
             remaining.subtract(next);
             if (remaining.isEmpty()) return true;
-            if (allowed == null) allowed = next;
+            if (allowed == null) allowed = new Area(next);
             else allowed.add(next);
         }
         if (allowed == null) return false;

@@ -19,6 +19,17 @@ class GisFieldBuildingResourceTest {
     private final ObjectMapper json = new ObjectMapper();
 
     @Test
+    void findsFootprintCentreForPolygonAndMultiPolygon() {
+        var mapper = new tools.jackson.databind.ObjectMapper();
+        var polygon = mapper.readTree("{\"type\":\"Polygon\",\"coordinates\":[[[0,0],[2,0],[2,2],[0,2],[0,0]]]}");
+        var multi = mapper.readTree("{\"type\":\"MultiPolygon\",\"coordinates\":[[[[0,0],[2,0],[2,2],[0,2],[0,0]]]]}");
+
+        assertArrayEquals(new double[] { 1, 1 }, GisFieldBuildingResource.footprintCentre(polygon));
+        assertArrayEquals(new double[] { 1, 1 }, GisFieldBuildingResource.footprintCentre(multi));
+        assertNull(GisFieldBuildingResource.footprintCentre(mapper.readTree("{\"type\":\"Polygon\",\"coordinates\":[]}")));
+    }
+
+    @Test
     void validatesTwentyFloorLimitAndEditedMaterials() {
         var feature = feature("[[0,0],[1,0],[1,1],[0,0]]");
         var properties = (tools.jackson.databind.node.ObjectNode) feature.path("properties");

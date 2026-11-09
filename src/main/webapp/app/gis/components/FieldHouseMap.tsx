@@ -34,6 +34,8 @@ interface Props {
   onSelect: (household: HouseholdFacility) => void;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  /** Commune-level users open on the whole commune from above; others open on their assigned hamlets. */
+  communeOverview?: boolean;
 }
 const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 const STATUS: Record<HouseholdStatus, string> = {
@@ -83,10 +85,12 @@ export default function FieldHouseMap({
   isFullscreen,
   onToggleFullscreen,
   captureOfficer,
+  communeOverview = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const initializedMapRef = useRef<maplibregl.Map | null>(null);
+  const framedMapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
   const [layersOpen, setLayersOpen] = useState(() => !window.matchMedia?.(COMPACT_MAP_QUERY).matches);
   const [loading, setLoading] = useState(true);
@@ -765,9 +769,7 @@ export default function FieldHouseMap({
       setBusy(false);
     }
   };
-  const overview = () => {
-    const map = mapRef.current;
-    if (!map || !houses.length) return;
+  const frameCommune = (map: maplibregl.Map) => {
     const b = baDiemCommuneBounds;
     map.fitBounds(
       [
@@ -777,6 +779,30 @@ export default function FieldHouseMap({
       { padding: 60, pitch: 0, bearing: 0, duration: 900 },
     );
   };
+  const overview = () => {
+    const map = mapRef.current;
+    if (!map || !houses.length) return;
+    frameCommune(map);
+  };
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || loading || !map || initializedMapRef.current !== map || framedMapRef.current === map) return;
+    framedMapRef.current = map;
+    const points = territoryShapes.flatMap(shape => shape.coordinates.flat(shape.type === 'Polygon' ? 1 : 2) as number[][]);
+    if (communeOverview || access.global || !points.length) {
+      frameCommune(map);
+      return;
+    }
+    const lngs = points.map(point => point[0]);
+    const lats = points.map(point => point[1]);
+    map.fitBounds(
+      [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ],
+      { padding: 48, pitch: 55, bearing: 0, duration: 900 },
+    );
+  }, [ready, loading, communeOverview, access.global, territoryShapes]);
   const zoomSelected = () => {
     if (selected) {
       const width = containerRef.current?.clientWidth ?? 1000;
