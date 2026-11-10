@@ -40,8 +40,26 @@ export function beginBackendLogin(): void {
   window.location.assign('/oauth2/authorization/oidc');
 }
 
+/**
+ * Ends the app session, then the Keycloak session. If the app session is already gone (expired, server restarted),
+ * still clear this browser and send the user to Keycloak's logout so the single sign-on session ends too.
+ */
 export async function logoutBackendSession(): Promise<void> {
-  const { data } = await axios.post<{ logoutUrl?: string }>('/api/logout', {});
-  localStorage.removeItem('cskv_auth_session_user');
-  window.location.assign(data.logoutUrl || '/');
+  let logoutUrl: string | undefined;
+  try {
+    logoutUrl = (await axios.post<{ logoutUrl?: string }>('/api/logout', {})).data.logoutUrl;
+  } catch {
+    try {
+      const { data } = await axios.get<{ issuer?: string; clientId?: string }>('/api/auth-info');
+      if (data.issuer && data.clientId) {
+        const params = new URLSearchParams({ client_id: data.clientId, post_logout_redirect_uri: window.location.origin });
+        logoutUrl = `${data.issuer.replace(/\/$/, '')}/protocol/openid-connect/logout?${params.toString()}`;
+      }
+    } catch {
+      /* Without provider details the user still leaves the app; the next sign-in goes through Keycloak. */
+    }
+  } finally {
+    localStorage.removeItem('cskv_auth_session_user');
+  }
+  window.location.assign(logoutUrl || '/');
 }

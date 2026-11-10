@@ -220,5 +220,13 @@ Production is now serving at `https://sunnytech.cloud` with the real database (r
 
 ### 5. Repository state
 
-- All go-live changes (production profile, VPS scripts, systemd units, tests, documentation) are uncommitted on branch `develop/3d-map`. Commit and push them so the deployed state is reproducible; the running image embeds git metadata `e996f07-dirty`.
+- The go-live changes were committed on `develop/3d-map` (`f458d81`). The running image still embeds `e996f07-dirty`, so make the next release from a clean commit with tests, following "Release procedure" in `PRODUCTION-CUTOVER.md`.
+- Before that release, install the new root-owned helpers `migrate-production-db.sh` and `verify-production-live.py` next to `update-production-app.py` in `/opt/police-management/production/`, and confirm `/opt/police-management/security/trivy` is present.
+
+### 6. Decisions from the 2026-11-10 review
+
+- Whether the staging site and realm `police-staging` should stay publicly reachable now that production is live.
+- GCP VPC rules still allow SSH 22 and RDP 3389 from `0.0.0.0/0` (host UFW blocks them). Restrict them at the cloud layer with a tested rollback when convenient.
+- Unify the duplicate HSTS/CSP/X-Frame-Options headers between Cloudflare, Nginx and the application.
+- Repeat the independent restore drill with a **production** archive.
 - The older staging one-time file `/etc/police-management/secrets/staging/admin-laihoangdo-initial` should be removed once you confirm both staging credentials were changed (see section 3 above).

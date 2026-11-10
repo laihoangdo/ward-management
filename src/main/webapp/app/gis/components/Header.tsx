@@ -116,7 +116,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="gis-header h-14 bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
+    <header className="gis-header h-14 bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shrink-0 w-full transition-colors select-none">
       {/* Title / Hamburger menu / Home button */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
         {onToggleDesktopSidebar && (
@@ -127,18 +127,18 @@ export const Header: React.FC<HeaderProps> = ({
             title={isDesktopSidebarOpen ? 'Ẩn menu bên trái' : 'Hiện menu bên trái'}
             aria-expanded={isDesktopSidebarOpen}
             aria-controls="gis-desktop-sidebar"
-            className="hidden lg:flex h-10 w-10 items-center justify-center shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="hidden md:flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             {isDesktopSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
           </button>
         )}
-        {/* Mobile/Tablet Hamburger Toggle Button */}
+        {/* Mobile Hamburger Toggle Button */}
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
             type="button"
             aria-label="Mở menu điều hành"
-            className="lg:hidden h-8 w-8 sm:h-9 sm:w-9 text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors relative flex items-center justify-center shrink-0 cursor-pointer"
+            className="md:hidden h-9 w-9 sm:h-10 sm:w-10 text-slate-700 dark:text-slate-200 hover:text-emerald-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors relative flex items-center justify-center shrink-0 cursor-pointer"
             title="Mở menu điều hành"
           >
             <Menu className="w-4 h-4 text-slate-700 dark:text-slate-200" />
@@ -153,20 +153,20 @@ export const Header: React.FC<HeaderProps> = ({
           to="/"
           id="btn-header-home"
           title="Quay về Trang chủ Cổng thông tin Monolithic"
-          className="gis-header-home hidden sm:flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white font-semibold text-xs transition-colors shadow-xs shrink-0 cursor-pointer no-underline"
+          className="gis-header-home hidden sm:flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white font-semibold text-xs transition-colors shrink-0 cursor-pointer no-underline"
           style={{ textDecoration: 'none' }}
         >
-          <Home className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+          <Home className="w-3.5 h-3.5 text-emerald-800 dark:text-emerald-400 shrink-0" />
           <span>Trang chủ</span>
         </Link>
 
         {/* Shield Icon — plain, no tinted box */}
-        <Shield aria-hidden="true" className="gis-header-emblem hidden md:block w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
+        <Shield aria-hidden="true" className="gis-header-emblem hidden lg:block w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
 
         {/* Module Title & Breadcrumb */}
         <div className="min-w-0 pr-1 flex-1">
           <h1
-            className="gis-header-title text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight m-0 p-0"
+            className="gis-header-title text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight truncate m-0 p-0"
             style={{ margin: 0, fontWeight: 700 }}
           >
             {getTabTitle()}
@@ -180,15 +180,21 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Action shortcuts & Search */}
       <div className="gis-header-actions flex items-center gap-1 sm:gap-2 shrink-0">
         {/* Desktop & Tablet Quick Search with Voice Search trigger */}
-        <div className="gis-header-search relative hidden md:block w-36 lg:w-56 xl:w-64 shrink-0">
+        <div className="gis-header-search relative hidden md:block w-44 lg:w-60 xl:w-72 shrink-0">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="search"
             aria-label="Tìm hộ dân, số nhà hoặc số điện thoại"
-            placeholder="Tên, số nhà, SĐT"
+            placeholder="Tìm hộ dân: tên, số nhà, SĐT..."
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            className="w-full h-9 pl-8 pr-14 text-xs bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-500 transition-colors"
+            onKeyDown={e => {
+              if (e.key === 'Escape' && searchQuery) {
+                e.preventDefault();
+                onSearchChange('');
+              }
+            }}
+            className="w-full h-9 pl-8 pr-14 text-xs bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-emerald-700 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-500 transition-colors"
           />
           <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {searchQuery && (
@@ -219,7 +225,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="btn-header-voice-search-mobile"
           onClick={() => setIsVoiceModalOpen(true)}
-          className="hidden sm:flex md:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors items-center justify-center cursor-pointer shrink-0"
+          className="hidden sm:flex md:hidden h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors items-center justify-center cursor-pointer shrink-0"
           title="Tìm kiếm bằng giọng nói Tiếng Việt"
         >
           <Mic className="w-4 h-4 text-rose-600" />
@@ -230,10 +236,10 @@ export const Header: React.FC<HeaderProps> = ({
           aria-expanded={isMobileSearchOpen}
           aria-controls="gis-mobile-search"
           onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-          className={`gis-header-mobile-search-toggle md:hidden h-8 w-8 sm:h-9 sm:w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
+          className={`gis-header-mobile-search-toggle md:hidden h-9 w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
             isMobileSearchOpen || searchQuery
-              ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
-              : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
+              ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300'
+              : 'text-slate-600 dark:text-slate-300 hover:text-emerald-800 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
           }`}
           title="Tìm kiếm nhanh"
         >
@@ -266,7 +272,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => onTabChange('residents')}
             title="Mở nhanh module Quản lý nhân khẩu & Định danh"
-            className={`hidden md:flex items-center gap-1.5 h-9 px-2 sm:px-2.5 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
+            className={`hidden md:flex items-center gap-1.5 h-9 px-2.5 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 transition-colors cursor-pointer ${
               activeTab === 'residents'
                 ? 'bg-[#1c4e3a] text-white border-[#1c4e3a]'
                 : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
@@ -283,7 +289,7 @@ export const Header: React.FC<HeaderProps> = ({
           disabled={isRefreshing}
           aria-label="Cập nhật dữ liệu"
           title="Làm mới dữ liệu địa bàn"
-          className="flex h-9 px-2 sm:px-2.5 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
+          className="flex h-9 w-9 xl:w-auto xl:px-2.5 justify-center text-slate-600 dark:text-slate-300 hover:text-emerald-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer"
         >
           <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
           <span className="gis-header-shortcut-label hidden xl:inline whitespace-nowrap">Cập nhật</span>
@@ -308,7 +314,7 @@ export const Header: React.FC<HeaderProps> = ({
             id="btn-toggle-dark-mode"
             onClick={onToggleTheme}
             title={theme === 'dark' ? 'Chuyển sang Chế độ Sáng (Ban ngày)' : 'Chuyển sang Chế độ Tối (Ban đêm)'}
-            className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 hover:text-amber-500 dark:text-slate-300 dark:hover:text-amber-400 transition-colors flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
+            className="h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 hover:text-amber-500 dark:text-slate-300 dark:hover:text-amber-400 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
           >
             {theme === 'dark' ? (
               <Sun className="w-4 h-4 text-amber-400 animate-in spin-in-180 duration-300" />
@@ -322,7 +328,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onOpenWarnings}
           title={`Thông báo & Cảnh báo an ninh địa bàn (${warningCount})`}
-          className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center justify-center shrink-0 cursor-pointer shadow-xs"
+          className="relative h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center justify-center shrink-0 cursor-pointer"
         >
           <Bell className={`w-4 h-4 shrink-0 ${warningCount > 0 ? 'text-amber-500 dark:text-amber-300' : 'text-slate-400'}`} />
           {warningCount > 0 && (
@@ -356,7 +362,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onLogout}
-                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center justify-center shrink-0 cursor-pointer"
+                className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center justify-center shrink-0 cursor-pointer"
                 title="Đăng xuất"
               >
                 <LogOut className="w-4 h-4" />
@@ -381,7 +387,13 @@ export const Header: React.FC<HeaderProps> = ({
               placeholder="Tìm theo tên chủ hộ, số nhà, SĐT..."
               value={searchQuery}
               onChange={e => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-16 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white text-slate-800 dark:text-white"
+              onKeyDown={e => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setIsMobileSearchOpen(false);
+                }
+              }}
+              className="w-full pl-9 pr-16 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-emerald-700 focus:bg-white text-slate-800 dark:text-white"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {searchQuery && (
@@ -389,7 +401,7 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   aria-label="Xóa tìm kiếm"
                   onClick={() => onSearchChange('')}
-                  className="text-slate-400 hover:text-slate-600 p-1"
+                  className="text-slate-400 hover:text-slate-600 p-1.5"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

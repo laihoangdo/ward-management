@@ -239,23 +239,23 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150">
-      <div className="gis-voice-dialog bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 animate-in fade-in duration-150">
+      <div className="gis-voice-dialog bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-3.5 sm:p-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-colors ${
-                isListening ? 'bg-rose-500 animate-pulse text-white' : 'bg-blue-600 text-white'
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                isListening ? 'bg-rose-600 text-white' : 'bg-emerald-800 text-white'
               }`}
             >
               <Mic className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-1.5 py-0.5 rounded flex items-center gap-1">
+                <span className="text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-1.5 py-0.5 rounded flex items-center gap-1">
                   <Radio className={`w-2.5 h-2.5 ${isListening ? 'animate-spin' : ''}`} />
-                  {isListening ? 'ĐANG LẮNG NGHE (TIẾNG VIỆT)' : 'TÌM KIẾM GIỌNG NÓI'}
+                  {isListening ? 'Đang lắng nghe (Tiếng Việt)' : 'Tìm kiếm giọng nói'}
                 </span>
               </div>
               <h3 className="gis-dialog-title text-sm font-bold text-white mt-0.5">Trợ lý giọng nói An ninh Địa bàn</h3>
@@ -276,29 +276,21 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 
         {/* Modal Body */}
         <div className="gis-voice-body p-4 sm:p-6 space-y-4">
-          {/* Main Visualizer & Mic Pulse */}
+          {/* Main Visualizer & Mic Button */}
           <div className="flex flex-col items-center justify-center py-2 text-center">
             <div className="relative mb-3">
-              {/* Animated pulsating circles when listening */}
-              {isListening && (
-                <>
-                  <div className="absolute -inset-4 rounded-full bg-rose-500/20 animate-ping" />
-                  <div className="absolute -inset-2 rounded-full bg-rose-500/30 animate-pulse" />
-                </>
-              )}
-
               <button
                 type="button"
                 id="btn-voice-toggle-listening"
                 onClick={isListening ? stopListening : startListening}
-                className={`relative w-20 h-20 rounded-full flex items-center justify-center shadow-xl transition-all cursor-pointer ${
+                className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                   isListening
-                    ? 'bg-rose-600 text-white ring-4 ring-rose-300 dark:ring-rose-900 scale-105'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    ? 'bg-rose-600 text-white ring-4 ring-rose-300 dark:ring-rose-900'
+                    : 'bg-emerald-800 hover:bg-emerald-900 text-white'
                 }`}
                 title={isListening ? 'Nhấn để dừng nhận diện' : 'Nhấn vào để bắt đầu nói'}
               >
-                {isListening ? <Mic className="w-9 h-9 animate-bounce" /> : <MicOff className="w-9 h-9" />}
+                {isListening ? <Mic className="w-9 h-9" /> : <MicOff className="w-9 h-9" />}
               </button>
             </div>
 
@@ -314,19 +306,6 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                       : 'Bấm vào Micro tròn ở trên để bắt đầu nói'}
                 </span>
               </h4>
-
-              {/* Dynamic Sound Wave Bars */}
-              {isListening && (
-                <div className="flex items-center justify-center gap-1 py-1">
-                  <span className="w-1 h-3 bg-rose-500 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1 h-6 bg-rose-500 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1 h-4 bg-rose-500 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
-                  <span className="w-1 h-7 bg-rose-500 rounded-full animate-pulse" style={{ animationDelay: '450ms' }} />
-                  <span className="w-1 h-5 bg-rose-500 rounded-full animate-pulse" style={{ animationDelay: '200ms' }} />
-                  <span className="w-1 h-8 bg-rose-500 rounded-full animate-pulse" style={{ animationDelay: '350ms' }} />
-                  <span className="w-1 h-3 bg-rose-500 rounded-full animate-pulse" style={{ animationDelay: '100ms' }} />
-                </div>
-              )}
             </div>
 
             {/* Editable Query Box with Realtime Voice Feedback */}
@@ -346,7 +325,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                     }
                   }}
                   placeholder="Nói vào micro hoặc gõ từ khóa tìm kiếm..."
-                  className="w-full pl-9 pr-10 py-2.5 text-sm sm:text-base font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:border-blue-500 focus:bg-white text-slate-900 dark:text-white placeholder-slate-400 text-center shadow-inner transition-colors"
+                  className="w-full pl-9 pr-10 py-2.5 text-sm sm:text-base font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:border-emerald-700 focus:bg-white text-slate-900 dark:text-white placeholder-slate-400 text-center transition-colors"
                 />
                 <Edit3 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 {(transcript || interimText) && (
@@ -364,7 +343,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                 )}
               </div>
               {interimText && !transcript && (
-                <div className="text-[11px] text-blue-600 dark:text-blue-400 font-medium mt-1">
+                <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-1">
                   Đang nhận dạng thời gian thực: "{interimText}"
                 </div>
               )}
@@ -383,7 +362,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                   <button
                     type="button"
                     onClick={handleOpenInNewTab}
-                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" />
                     <span>Mở app ở Tab mới để cấp quyền Micro</span>
@@ -420,9 +399,9 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                       setTranscript(item.label);
                       handleApply(item.label);
                     }}
-                    className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-300 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 hover:text-emerald-800 dark:hover:text-emerald-300 hover:border-emerald-300 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer"
                   >
-                    <IconComponent className="w-3 h-3 text-slate-400 group-hover:text-blue-500" />
+                    <IconComponent className="w-3 h-3 text-slate-400" />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -474,7 +453,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               type="button"
               onClick={() => handleApply(transcript || interimText)}
               disabled={!transcript && !interimText}
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-1.5 cursor-pointer min-h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-1.5 cursor-pointer min-h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Check className="w-4 h-4" />
               <span>Áp dụng tìm kiếm</span>

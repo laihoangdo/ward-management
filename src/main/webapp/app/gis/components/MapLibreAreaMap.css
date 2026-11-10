@@ -17,80 +17,81 @@
   min-width: 0;
   max-height: 65vh;
   overflow-y: auto;
-  border: 1px solid #334155;
-  border-radius: 1rem;
-  background: #0f172a;
-  color: #f8fafc;
-  padding: 1.25rem;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 0.75rem;
+  background: var(--gis-surface, #ffffff);
+  color: var(--gis-text, #172c35);
+  padding: 1.15rem;
   font:
-    12px/1.45 system-ui,
+    13px/1.5 system-ui,
     sans-serif;
 }
 .tc2-household-panel-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #334155;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--gis-border, #cbd2d9);
 }
 .tc2-household-panel-header h3 {
   flex: 1;
   margin: 0;
-  font-size: 1.3rem;
-  line-height: 1.15;
+  font-size: 1.15rem;
+  line-height: 1.25;
   font-weight: 700;
 }
 .tc2-household-panel-header span {
-  padding: 0.3rem 0.45rem;
-  border: 1px solid #2563eb;
-  border-radius: 0.4rem;
-  color: #93c5fd;
-  font-size: 0.7rem;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid var(--gis-primary, #1c4e3a);
+  border-radius: 0.35rem;
+  color: var(--gis-accent-text, #1c4e3a);
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 .tc2-household-panel-header button {
   border: 0;
   background: transparent;
-  color: #94a3b8;
-  font-size: 1.5rem;
+  color: var(--gis-muted, #526170);
+  font-size: 1.4rem;
 }
 .tc2-household-panel-body {
   display: grid;
   gap: 0.7rem;
-  padding-top: 1rem;
+  padding-top: 0.85rem;
 }
 .tc2-household-panel-body h4 {
   margin: 0;
   font-size: 1rem;
 }
 .tc2-household-panel-body small {
-  color: #94a3b8;
+  color: var(--gis-muted, #526170);
 }
 .tc2-household-status {
   justify-self: start;
   border: 1px solid currentColor;
   border-radius: 0.4rem;
-  padding: 0.3rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   font-weight: 700;
 }
 .tc2-household-status--normal {
-  color: #34d399;
+  color: var(--gis-success, #237347);
 }
 .tc2-household-status--warning {
-  color: #fbbf24;
+  color: var(--gis-warning, #855600);
 }
 .tc2-household-status--alert {
-  color: #fb7185;
+  color: var(--gis-error, #b42318);
 }
 .tc2-household-status--business {
-  color: #60a5fa;
+  color: var(--gis-info, #0d47a1);
 }
 .tc2-household-panel-callout,
 .tc2-household-panel-facts,
 .tc2-household-panel-notes p {
-  padding: 0.8rem;
-  border: 1px solid #334155;
-  border-radius: 0.7rem;
-  background: #1e293b;
+  padding: 0.75rem;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 0.5rem;
+  background: var(--gis-surface-soft, #f1f5f3);
 }
 .tc2-household-panel-callout {
   display: grid;
@@ -106,7 +107,7 @@
   gap: 0.5rem;
 }
 .tc2-household-panel-facts dt {
-  color: #94a3b8;
+  color: var(--gis-muted, #526170);
 }
 .tc2-household-panel-facts dd {
   margin: 0;
@@ -114,7 +115,7 @@
   font-weight: 600;
 }
 .tc2-household-panel-facts a {
-  color: #60a5fa;
+  color: var(--gis-accent-text, #1c4e3a);
 }
 .tc2-household-panel-notes p {
   margin: 0.35rem 0;
@@ -123,26 +124,27 @@
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
-  color: #94a3b8;
-  font-size: 0.68rem;
+  color: var(--gis-muted, #526170);
+  font-size: 0.72rem;
 }
 .tc2-household-panel-profile,
 .tc2-household-panel-phone {
   display: block;
   width: 100%;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 0.4rem;
   padding: 0.65rem;
   text-align: center;
   font-weight: 700;
 }
 .tc2-household-panel-profile {
-  background: #2563eb;
+  background: var(--gis-primary, #1c4e3a);
   color: white;
 }
 .tc2-household-panel-phone {
-  background: #1e293b;
-  color: #cbd5e1;
+  background: var(--gis-surface-soft, #f1f5f3);
+  border-color: var(--gis-border, #cbd2d9);
+  color: var(--gis-text, #172c35);
 }
 @media (max-width: 760px) {
   .tc2-map-content--selected {
@@ -237,7 +239,7 @@
   top: 1rem;
   left: 1rem;
   display: grid;
-  grid-template-columns: repeat(2, 2.3rem);
+  grid-template-columns: repeat(2, 2.5rem);
   gap: 0.35rem;
 }
 .tc2-map-basemap {
@@ -252,7 +254,7 @@
   box-shadow: 0 2px 8px #20304026;
   color: #26394c;
   font:
-    600 10px system-ui,
+    600 11px system-ui,
     sans-serif;
 }
 .tc2-map-basemap select {
@@ -266,7 +268,7 @@
     sans-serif;
 }
 .tc2-map-tools button {
-  height: 2.3rem;
+  height: 2.5rem;
   border: 1px solid #cbd5e1;
   border-radius: 0.45rem;
   background: #fff;
@@ -277,8 +279,8 @@
 }
 .tc2-map-tools button:hover,
 .tc2-map-tools button:focus-visible {
-  background: #e8f1f8;
-  outline-color: #2563eb;
+  background: #e8f1ec;
+  outline-color: #1c4e3a;
 }
 .tc2-map-tools button:disabled {
   cursor: not-allowed;
@@ -303,7 +305,7 @@
 }
 .tc2-map-tilt input {
   width: 7rem;
-  accent-color: #2563eb;
+  accent-color: #1c4e3a;
 }
 .tc2-map-panel {
   display: grid;
@@ -381,7 +383,7 @@
 .tc2-map-search button {
   padding: 0.55rem 0.85rem;
   border-radius: 0.45rem;
-  background: #1d4ed8;
+  background: var(--gis-primary, #1c4e3a);
   color: white;
   font-weight: 600;
 }
@@ -419,8 +421,8 @@
 }
 .tc2-map-search-results-list button:hover,
 .tc2-map-search-results-list button:focus-visible {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--gis-primary, #1c4e3a);
+  background: #e8f1ec;
 }
 .tc2-map-search-results-list small {
   overflow: hidden;
@@ -481,7 +483,6 @@
   justify-content: center;
   padding: 1rem;
   background: #020617cc;
-  backdrop-filter: blur(5px);
 }
 .tc2-capture-modal {
   display: flex;
@@ -536,8 +537,8 @@
   color: white;
 }
 .tc2-capture-modal .tc2-capture-download {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: var(--gis-primary, #1c4e3a);
+  background: var(--gis-primary, #1c4e3a);
   color: white;
 }
 .tc2-capture-modal .tc2-capture-close {

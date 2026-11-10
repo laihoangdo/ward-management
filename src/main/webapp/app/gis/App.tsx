@@ -990,15 +990,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           id="gis-main-content"
           tabIndex={-1}
           className={`flex-1 min-w-0 min-h-0 ${
-            isMapFullscreen || activeTab === 'field-3d-map'
+            isMapFullscreen
               ? 'w-full h-full p-0 overflow-hidden flex flex-col'
-              : 'overflow-y-auto p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-6 scroll-smooth'
+              : activeTab === 'field-3d-map'
+                ? 'w-full h-full p-0 pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 overflow-hidden flex flex-col'
+                : 'overflow-y-auto p-2.5 sm:p-4 lg:p-5 pb-20 md:pb-6 scroll-smooth'
           }`}
         >
           {householdRouteLoading && <p role="status">Đang tải hồ sơ hộ…</p>}
           {householdRouteError && <p role="alert">{householdRouteError}</p>}
-          {!isMapFullscreen && (
-            <div className="mb-4 space-y-2">
+          {!isMapFullscreen && (isLoading || dataErrors.length > 0) && (
+            <div className="mb-3 space-y-2">
               {isLoading && (
                 <p role="status" className="text-sm text-slate-600 dark:text-slate-300">
                   Đang tải dữ liệu địa bàn…
@@ -1025,7 +1027,6 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                   </button>
                 </div>
               )}
-              {lastUpdated && <p className="mb-0 text-xs text-slate-500">Lần cập nhật dữ liệu: {lastUpdated.toLocaleString('vi-VN')}</p>}
             </div>
           )}
           {canOpenMenu(activeTab) ? (
@@ -1036,25 +1037,45 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                 activeTab !== 'households' &&
                 activeTab !== 'residents' &&
                 activeTab !== 'overview' && (
-                  <div className="mb-4 p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="mb-3 p-2.5 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex flex-wrap items-center justify-between gap-2.5 text-xs">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
                       <span className="text-slate-600 dark:text-slate-300">Kết quả lọc tìm kiếm:</span>
-                      <span className="font-bold text-blue-900 dark:text-blue-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+                      <span className="font-bold text-emerald-900 dark:text-emerald-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                         "{searchQuery}"
                       </span>
-                      <span className="text-slate-500 font-mono text-[11px] hidden sm:inline">
-                        ({displayedHouseholds.length} hồ sơ phù hợp)
+                      <span className="text-slate-600 dark:text-slate-300 tabular-nums text-[11px] font-semibold">
+                        ({displayedHouseholds.length} hộ phù hợp)
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      id="btn-clear-active-search"
-                      onClick={() => setSearchQuery('')}
-                      className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer shadow-xs"
-                    >
-                      <span>Xóa bộ lọc</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {canOpenMenu('households') && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('households')}
+                          className="px-2.5 py-1 bg-[#1c4e3a] hover:bg-[#153c2c] text-white font-semibold rounded-lg border border-[#1c4e3a] transition-colors text-[11px] cursor-pointer"
+                        >
+                          Xem danh sách hộ ({displayedHouseholds.length})
+                        </button>
+                      )}
+                      {canOpenMenu('area-map') && activeTab !== 'area-map' && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('area-map')}
+                          className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-200 font-semibold rounded-lg border border-emerald-300 dark:border-emerald-700 transition-colors text-[11px] cursor-pointer"
+                        >
+                          Xem trên sơ đồ
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        id="btn-clear-active-search"
+                        onClick={() => setSearchQuery('')}
+                        className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Xóa bộ lọc</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1243,69 +1264,99 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
         {/* Mobile Bottom Navigation Bar (Fixed for quick thumb access on phones) */}
         {!isMapFullscreen && (
-          <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-lg">
+          <nav
+            aria-label="Điều hướng nhanh trên thiết bị di động"
+            className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-1.5 pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex items-center justify-around"
+          >
             <button
+              type="button"
               onClick={() => setActiveTab('overview')}
               style={{ display: canOpenMenu('overview') ? undefined : 'none' }}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
-                activeTab === 'overview' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              aria-current={activeTab === 'overview' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                activeTab === 'overview'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <LayoutDashboard className={`w-5 h-5 ${activeTab === 'overview' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Tổng quan</span>
+              <LayoutDashboard
+                className={`w-4.5 h-4.5 ${activeTab === 'overview' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+              />
+              <span className="text-[11px] mt-0.5 leading-tight">Tổng quan</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('area-map')}
               style={{ display: canOpenMenu('area-map') ? undefined : 'none' }}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
-                activeTab === 'area-map' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              aria-current={activeTab === 'area-map' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                activeTab === 'area-map'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Map className={`w-5 h-5 ${activeTab === 'area-map' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Sơ đồ</span>
+              <Map className={`w-4.5 h-4.5 ${activeTab === 'area-map' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`} />
+              <span className="text-[11px] mt-0.5 leading-tight">Sơ đồ</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('households')}
               style={{ display: canOpenMenu('households') ? undefined : 'none' }}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
-                activeTab === 'households' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              aria-current={activeTab === 'households' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                activeTab === 'households'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Users className={`w-5 h-5 ${activeTab === 'households' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Hộ dân</span>
+              <Users className={`w-4.5 h-4.5 ${activeTab === 'households' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`} />
+              <span className="text-[11px] mt-0.5 leading-tight">Hộ dân</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('residents')}
               style={{ display: canOpenMenu('residents') ? undefined : 'none' }}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
-                activeTab === 'residents' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              aria-current={activeTab === 'residents' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                activeTab === 'residents'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <UserCheck className={`w-5 h-5 ${activeTab === 'residents' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Nhân khẩu</span>
+              <UserCheck
+                className={`w-4.5 h-4.5 ${activeTab === 'residents' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+              />
+              <span className="text-[11px] mt-0.5 leading-tight">Nhân khẩu</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('documents')}
               style={{ display: canOpenMenu('documents') ? undefined : 'none' }}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] relative ${
-                activeTab === 'documents' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              aria-current={activeTab === 'documents' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] relative ${
+                activeTab === 'documents'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <FileText className={`w-5 h-5 ${activeTab === 'documents' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Hồ sơ</span>
+              <FileText
+                className={`w-4.5 h-4.5 ${activeTab === 'documents' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+              />
+              <span className="text-[11px] mt-0.5 leading-tight">Hồ sơ</span>
               {warningCount > 0 && <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />}
             </button>
 
             <button
+              type="button"
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] text-slate-500 hover:text-slate-800"
+              className="flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             >
-              <Menu className="w-5 h-5 text-slate-400" />
-              <span className="text-[10px] mt-0.5">Thêm</span>
+              <Menu className="w-4.5 h-4.5 text-slate-400" />
+              <span className="text-[11px] mt-0.5 leading-tight">Thêm</span>
             </button>
           </nav>
         )}
@@ -1378,8 +1429,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-xs font-semibold flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200 max-w-[90vw]">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-ping"></span>
+        <div className="fixed bottom-16 md:bottom-6 right-4 sm:right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl border border-slate-700 text-xs font-semibold flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200 max-w-[90vw]">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
           <span className="truncate">{toastMessage}</span>
         </div>
       )}

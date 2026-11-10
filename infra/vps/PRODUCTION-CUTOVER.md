@@ -85,17 +85,36 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 ### Still open after go-live
 
 - Missing-heartbeat alert policy creation still awaits owner evidence (`cloud-shell-observability.py` with `APPROVE-90-DAYS`).
-- All repository changes (scripts, configuration, documentation) are uncommitted on branch `develop/3d-map`.
 - Owner must complete first production sign-in for the named operator, remove the one-time credential file, and reassign the disabled `user` account's hamlet assignment (see `OWNER-ACTIONS.md`).
+- The go-live repository changes were committed afterwards (`f458d81`, 2026-11-08). The running image was built from an uncommitted tree (`e996f07-dirty`) with tests skipped, so it is not proven identical to any commit; the next release must follow the procedure below.
 
-## Current serving state
+## Current serving state (reviewed 2026-11-10)
 
-- Public root is still maintenance, with the identity-only staging site selected.
-- Backend image is `police-app-staging:20261105-3` with a synthetic-only frontend manifest and excluded operational GIS datasets.
-- Existing staging application DB has zero households and zero residents. Database/Liquibase history are preserved.
-- No separately reviewed production Compose/site/configuration or production artifact is deployed. Do not rename the staging image or remove its manifest to imply production readiness.
+- Public site serves production: image `police-app-production:20261108-1` (rollback candidates `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
+- Read-only review evidence: public root 200, issuer `https://sunnytech.cloud/realms/jhipster`, anonymous RBAC 401, `staging-manifest.json`, `/admin/` and `/management/health` 404, MapLibre worker asset 200. `/realms/master/*` reaches only the application's SPA fallback, not Keycloak. Production, staging, audit-export and certbot units last ran with `Result=success`; root disk 52% used.
+- The staging application and realm `police-staging` remain publicly discoverable on the same host. Decide whether staging should stay public now that production is live.
+- Duplicate response headers: Cloudflare adds `Strict-Transport-Security: max-age=31536000; includeSubDomains` while the origin sends `max-age=86400`, and both the application CSP and an Nginx `frame-ancestors 'none'` CSP are present beside `X-Frame-Options: SAMEORIGIN`. Not a functional fault; unify deliberately (the Cloudflare value commits every subdomain to HTTPS for a year).
 
-## Required cutover inputs (not acceptance-test requests)
+## Logout fix — 2026-11-10
+
+- Symptom: signing out in production stopped on a Keycloak error page. The app sends its origin `https://sunnytech.cloud` as `post_logout_redirect_uri`, but realm `jhipster` client `web_app` had `post.logout.redirect.uris = +` (reuse redirect URIs), and its only redirect URI is the login callback, so Keycloak answered 400 "invalid redirect URI". Local realms allow every `localhost`, which hid the problem.
+- Live fix: set `post.logout.redirect.uris` to exactly `https://sunnytech.cloud` (previous value `+`, one row changed) in the identity database, then restarted `police-staging-keycloak-1` (healthy after ~21 s). Verified: logout with `https://sunnytech.cloud` → 302 to the site; a foreign URI is still rejected (400); public root 200, anonymous RBAC 401, both realm discoveries 200, production app UP with no new error logs. Rollback: set the value back to `+` and restart Keycloak.
+- `prepare-production-identity.py` now sets the attribute so a future realm preparation keeps logout working.
+- Application-side hardening (URL-encoded redirect with a fallback when the browser sends no usable Origin; frontend still ends the Keycloak session when the app session has already expired) is in the repository and reaches production with the next release.
+- Not changed: realm `police-staging` client `web_app` uses `https://sunnytech.cloud/` (trailing slash) for the same attribute.
+
+## Release procedure for later production updates (from 2026-11-10)
+
+The 2026-11-07/08 rollouts used `update-production-app.py` as an image swap only: the `vps` profile disables Liquibase and nothing ran production migrations, so a release that adds changesets would have started against an old schema. The script now enforces the staging-equivalent gates:
+
+1. Commit a clean tree; build the frontend and `mvn -Pprod,vps package` **with tests**; run `scripts/audit-production-artifact.ps1`; record the JAR SHA256.
+2. Upload only the JAR, build the immutable image `police-app-production:YYYYMMDD-N` from `App.Dockerfile` on the VPS. Install `migrate-production-db.sh` and `verify-production-live.py` under `/opt/police-management/production/` (root-owned).
+3. `sudo python3 update-production-app.py police-app-production:YYYYMMDD-N <sha256>`: checks the JAR inside the image, requires a clean HIGH/CRITICAL Trivy scan, runs `migrate-production-db.sh` (fresh offsite backup → restore drill into a disposable database with matching counts → Liquibase `status → update → status`), swaps the pinned image, waits for health, runs `verify-production-live.py` and returns to the previous image on failure.
+4. Rollback: `update-production-app.py <older tag> --rollback` (needs an offsite backup from the last 6 hours, runs no migrations). Applied changesets stay applied; only roll back to code that works with the current schema. Data recovery after real writes still follows the rollback boundary below.
+
+`verify-production.py` stays as the historical pre-cutover check (it requires maintenance and the 1,291/5,074 source counts) and must not be used after go-live.
+
+## Required cutover inputs (historical, satisfied by the 2026-11-07 cutover)
 
 1. Owner chooses whether production starts **empty** for later authorized entry/import, or receives a specifically identified operational source DB. Do not infer the source from local files.
 2. Prepare a production artifact/configuration appropriate to that scope; exclude operational/citizen material from public static bundles, retain server-side keys and restricted runtime privileges, and keep Keycloak admin endpoints private.

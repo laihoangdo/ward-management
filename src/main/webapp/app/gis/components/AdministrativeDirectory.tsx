@@ -36,7 +36,7 @@ export function AdministrativeDirectory({ onCommuneChange }: { onCommuneChange?:
   const hamlets = useUnits(communeId ? `/api/administrative-units/hamlets?communeId=${communeId}` : null);
   return (
     <section className="space-y-3 rounded-xl border border-slate-700 p-4">
-      <h3 className="text-sm font-semibold text-blue-300">Danh mục hành chính từ DB</h3>
+      <h3 className="text-sm font-semibold text-emerald-300">Danh mục hành chính từ DB</h3>
       <div className="grid gap-3 md:grid-cols-3">
         {[
           {
@@ -71,7 +71,7 @@ export function AdministrativeDirectory({ onCommuneChange }: { onCommuneChange?:
               value={item.value}
               disabled={!item.enabled || item.state.loading || item.state.error}
               onChange={event => item.change(event.target.value)}
-              className="mt-2 w-full rounded-lg bg-slate-950 p-2 text-white"
+              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white"
             >
               <option value="">{item.state.loading ? 'Đang tải...' : 'Chọn ' + item.label}</option>
               {item.state.units.map(unit => (

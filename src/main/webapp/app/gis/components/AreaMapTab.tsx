@@ -35,10 +35,10 @@ interface AreaMapTabProps {
 // nhóm hẻm. Đây là màu phân loại nghiệp vụ, không phải accent trang trí.
 const ALLEY_LEGEND_DOT = 'w-2 h-2 rounded-full bg-purple-500'; // taste-skill-ignore: màu phân loại tuyến hẻm
 const ALLEY_LEGEND_TEXT = 'font-semibold text-purple-600'; // taste-skill-ignore: màu phân loại tuyến hẻm
-const ALLEY_ACTIVE_PILL = 'bg-purple-600 text-white shadow-xs'; // taste-skill-ignore: màu phân loại tuyến hẻm
-const ALLEY_FILTER_TAG = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-600 text-white text-[11px] font-bold shadow-xs'; // taste-skill-ignore: màu phân loại tuyến hẻm
+const ALLEY_ACTIVE_PILL = 'bg-purple-600 text-white'; // taste-skill-ignore: màu phân loại tuyến hẻm
+const ALLEY_FILTER_TAG = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-600 text-white text-[11px] font-bold'; // taste-skill-ignore: màu phân loại tuyến hẻm
 const ALLEY_CARD_BADGE =
-  'inline-block text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-semibold border border-purple-150 truncate max-w-full'; // taste-skill-ignore: màu phân loại tuyến hẻm
+  'inline-block text-[11px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-semibold border border-purple-150 truncate max-w-full'; // taste-skill-ignore: màu phân loại tuyến hẻm
 const ALLEY_VALUE_TEXT = 'font-bold text-purple-800 text-xs truncate block'; // taste-skill-ignore: màu phân loại tuyến hẻm
 const ALLEY_ISOLATE_BUTTON =
   'flex-1 py-1 px-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center'; // taste-skill-ignore: màu phân loại tuyến hẻm
@@ -122,10 +122,8 @@ const StreetFilter: React.FC<{
           id={`filter-street-${name}`}
           aria-pressed={selected === name}
           onClick={() => onSelect(name)}
-          className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer shrink-0 ${
-            selected === name
-              ? 'bg-slate-800 text-white shadow-xs'
-              : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
+          className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer shrink-0 ${
+            selected === name ? 'bg-slate-800 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           {name === 'all' ? 'Tất cả đường' : `${name} (${count})`}
@@ -138,12 +136,12 @@ const StreetFilter: React.FC<{
 const HouseholdCardTags: React.FC<{ household: HouseholdFacility }> = ({ household }) => (
   <>
     {household.legacyHamlet && (
-      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-50 text-slate-700 font-semibold border border-slate-200">
+      <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-50 text-slate-700 font-semibold border border-slate-200">
         {getHouseholdLegacyHamlet(household)}
       </span>
     )}
     {household.neighborhoodGroup?.trim() && (
-      <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-extrabold border border-blue-200">
+      <span className="text-[11px] px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 font-extrabold border border-blue-200">
         {household.neighborhoodGroup.trim()}
       </span>
     )}
@@ -182,14 +180,14 @@ const LegacyHamletFilter: React.FC<{
           aria-pressed={selected === name}
           aria-label={`${name}, ${count} hộ`}
           onClick={() => onSelect(name)}
-          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+          className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shrink-0 cursor-pointer flex items-center gap-1.5 ${
             selected === name
-              ? 'bg-slate-800 text-white font-bold shadow-xs'
+              ? 'bg-slate-800 text-white font-bold'
               : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
           }`}
         >
           <span>{name}</span>
-          <span className="text-[10px] tabular-nums font-bold opacity-80">{count}</span>
+          <span className="text-[11px] tabular-nums font-bold opacity-80">{count}</span>
         </button>
       ))}
     </div>
@@ -211,17 +209,17 @@ const HouseholdClassification: React.FC<{
 
     <div className="grid grid-cols-2 gap-2 text-xs">
       <div className="bg-white/90 p-2 rounded-lg border border-blue-100 col-span-2">
-        <span className="text-[10px] text-slate-500 block font-semibold">Ấp cũ (theo nguồn nhập):</span>
+        <span className="text-[11px] text-slate-500 block font-semibold">Ấp cũ (theo nguồn nhập):</span>
         <span className="font-bold text-slate-800 text-sm">{getHouseholdLegacyHamlet(household)}</span>
       </div>
       <div className="bg-white/90 p-2 rounded-lg border border-blue-100">
-        <span className="text-[10px] text-slate-500 block font-semibold">Tổ dân phố:</span>
+        <span className="text-[11px] text-slate-500 block font-semibold">Tổ dân phố:</span>
         <span className={`font-extrabold text-sm ${household.neighborhoodGroup?.trim() ? 'text-blue-700' : 'text-slate-500'}`}>
           {getHouseholdNeighborhoodGroup(household)}
         </span>
       </div>
       <div className="bg-white/90 p-2 rounded-lg border border-blue-100">
-        <span className="text-[10px] text-slate-500 block font-semibold">Vị trí / Tuyến hẻm:</span>
+        <span className="text-[11px] text-slate-500 block font-semibold">Vị trí / Tuyến hẻm:</span>
         <span className={ALLEY_VALUE_TEXT} title={getHouseholdAlley(household)}>
           {getHouseholdAlley(household)}
         </span>
@@ -459,11 +457,11 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
     >
       {/* Fullscreen Top Navigation Bar */}
       {isFullscreen && (
-        <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 shrink-0 text-white shadow-lg">
+        <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 shrink-0 text-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold text-xs sm:text-sm text-slate-100">SƠ ĐỒ ĐỊA BÀN DÂN CƯ TƯƠNG TÁC — TOÀN MÀN HÌNH</span>
-            <span className="hidden sm:inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+            <span className="font-bold text-xs sm:text-sm text-slate-100">Sơ đồ địa bàn dân cư tương tác — Toàn màn hình</span>
+            <span className="hidden sm:inline-block text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 tabular-nums">
               {filteredHouseholds.length} / {households.length} vị trí
             </span>
           </div>
@@ -487,7 +485,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             <button
               id="btn-exit-fullscreen"
               onClick={() => setIsFullscreen(false)}
-              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-md cursor-pointer"
+              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
               title="Thoát chế độ toàn màn hình (Esc)"
             >
               <Minimize2 className="w-3.5 h-3.5" />
@@ -499,18 +497,18 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
       {/* Header Banner */}
       {!isFullscreen && (
-        <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-3">
             <div>
               <h2 id="map-title" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                 Sơ đồ địa bàn tương tác
               </h2>
-              <p id="map-description" className="hidden sm:block text-sm text-slate-500 mt-1 mb-0">
+              <p id="map-description" className="hidden sm:block text-sm text-slate-500 mt-0.5 mb-0">
                 Lọc nhanh theo ấp cũ, tổ dân phố hoặc tuyến hẻm để quan sát khu vực phụ trách rõ nét, loại bỏ dữ liệu dư thừa.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Toggle Only Warnings */}
               <label className="gis-check-row px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors min-h-[40px]">
                 <input
@@ -529,7 +527,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               <button
                 id="map-refresh-button"
                 onClick={onRefresh}
-                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs min-h-[40px] cursor-pointer"
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 min-h-[40px] cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Cập nhật</span>
@@ -563,7 +561,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               <button
                 id="map-fullscreen-button"
                 onClick={() => setIsFullscreen(true)}
-                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs min-h-[40px] cursor-pointer"
+                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 min-h-[40px] cursor-pointer"
                 title="Xem toàn màn hình"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
@@ -572,16 +570,16 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             </div>
           </div>
 
-          <p id="map-help" className="hidden sm:block text-xs text-slate-500 mt-2.5 mb-0 pt-2.5 border-t border-slate-100">
+          <p id="map-help" className="hidden lg:block text-xs text-slate-500 mt-2 mb-0 pt-2 border-t border-slate-100">
             Sơ đồ phân tổ và hẻm giúp cán bộ CSKV tập trung vào từng cụm dân cư phụ trách mà không bị rối mắt bởi lượng lớn dữ liệu.
           </p>
         </div>
       )}
 
       {/* Modern Filter Suite: Tổ Dân Phố, Tuyến Hẻm, Khu Vực & Tuyến Đường */}
-      <div className="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs space-y-3.5">
+      <div className="bg-white p-3 sm:p-4 rounded-xl border border-slate-200/80 space-y-2.5">
         {/* Mode Selector & Search Row */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
           {/* Filter Mode Selector Pills */}
           <div
             role="group"
@@ -596,7 +594,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 setSelectedAlley('all');
               }}
               className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                filterMode === 'all' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                filterMode === 'all' ? 'bg-white text-blue-700' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Building className="w-3.5 h-3.5" />
@@ -606,9 +604,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               id="mode-filter-group"
               onClick={() => setFilterMode('group')}
               className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
-                filterMode === 'group' || selectedGroup !== 'all'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                filterMode === 'group' || selectedGroup !== 'all' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -637,7 +633,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               placeholder="Tìm số nhà, chủ hộ, tổ, hẻm..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-8.5 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+              className="w-full pl-8.5 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
             />
             {searchQuery && (
               <button
@@ -651,8 +647,8 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
         </div>
 
         {/* Granular Filter Row 1: Hamlet & Street */}
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-bold text-slate-600 shrink-0 flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-blue-600" />
               <span>Khu vực:</span>
@@ -667,8 +663,8 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                   setSelectedLegacyHamlet('all');
                   setActiveStreet('all');
                 }}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer shrink-0 ${
-                  selectedHamlet === hamlet ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer shrink-0 ${
+                  selectedHamlet === hamlet ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {hamlet === 'all' ? 'Toàn địa bàn' : hamlet}
@@ -689,7 +685,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
           </div>
 
           {/* Quick Stats on density */}
-          <div className="text-[11px] text-slate-500 font-medium">
+          <div className="text-[11px] text-slate-500 font-medium tabular-nums">
             Mật độ: <span className="font-bold text-slate-800">{filteredHouseholds.length}</span> / {households.length} hộ
           </div>
         </div>
@@ -730,15 +726,15 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                     setSelectedGroup(name);
                     setFilterMode('group');
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shrink-0 cursor-pointer flex items-center gap-1.5 ${
                     selectedGroup === name
-                      ? 'bg-blue-600 text-white font-bold shadow-xs'
+                      ? 'bg-blue-600 text-white font-bold'
                       : 'bg-blue-50/70 text-blue-900 border border-blue-200 hover:bg-blue-100'
                   }`}
                 >
                   <span>{name}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    className={`text-[11px] tabular-nums px-1.5 py-0.2 rounded-full font-bold ${
                       selectedGroup === name ? 'bg-blue-800 text-white' : 'bg-blue-200/80 text-blue-800'
                     }`}
                   >
@@ -778,15 +774,15 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                   setSelectedAlley(name);
                   setFilterMode('alley');
                 }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors shrink-0 cursor-pointer flex items-center gap-1.5 ${
                   selectedAlley === name
-                    ? 'bg-purple-600 text-white font-bold shadow-xs' // taste-skill-ignore: màu phân loại tuyến hẻm
+                    ? 'bg-purple-600 text-white font-bold' // taste-skill-ignore: màu phân loại tuyến hẻm
                     : 'bg-purple-50/70 text-purple-900 border border-purple-200 hover:bg-purple-100' // taste-skill-ignore: màu phân loại tuyến hẻm
                 }`}
               >
                 <span>{name}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  className={`text-[11px] tabular-nums px-1.5 py-0.2 rounded-full font-bold ${
                     selectedAlley === name
                       ? 'bg-purple-800 text-white' // taste-skill-ignore: màu phân loại tuyến hẻm
                       : 'bg-purple-200/80 text-purple-800' // taste-skill-ignore: màu phân loại tuyến hẻm
@@ -827,7 +823,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               )}
 
               {selectedGroup !== 'all' && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-600 text-white text-[11px] font-bold shadow-xs">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-600 text-white text-[11px] font-bold">
                   Tổ: {selectedGroup}
                   <button onClick={() => setSelectedGroup('all')} className="hover:text-slate-200">
                     <X className="w-3 h-3" />
@@ -922,22 +918,19 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
       </div>
 
       {/* Main Interactive Grid & Detail Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
         {/* Sơ đồ lưới khối nhà (Grid View) */}
-        <div
-          id="map-grid-panel"
-          className="lg:col-span-8 bg-white p-3.5 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs"
-        >
+        <div id="map-grid-panel" className="lg:col-span-8 bg-white p-3.5 sm:p-5 rounded-xl border border-slate-200/80">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <div className="flex items-center gap-2">
               <h3 id="map-results-title" className="gis-panel-title text-slate-800">
                 Sơ đồ vị trí các hộ dân
               </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold border border-blue-100">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold border border-blue-100 tabular-nums">
                 {filteredHouseholds.length} / {households.length} vị trí
               </span>
             </div>
-            <span className="text-[11px] text-slate-400 hidden sm:inline">Chạm vào khối nhà để xem thông tin chi tiết</span>
+            <span className="text-[11px] text-slate-500 hidden sm:inline">Chạm vào khối nhà để xem thông tin chi tiết</span>
           </div>
 
           {/* House Matrix Grid */}
@@ -952,22 +945,18 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                   key={item.id}
                   id={`house-card-${item.id}`}
                   onClick={() => setInspectedHousehold(item)}
-                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-150 relative flex flex-col justify-between ${status.boxBorder} ${
-                    isSelected ? 'ring-3 ring-blue-500 shadow-md scale-[1.02]' : 'hover:shadow-sm'
+                  className={`p-3 rounded-xl border-2 cursor-pointer transition-colors duration-150 relative flex flex-col justify-between ${status.boxBorder} ${
+                    isSelected ? 'ring-3 ring-[#1c4e3a] border-[#1c4e3a] bg-emerald-50/40' : ''
                   }`}
                 >
                   <div>
                     {/* Top tags: Hamlet, Group, Alley & Status Dot */}
                     <div className="flex items-center justify-between gap-1 mb-1.5">
                       <div className="flex items-center gap-1 flex-wrap">
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-bold">
-                          {item.hamlet}
-                        </span>
+                        <span className="text-[11px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-bold">{item.hamlet}</span>
                         <HouseholdCardTags household={item} />
                       </div>
-                      <span
-                        className={`w-2.5 h-2.5 rounded-full shrink-0 ${status.dot} ${item.status === 'warning' ? 'animate-pulse' : ''}`}
-                      />
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${status.dot}`} />
                     </div>
 
                     {/* House Number and Street */}
@@ -1006,22 +995,24 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
                   {/* Residents & Status subtitle */}
                   <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
-                    <span className="flex items-center gap-1 font-medium">
+                    <span className="flex items-center gap-1 font-medium tabular-nums">
                       <Users className="w-3 h-3 text-slate-400" />
                       {item.residentsCount} người
                     </span>
-                    <span className="font-mono text-[10px] font-semibold text-slate-400">{item.id}</span>
+                    <span data-id className="font-mono text-[11px] font-semibold text-slate-400">
+                      {item.id}
+                    </span>
                   </div>
 
                   {/* Warning banner tag if warning */}
                   {item.status === 'warning' && (
-                    <div className="mt-2 py-0.5 px-1 bg-amber-200/80 rounded text-[10px] font-bold text-amber-900 flex items-center justify-center gap-1">
+                    <div className="mt-2 py-0.5 px-1 bg-amber-200/80 rounded text-[11px] font-bold text-amber-900 flex items-center justify-center gap-1">
                       <AlertTriangle className="w-3 h-3 shrink-0" />
                       <span className="truncate">Hết hạn {item.licenseExpiry}</span>
                     </div>
                   )}
                   {item.status === 'alert' && (
-                    <div className="mt-2 py-0.5 px-1 bg-rose-200/80 rounded text-[10px] font-bold text-rose-900 flex items-center justify-center gap-1">
+                    <div className="mt-2 py-0.5 px-1 bg-rose-200/80 rounded text-[11px] font-bold text-rose-900 flex items-center justify-center gap-1">
                       <AlertOctagon className="w-3 h-3 shrink-0" />
                       <span className="truncate">Quản lý đối tượng</span>
                     </div>
@@ -1033,7 +1024,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
 
           {filteredHouseholds.length > 0 && (
             <nav aria-label="Phân trang sơ đồ hộ dân" className="flex flex-wrap items-center justify-between gap-3 mt-4 text-sm">
-              <span role="status">
+              <span role="status" className="tabular-nums">
                 {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredHouseholds.length)} /{' '}
                 {filteredHouseholds.length} hộ
               </span>
@@ -1046,7 +1037,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 >
                   Trang trước
                 </button>
-                <span>
+                <span className="tabular-nums">
                   Trang {currentPage} / {pageCount}
                 </span>
                 <button
@@ -1077,8 +1068,49 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
           )}
         </div>
 
+        {/* Mobile/Tablet Quick Inspector Bar (<1024px) */}
+        {inspectedHousehold && (
+          <div
+            role="region"
+            aria-label="Chi tiết nhanh hộ đang chọn"
+            className="lg:hidden sticky bottom-2 z-20 bg-white dark:bg-slate-900 border-2 border-[#1c4e3a] dark:border-emerald-600 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                  {[
+                    String(inspectedHousehold.houseNumber ?? '').trim() && `Số ${inspectedHousehold.houseNumber}`,
+                    inspectedHousehold.street,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || 'Chưa có địa chỉ'}
+                </span>
+                <span
+                  className={`text-[11px] px-1.5 py-0.5 rounded font-semibold border ${getStatusDetails(inspectedHousehold.status).badge}`}
+                >
+                  {getStatusDetails(inspectedHousehold.status).label}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5 truncate">
+                Chủ hộ: <strong>{inspectedHousehold.ownerName}</strong> • {inspectedHousehold.residentsCount} nhân khẩu
+                {inspectedHousehold.ownerPhone ? ` • SĐT: ${inspectedHousehold.ownerPhone}` : ''}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => onSelectHousehold(inspectedHousehold)}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Mở hồ sơ</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Selected House Inspector Drawer */}
-        <div className="lg:col-span-4 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4 sticky top-20">
+        <div className="lg:col-span-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 space-y-4 sticky top-20">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
             <h3 id="map-summary-title" className="gis-panel-title text-slate-900 flex items-center gap-2 whitespace-nowrap">
               <Building className="w-4 h-4 text-slate-500" aria-hidden="true" />
@@ -1159,17 +1191,17 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 </div>
                 <div className="flex items-center justify-between text-slate-600">
                   <span>Số điện thoại:</span>
-                  <span className="font-mono font-bold text-blue-700">{inspectedHousehold.ownerPhone}</span>
+                  <span className="tabular-nums font-bold text-blue-700">{inspectedHousehold.ownerPhone}</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600">
                   <span>Tổng nhân khẩu:</span>
-                  <span className="font-bold text-slate-900">
+                  <span className="font-bold text-slate-900 tabular-nums">
                     {inspectedHousehold.residentsCount} người ({inspectedHousehold.maleCount} Nam, {inspectedHousehold.femaleCount} Nữ)
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600">
                   <span>Độ tuổi:</span>
-                  <span>
+                  <span className="tabular-nums">
                     {inspectedHousehold.above18Count} người lớn, {inspectedHousehold.under18Count} trẻ em
                   </span>
                 </div>
@@ -1181,7 +1213,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 <p className="p-3 bg-amber-50/50 border border-amber-200/60 rounded-xl text-slate-700 leading-relaxed text-[11px]">
                   {inspectedHousehold.notes}
                 </p>
-                <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                   <span>Kiểm tra gần nhất: {inspectedHousehold.lastCheckedDate}</span>
                   <span>Cán bộ: {inspectedHousehold.officerInCharge}</span>
                 </div>
@@ -1192,7 +1224,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 <button
                   id="btn-view-household-detail"
                   onClick={() => onSelectHousehold(inspectedHousehold)}
-                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Xem hồ sơ hộ dân & cập nhật</span>

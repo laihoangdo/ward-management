@@ -359,6 +359,7 @@ test('production identity preparation preserves UUIDs and hardens the realm with
   assert.match(script, /'UPDATE_PASSWORD', 'CONFIGURE_OTP'/);
   assert.match(script, /'realmRoles': \['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SUPERADMIN'\]/);
   assert.match(script, /redirectUris'\] = \['https:\/\/sunnytech\.cloud\/login\/oauth2\/code\/oidc'\]/);
+  assert.match(script, /\['post\.logout\.redirect\.uris'\] = 'https:\/\/sunnytech\.cloud'/);
   assert.match(script, /bruteForceProtected'\] = True/);
   assert.match(script, /registrationAllowed'\] = False/);
   assert.match(script, /frontendUrl'\] = 'https:\/\/sunnytech\.cloud'/);
@@ -383,6 +384,52 @@ test('production app deployment stays off the public route until explicit cutove
   assert.match(script, /publicGoLive': False/);
   assert.match(script, /did not become healthy/);
   assert.doesNotMatch(script, /0\.0\.0\.0:|DROP /);
+});
+
+test('production migration backs up, drills a restore and only then runs Liquibase update', () => {
+  const script = read('migrate-production-db.sh');
+  assert.match(script, /set -euo pipefail/);
+  assert.match(script, /flock -n 9/);
+  const backup = script.indexOf('backup-production-offsite.sh');
+  const drill = script.indexOf('pg_restore');
+  const before = script.indexOf('liquibase status >');
+  const update = script.indexOf('liquibase update >');
+  const after = script.lastIndexOf('liquibase status >');
+  assert.ok(backup > 0 && backup < drill && drill < before && before < update && update < after);
+  assert.match(script, /--exit-on-error/);
+  assert.match(script, /Restored drill counts differ/);
+  assert.match(script, /contexts=!test and !faker/);
+  assert.match(script, /is up to date/);
+  // Credentials only on tmpfs for the run, removed on every exit; the tools container has no ports.
+  assert.match(script, /mktemp -d \/run\/police-migrate\./);
+  assert.match(script, /trap cleanup EXIT/);
+  assert.match(script, /rm -f -- "\$secrets_dir\/migration\.properties"/);
+  assert.match(script, /--network "\$network" --read-only/);
+  assert.match(script, /--cap-drop ALL/);
+  assert.doesNotMatch(script, /\s-p\s|--publish|dropAll|drop-all|rollback|clear-checksums|changelog-sync|DROP SCHEMA|DROP TABLE/i);
+});
+
+test('production update verifies, scans and migrates before swapping, and rolls back on failure', () => {
+  const script = read('update-production-app.py');
+  const checksum = script.indexOf("STAGE = 'artifact-checksum'");
+  const scan = script.indexOf("STAGE = 'vulnerability-scan'");
+  const migrate = script.indexOf("STAGE = 'database-migration'");
+  const swap = script.indexOf("STAGE = 'swap-image'");
+  assert.ok(checksum > 0 && checksum < scan && scan < migrate && migrate < swap);
+  assert.match(script, /'--severity', 'HIGH,CRITICAL',\s*'--exit-code', '1'/);
+  assert.match(script, /release\.jar in the image does not match the audited SHA256/);
+  assert.match(script, /if rollback:\n\s+STAGE = 'backup-freshness-gate'\n\s+require_recent_backup\(\)/);
+  assert.match(script, /STAGE = 'automatic-rollback'\n\s+pin\(previous\)/);
+  assert.match(script, /str\(VERIFY\)/);
+});
+
+test('live production verification expects the public site and present data, not maintenance', () => {
+  const script = read('verify-production-live.py');
+  assert.match(script, /curl\('https:\/\/sunnytech\.cloud\/'\)\[0\] == '200'/);
+  assert.match(script, /households > 0 and residents > 0/);
+  assert.match(script, /police_runtime/);
+  assert.match(script, /issuer'\] == 'https:\/\/sunnytech\.cloud\/realms\/jhipster'/);
+  assert.doesNotMatch(script, /'503'|'1291'|'5074'/);
 });
 
 test('production verification requires real data, no synthetic marker and maintenance until cutover', () => {

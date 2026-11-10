@@ -808,89 +808,137 @@ export default function RosterPage({
   const householdDetail = household && (
     <section className="roster-detail">
       {/* Officers recognise a household by its address; the code is the reference beneath it. */}
-      <h2>{householdTitle(household)}</h2>
-      <p className="roster-subline">
-        Mã hộ {household.code}
-        {caseSuffix(household.source_case_number)}
-      </p>
-      <p>Vị trí trên bản đồ: {coordinateLabel(household.coordinate_method)}. Tên đại diện nguồn chưa mặc nhiên là chủ hộ đã xác minh.</p>
-      <button onClick={() => editHouse()}>Sửa hộ</button>
-      <button onClick={() => run(() => showHistory('household', household.id, 0))}>Lịch sử hộ</button>
-      <p>
-        {household.origin === 'EXCEL' ? 'Khởi tạo từ dữ liệu Excel gốc của ấp' : 'Khởi tạo trực tiếp'} ·{' '}
-        {household.source_case_number
-          ? 'Có HSCT nguồn (chưa đồng nghĩa đã xác minh hộ thực tế)'
-          : 'Chưa có HSCT; cần đối soát hộ/nhóm địa chỉ'}
-      </p>
-      <h3>Thành viên và hồ sơ</h3>
-      {household.members.map((m: Row) => (
-        <div className="roster-row" key={m.membership_id}>
-          <button onClick={() => run(() => loadPerson(m.id))}>{m.full_name}</button>
+      <div className="roster-detail-header">
+        <div>
+          <h2>{householdTitle(household)}</h2>
+          <p className="roster-subline">
+            Mã hộ {household.code}
+            {caseSuffix(household.source_case_number)}
+          </p>
+        </div>
+        <div className="roster-actions">
+          <button className="roster-primary" onClick={() => editHouse()}>
+            Sửa hộ
+          </button>
+          <button onClick={() => run(() => showHistory('household', household.id, 0))}>Lịch sử hộ</button>
+        </div>
+      </div>
+
+      <div className="roster-meta-grid">
+        <div className="roster-meta-item">
+          <span className="roster-meta-label">Chủ hộ / đại diện nguồn</span>
+          <strong>{household.representative_name || 'Chưa rõ'}</strong>
+          {household.phone && <span className="roster-subline">ĐT: {household.phone}</span>}
+        </div>
+        <div className="roster-meta-item">
+          <span className="roster-meta-label">Trạng thái & nguồn</span>
           <span>
-            {displayDate(m.birth_date) || m.birth_year || 'Chưa rõ năm sinh'} ·{' '}
-            {m.is_head ? 'Chủ hộ' : m.relationship_code || 'Quan hệ chưa rõ'} ·{' '}
-            {m.valid_to ? `Đã kết thúc ${m.valid_to}` : 'Thành viên hiện hành'}
+            {household.origin === 'EXCEL' ? 'Khởi tạo từ dữ liệu Excel gốc của ấp' : 'Khởi tạo trực tiếp'} ·{' '}
+            {household.source_case_number
+              ? 'Có HSCT nguồn (chưa đồng nghĩa đã xác minh hộ thực tế)'
+              : 'Chưa có HSCT; cần đối soát hộ/nhóm địa chỉ'}
           </span>
+        </div>
+        <div className="roster-meta-item roster-meta-item--full">
+          <span className="roster-meta-label">Vị trí & lưu ý xác minh</span>
+          <span>
+            Vị trí trên bản đồ: {coordinateLabel(household.coordinate_method)}. Tên đại diện nguồn chưa mặc nhiên là chủ hộ đã xác minh.
+          </span>
+        </div>
+      </div>
+
+      <h3>Thành viên và hồ sơ ({household.members.length})</h3>
+      <div className="roster-member-list">
+        {household.members.map((m: Row) => (
+          <div className="roster-member-card" key={m.membership_id}>
+            <div className="roster-member-info">
+              <button className="roster-row-link roster-member-name" onClick={() => run(() => loadPerson(m.id))}>
+                {m.full_name}
+              </button>
+              <span className="roster-member-meta">
+                {displayDate(m.birth_date) || m.birth_year || 'Chưa rõ năm sinh'} ·{' '}
+                {m.is_head ? 'Chủ hộ' : m.relationship_code || 'Quan hệ chưa rõ'} ·{' '}
+                {m.valid_to ? `Đã kết thúc ${m.valid_to}` : 'Thành viên hiện hành'}
+              </span>
+            </div>
+            <button
+              className="roster-btn-sm"
+              onClick={() =>
+                setEditor({
+                  title: 'Sửa quan hệ thành viên hộ',
+                  fields: [
+                    { key: 'relationship', label: 'Quan hệ' },
+                    { key: 'isHead', label: 'Chủ hộ', type: 'checkbox' },
+                    { key: 'validFrom', label: 'Bắt đầu', type: 'date' },
+                    { key: 'validTo', label: 'Kết thúc', type: 'date' },
+                    reason,
+                  ],
+                  initial: {
+                    relationship: m.relationship_code,
+                    isHead: m.is_head,
+                    validFrom: m.valid_from,
+                    validTo: m.valid_to,
+                    version: m.membership_version,
+                  },
+                  async save(r) {
+                    await axios.put(`${api}/memberships/${m.membership_id}`, r);
+                    await done('Đã cập nhật quan hệ');
+                  },
+                })
+              }
+            >
+              Sửa quan hệ
+            </button>
+          </div>
+        ))}
+        {household.members.length === 0 && <p className="roster-subline">Chưa có thành viên nào được liên kết vào hộ này.</p>}
+      </div>
+
+      <div className="roster-subcard">
+        <h3>Thêm nhân khẩu vào hộ</h3>
+        <div className="roster-actions">
+          <input
+            aria-label="Tìm người"
+            placeholder="Tên hoặc số định danh"
+            value={personSearch}
+            onChange={e => setPersonSearch(e.target.value)}
+          />
           <button
             onClick={() =>
-              setEditor({
-                title: 'Sửa quan hệ thành viên hộ',
-                fields: [
-                  { key: 'relationship', label: 'Quan hệ' },
-                  { key: 'isHead', label: 'Chủ hộ', type: 'checkbox' },
-                  { key: 'validFrom', label: 'Bắt đầu', type: 'date' },
-                  { key: 'validTo', label: 'Kết thúc', type: 'date' },
-                  reason,
-                ],
-                initial: {
-                  relationship: m.relationship_code,
-                  isHead: m.is_head,
-                  validFrom: m.valid_from,
-                  validTo: m.valid_to,
-                  version: m.membership_version,
-                },
-                async save(r) {
-                  await axios.put(`${api}/memberships/${m.membership_id}`, r);
-                  await done('Đã cập nhật quan hệ');
-                },
+              run(async () => {
+                const { data } = await axios.get(`${api}/residents/search`, { params: { search: personSearch } });
+                setCandidates(data);
               })
             }
           >
-            Sửa quan hệ
+            Tìm người đã có
+          </button>
+          <button className="roster-primary" onClick={() => addMember()}>
+            Tạo người mới
           </button>
         </div>
-      ))}
-      <h3>Thêm nhân khẩu</h3>
-      <div className="roster-actions">
-        <input
-          aria-label="Tìm người"
-          placeholder="Tên hoặc số định danh"
-          value={personSearch}
-          onChange={e => setPersonSearch(e.target.value)}
-        />
-        <button
-          onClick={() =>
-            run(async () => {
-              const { data } = await axios.get(`${api}/residents/search`, { params: { search: personSearch } });
-              setCandidates(data);
-            })
-          }
-        >
-          Tìm người đã có
-        </button>
-        <button onClick={() => addMember()}>Tạo người mới</button>
+        {candidates.map(c => (
+          <div className="roster-member-card" key={c.id}>
+            <span>
+              <strong>{c.full_name}</strong> · {displayDate(c.birth_date) || c.birth_year}
+            </span>
+            <button className="roster-btn-sm" onClick={() => addMember(c)}>
+              Dùng hồ sơ này
+            </button>
+          </div>
+        ))}
       </div>
-      {candidates.map(c => (
-        <div className="roster-row" key={c.id}>
-          {c.full_name} · {displayDate(c.birth_date) || c.birth_year}
-          <button onClick={() => addMember(c)}>Dùng hồ sơ này</button>
-        </div>
-      ))}
+
       <details>
         <summary>Nguồn ban đầu của hộ ({household.sources.length} dòng)</summary>
         {household.sources.map((s: Row) => (
-          <div key={s.id}>
-            {s.file_name} · {s.sheet} · dòng {s.row_number} <button onClick={() => run(() => openSource(s.id))}>Xem nguồn</button>
+          <div className="roster-row" key={s.id}>
+            <span>
+              {s.file_name} · {s.sheet} · dòng {s.row_number}
+            </span>
+            <button className="roster-btn-sm" onClick={() => run(() => openSource(s.id))}>
+              Xem nguồn
+            </button>
           </div>
         ))}
       </details>
@@ -898,181 +946,306 @@ export default function RosterPage({
   );
   const personDetail = person && (
     <section className="roster-detail">
-      <h2>{person.full_name}</h2>
-      <details>
-        <summary>Giấy tờ định danh ({person.identities.length})</summary>
-        {person.identities.map((i: Row) => (
-          <p key={i.id}>
-            {i.document_type} · {revealedIds[i.id] ?? i.number} · {i.verified ? 'Đã đối chiếu' : 'Chưa xác minh'} ·{' '}
-            {i.active ? 'Đang dùng' : 'Đã thay thế'}{' '}
-            {i.number && (
-              <button onClick={() => run(() => revealIdentity(i.id))}>{revealedIds[i.id] ? 'Ẩn số' : 'Xem số đầy đủ (ghi nhật ký)'}</button>
-            )}
+      <div className="roster-detail-header">
+        <div>
+          <h2>{person.full_name}</h2>
+          <p className="roster-subline">
+            {displayDate(person.birth_date) || `Năm sinh: ${person.birth_year || 'Chưa rõ'}`} · Nguồn {person.origin}
+            {person.birth_date_precision === 'YEAR' ? ' · Chỉ biết năm sinh' : ''}
           </p>
-        ))}
-      </details>
-      <button onClick={() => run(() => showHistory('resident', person.id, 0))}>Lịch sử cá nhân</button>
-      <button
-        onClick={() => {
-          setLinkPerson(person);
-          setHouseChoices([]);
-          setHouseSearch('');
-        }}
-      >
-        Gắn vào hộ có sẵn
-      </button>
-      <h3>Quan hệ hộ theo thời gian</h3>
-      {(person.memberships || []).map((m: Row) => (
-        <div className="roster-row" key={m.id}>
-          <button onClick={() => run(() => loadHouse(m.household_id))}>{m.code}</button>
-          <span>
-            {m.raw_address} · {m.relationship_code || 'Quan hệ chưa rõ'} · {m.is_head ? 'Chủ hộ' : ''} ·{' '}
-            {m.valid_from || 'Chưa rõ ngày bắt đầu'} → {m.valid_to || 'Hiện hành'}
-          </span>
+        </div>
+        <div className="roster-actions">
           <button
+            className="roster-primary"
             onClick={() =>
               setEditor({
-                title: 'Sửa / kết thúc quan hệ hộ',
-                fields: [
-                  { key: 'relationship', label: 'Quan hệ với chủ hộ' },
-                  { key: 'isHead', label: 'Chủ hộ đã xác minh', type: 'checkbox' },
-                  { key: 'validFrom', label: 'Ngày bắt đầu', type: 'date' },
-                  { key: 'validTo', label: 'Ngày kết thúc (để trống nếu hiện hành)', type: 'date' },
-                  reason,
-                ],
+                title: 'Sửa thông tin cá nhân dùng chung',
+                fields: [...personFields, reason],
                 initial: {
-                  relationship: m.relationship_code,
-                  isHead: m.is_head,
-                  validFrom: m.valid_from,
-                  validTo: m.valid_to,
-                  version: m.version,
+                  fullName: person.full_name,
+                  birthPrecision: person.birth_date_precision,
+                  birthDate: person.birth_date,
+                  birthYear: person.birth_year,
+                  gender: person.gender,
+                  fatherName: person.father_name,
+                  motherName: person.mother_name,
+                  version: person.version,
                 },
-                async save(d) {
-                  await axios.put(`${api}/memberships/${m.id}`, d);
+                async save(r) {
+                  await axios.put(`${api}/residents/${person.id}`, r);
                   await loadPerson(person.id);
-                  await done('Đã cập nhật quan hệ hộ và giữ lịch sử');
+                  await refresh();
+                  setMessage('Đã sửa cá nhân dùng chung');
                 },
               })
             }
           >
-            Sửa / kết thúc quan hệ
+            Sửa thông tin cá nhân
           </button>
-          {!m.valid_to && <button onClick={() => transfer(m)}>Chuyển sang hộ khác</button>}
+          <button
+            onClick={() => {
+              setLinkPerson(person);
+              setHouseChoices([]);
+              setHouseSearch('');
+            }}
+          >
+            Gắn vào hộ có sẵn
+          </button>
+          <button onClick={() => run(() => showHistory('resident', person.id, 0))}>Lịch sử cá nhân</button>
         </div>
-      ))}
-      <p>
-        {displayDate(person.birth_date) || `Năm sinh: ${person.birth_year || 'Chưa rõ'}`} · Nguồn {person.origin} ·{' '}
-        {person.birth_date_precision === 'YEAR' ? 'Chỉ biết năm sinh' : ''}
-      </p>
-      <button
-        onClick={() =>
-          setEditor({
-            title: 'Sửa thông tin cá nhân dùng chung',
-            fields: [...personFields, reason],
-            initial: {
-              fullName: person.full_name,
-              birthPrecision: person.birth_date_precision,
-              birthDate: person.birth_date,
-              birthYear: person.birth_year,
-              gender: person.gender,
-              fatherName: person.father_name,
-              motherName: person.mother_name,
-              version: person.version,
-            },
-            async save(r) {
-              await axios.put(`${api}/residents/${person.id}`, r);
-              await loadPerson(person.id);
-              await refresh();
-              setMessage('Đã sửa cá nhân dùng chung');
-            },
-          })
-        }
-      >
-        Sửa thông tin cá nhân
-      </button>
-      <h3>Các hồ sơ cư trú</h3>
-      <div className="roster-actions">
-        <button
-          onClick={() =>
-            setEditor({
-              title: 'Thêm hồ sơ cư trú cho người đã có',
-              fields: [
-                {
-                  key: 'householdId',
-                  label: 'Hộ liên quan (nếu đã đối chiếu)',
-                  options: [
-                    ['', 'Chưa liên kết hộ'],
-                    ...(person.memberships || [])
-                      .filter((m: Row) => !m.valid_to)
-                      .map((m: Row) => [m.household_id, `${m.code} · ${m.raw_address}`]),
-                  ],
-                },
-                ...recordFields,
-                { key: 'effectiveDate', label: 'Ngày hiệu lực thực tế (nếu biết)', type: 'date' },
-                reason,
-              ],
-              initial: { householdId: household?.id || '' },
-              async save(d) {
-                await axios.post(`${api}/residents/${person.id}/records`, d);
-                await loadPerson(person.id);
-                await refresh();
-                setMessage('Đã thêm hồ sơ cư trú, giữ nguyên lịch sử cũ');
-              },
-            })
-          }
-        >
-          + Hồ sơ cư trú
-        </button>
-        <button
-          onClick={() =>
-            setEditor({
-              title: 'Bổ sung / xác minh giấy tờ',
-              fields: [
-                { key: 'identity', label: 'Số giấy tờ (giữ số 0 đầu)', required: true },
-                {
-                  key: 'documentType',
-                  label: 'Loại giấy tờ',
-                  options: [
-                    ['SOURCE_UNCONFIRMED', 'Chưa xác định loại'],
-                    ['CCCD', 'CCCD / ĐDCN'],
-                    ['CMND', 'CMND'],
-                  ],
-                },
-                { key: 'verified', label: 'Đã đối chiếu giấy tờ gốc', type: 'checkbox' },
-                {
-                  key: 'replaceIdentityId',
-                  label: 'Thay giấy tờ cũ nếu số cũ bị sai/đã đổi',
-                  options: [
-                    ['', 'Bổ sung giấy tờ, giữ giấy tờ cũ'],
-                    ...person.identities
-                      .filter((i: Row) => i.active)
-                      .map((i: Row, index: number) => [
-                        i.id,
-                        `Giấy tờ ${index + 1} · ${i.document_type} · ${i.verified ? 'Đã đối chiếu' : 'Nguồn chưa xác minh'}`,
-                      ]),
-                  ],
-                },
-                { key: 'effectiveDate', label: 'Ngày thay đổi thực tế (nếu biết)', type: 'date' },
-                reason,
-              ],
-              initial: { version: person.version },
-              async save(d) {
-                await axios.post(`${api}/residents/${person.id}/identities`, d);
-                await loadPerson(person.id);
-                setMessage('Đã lưu giấy tờ và lịch sử');
-              },
-            })
-          }
-        >
-          + Giấy tờ / đối soát
-        </button>
       </div>
-      {person.records.map((r: Row) => (
-        <div className="roster-detail" key={r.id}>
-          <div>
-            {kinds.find(k => k[0] === r.record_kind)?.[1]} · Ngày đăng ký {r.registration_date || 'chưa rõ'} · Hạn {r.valid_to || 'chưa rõ'}{' '}
-            {r.expiry_status === 'EXPIRED' ? '(đã qua hạn)' : ''}
+
+      <details open className="roster-subcard">
+        <summary>Giấy tờ định danh ({person.identities.length})</summary>
+        {person.identities.map((i: Row) => (
+          <div className="roster-member-card" key={i.id}>
+            <span>
+              <strong>{i.document_type === 'SOURCE_UNCONFIRMED' ? 'ĐDCN / CCCD nguồn' : i.document_type}</strong> ·{' '}
+              {revealedIds[i.id] ?? i.number} · {i.verified ? 'Đã đối chiếu' : 'Chưa xác minh'} · {i.active ? 'Đang dùng' : 'Đã thay thế'}
+            </span>
+            {i.number && (
+              <button className="roster-btn-sm" onClick={() => run(() => revealIdentity(i.id))}>
+                {revealedIds[i.id] ? 'Ẩn số' : 'Xem số đầy đủ (ghi nhật ký)'}
+              </button>
+            )}
           </div>
+        ))}
+        {person.identities.length === 0 && <p className="roster-subline">Chưa có giấy tờ định danh được ghi nhận.</p>}
+      </details>
+
+      <h3>Quan hệ hộ theo thời gian</h3>
+      <div className="roster-member-list">
+        {(person.memberships || []).map((m: Row) => (
+          <div className="roster-member-card" key={m.id}>
+            <div className="roster-member-info">
+              <div className="roster-member-title-row">
+                <button className="roster-row-link roster-member-name" onClick={() => run(() => loadHouse(m.household_id))}>
+                  {m.code}
+                </button>
+                <span className="roster-badge roster-badge--muted">{m.is_head ? 'Chủ hộ' : m.relationship_code || 'Quan hệ chưa rõ'}</span>
+              </div>
+              <span className="roster-member-meta">
+                {m.raw_address} · {m.valid_from || 'Chưa rõ ngày bắt đầu'} → {m.valid_to || 'Hiện hành'}
+              </span>
+            </div>
+            <div className="roster-actions">
+              <button
+                className="roster-btn-sm"
+                onClick={() =>
+                  setEditor({
+                    title: 'Sửa / kết thúc quan hệ hộ',
+                    fields: [
+                      { key: 'relationship', label: 'Quan hệ với chủ hộ' },
+                      { key: 'isHead', label: 'Chủ hộ đã xác minh', type: 'checkbox' },
+                      { key: 'validFrom', label: 'Ngày bắt đầu', type: 'date' },
+                      { key: 'validTo', label: 'Ngày kết thúc (để trống nếu hiện hành)', type: 'date' },
+                      reason,
+                    ],
+                    initial: {
+                      relationship: m.relationship_code,
+                      isHead: m.is_head,
+                      validFrom: m.valid_from,
+                      validTo: m.valid_to,
+                      version: m.version,
+                    },
+                    async save(d) {
+                      await axios.put(`${api}/memberships/${m.id}`, d);
+                      await loadPerson(person.id);
+                      await done('Đã cập nhật quan hệ hộ và giữ lịch sử');
+                    },
+                  })
+                }
+              >
+                Sửa / kết thúc quan hệ
+              </button>
+              {!m.valid_to && (
+                <button className="roster-btn-sm" onClick={() => transfer(m)}>
+                  Chuyển sang hộ khác
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="roster-section-head">
+        <h3>Các hồ sơ cư trú ({person.records.length})</h3>
+        <div className="roster-actions">
+          <button
+            className="roster-btn-sm"
+            onClick={() =>
+              setEditor({
+                title: 'Thêm hồ sơ cư trú cho người đã có',
+                fields: [
+                  {
+                    key: 'householdId',
+                    label: 'Hộ liên quan (nếu đã đối chiếu)',
+                    options: [
+                      ['', 'Chưa liên kết hộ'],
+                      ...(person.memberships || [])
+                        .filter((m: Row) => !m.valid_to)
+                        .map((m: Row) => [m.household_id, `${m.code} · ${m.raw_address}`]),
+                    ],
+                  },
+                  ...recordFields,
+                  { key: 'effectiveDate', label: 'Ngày hiệu lực thực tế (nếu biết)', type: 'date' },
+                  reason,
+                ],
+                initial: { householdId: household?.id || '' },
+                async save(d) {
+                  await axios.post(`${api}/residents/${person.id}/records`, d);
+                  await loadPerson(person.id);
+                  await refresh();
+                  setMessage('Đã thêm hồ sơ cư trú, giữ nguyên lịch sử cũ');
+                },
+              })
+            }
+          >
+            + Hồ sơ cư trú
+          </button>
+          <button
+            className="roster-btn-sm"
+            onClick={() =>
+              setEditor({
+                title: 'Bổ sung / xác minh giấy tờ',
+                fields: [
+                  { key: 'identity', label: 'Số giấy tờ (giữ số 0 đầu)', required: true },
+                  {
+                    key: 'documentType',
+                    label: 'Loại giấy tờ',
+                    options: [
+                      ['SOURCE_UNCONFIRMED', 'Chưa xác định loại'],
+                      ['CCCD', 'CCCD / ĐDCN'],
+                      ['CMND', 'CMND'],
+                    ],
+                  },
+                  { key: 'verified', label: 'Đã đối chiếu giấy tờ gốc', type: 'checkbox' },
+                  {
+                    key: 'replaceIdentityId',
+                    label: 'Thay giấy tờ cũ nếu số cũ bị sai/đã đổi',
+                    options: [
+                      ['', 'Bổ sung giấy tờ, giữ giấy tờ cũ'],
+                      ...person.identities
+                        .filter((i: Row) => i.active)
+                        .map((i: Row, index: number) => [
+                          i.id,
+                          `Giấy tờ ${index + 1} · ${i.document_type} · ${i.verified ? 'Đã đối chiếu' : 'Nguồn chưa xác minh'}`,
+                        ]),
+                    ],
+                  },
+                  { key: 'effectiveDate', label: 'Ngày thay đổi thực tế (nếu biết)', type: 'date' },
+                  reason,
+                ],
+                initial: { version: person.version },
+                async save(d) {
+                  await axios.post(`${api}/residents/${person.id}/identities`, d);
+                  await loadPerson(person.id);
+                  setMessage('Đã lưu giấy tờ và lịch sử');
+                },
+              })
+            }
+          >
+            + Giấy tờ / đối soát
+          </button>
+          <button
+            className="roster-btn-sm"
+            onClick={() =>
+              setEditor({
+                title: 'Ghi nhận xác minh thực tế',
+                fields: [
+                  {
+                    key: 'presence',
+                    label: 'Kết quả',
+                    options: [
+                      ['PRESENT', 'Đang cư trú'],
+                      ['ABSENT', 'Không cư trú'],
+                      ['UNKNOWN', 'Chưa xác minh được'],
+                    ],
+                  },
+                  { key: 'observedAt', label: 'Ngày kiểm tra', type: 'date', required: true },
+                  reason,
+                ],
+                initial: { observedAt: dateToday() },
+                async save(d) {
+                  await axios.post(`${api}/residents/${person.id}/verifications`, d);
+                  await loadPerson(person.id);
+                  setMessage('Đã thêm lần xác minh');
+                },
+              })
+            }
+          >
+            + Ghi nhận xác minh
+          </button>
+        </div>
+      </div>
+
+      {person.records.map((r: Row) => (
+        <div className="roster-subcard" key={r.id}>
+          <div className="roster-member-card">
+            <div>
+              <strong>{kinds.find(k => k[0] === r.record_kind)?.[1]}</strong> · Ngày đăng ký {r.registration_date || 'chưa rõ'} · Hạn{' '}
+              {r.valid_to || 'chưa rõ'} {r.expiry_status === 'EXPIRED' ? '(đã qua hạn)' : ''}
+            </div>
+            <button
+              className="roster-btn-sm"
+              onClick={() =>
+                setEditor({
+                  title: 'Sửa / gia hạn hồ sơ cư trú đã chọn',
+                  fields: [
+                    {
+                      key: 'changeKind',
+                      label: 'Nghiệp vụ',
+                      options: [
+                        ['CORRECTION', 'Sửa thông tin'],
+                        ['RENEWAL', 'Gia hạn'],
+                        ['RESIDENCE_ENDED', 'Kết thúc hồ sơ cư trú'],
+                      ],
+                    },
+                    { key: 'registrationDate', label: 'Ngày đăng ký', type: 'date' },
+                    { key: 'validFrom', label: 'Hiệu lực bắt đầu', type: 'date' },
+                    { key: 'validTo', label: 'Kết thúc / hết hạn', type: 'date' },
+                    { key: 'sourceStatus', label: 'Trạng thái hồ sơ' },
+                    ...recordFields.filter(f => ['permanentAddress', 'temporaryAddress', 'currentAddress'].includes(f.key)),
+                    { key: 'declaredAddress', label: 'Địa chỉ khai báo' },
+                    { key: 'previousAddress', label: 'Địa chỉ trước khi chuyển đến' },
+                    { key: 'effectiveDate', label: 'Ngày thay đổi thực tế', type: 'date' },
+                    reason,
+                  ],
+                  initial: {
+                    registrationDate: r.registration_date,
+                    validFrom: r.valid_from,
+                    validTo: r.valid_to,
+                    sourceStatus: r.source_status,
+                    ...Object.fromEntries(r.addresses.map((a: Row) => [a.address_role, a.raw_address])),
+                    version: r.version,
+                  },
+                  async save(d) {
+                    await axios.put(`${api}/records/${r.id}`, d);
+                    await loadPerson(person.id);
+                    setMessage('Đã lưu hồ sơ cư trú và lịch sử');
+                  },
+                })
+              }
+            >
+              Sửa / gia hạn
+            </button>
+          </div>
+          {r.addresses.map((a: Row) => (
+            <div className="roster-subline" key={`${a.id}-${a.address_role}`}>
+              <strong>
+                {
+                  {
+                    permanentAddress: 'Thường trú',
+                    temporaryAddress: 'Tạm trú',
+                    currentAddress: 'Hiện tại',
+                    declaredAddress: 'Khai báo',
+                    previousAddress: 'Trước khi đến',
+                  }[a.address_role]
+                }
+              </strong>
+              : {a.raw_address}
+            </div>
+          ))}
           <details>
             <summary>Thông tin nghiệp vụ theo nguồn</summary>
             <p>
@@ -1085,104 +1258,30 @@ export default function RosterPage({
               Đại diện nguồn: {r.representative_name_raw || 'Chưa rõ'} · Thời gian nguồn: {r.source_residence_time_raw || 'Chưa rõ'}
             </p>
           </details>
-          {r.addresses.map((a: Row) => (
-            <div key={`${a.id}-${a.address_role}`}>
-              {
-                {
-                  permanentAddress: 'Thường trú',
-                  temporaryAddress: 'Tạm trú',
-                  currentAddress: 'Hiện tại',
-                  declaredAddress: 'Khai báo',
-                  previousAddress: 'Trước khi đến',
-                }[a.address_role]
-              }
-              : {a.raw_address}
-            </div>
-          ))}
-          <button
-            onClick={() =>
-              setEditor({
-                title: 'Sửa / gia hạn hồ sơ cư trú đã chọn',
-                fields: [
-                  {
-                    key: 'changeKind',
-                    label: 'Nghiệp vụ',
-                    options: [
-                      ['CORRECTION', 'Sửa thông tin'],
-                      ['RENEWAL', 'Gia hạn'],
-                      ['RESIDENCE_ENDED', 'Kết thúc hồ sơ cư trú'],
-                    ],
-                  },
-                  { key: 'registrationDate', label: 'Ngày đăng ký', type: 'date' },
-                  { key: 'validFrom', label: 'Hiệu lực bắt đầu', type: 'date' },
-                  { key: 'validTo', label: 'Kết thúc / hết hạn', type: 'date' },
-                  { key: 'sourceStatus', label: 'Trạng thái hồ sơ' },
-                  ...recordFields.filter(f => ['permanentAddress', 'temporaryAddress', 'currentAddress'].includes(f.key)),
-                  { key: 'declaredAddress', label: 'Địa chỉ khai báo' },
-                  { key: 'previousAddress', label: 'Địa chỉ trước khi chuyển đến' },
-                  { key: 'effectiveDate', label: 'Ngày thay đổi thực tế', type: 'date' },
-                  reason,
-                ],
-                initial: {
-                  registrationDate: r.registration_date,
-                  validFrom: r.valid_from,
-                  validTo: r.valid_to,
-                  sourceStatus: r.source_status,
-                  ...Object.fromEntries(r.addresses.map((a: Row) => [a.address_role, a.raw_address])),
-                  version: r.version,
-                },
-                async save(d) {
-                  await axios.put(`${api}/records/${r.id}`, d);
-                  await loadPerson(person.id);
-                  setMessage('Đã lưu hồ sơ cư trú và lịch sử');
-                },
-              })
-            }
-          >
-            Sửa / gia hạn
-          </button>
         </div>
       ))}
-      <button
-        onClick={() =>
-          setEditor({
-            title: 'Ghi nhận xác minh thực tế',
-            fields: [
-              {
-                key: 'presence',
-                label: 'Kết quả',
-                options: [
-                  ['PRESENT', 'Đang cư trú'],
-                  ['ABSENT', 'Không cư trú'],
-                  ['UNKNOWN', 'Chưa xác minh được'],
-                ],
-              },
-              { key: 'observedAt', label: 'Ngày kiểm tra', type: 'date', required: true },
-              reason,
-            ],
-            initial: { observedAt: dateToday() },
-            async save(d) {
-              await axios.post(`${api}/residents/${person.id}/verifications`, d);
-              await loadPerson(person.id);
-              setMessage('Đã thêm lần xác minh');
-            },
-          })
-        }
-      >
-        + Ghi nhận xác minh
-      </button>
-      <div>
-        {person.verifications.map((v: Row) => (
-          <p key={v.id}>
-            {v.observed_at || 'Chưa rõ ngày nguồn'} · {v.presence_status} · {v.method}
-          </p>
-        ))}
-      </div>
+
+      {person.verifications.length > 0 && (
+        <div className="roster-subcard">
+          <strong>Lịch sử xác minh thực địa</strong>
+          {person.verifications.map((v: Row) => (
+            <p className="roster-subline" key={v.id}>
+              {v.observed_at || 'Chưa rõ ngày nguồn'} · {v.presence_status} · {v.method}
+            </p>
+          ))}
+        </div>
+      )}
+
       <details>
         <summary>Nguồn cá nhân ({person.sources.length} dòng)</summary>
         {person.sources.map((s: Row) => (
-          <div key={s.id}>
-            {s.file_name} · {s.sheet} · dòng {s.row_number} <button onClick={() => run(() => openSource(s.id))}>Xem nguồn</button>
+          <div className="roster-row" key={s.id}>
+            <span>
+              {s.file_name} · {s.sheet} · dòng {s.row_number}
+            </span>
+            <button className="roster-btn-sm" onClick={() => run(() => openSource(s.id))}>
+              Xem nguồn
+            </button>
           </div>
         ))}
       </details>
@@ -1331,11 +1430,10 @@ export default function RosterPage({
     <Root className={`roster-page ${embedded ? 'roster-embedded' : ''}`}>
       <div className="roster-heading">
         <div className="roster-heading-icon" aria-hidden="true">
-          {tab === 'households' ? <House size={23} /> : <Users size={23} />}
+          {tab === 'households' ? <House size={22} /> : <Users size={22} />}
         </div>
-        <div>
+        <div className="roster-heading-main">
           {!embedded && <Link to="/dashboard">← Về dashboard</Link>}
-          <div className="roster-eyebrow">Quản lý dân cư</div>
           <Title className="roster-title">
             {tab === 'households' ? 'Danh sách hộ dân' : tab === 'residents' ? 'Quản lý nhân khẩu' : 'Hồ sơ dân cư'} · Trung Chánh 2
           </Title>
@@ -1389,9 +1487,11 @@ export default function RosterPage({
           >
             {tab === 'residents' && (
               <section>
-                <p>Tìm người trước khi tạo mới. Một cá nhân có thể có nhiều hồ sơ cư trú; danh sách này đếm mỗi người một lần.</p>
-                <div className="roster-actions">
-                  <label>
+                <p className="roster-helper-note">
+                  Tìm người trước khi tạo mới. Một cá nhân có thể có nhiều hồ sơ cư trú; danh sách này đếm mỗi người một lần.
+                </p>
+                <div className="roster-actions roster-filter-bar">
+                  <label className="roster-filter-search">
                     Tìm họ tên hoặc ĐDCN / CCCD / CMND
                     <input
                       type="search"
@@ -1403,7 +1503,7 @@ export default function RosterPage({
                       }}
                     />
                   </label>
-                  <label>
+                  <label className="roster-filter-select">
                     Loại hồ sơ
                     <select
                       value={kind}
@@ -1420,7 +1520,7 @@ export default function RosterPage({
                       ))}
                     </select>
                   </label>
-                  <label>
+                  <label className="roster-filter-select">
                     Nguồn khởi tạo
                     <select
                       value={origin}
@@ -1434,23 +1534,39 @@ export default function RosterPage({
                       <option value="MANUAL">Nhập trực tiếp</option>
                     </select>
                   </label>
-                  <button
-                    className="roster-primary"
-                    onClick={() =>
-                      setEditor({
-                        title: 'Thêm nhân khẩu chưa gắn hộ',
-                        fields: [...personFields, { key: 'identity', label: 'ĐDCN / CCCD / CMND (nếu có)' }, reason],
-                        initial: { birthPrecision: 'UNKNOWN' },
-                        async save(d) {
-                          const { data } = await axios.post(`${api}/residents`, d);
-                          await loadPerson(data.id);
-                          await done('Đã tạo cá nhân; có thể gắn hộ và bổ sung hồ sơ cư trú');
-                        },
-                      })
-                    }
-                  >
-                    + Thêm nhân khẩu
-                  </button>
+                  <div className="roster-filter-cta">
+                    {(search || kind || origin) && (
+                      <button
+                        type="button"
+                        className="roster-btn-sm"
+                        onClick={() => {
+                          setSearch('');
+                          setKind('');
+                          setOrigin('');
+                          setPage(0);
+                        }}
+                      >
+                        Xóa lọc
+                      </button>
+                    )}
+                    <button
+                      className="roster-primary"
+                      onClick={() =>
+                        setEditor({
+                          title: 'Thêm nhân khẩu chưa gắn hộ',
+                          fields: [...personFields, { key: 'identity', label: 'ĐDCN / CCCD / CMND (nếu có)' }, reason],
+                          initial: { birthPrecision: 'UNKNOWN' },
+                          async save(d) {
+                            const { data } = await axios.post(`${api}/residents`, d);
+                            await loadPerson(data.id);
+                            await done('Đã tạo cá nhân; có thể gắn hộ và bổ sung hồ sơ cư trú');
+                          },
+                        })
+                      }
+                    >
+                      + Thêm nhân khẩu
+                    </button>
+                  </div>
                 </div>
                 <div className="roster-table">
                   <table>
@@ -1465,9 +1581,20 @@ export default function RosterPage({
                     </thead>
                     <tbody>
                       {items.map(r => (
-                        <tr key={r.id} data-selected={detailOpen && person?.id === r.id}>
+                        <tr
+                          key={r.id}
+                          className="roster-table-row"
+                          data-selected={detailOpen && person?.id === r.id}
+                          onClick={() => run(() => loadPerson(r.id))}
+                        >
                           <td className="roster-cell-identity">
-                            <button className="roster-row-link" onClick={() => run(() => loadPerson(r.id))}>
+                            <button
+                              className="roster-row-link"
+                              onClick={e => {
+                                e.stopPropagation();
+                                run(() => loadPerson(r.id));
+                              }}
+                            >
                               {r.full_name}
                             </button>
                           </td>
@@ -1481,14 +1608,18 @@ export default function RosterPage({
                           <td data-label="Hồ sơ cư trú" className="roster-num">
                             {r.record_count}
                           </td>
-                          <td data-label="Nguồn">{r.origin === 'EXCEL' ? 'Excel gốc' : 'Nhập trực tiếp'}</td>
+                          <td data-label="Nguồn">
+                            <span className={`roster-badge ${r.origin === 'EXCEL' ? 'roster-badge--muted' : 'roster-badge--ok'}`}>
+                              {r.origin === 'EXCEL' ? 'Excel gốc' : 'Nhập trực tiếp'}
+                            </span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
                 {items.length === 0 && <p>Không có kết quả trong phạm vi được giao.</p>}
-                <div className="roster-actions">
+                <div className="roster-actions roster-pagination-bar">
                   <button disabled={page === 0} onClick={() => setPage(page - 1)}>
                     Trang trước
                   </button>
@@ -1503,8 +1634,8 @@ export default function RosterPage({
             )}
             {tab === 'households' && (
               <>
-                <div className="roster-actions">
-                  <label>
+                <div className="roster-actions roster-filter-bar">
+                  <label className="roster-filter-search">
                     Tìm hộ theo địa chỉ, tên đại diện, mã hoặc HSCT
                     <input
                       type="search"
@@ -1516,7 +1647,7 @@ export default function RosterPage({
                       }}
                     />
                   </label>
-                  <label>
+                  <label className="roster-filter-select">
                     Phân nhóm hộ
                     <select
                       value={category}
@@ -1530,7 +1661,7 @@ export default function RosterPage({
                       <option value="PROVISIONAL">Chưa có HSCT / chờ xác minh</option>
                     </select>
                   </label>
-                  <label>
+                  <label className="roster-filter-select">
                     Nguồn khởi tạo
                     <select
                       value={origin}
@@ -1544,9 +1675,25 @@ export default function RosterPage({
                       <option value="MANUAL">Nhập trực tiếp</option>
                     </select>
                   </label>
-                  <button className="roster-primary" onClick={openNewHousehold}>
-                    + Thêm hộ
-                  </button>
+                  <div className="roster-filter-cta">
+                    {(search || category || origin) && (
+                      <button
+                        type="button"
+                        className="roster-btn-sm"
+                        onClick={() => {
+                          setSearch('');
+                          setCategory('');
+                          setOrigin('');
+                          setPage(0);
+                        }}
+                      >
+                        Xóa lọc
+                      </button>
+                    )}
+                    <button className="roster-primary" onClick={openNewHousehold}>
+                      + Thêm hộ
+                    </button>
+                  </div>
                 </div>
                 <div className="roster-table">
                   <table>
@@ -1561,9 +1708,20 @@ export default function RosterPage({
                     </thead>
                     <tbody>
                       {items.map(h => (
-                        <tr key={h.id} data-selected={detailOpen && household?.id === h.id}>
+                        <tr
+                          key={h.id}
+                          className="roster-table-row"
+                          data-selected={detailOpen && household?.id === h.id}
+                          onClick={() => run(() => loadHouse(h.id))}
+                        >
                           <td className="roster-cell-identity">
-                            <button className="roster-row-link" onClick={() => run(() => loadHouse(h.id))}>
+                            <button
+                              className="roster-row-link"
+                              onClick={e => {
+                                e.stopPropagation();
+                                run(() => loadHouse(h.id));
+                              }}
+                            >
                               {h.source_case_number ||
                                 (typeof h.code !== 'string' || !h.code
                                   ? 'Chưa có mã hộ'
@@ -1571,27 +1729,48 @@ export default function RosterPage({
                                     ? h.code
                                     : `Nhóm ${h.code.slice(-8)}`)}
                             </button>
-                            <div className="roster-subline">{h.source_case_number ? 'HSCT nguồn' : 'Chưa có HSCT'}</div>
+                            <div className="roster-subline">
+                              <span className={`roster-badge ${h.source_case_number ? 'roster-badge--ok' : 'roster-badge--muted'}`}>
+                                {h.source_case_number ? 'HSCT nguồn' : 'Chưa có HSCT'}
+                              </span>
+                            </div>
                           </td>
-                          <td data-label="Chủ hộ / đại diện">{h.representative_name || 'Chưa rõ'}</td>
-                          <td data-label="Địa chỉ">{h.raw_address}</td>
+                          <td data-label="Chủ hộ / đại diện" className="roster-cell-strong">
+                            {h.representative_name || 'Chưa rõ'}
+                          </td>
+                          <td data-label="Địa chỉ" className="roster-cell-address">
+                            {h.raw_address}
+                          </td>
                           <td data-label="Thành viên đã nhập" className="roster-num">
                             {h.member_count}
                           </td>
                           <td data-label="Nguồn">
-                            {h.origin === 'EXCEL' ? 'Excel' : 'Nhập trực tiếp'} ·{' '}
-                            {h.verification_status === 'HEAD_CONFLICT'
-                              ? 'Cần đối soát tên chủ hộ'
-                              : h.verification_status === 'UNVERIFIED'
-                                ? 'Chưa xác minh'
-                                : h.verification_status}
+                            <span className="roster-origin-tag">{h.origin === 'EXCEL' ? 'Excel' : 'Nhập trực tiếp'}</span> ·{' '}
+                            <span
+                              className={`roster-badge ${
+                                h.verification_status === 'HEAD_CONFLICT'
+                                  ? 'roster-badge--warn'
+                                  : h.verification_status === 'UNVERIFIED'
+                                    ? 'roster-badge--muted'
+                                    : 'roster-badge--ok'
+                              }`}
+                            >
+                              {h.verification_status === 'HEAD_CONFLICT'
+                                ? 'Cần đối soát tên chủ hộ'
+                                : h.verification_status === 'UNVERIFIED'
+                                  ? 'Chưa xác minh'
+                                  : h.verification_status === 'VERIFIED'
+                                    ? 'Đã xác minh'
+                                    : h.verification_status}
+                            </span>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <div className="roster-actions">
+                {items.length === 0 && <p>Không có kết quả trong phạm vi được giao.</p>}
+                <div className="roster-actions roster-pagination-bar">
                   <button disabled={page === 0} onClick={() => setPage(page - 1)}>
                     Trang trước
                   </button>

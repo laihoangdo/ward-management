@@ -79,6 +79,8 @@ def run():
     web = next(client for client in clients if client.get('clientId') == 'web_app')
     web['redirectUris'] = ['https://sunnytech.cloud/login/oauth2/code/oidc']
     web['webOrigins'] = ['https://sunnytech.cloud']
+    # The app sends its origin as post_logout_redirect_uri; '+' (reuse redirect URIs) only allows the login callback.
+    web.setdefault('attributes', {})['post.logout.redirect.uris'] = 'https://sunnytech.cloud'
     web['publicClient'] = True
     web['standardFlowEnabled'] = True
     web['directAccessGrantsEnabled'] = False

@@ -249,10 +249,10 @@ html.dark .text-purple-600 { /* taste-skill-ignore */
   cursor: not-allowed;
 }
 .gis-header {
-  min-height: 72px;
+  min-height: 56px;
   height: auto;
-  padding-block: 10px;
-  gap: 12px;
+  padding-block: 6px;
+  gap: 10px;
 }
 .gis-header .gis-clock {
   display: none;
@@ -1009,5 +1009,58 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
   :is(.gis-household-dialog, .gis-household-create-dialog) button {
     min-height: 44px;
     touch-action: manipulation;
+  }
+}
+
+/* Tablet Navigation Rail (768px - 1279px) when not expanded */
+@media (min-width: 768px) and (max-width: 1279px) {
+  #__page-root .gis-sidebar--rail-tablet .gis-sidebar-brand {
+    padding-inline: 8px;
+    justify-content: center;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-sidebar-brand a {
+    justify-content: center;
+  }
+  #__page-root
+    .gis-sidebar--rail-tablet
+    :is(
+      .gis-sidebar-brand-text,
+      .gis-account-details,
+      .gis-account-meta,
+      .gis-sidebar-territory,
+      .gis-sidebar-nav-header,
+      .gis-menu-group,
+      .gis-nav-item-badge,
+      .gis-sidebar-footer-label,
+      .gis-sidebar-footer-role,
+      .gis-sidebar-footer-unit
+    ) {
+    display: none !important;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-nav-item-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  #__page-root .gis-sidebar--rail-tablet :is(.gis-nav-item, .gis-nav-home) {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  #__page-root .gis-sidebar--rail-tablet #account-card {
+    margin-inline: 8px;
+    padding: 8px;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-account-header {
+    justify-content: center;
+    margin-bottom: 0;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-sidebar-footer {
+    padding-inline: 8px;
   }
 }

@@ -308,21 +308,21 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
   const officerCount = subordinates.filter(u => u.role === 'officer').length;
 
   return (
-    <div id="subadmin-delegation-tab" className="space-y-6">
+    <div id="subadmin-delegation-tab" className="space-y-5">
       {/* Header Banner */}
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 relative overflow-hidden">
+      <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 sm:p-5 relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-md bg-blue-900/60 text-blue-300 border border-blue-700/60 text-xs font-mono font-bold flex items-center gap-1.5">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-md bg-emerald-900/60 text-emerald-300 border border-emerald-700/60 text-xs font-bold flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
                 {isAdmin
-                  ? 'TRƯỞNG CÔNG AN XÃ / PHƯỜNG ĐIỀU HÀNH'
+                  ? 'Trưởng Công an xã / phường điều hành'
                   : isSubAdmin
                     ? 'Cán bộ quản lý ấp điều hành'
                     : 'Quản trị viên tối cao điều hành'}
               </span>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-xs text-slate-400">
                 {currentUser.position} • {currentUser.fullName}
               </span>
             </div>
@@ -351,11 +351,11 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       </div>
 
       {/* Main Layout: List of Officers + Delegation Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left: Officer Selector */}
         <div className="lg:col-span-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="gis-admin-list-heading text-sm font-semibold text-slate-300">
+            <h3 className="gis-admin-list-heading text-sm font-semibold text-slate-300 tabular-nums">
               Cán bộ cấp dưới thuộc thẩm quyền ({subordinates.length})
             </h3>
           </div>
@@ -367,8 +367,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <button
                   type="button"
                   onClick={() => setRoleFilter('all')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition text-[11px] ${
-                    roleFilter === 'all' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-colors text-[11px] tabular-nums ${
+                    roleFilter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   Tất cả ({subordinates.length})
@@ -376,8 +376,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <button
                   type="button"
                   onClick={() => setRoleFilter('sub-admin')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition text-[11px] ${
-                    roleFilter === 'sub-admin' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-colors text-[11px] tabular-nums ${
+                    roleFilter === 'sub-admin' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   QL Ấp ({subAdminCount})
@@ -385,8 +385,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <button
                   type="button"
                   onClick={() => setRoleFilter('officer')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition text-[11px] ${
-                    roleFilter === 'officer' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-colors text-[11px] tabular-nums ${
+                    roleFilter === 'officer' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                   }`}
                 >
                   CA Viên ({officerCount})
@@ -420,11 +420,11 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
           )}
 
           {displayedSubordinates.length === 0 ? (
-            <div className="p-6 text-center rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+            <div className="p-6 text-center rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
               Không có cán bộ nào phù hợp với bộ lọc.
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[420px] lg:max-h-[680px] overflow-y-auto pr-0.5">
               {displayedSubordinates.map(off => {
                 const isSelected = selectedOfficer?.id === off.id;
                 const isSubAdminRole = off.role === 'sub-admin';
@@ -433,19 +433,19 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                     key={off.id}
                     type="button"
                     onClick={() => handleSelectOfficer(off)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all flex items-start justify-between cursor-pointer ${
+                    className={`w-full text-left p-3.5 rounded-xl border transition-colors flex items-start justify-between cursor-pointer ${
                       isSelected
-                        ? 'bg-slate-800 border-blue-500 text-white'
+                        ? 'bg-slate-800 border-emerald-500 text-white'
                         : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 hover:border-slate-700'
                     }`}
                   >
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm">
                           {off.rank} {off.fullName}
                         </span>
                         <span
-                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase font-mono ${
+                          className={`text-[11px] px-1.5 py-0.5 rounded font-bold ${
                             isSubAdminRole
                               ? 'bg-blue-900/80 text-blue-200 border border-blue-700'
                               : 'bg-emerald-900/80 text-emerald-200 border border-emerald-700'
@@ -468,7 +468,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                       {off.assignedStreets && off.assignedStreets.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {off.assignedStreets.map((st, i) => (
-                            <span key={i} className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] text-slate-300">
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
                               {st}
                             </span>
                           ))}
@@ -485,13 +485,13 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
         {/* Right: Permission Checklist & Road Assignment */}
         <div className="lg:col-span-8">
           {selectedOfficer ? (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono text-blue-400 font-bold uppercase">Đang thiết lập thẩm quyền cho</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] text-emerald-400 font-bold">Đang thiết lập thẩm quyền cho</span>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase font-mono ${
+                      className={`text-[11px] px-2 py-0.5 rounded font-bold ${
                         selectedOfficer.role === 'sub-admin'
                           ? 'bg-blue-900/80 text-blue-200 border border-blue-700'
                           : 'bg-emerald-900/80 text-emerald-200 border border-emerald-700'
@@ -500,11 +500,11 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                       {selectedOfficer.role === 'sub-admin' ? 'Cán bộ quản lý ấp (sub-admin)' : 'Công an viên (officer)'}
                     </span>
                   </div>
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2 mt-1">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2 mt-1 flex-wrap">
                     <Award className="w-5 h-5 text-amber-400" />
                     {selectedOfficer.rank} {selectedOfficer.fullName}
                     {selectedOfficer.badgeNumber && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-slate-950 border border-slate-700 text-slate-300">
+                      <span data-id className="text-xs px-2 py-0.5 rounded bg-slate-950 border border-slate-700 text-slate-300 font-mono">
                         Số hiệu {selectedOfficer.badgeNumber}
                       </span>
                     )}
@@ -518,11 +518,11 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
 
               {/* Assignment of Hamlets (Địa bàn Ấp/Khu phố) */}
               <div className="space-y-2 p-4 rounded-xl bg-slate-950 border border-slate-800">
-                <label className="block text-xs font-bold text-blue-400 flex items-center gap-2">
+                <label className="block text-xs font-bold text-emerald-400 flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
                   {selectedOfficer.role === 'sub-admin'
-                    ? 'Phân Bổ Địa Bàn Ấp / Khu Phố Quản Lý Toàn Diện:'
-                    : 'Phân Bổ Ấp / Khu Phố Trực Thuộc Thực Nhiệm:'}
+                    ? 'Phân bổ địa bàn ấp / khu phố quản lý toàn diện:'
+                    : 'Phân bổ ấp / khu phố trực thuộc thực nhiệm:'}
                 </label>
                 <p className="text-[11px] text-slate-400">
                   {selectedOfficer.role === 'sub-admin'
@@ -545,8 +545,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <label className="block text-xs font-bold text-amber-400 flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
                   {selectedOfficer.role === 'sub-admin'
-                    ? 'Tuyến Đường Trọng Điểm & Mạng Lưới Hẻm Thuộc Ấp:'
-                    : 'Tuyến Đường, Đoạn Phố & Tuyến Hẻm Phụ Trách Tuần Tra Trực Tiếp:'}
+                    ? 'Tuyến đường trọng điểm & mạng lưới hẻm thuộc ấp:'
+                    : 'Tuyến đường, đoạn phố & tuyến hẻm phụ trách tuần tra trực tiếp:'}
                 </label>
                 <p className="text-[11px] text-slate-400">
                   Giao cụ thể các tuyến đường hoặc hẻm thuộc ấp để thực hiện tuần tra, giám sát an ninh trật tự:
@@ -559,7 +559,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                   onChange={values => setAssignedStreetsInput(values.join(', '))}
                   emptyText="Chưa có tuyến đường/hẻm trong các ấp đã chọn."
                 />
-                <p className="text-xs text-slate-400" role="status">
+                <p className="text-xs text-slate-400 tabular-nums" role="status">
                   {roadsLoading
                     ? 'Đang tải tuyến đường từ DB...'
                     : roadsError
@@ -572,10 +572,10 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
 
               {/* Toggles for Feature permissions */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-blue-400" />
-                    Bảng Phân Quyền Tính Năng Nghiệp Vụ
+                    <Sliders className="w-4 h-4 text-emerald-400" />
+                    Bảng phân quyền tính năng nghiệp vụ
                   </h3>
                   <span className="text-[11px] text-slate-400">Bật để cấp quyền, Tắt để khóa tính năng</span>
                 </div>
@@ -598,8 +598,8 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                           }
                         }}
                         onClick={() => handleTogglePermission(item.key)}
-                        className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
-                          isGranted ? 'bg-slate-800 border-blue-700/60' : 'bg-slate-950 border-slate-800'
+                        className={`p-3.5 rounded-xl border transition-colors cursor-pointer flex items-start justify-between gap-3 ${
+                          isGranted ? 'bg-slate-800 border-emerald-600/70' : 'bg-slate-950 border-slate-800'
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -614,7 +614,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
 
                         <div className="shrink-0 mt-1">
                           <div
-                            className={`w-5 h-5 rounded-md flex items-center justify-center border transition ${
+                            className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
                               isGranted ? 'bg-blue-600 border-blue-500 text-white' : 'border-slate-700 bg-slate-900'
                             }`}
                           >
@@ -631,14 +631,14 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <button
                   type="button"
                   onClick={handleSaveDelegation}
-                  className="py-2.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md transition cursor-pointer"
+                  className="py-2.5 px-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-colors cursor-pointer"
                 >
-                  Xác Nhận & Cập Nhật Quyền Hạn
+                  Xác nhận & cập nhật quyền hạn
                 </button>
               </div>
             </div>
           ) : (
-            <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-xs">
+            <div className="p-12 text-center rounded-xl bg-slate-900 border border-slate-800 text-slate-400 text-xs">
               Vui lòng chọn một cán bộ ở danh sách bên trái để phân quyền.
             </div>
           )}

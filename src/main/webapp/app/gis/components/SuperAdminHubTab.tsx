@@ -19,7 +19,7 @@ import {
   Eye,
   EyeOff,
   Ban,
-  Unlock,
+  ShieldCheck,
   FileCheck,
   AlertOctagon,
 } from 'lucide-react';
@@ -639,7 +639,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
           >
             <ShieldAlert className="w-3.5 h-3.5" />
             Cảnh Báo & Thống Kê An Ninh ({effectiveAlertsList.length})
-            {effectiveAlertsList.filter(a => !a.resolved).length > 0 && <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />}
+            {effectiveAlertsList.filter(a => !a.resolved).length > 0 && <span className="w-2 h-2 rounded-full bg-amber-400" />}
           </button>
         </div>
       </div>
@@ -1170,7 +1170,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                             Đã xác minh & Xử lý xong
                           </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-950/90 text-rose-300 border border-rose-700/60 flex items-center gap-1 animate-pulse">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-950/90 text-rose-300 border border-rose-700/60 flex items-center gap-1">
                             <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
                             Cần xác minh & xử lý
                           </span>
@@ -1274,7 +1274,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs text-slate-400">Chính sách truy cập API:</span>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-700/60 text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
                   Đang Bật Bảo Vệ (Active)
                 </span>
               </div>
@@ -1373,7 +1373,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                           className="py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition"
                           title="Gỡ chặn IP"
                         >
-                          <Unlock className="w-3 h-3 text-amber-400" />
+                          <ShieldCheck className="w-3 h-3 text-amber-400" />
                           Gỡ Chặn
                         </button>
                       </div>
@@ -1407,7 +1407,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
       {/* MODAL: ADD NEW USER */}
       {isAddUserOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-slate-750 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -1578,7 +1578,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
       {/* MODAL: ADD WHITELIST EMAIL */}
       {isAddEmailOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-slate-900 border border-slate-750 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -1683,7 +1683,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
       {/* MODAL: ADD HCM ADMIN UNIT & ALLEYS */}
       {isAddUnitOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-slate-750 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -1786,7 +1786,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
       {/* MODAL: IMPORT JSON DATA */}
       {showImportModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-slate-750 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">

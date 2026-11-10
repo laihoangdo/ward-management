@@ -64,23 +64,23 @@ export const Pagination: React.FC<PaginationProps> = ({
     <div
       role="navigation"
       aria-label="Phân trang danh sách"
-      className={`gis-pagination p-3 sm:p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300 select-none ${className}`}
+      className={`gis-pagination p-3 sm:p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-300 select-none ${className}`}
     >
       {/* Left: Summary and Page Size Selector */}
       <div className="flex items-center justify-between sm:justify-start gap-3 flex-wrap">
         <div>
           <span>
             Hiển thị{' '}
-            <strong className="text-slate-900 dark:text-white font-bold font-mono">
+            <strong className="text-slate-900 dark:text-white font-bold tabular-nums">
               {startIndex}-{endIndex}
             </strong>{' '}
-            trên <strong className="text-slate-900 dark:text-white font-bold font-mono">{totalItems}</strong> {itemLabel}
+            trên <strong className="text-slate-900 dark:text-white font-bold tabular-nums">{totalItems}</strong> {itemLabel}
           </span>
         </div>
 
         {onPageSizeChange && (
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-400 text-[11px] hidden xs:inline">Mỗi trang:</span>
+            <span className="text-slate-500 text-[11px] hidden xs:inline">Mỗi trang:</span>
             <select
               value={pageSize}
               onChange={e => onPageSizeChange(Number(e.target.value))}
@@ -104,7 +104,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           type="button"
           onClick={() => handlePageClick(1)}
           disabled={safePage === 1}
-          className={`p-1.5 rounded-lg border text-xs transition-colors flex items-center justify-center min-w-[32px] min-h-[32px] cursor-pointer ${
+          className={`p-1.5 rounded-lg border text-xs transition-colors flex items-center justify-center min-w-[34px] min-h-[34px] cursor-pointer ${
             safePage === 1
               ? 'border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
               : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-750 hover:text-blue-600'
@@ -119,7 +119,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           type="button"
           onClick={() => handlePageClick(safePage - 1)}
           disabled={safePage === 1}
-          className={`px-2 py-1.5 rounded-lg border text-xs font-semibold transition-colors flex items-center justify-center gap-1 min-h-[32px] cursor-pointer ${
+          className={`px-2 py-1.5 rounded-lg border text-xs font-semibold transition-colors flex items-center justify-center gap-1 min-h-[34px] cursor-pointer ${
             safePage === 1
               ? 'border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
               : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-750 hover:text-blue-600'
@@ -135,7 +135,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           {pages.map((p, idx) => {
             if (p === '...') {
               return (
-                <span key={`ellipsis-${idx}`} className="px-1.5 text-slate-400 font-mono">
+                <span key={`ellipsis-${idx}`} className="px-1.5 text-slate-400">
                   …
                 </span>
               );
@@ -151,10 +151,10 @@ export const Pagination: React.FC<PaginationProps> = ({
                 aria-current={isActive ? 'page' : undefined}
                 type="button"
                 onClick={() => handlePageClick(pageNum)}
-                className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
+                className={`min-w-[34px] h-8.5 px-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center cursor-pointer tabular-nums ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-xs font-mono scale-105'
-                    : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600 font-mono'
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-600'
                 }`}
               >
                 {pageNum}
@@ -164,7 +164,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         </div>
 
         {/* Mobile Page Indicator */}
-        <div className="sm:hidden px-2 py-1 font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+        <div className="sm:hidden px-2 py-1 tabular-nums text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
           {safePage} / {totalPages}
         </div>
 
@@ -173,7 +173,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           type="button"
           onClick={() => handlePageClick(safePage + 1)}
           disabled={safePage === totalPages}
-          className={`px-2 py-1.5 rounded-lg border text-xs font-semibold transition-colors flex items-center justify-center gap-1 min-h-[32px] cursor-pointer ${
+          className={`px-2 py-1.5 rounded-lg border text-xs font-semibold transition-colors flex items-center justify-center gap-1 min-h-[34px] cursor-pointer ${
             safePage === totalPages
               ? 'border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
               : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-750 hover:text-blue-600'
@@ -189,7 +189,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           type="button"
           onClick={() => handlePageClick(totalPages)}
           disabled={safePage === totalPages}
-          className={`p-1.5 rounded-lg border text-xs transition-colors flex items-center justify-center min-w-[32px] min-h-[32px] cursor-pointer ${
+          className={`p-1.5 rounded-lg border text-xs transition-colors flex items-center justify-center min-w-[34px] min-h-[34px] cursor-pointer ${
             safePage === totalPages
               ? 'border-slate-200 dark:border-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed'
               : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-750 hover:text-blue-600'
