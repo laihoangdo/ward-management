@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -47,7 +47,15 @@ const STATUS: Record<HouseholdStatus, string> = {
   unverified: 'Chưa xác minh',
 };
 const COLORS = { normal: '#10b981', warning: '#f59e0b', alert: '#ef4444', business: '#38bdf8', unverified: '#94a3b8' };
-const COMPACT_MAP_QUERY = '(max-width: 760px), (max-height: 600px) and (pointer: coarse)';
+const COMPACT_MAP_QUERY = '(max-width: 1024px), (max-height: 640px) and (pointer: coarse)';
+const REALISTIC_WALLS = ['#f2ece1', '#e8dccb', '#dfd1bc', '#dce4dd', '#ebe1d3', '#ead8c8', '#e3e8ec', '#d8e0e5'];
+const REALISTIC_GABLE_ROOFS = ['#b85c42', '#a34832', '#c26a4a', '#486578', '#3f5c6e', '#496957'];
+const REALISTIC_FLAT_ROOFS = ['#7a8288', '#6c757d', '#868e88', '#737b80'];
+function hashUnit(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return (h >>> 0) / 4294967296;
+}
 type FieldEffects = ReturnType<typeof import('../three/field-effects.js').attachFieldEffects>;
 function territoryPolygons(value: unknown): (GeoJSON.Polygon | GeoJSON.MultiPolygon)[] {
   if (!value || typeof value !== 'object') return [];
@@ -60,6 +68,40 @@ const centerOf = (house: FieldHouse): [number, number] => {
   const [w, s, e, n] = houseBounds(house);
   return [(w + e) / 2, (s + n) / 2];
 };
+/** Enrich synthetic unedited footprints with natural undulating heights (1–5 floors) and architectural roofs for Three.js. */
+function enrichHouseForThree(house: FieldHouse): FieldHouse {
+  const p = house.properties;
+  if (!p.estimated || p.appearanceSource === 'manual') return house;
+  const id = String(house.id ?? p.buildingId ?? '');
+  const h1 = hashUnit(id);
+  const h2 = hashUnit(`${id}:f`);
+  const h3 = hashUnit(`${id}:r`);
+  const [lng, lat] = centerOf(house);
+  const wave = 0.5 + 0.5 * Math.sin(lng * 3800 + lat * 2900) * Math.cos(lat * 4100 - lng * 2100);
+  const score = h1 * 0.68 + wave * 0.32;
+  const levels = score < 0.2 ? 1 : score < 0.52 ? 2 : score < 0.78 ? 3 : score < 0.93 ? 4 : 5;
+  const floorHeight = Math.round((3.15 + h2 * 0.55) * 100) / 100;
+  const height = Math.max(3.5, Math.min(20, Math.round((levels * floorHeight + (h3 - 0.35) * 1.3) * 10) / 10));
+  const isGable = levels <= 3 ? h2 < 0.58 : h2 < 0.28;
+  const roofShape = isGable ? 'gable' : 'flat';
+  const wallColor = REALISTIC_WALLS[Math.floor(h1 * REALISTIC_WALLS.length)];
+  const roofPalette = isGable ? REALISTIC_GABLE_ROOFS : REALISTIC_FLAT_ROOFS;
+  const roofColor = roofPalette[Math.floor(h3 * roofPalette.length)];
+  return {
+    ...house,
+    properties: {
+      ...p,
+      levels,
+      floors: levels,
+      floorHeight,
+      height,
+      roofShape,
+      wallColor,
+      roofColor,
+      appearanceSeed: h1,
+    },
+  };
+}
 function insidePoint(house: FieldHouse): [number, number] {
   const center = centerOf(house);
   if (containsHousePoint(house.geometry, center)) return center;
@@ -94,13 +136,103 @@ export default function FieldHouseMap({
   const framedMapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
   const [layersOpen, setLayersOpen] = useState(() => !window.matchMedia?.(COMPACT_MAP_QUERY).matches);
+  useEffect(() => {
+    const mql = window.matchMedia?.(COMPACT_MAP_QUERY);
+    if (!mql?.addEventListener) return undefined;
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setLayersOpen(false);
+    };
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
   const [loading, setLoading] = useState(true);
   const [screenshotBlob, setScreenshotBlob] = useState<Blob | null>(null);
   const [access, setAccess] = useState<{ global: boolean; territories: unknown[] }>({ global: false, territories: [] });
   const [hamletBoundaries, setHamletBoundaries] = useState<GeoJSON.FeatureCollection>(EMPTY);
   const territoryShapes = useMemo(() => access.territories.flatMap(territoryPolygons), [access.territories]);
+  const realHamlets = useMemo(
+    () => hamletBoundaries.features.filter(f => f.properties?.hamletId != null && f.properties?.name),
+    [hamletBoundaries],
+  );
+  const [scopeHamletId, setScopeHamletId] = useState<string>('');
+  const [quickSearch, setQuickSearch] = useState<string>('');
+  const defaultHamletFeature = useMemo(() => {
+    if (!realHamlets.length) return undefined;
+    const areaHint = (captureOfficer?.area ?? '').toLocaleLowerCase();
+    if (areaHint) {
+      const matched = realHamlets.find(f => areaHint.includes(String(f.properties?.name ?? '').toLocaleLowerCase()));
+      if (matched) return matched;
+    }
+    return (
+      realHamlets.find(f =>
+        String(f.properties?.name ?? '')
+          .toLocaleLowerCase()
+          .includes('trung chánh'),
+      ) ??
+      realHamlets.find(f => String(f.properties?.name ?? '').includes('62')) ??
+      realHamlets[0]
+    );
+  }, [realHamlets, captureOfficer?.area]);
+  const effectiveScopeHamletId = scopeHamletId || (defaultHamletFeature ? String(defaultHamletFeature.properties?.hamletId) : '');
+  const activeTerritoryShapes = useMemo(() => {
+    if (!access.global || territoryShapes.length > 0) return territoryShapes;
+    if (!realHamlets.length || effectiveScopeHamletId === 'ALL') return [];
+    const target = realHamlets.find(f => String(f.properties?.hamletId) === effectiveScopeHamletId) ?? defaultHamletFeature;
+    return target ? territoryPolygons(target.geometry) : [];
+  }, [access.global, territoryShapes, realHamlets, effectiveScopeHamletId, defaultHamletFeature]);
+  const activeTerritoryWithBounds = useMemo(
+    () =>
+      activeTerritoryShapes.map(geometry => {
+        const pts = geometry.coordinates.flat(geometry.type === 'Polygon' ? 1 : 2) as number[][];
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity;
+        for (const [x, y] of pts) {
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+        return { geometry, minX, minY, maxX, maxY };
+      }),
+    [activeTerritoryShapes],
+  );
+  const hasThreeScopeRestriction = !access.global || activeTerritoryWithBounds.length > 0;
   const [checkedAccess, setCheckedAccess] = useState({ id: '', allowed: false });
   const [houses, setHouses] = useState<FieldHouse[]>([]);
+  const inThreeScopeIds = useMemo(() => {
+    if (!hasThreeScopeRestriction) {
+      return new Set(houses.filter(h => h.properties.canManage !== false).map(h => h.properties.buildingId));
+    }
+    if (!activeTerritoryWithBounds.length) return new Set<string>();
+    const ids = new Set<string>();
+    for (const h of houses) {
+      if (h.properties.canManage === false) continue;
+      const [lng, lat] = centerOf(h);
+      const ring = h.geometry.type === 'Polygon' ? h.geometry.coordinates[0] : h.geometry.coordinates[0]?.[0];
+      const sample: [number, number] =
+        ring && ring.length >= 3 ? [(ring[0][0] + ring[1][0] + ring[2][0]) / 3, (ring[0][1] + ring[1][1] + ring[2][1]) / 3] : [lng, lat];
+      if (
+        activeTerritoryWithBounds.some(
+          b =>
+            (lng >= b.minX && lng <= b.maxX && lat >= b.minY && lat <= b.maxY && containsHousePoint(b.geometry, [lng, lat])) ||
+            (sample[0] >= b.minX &&
+              sample[0] <= b.maxX &&
+              sample[1] >= b.minY &&
+              sample[1] <= b.maxY &&
+              containsHousePoint(b.geometry, sample)),
+        )
+      ) {
+        ids.add(h.properties.buildingId);
+      }
+    }
+    return ids;
+  }, [houses, hasThreeScopeRestriction, activeTerritoryWithBounds]);
+  const threeHouses = useMemo(
+    () => houses.filter(h => inThreeScopeIds.has(h.properties.buildingId)).map(enrichHouseForThree),
+    [houses, inThreeScopeIds],
+  );
   const [threeEnabled, setThreeEnabled] = useState(false);
   const [threeActive, setThreeActive] = useState(false);
   const effectsRef = useRef<FieldEffects | null>(null);
@@ -169,6 +301,18 @@ export default function FieldHouseMap({
   );
   const indexed = useMemo(() => indexHouseholds(houses, householdsOnMap), [houses, householdsOnMap]);
   const houseById = useMemo(() => new Map(houses.map(h => [h.properties.buildingId, h])), [houses]);
+  const buildingByHouseholdId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const [bId, list] of indexed.entries()) {
+      for (const h of list) map.set(h.id, bId);
+    }
+    return map;
+  }, [indexed]);
+  const quickMatches = useMemo(() => {
+    const q = quickSearch.trim().toLocaleLowerCase();
+    if (!q) return [];
+    return householdsOnMap.filter(h => `${h.code} ${h.ownerName} ${h.houseNumber} ${h.street}`.toLocaleLowerCase().includes(q)).slice(0, 6);
+  }, [householdsOnMap, quickSearch]);
   const selected = houseById.get(selectedId);
   const linked = indexed.get(selectedId) ?? [];
   const savedLinked = linked.filter(h => selected?.properties.householdIds?.includes(h.id));
@@ -361,6 +505,17 @@ export default function FieldHouseMap({
       if (mapRef.current !== map) return;
       map.addSource('houses', { type: 'geojson', data: EMPTY, maxzoom: 20 });
       map.addLayer({
+        id: 'houses-3d-outside',
+        type: 'fill-extrusion',
+        source: 'houses',
+        layout: { visibility: 'none' },
+        paint: {
+          'fill-extrusion-height': ['get', 'height'],
+          'fill-extrusion-color': ['coalesce', ['get', 'displayColor'], '#b6c9d6'],
+          'fill-extrusion-opacity': 0.84,
+        },
+      });
+      map.addLayer({
         id: 'houses-3d',
         type: 'fill-extrusion',
         source: 'houses',
@@ -494,7 +649,7 @@ export default function FieldHouseMap({
       }
       const id = hits.find(f => f.properties.buildingId)?.properties.buildingId;
       if (id && live.houseById.has(id)) {
-        if ((containerRef.current?.clientWidth ?? 1000) <= 760 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) setLayersOpen(false);
+        if ((containerRef.current?.clientWidth ?? 1000) <= 1024 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) setLayersOpen(false);
         setSelectedId(id);
         setSearch('');
         setLinkId('');
@@ -566,6 +721,7 @@ export default function FieldHouseMap({
         ...h,
         properties: {
           ...h.properties,
+          inThreeScope: inThreeScopeIds.has(h.properties.buildingId),
           occupied: residents.length > 0,
           normal: residents.some(r => r.status === 'normal'),
           unverified: residents.some(r => r.status === 'unverified'),
@@ -581,7 +737,7 @@ export default function FieldHouseMap({
       type: 'FeatureCollection',
       features: features.map(h => ({ ...h, geometry: { type: 'Point', coordinates: centerOf(h) } })),
     });
-  }, [houses, indexed, ready]);
+  }, [houses, indexed, ready, inThreeScopeIds]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -590,13 +746,13 @@ export default function FieldHouseMap({
     let cancelled = false;
     let effects: FieldEffects | undefined;
     const [west, south, east, north] = baDiemCommuneBounds;
-    // Rebuild only for geometry changes, never for selection or status filters.
+    // Rebuild only for geometry or territory scope changes, never for selection or status filters.
     const timer = window.setTimeout(() => {
       void import('../three/field-effects.js')
         .then(({ attachFieldEffects }) => {
           if (cancelled) return;
           effects = attachFieldEffects(map, {
-            collection: { type: 'FeatureCollection', features: houses },
+            collection: { type: 'FeatureCollection', features: threeHouses },
             anchor: [(west + east) / 2, (south + north) / 2],
             onError() {
               if (!cancelled) {
@@ -625,7 +781,7 @@ export default function FieldHouseMap({
       effectsRef.current = null;
       effects?.dispose();
     };
-  }, [ready, loading, threeEnabled, houses, representation, layers.buildings]);
+  }, [ready, loading, threeEnabled, threeHouses, representation, layers.buildings]);
 
   const displayStates = useMemo(
     () =>
@@ -666,8 +822,15 @@ export default function FieldHouseMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (ready && map?.getLayer('houses-3d')) map.setPaintProperty('houses-3d', 'fill-extrusion-opacity', threeActive ? 0 : 0.88);
-  }, [ready, threeActive]);
+    if (ready && map?.getLayer('houses-3d')) {
+      map.setLayoutProperty(
+        'houses-3d-outside',
+        'visibility',
+        threeActive && hasThreeScopeRestriction && layers.buildings && representation === '3d' ? 'visible' : 'none',
+      );
+      map.setPaintProperty('houses-3d', 'fill-extrusion-opacity', threeActive ? 0 : 0.88);
+    }
+  }, [ready, threeActive, hasThreeScopeRestriction, layers.buildings, representation]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -690,6 +853,13 @@ export default function FieldHouseMap({
       ['case', ['get', 'occupied'], layers.occupied, layers.empty],
       status === 'all' ? true : ['==', ['get', status], true],
     ];
+    const outsideFilter: maplibregl.FilterSpecification = [
+      'all',
+      ['==', ['get', 'inThreeScope'], false],
+      ['case', ['get', 'occupied'], layers.occupied, layers.empty],
+      status === 'all' ? true : ['==', ['get', status], true],
+    ];
+    map.setFilter('houses-3d-outside', outsideFilter);
     map.setFilter('houses-3d', filter);
     map.setFilter('house-points', filter);
     const show = (id: string, visible: boolean) => map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
@@ -715,12 +885,13 @@ export default function FieldHouseMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || initializedMapRef.current !== map) return;
+    const displayedTerritories = threeEnabled ? activeTerritoryShapes : territoryShapes;
     (map.getSource('hamlets') as maplibregl.GeoJSONSource | undefined)?.setData(hamletBoundaries);
     (map.getSource('assigned-territories') as maplibregl.GeoJSONSource | undefined)?.setData({
       type: 'FeatureCollection',
-      features: territoryShapes.map(geometry => ({ type: 'Feature', properties: {}, geometry })),
+      features: displayedTerritories.map(geometry => ({ type: 'Feature', properties: {}, geometry })),
     });
-  }, [ready, hamletBoundaries, territoryShapes]);
+  }, [ready, hamletBoundaries, activeTerritoryShapes, territoryShapes, threeEnabled]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -912,13 +1083,85 @@ export default function FieldHouseMap({
   const toggle = (key: keyof typeof layers) => {
     setLayers(prev => ({ ...prev, [key]: !prev[key] }));
   };
+  const frameBoundsList = (boundsList: { minX: number; minY: number; maxX: number; maxY: number }[]) => {
+    const map = mapRef.current;
+    if (!map || !boundsList.length) return;
+    const minX = Math.min(...boundsList.map(b => b.minX));
+    const minY = Math.min(...boundsList.map(b => b.minY));
+    const maxX = Math.max(...boundsList.map(b => b.maxX));
+    const maxY = Math.max(...boundsList.map(b => b.maxY));
+    map.fitBounds(
+      [
+        [minX, minY],
+        [maxX, maxY],
+      ],
+      { padding: 56, maxZoom: 17.8, pitch: 58, bearing: -18, duration: 900 },
+    );
+  };
+  const jumpToHousehold = (h: HouseholdFacility) => {
+    setQuickSearch('');
+    if ((containerRef.current?.clientWidth ?? 1000) <= 1024 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) {
+      setLayersOpen(false);
+    }
+    const bId = buildingByHouseholdId.get(h.id);
+    const bHouse = bId ? houseById.get(bId) : undefined;
+    if (bId && bHouse) {
+      setSelectedId(bId);
+      setMode('select');
+      const width = containerRef.current?.clientWidth ?? 1000;
+      const mapHeight = containerRef.current?.clientHeight ?? 650;
+      const compact = width <= 760 || window.matchMedia?.(COMPACT_MAP_QUERY).matches;
+      mapRef.current?.fitBounds(houseBounds(bHouse), {
+        padding: compact
+          ? { top: Math.min(48, mapHeight * 0.12), bottom: mapHeight * 0.52 + 8, left: 20, right: 20 }
+          : { top: 100, bottom: 100, left: 80, right: 360 },
+        maxZoom: 20,
+        pitch: representation === '3d' ? 55 : 0,
+        duration: 800,
+      });
+      return;
+    }
+    const [lat, lng] = h.coordinates ?? [];
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      mapRef.current?.easeTo({ center: [lng, lat], pitch: 55 });
+    }
+    onSelect(h);
+  };
 
   return (
     <div className="field-house-map">
       {screenshotBlob && <MapCapturePreview blob={screenshotBlob} onClose={() => setScreenshotBlob(null)} />}
       <header>
-        <strong>Bản Đồ Không Gian 3D Thực Địa</strong>
-        <span>{loading ? 'Đang tải công trình…' : `${houses.length.toLocaleString('vi-VN')} công trình`}</span>
+        <div className="field-header-brand">
+          <strong>Bản Đồ Không Gian 3D Thực Địa</strong>
+          <span className="field-count-badge">
+            {loading ? 'Đang tải công trình…' : `${houses.length.toLocaleString('vi-VN')} công trình`}
+          </span>
+        </div>
+        <div className="field-quick-search">
+          <input
+            type="search"
+            aria-label="Tìm nhanh hộ dân trên bản đồ 3D"
+            placeholder="Tìm nhanh chủ hộ, mã hộ, địa chỉ…"
+            value={quickSearch}
+            onChange={e => setQuickSearch(e.target.value)}
+          />
+          {quickMatches.length > 0 && (
+            <div className="field-quick-results" role="listbox" aria-label="Gợi ý hộ dân trên bản đồ">
+              {quickMatches.map(h => {
+                const bId = buildingByHouseholdId.get(h.id);
+                return (
+                  <button key={h.id} type="button" className="field-quick-item" onClick={() => jumpToHousehold(h)}>
+                    <strong>{h.ownerName}</strong>
+                    <span>
+                      {h.code} · {h.houseNumber} {h.street} · {bId ? 'Đã gắn khối nhà 3D' : 'Điểm tọa độ'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         <div className="field-map-actions" role="toolbar" aria-label="Điều khiển bản đồ 3D">
           <button type="button" disabled={!ready || loading || busy || mode !== 'select'} onClick={overview}>
             Toàn cảnh từ trên cao
@@ -932,20 +1175,23 @@ export default function FieldHouseMap({
           <button type="button" disabled={!ready} onClick={() => mapRef.current?.easeTo({ bearing: 0, pitch: 55, duration: 600 })}>
             Đặt lại góc nhìn
           </button>
+          <span className="field-toolbar-divider" aria-hidden="true" />
           <button type="button" disabled={!ready} aria-label="Phóng to" onClick={() => mapRef.current?.zoomIn()}>
             Zoom +
           </button>
           <button type="button" disabled={!ready} aria-label="Thu nhỏ" onClick={() => mapRef.current?.zoomOut()}>
             Zoom −
           </button>
-          <button type="button" disabled={!ready || busy || loading} onClick={screenshot}>
-            Chụp ảnh PNG
-          </button>
+          <span className="field-toolbar-divider" aria-hidden="true" />
           {canLink && mayWriteTerritory && (
             <button
               type="button"
+              className="field-btn-accent"
               disabled={!ready || loading || busy || mode !== 'select'}
               onClick={() => {
+                if ((containerRef.current?.clientWidth ?? 1000) <= 1024 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) {
+                  setLayersOpen(false);
+                }
                 setMode('draw');
                 setSelectedId('');
                 setDraft([]);
@@ -957,19 +1203,73 @@ export default function FieldHouseMap({
               + Vẽ khối nhà
             </button>
           )}
+          <button type="button" disabled={!ready || busy || loading} onClick={screenshot}>
+            Chụp ảnh PNG
+          </button>
+          <button
+            type="button"
+            aria-pressed={threeEnabled}
+            disabled={!ready || loading}
+            onClick={() => {
+              const next = !threeEnabled;
+              setThreeEnabled(next);
+              if (next && activeTerritoryWithBounds.length > 0) {
+                frameBoundsList(activeTerritoryWithBounds);
+              }
+            }}
+          >
+            {threeEnabled ? 'Tắt hiệu ứng Three.js' : 'Hiệu ứng Three.js'}
+          </button>
           <button type="button" onClick={onToggleFullscreen}>
             {isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
-          </button>
-          <button type="button" aria-pressed={threeEnabled} disabled={!ready || loading} onClick={() => setThreeEnabled(value => !value)}>
-            {threeEnabled ? 'Tắt hiệu ứng Three.js' : 'Hiệu ứng Three.js'}
           </button>
         </div>
       </header>
       {threeEnabled && (
-        <p role="status" className="field-notice">
-          {threeActive ? 'Hiệu ứng Three.js đang bật' : 'Đang chuẩn bị hiệu ứng Three.js…'} · Thuộc tính minh họa từ GeoJSON dùng chung,
-          không phải khảo sát thực tế.
-        </p>
+        <div role="status" className="field-notice field-three-banner">
+          <span>
+            {threeActive ? 'Hiệu ứng Three.js đang bật' : 'Đang chuẩn bị hiệu ứng Three.js…'} · Áp dụng{' '}
+            <strong>{threeHouses.length.toLocaleString('vi-VN')}</strong> công trình thuộc phạm vi quản lý (nhấp nhô 1–5 tầng, mái ngói/mái
+            bằng); công trình ngoài phạm vi giữ nguyên · Thuộc tính minh họa từ GeoJSON dùng chung, không phải khảo sát thực tế.
+          </span>
+          {access.global && territoryShapes.length === 0 && realHamlets.length > 0 && (
+            <label className="field-scope-picker">
+              Phạm vi ấp:
+              <select
+                aria-label="Phạm vi ấp áp dụng Three.js"
+                value={effectiveScopeHamletId}
+                onChange={e => {
+                  const val = e.target.value;
+                  setScopeHamletId(val);
+                  if (val === 'ALL') {
+                    overview();
+                  } else {
+                    const target = realHamlets.find(f => String(f.properties?.hamletId) === val);
+                    if (target) {
+                      const shapes = territoryPolygons(target.geometry).map(geometry => {
+                        const pts = geometry.coordinates.flat(geometry.type === 'Polygon' ? 1 : 2) as number[][];
+                        return {
+                          minX: Math.min(...pts.map(p => p[0])),
+                          minY: Math.min(...pts.map(p => p[1])),
+                          maxX: Math.max(...pts.map(p => p[0])),
+                          maxY: Math.max(...pts.map(p => p[1])),
+                        };
+                      });
+                      frameBoundsList(shapes);
+                    }
+                  }
+                }}
+              >
+                {realHamlets.map(f => (
+                  <option key={String(f.properties?.hamletId)} value={String(f.properties?.hamletId)}>
+                    {String(f.properties?.name)}
+                  </option>
+                ))}
+                <option value="ALL">Toàn xã Bà Điểm ({houses.length.toLocaleString('vi-VN')} nhà)</option>
+              </select>
+            </label>
+          )}
+        </div>
       )}
       {error && (
         <p role="alert" className="field-error">
@@ -1036,8 +1336,8 @@ export default function FieldHouseMap({
               {label}
             </label>
           ))}
-          <label>
-            Hiển thị công trình
+          <label className="field-layer-select">
+            <span>Hiển thị công trình</span>
             <select
               value={representation}
               onChange={e => {
@@ -1048,8 +1348,8 @@ export default function FieldHouseMap({
               <option value="point">Điểm (Point)</option>
             </select>
           </label>
-          <label>
-            Trạng thái hộ dân
+          <label className="field-layer-select">
+            <span>Trạng thái hộ dân</span>
             <select
               value={status}
               onChange={e => {
@@ -1064,6 +1364,32 @@ export default function FieldHouseMap({
               ))}
             </select>
           </label>
+          <div className="field-legend" aria-label="Chú giải màu sắc">
+            <span className="field-legend-item">
+              <i style={{ background: '#10b981' }} aria-hidden="true" />
+              Bình thường
+            </span>
+            <span className="field-legend-item">
+              <i style={{ background: '#38bdf8' }} aria-hidden="true" />
+              Kinh doanh
+            </span>
+            <span className="field-legend-item">
+              <i style={{ background: '#f59e0b' }} aria-hidden="true" />
+              Chú ý
+            </span>
+            <span className="field-legend-item">
+              <i style={{ background: '#ef4444' }} aria-hidden="true" />
+              Cảnh báo
+            </span>
+            <span className="field-legend-item">
+              <i style={{ background: '#f97316' }} aria-hidden="true" />
+              Vị trí tạm
+            </span>
+            <span className="field-legend-item">
+              <i style={{ background: '#b6c9d6' }} aria-hidden="true" />
+              Chưa có hộ
+            </span>
+          </div>
           <small>Nhà chưa có hộ chỉ hiển thị khi chọn “Tất cả”. Chiều cao nhập từ dữ liệu nguồn là giả lập.</small>
           <small>Ranh giới {hamletBoundaries.features.length} ấp: nét vàng. Phạm vi được giao: nét xanh.</small>
           {hamletBoundaries.features.some(feature => feature.properties?.provisional) && (
@@ -1074,78 +1400,85 @@ export default function FieldHouseMap({
           <aside className="field-panel">
             <h3>Vẽ khối nhà Polygon</h3>
             <p>Click lần lượt các đỉnh trên bản đồ. Khi lưu, cạnh cuối sẽ nối về đỉnh đầu.</p>
-            <p>{draft.length} đỉnh</p>
-            <button type="button" disabled={!draft.length || busy} onClick={() => setDraft(prev => prev.slice(0, -1))}>
-              Bỏ đỉnh cuối
-            </button>
+            <div className="field-draw-status">
+              <span>{draft.length} đỉnh</span>
+              <button type="button" disabled={!draft.length || busy} onClick={() => setDraft(prev => prev.slice(0, -1))}>
+                Bỏ đỉnh cuối
+              </button>
+            </div>
             <label>
               Tên công trình
               <input value={name} maxLength={255} onChange={e => setName(e.target.value)} />
             </label>
-            <label>
-              Số tầng
-              <input
-                type="number"
-                min={1}
-                max={MAX_BUILDING_FLOORS}
-                value={floors}
-                onChange={e => {
-                  const v = Number(e.target.value);
-                  setFloors(v);
-                  setHeight(v * 3.5);
-                }}
-              />
-            </label>
-            <label>
-              Chiều cao (m)
-              <input
-                type="number"
-                min={0.5}
-                max={MAX_BUILDING_HEIGHT}
-                step={0.5}
-                value={height}
-                onChange={e => setHeight(Number(e.target.value))}
-              />
-            </label>
+            <div className="field-form-grid-2">
+              <label>
+                Số tầng
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_BUILDING_FLOORS}
+                  value={floors}
+                  onChange={e => {
+                    const v = Number(e.target.value);
+                    setFloors(v);
+                    setHeight(v * 3.5);
+                  }}
+                />
+              </label>
+              <label>
+                Chiều cao (m)
+                <input
+                  type="number"
+                  min={0.5}
+                  max={MAX_BUILDING_HEIGHT}
+                  step={0.5}
+                  value={height}
+                  onChange={e => setHeight(Number(e.target.value))}
+                />
+              </label>
+            </div>
             <label>
               Màu khối nhà
               <input type="color" value={color} onChange={e => setColor(e.target.value)} />
             </label>
-            <button
-              type="button"
-              disabled={busy || draft.length < 3}
-              onClick={() =>
-                void act(async () => {
-                  const problem = validateDraft(draft);
-                  if (problem) throw Error(problem);
-                  const invalidProperties = validateBuildingProperties({ buildingId: '', height, floors, name, color });
-                  if (invalidProperties) throw Error(invalidProperties);
-                  const id = `custom-${crypto.randomUUID()}`;
-                  await persist({
-                    type: 'Feature',
-                    id,
-                    geometry: { type: 'Polygon', coordinates: [[...draft, draft[0]]] },
-                    properties: { buildingId: id, height, floors, name, color, estimated: false, householdIds: [] },
-                  });
-                  setSelectedId(id);
-                  setDraft([]);
+            <div className="field-panel-actions">
+              <button
+                type="button"
+                className="field-primary"
+                disabled={busy || draft.length < 3}
+                onClick={() =>
+                  void act(async () => {
+                    const problem = validateDraft(draft);
+                    if (problem) throw Error(problem);
+                    const invalidProperties = validateBuildingProperties({ buildingId: '', height, floors, name, color });
+                    if (invalidProperties) throw Error(invalidProperties);
+                    const id = `custom-${crypto.randomUUID()}`;
+                    await persist({
+                      type: 'Feature',
+                      id,
+                      geometry: { type: 'Polygon', coordinates: [[...draft, draft[0]]] },
+                      properties: { buildingId: id, height, floors, name, color, estimated: false, householdIds: [] },
+                    });
+                    setSelectedId(id);
+                    setDraft([]);
+                    setMode('select');
+                    setNotice('Đã lưu khối nhà vào cơ sở dữ liệu.');
+                  })
+                }
+              >
+                {busy ? 'Đang lưu…' : 'Lưu khối nhà'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
                   setMode('select');
-                  setNotice('Đã lưu khối nhà vào cơ sở dữ liệu.');
-                })
-              }
-            >
-              {busy ? 'Đang lưu…' : 'Lưu khối nhà'}
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setMode('select');
-                setDraft([]);
-              }}
-            >
-              Hủy vẽ
-            </button>
+                  setDraft([]);
+                }}
+              >
+                Hủy vẽ
+              </button>
+            </div>
           </aside>
         )}
         {selected && mode !== 'draw' && (
@@ -1163,13 +1496,17 @@ export default function FieldHouseMap({
                 Đóng
               </button>
             </div>
-            <p className="field-id">{selectedId}</p>
-            <p>
-              Chiều cao: {selected.properties.height} m {selected.properties.estimated ? '(giả lập)' : ''}
-            </p>
-            <button type="button" onClick={zoomSelected}>
-              Zoom tới khối nhà
-            </button>
+            <div className="field-meta-card">
+              <p className="field-id">{selectedId}</p>
+              <div className="field-meta-row">
+                <p>
+                  Chiều cao: {selected.properties.height} m {selected.properties.estimated ? '(giả lập)' : ''}
+                </p>
+                <button type="button" onClick={zoomSelected}>
+                  Zoom tới khối nhà
+                </button>
+              </div>
+            </div>
             {mode === 'select' && canLink && canManageSelected && (
               <FieldHousePropertiesEditor
                 key={selectedId}
@@ -1334,35 +1671,40 @@ export default function FieldHouseMap({
                   Click vị trí mới hoặc nhập tâm khung bao. Giữ hình dạng, lỗ rỗng, chiều cao và liên kết hộ dân. Tọa độ GPS gốc của hộ
                   không thay đổi.
                 </p>
-                <label>
-                  Vĩ độ
-                  <input type="number" step="0.0000001" value={moveLat} onChange={e => setMoveLat(e.target.value)} />
-                </label>
-                <label>
-                  Kinh độ
-                  <input type="number" step="0.0000001" value={moveLng} onChange={e => setMoveLng(e.target.value)} />
-                </label>
-                <button
-                  type="button"
-                  disabled={busy || !moveLat.trim() || !moveLng.trim()}
-                  onClick={() =>
-                    void act(async () => {
-                      const moved = moveHouse(selected, Number(moveLng), Number(moveLat));
-                      moved.properties = {
-                        ...moved.properties,
-                        householdIds: [...new Set([...(selected.properties.householdIds ?? []), ...linked.map(h => h.id)])],
-                      };
-                      await persist(moved);
-                      setMode('select');
-                      setNotice('Đã lưu vị trí mới và giữ liên kết hộ dân.');
-                    })
-                  }
-                >
-                  {busy ? 'Đang lưu…' : 'Lưu vị trí khối nhà'}
-                </button>
-                <button type="button" disabled={busy} onClick={() => setMode('select')}>
-                  Hủy di chuyển
-                </button>
+                <div className="field-form-grid-2">
+                  <label>
+                    Vĩ độ
+                    <input type="number" step="0.0000001" value={moveLat} onChange={e => setMoveLat(e.target.value)} />
+                  </label>
+                  <label>
+                    Kinh độ
+                    <input type="number" step="0.0000001" value={moveLng} onChange={e => setMoveLng(e.target.value)} />
+                  </label>
+                </div>
+                <div className="field-panel-actions">
+                  <button
+                    type="button"
+                    className="field-primary"
+                    disabled={busy || !moveLat.trim() || !moveLng.trim()}
+                    onClick={() =>
+                      void act(async () => {
+                        const moved = moveHouse(selected, Number(moveLng), Number(moveLat));
+                        moved.properties = {
+                          ...moved.properties,
+                          householdIds: [...new Set([...(selected.properties.householdIds ?? []), ...linked.map(h => h.id)])],
+                        };
+                        await persist(moved);
+                        setMode('select');
+                        setNotice('Đã lưu vị trí mới và giữ liên kết hộ dân.');
+                      })
+                    }
+                  >
+                    {busy ? 'Đang lưu…' : 'Lưu vị trí khối nhà'}
+                  </button>
+                  <button type="button" disabled={busy} onClick={() => setMode('select')}>
+                    Hủy di chuyển
+                  </button>
+                </div>
               </>
             )}
           </aside>

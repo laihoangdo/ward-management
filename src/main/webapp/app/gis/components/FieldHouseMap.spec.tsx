@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import axios from 'axios';
@@ -362,6 +362,53 @@ describe('field map controls', () => {
     expect(mocks.setPaintProperty).toHaveBeenLastCalledWith('houses-3d', 'fill-extrusion-opacity', 0.88);
     expect(axios.put).not.toHaveBeenCalled();
     expect(vi.mocked(axios.get).mock.calls.filter(([url]) => String(url).includes('.geojson'))).toHaveLength(1);
+  });
+
+  it('applies Three.js undulating effects only to buildings inside managed territory and keeps outside buildings on houses-3d-outside', async () => {
+    const insideHouse: FieldHouse = {
+      ...house,
+      id: 'inside-1',
+      properties: { buildingId: 'inside-1', height: 6.4, estimated: true },
+    };
+    const outsideHouse: FieldHouse = {
+      type: 'Feature',
+      id: 'outside-1',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [106.5, 10.5],
+            [106.501, 10.5],
+            [106.501, 10.501],
+            [106.5, 10.5],
+          ],
+        ],
+      },
+      properties: { buildingId: 'outside-1', height: 6.4, estimated: true },
+    };
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories: [house.geometry] }
+          : String(url).endsWith('/badiem-houses.geojson')
+            ? { type: 'FeatureCollection', features: [insideHouse, outsideHouse] }
+            : { type: 'FeatureCollection', features: [] },
+      }),
+    );
+    render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('2 công trình');
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledTimes(1));
+    const passedFeatures = mocks.effectsAttach.mock.calls[0][1].collection.features as FieldHouse[];
+    expect(passedFeatures).toHaveLength(1);
+    expect(passedFeatures[0].properties.buildingId).toBe('inside-1');
+    expect(passedFeatures[0].properties.levels).toBeGreaterThanOrEqual(1);
+    expect(['flat', 'gable']).toContain(passedFeatures[0].properties.roofShape);
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('houses-3d-outside', 'visibility', 'visible'));
+    expect(mocks.setFilter).toHaveBeenCalledWith('houses-3d-outside', expect.arrayContaining([['==', ['get', 'inThreeScope'], false]]));
   });
 
   it('disposes shared-context effects before destroying the host map', async () => {

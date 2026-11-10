@@ -13,45 +13,130 @@
   min-width: 0;
   background: #14212b;
   color: var(--field-text);
+  box-sizing: border-box;
 }
 .field-house-map > header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 10px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: var(--field-surface);
   border-bottom: 1px solid var(--field-border);
+}
+.field-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.field-header-brand strong {
+  font-size: 15px;
+  color: var(--field-text);
+}
+.field-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--field-soft);
+  border: 1px solid var(--field-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gis-primary, #1c4e3a);
+}
+.field-quick-search {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 320px;
+  min-width: 180px;
+}
+.field-house-map .field-quick-search input {
+  min-height: 34px;
+  margin-top: 0;
+  padding: 4px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+.field-quick-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--field-surface);
+  border: 1px solid var(--field-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgb(15 35 30 / 18%); /* taste-skill-ignore: dropdown gợi ý tìm kiếm nổi trên bản đồ */
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.field-house-map .field-quick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+  gap: 2px;
+}
+.field-house-map .field-quick-item strong {
+  font-size: 13px;
+  color: var(--field-text);
+}
+.field-house-map .field-quick-item span {
+  font-size: 11px;
+  color: var(--field-muted);
 }
 .field-map-actions {
   display: flex;
   flex-wrap: nowrap;
+  align-items: center;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
   max-width: 100%;
+  margin-left: auto;
   padding-bottom: 2px;
 }
 .field-map-actions button {
   flex: 0 0 auto;
   white-space: nowrap;
 }
+.field-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--field-border);
+  flex: 0 0 auto;
+  margin: 0 2px;
+}
 .field-house-map button:not([class*='maplibregl-ctrl']) {
-  padding: 6px 10px;
+  padding: 5px 10px;
   border: 1px solid var(--field-border);
   border-radius: 6px;
   background: var(--field-surface);
   color: var(--field-text);
   font-size: 13px;
-  min-height: 38px;
+  min-height: 34px;
   cursor: pointer;
   touch-action: manipulation;
 }
 .field-house-map button:not([class*='maplibregl-ctrl']):hover:enabled {
   background: var(--field-soft);
   border-color: var(--gis-primary, #1c4e3a);
+}
+.field-house-map .field-btn-accent {
+  background: var(--gis-selected, #e8f1ec);
+  border-color: var(--gis-primary, #1c4e3a);
+  color: var(--gis-primary, #1c4e3a);
+  font-weight: 600;
 }
 .field-house-map button:disabled {
   opacity: 0.45;
@@ -62,7 +147,8 @@
   color: #fff;
   border-color: var(--gis-primary, #1c4e3a);
   width: 100%;
-  margin: 10px 0;
+  margin: 8px 0;
+  font-weight: 600;
 }
 .field-house-map .field-primary:hover:enabled {
   background: var(--gis-primary-hover, #153c2c);
@@ -70,15 +156,42 @@
 .field-house-map button[aria-pressed='true'] {
   background: var(--gis-selected, #e8f1ec);
   border-color: var(--gis-primary, #1c4e3a);
+  color: var(--gis-primary, #1c4e3a);
+  font-weight: 600;
 }
 .field-house-map :is(button, input, select, summary):focus-visible {
   outline: 3px solid var(--gis-focus, #2563eb); /* taste-skill-ignore: focus ring chức năng */
   outline-offset: 2px;
 }
+.field-three-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+.field-house-map .field-scope-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.field-house-map .field-scope-picker select {
+  display: inline-block;
+  width: auto;
+  min-width: 165px;
+  min-height: 30px;
+  margin-top: 0;
+  padding: 3px 8px;
+  font-size: 12px;
+}
 .field-map-body {
   position: relative;
   flex: 1;
-  min-height: 550px;
+  min-height: 540px;
 }
 .field-map-canvas {
   position: absolute;
@@ -91,12 +204,12 @@
 .field-panel {
   position: absolute;
   z-index: 2;
-  padding: 14px;
+  padding: 12px;
   background: var(--field-surface);
   border: 1px solid var(--field-border);
   border-radius: 8px;
   box-shadow: 0 3px 12px rgb(15 35 30 / 16%); /* taste-skill-ignore: panel nổi trên bản đồ là overlay thật */
-  max-height: calc(100% - 25px);
+  max-height: calc(100% - 24px);
   overflow-y: auto;
   box-sizing: border-box;
   overscroll-behavior: contain;
@@ -106,18 +219,21 @@
 }
 .field-panel-heading {
   position: sticky;
-  top: -14px;
+  top: -12px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
-  padding: 10px 0;
+  padding: 8px 0;
   z-index: 1;
   background: var(--field-surface);
+  border-bottom: 1px solid var(--field-border);
+  margin-bottom: 8px;
 }
 .field-panel-heading h3 {
   min-width: 0;
-  font-size: 18px;
+  font-size: 16px;
+  margin: 0;
 }
 .field-panel-heading button {
   flex-shrink: 0;
@@ -126,28 +242,137 @@
   display: none;
 }
 .field-layers {
-  top: 12px;
-  left: 12px;
-  width: 245px;
+  top: 10px;
+  left: 10px;
+  width: 248px;
+}
+.field-layers:not([open]) {
+  width: auto;
+  padding: 6px 12px;
+}
+.field-layers:not([open]) summary {
+  margin-bottom: 0;
 }
 .field-panel {
-  right: 12px;
-  top: 50px;
+  right: 10px;
+  top: 10px;
   width: 320px;
 }
 .field-layers summary {
   cursor: pointer;
   font-weight: 600;
-  margin-bottom: 10px;
+  font-size: 13px;
+  margin-bottom: 8px;
 }
 .field-house-map label {
   display: block;
-  margin: 10px 0;
-  font-size: 14px;
+  margin: 6px 0;
+  font-size: 13px;
+}
+.field-layers > label {
+  margin: 4px 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.field-layers > label.field-layer-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0;
+}
+.field-layers > label.field-layer-select select {
+  width: 118px;
+  min-height: 32px;
+  margin-top: 0;
+  padding: 3px 6px;
+  font-size: 12.5px;
+  flex: 0 0 auto;
+}
+.field-form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 6px 0;
+}
+.field-form-grid-2 label {
+  margin: 0;
+  font-size: 12px;
+}
+.field-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
+  margin: 8px 0 6px;
+  padding: 6px 8px;
+  background: var(--field-soft);
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+}
+.field-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--field-text);
+  white-space: nowrap;
+}
+.field-legend-item i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  border: 1px solid rgb(15 23 42 / 20%);
+}
+.field-meta-card {
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: var(--field-soft);
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+}
+.field-meta-card .field-id {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-family: monospace;
+}
+.field-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.field-meta-row p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.field-draw-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--field-soft);
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  margin: 6px 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.field-panel-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.field-panel-actions .field-primary {
+  margin: 0;
+  flex: 1;
 }
 .field-property-editor {
-  margin: 12px 0;
-  padding: 10px;
+  margin: 8px 0;
+  padding: 8px 10px;
   border: 1px solid var(--field-border);
   background: var(--field-soft);
   border-radius: 6px;
@@ -155,8 +380,9 @@
 .field-property-editor summary {
   cursor: pointer;
   font-weight: 600;
-  padding-block: 4px;
-  min-height: 32px;
+  font-size: 13px;
+  padding-block: 2px;
+  min-height: 28px;
 }
 .field-property-editor fieldset {
   min-width: 0;
@@ -171,14 +397,15 @@
   background: var(--field-surface);
   color: var(--field-text);
   border: 1px solid var(--gis-control-border, #84939c);
-  min-height: 40px;
-  font-size: 14px;
+  min-height: 36px;
+  font-size: 13px;
   border-radius: 4px;
-  padding: 7px;
-  margin-top: 5px;
+  padding: 5px 7px;
+  margin-top: 4px;
+  box-sizing: border-box;
 }
 .field-house-map input[type='checkbox'] {
-  margin-right: 8px;
+  margin-right: 7px;
   accent-color: var(--gis-primary, #1c4e3a);
 }
 .field-house-map input::placeholder {
@@ -188,15 +415,17 @@
 .field-house-map small {
   display: block;
   color: var(--field-muted);
-  font-size: 12px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  margin-top: 3px;
 }
 .field-panel h3 {
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .field-panel p {
-  font-size: 14px;
-  margin: 10px 0;
+  font-size: 13px;
+  margin: 6px 0;
 }
 .field-id {
   overflow-wrap: anywhere;
@@ -206,14 +435,14 @@
   display: block;
   width: 100%;
   color: var(--gis-accent-text, #1c4e3a);
-  margin: 5px 0;
+  margin: 4px 0;
   text-align: left;
 }
 /* A saved link: the household on the left, its unlink control (two-step) on the right. */
 .field-linked-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 .field-linked-row .field-household {
   flex: 1;
@@ -221,12 +450,12 @@
 }
 .field-linked-row small {
   color: var(--field-muted);
-  font-size: 12px;
+  font-size: 11.5px;
   flex: none;
 }
 .field-unlink {
   flex: none;
-  min-height: 36px;
+  min-height: 34px;
   color: #9f1239;
 }
 .field-unlink-confirm {
@@ -236,9 +465,9 @@
 }
 .field-error,
 .field-notice {
-  padding: 10px 14px;
+  padding: 6px 12px;
   margin: 0;
-  font-size: 14px;
+  font-size: 12.5px;
 }
 .field-error {
   background: #7f1d1d;
@@ -251,17 +480,36 @@
 }
 .field-temporary-notice {
   margin: 0;
-  padding: 6px 12px;
+  padding: 4px 12px;
   background: #422c13;
   color: #ffedd5;
   border-top: 1px solid #875322;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11.5px;
+  line-height: 1.4;
 }
 .field-temporary-notice span {
   color: #fb923c;
 }
-@media (max-width: 760px), (max-height: 600px) and (pointer: coarse) {
+.field-mouse-help {
+  position: absolute;
+  left: 270px;
+  right: 342px;
+  bottom: 12px;
+  z-index: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.84);
+  color: #e2e8f0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  pointer-events: none;
+}
+@media (max-width: 1180px) {
+  .field-mouse-help {
+    display: none;
+  }
+}
+@media (max-width: 1024px), (max-height: 640px) and (pointer: coarse) {
   .field-house-map {
     min-height: 0;
     height: 100%;
@@ -270,21 +518,22 @@
   .field-house-map > header {
     flex: 0 0 auto;
     padding: 6px 8px;
-    gap: 4px 8px;
+    gap: 5px 8px;
   }
-  .field-house-map > header strong {
+  .field-header-brand strong {
     font-size: 14px;
     line-height: 1.3;
   }
-  .field-house-map > header > span {
-    font-size: 12px;
+  .field-quick-search {
+    flex: 1 1 180px;
+    max-width: none;
   }
   .field-map-actions {
     width: 100%;
     flex-wrap: nowrap;
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
   }
   .field-map-actions button {
     flex: 0 0 auto;
@@ -293,51 +542,56 @@
   .field-house-map button,
   .field-house-map input:not([type='checkbox']),
   .field-house-map select {
-    min-height: 40px;
+    min-height: 38px;
   }
   .field-house-map input:not([type='checkbox']),
   .field-house-map select {
-    font-size: 16px;
+    font-size: 15px;
     min-width: 0;
     max-width: 100%;
     box-sizing: border-box;
   }
   .field-house-map input[type='checkbox'] {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     vertical-align: middle;
   }
   .field-map-body {
     min-height: 0;
   }
   .field-map-body .maplibregl-ctrl-group button {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
   }
   .field-layers {
     top: 8px;
     left: max(8px, env(safe-area-inset-left));
-    width: min(270px, calc(100% - 60px));
-    max-height: calc(100% - 48px);
+    width: min(260px, calc(100% - 60px));
+    max-height: calc(100% - 24px);
     padding: 10px;
   }
   .field-layers:not([open]) {
     width: auto;
     padding-block: 0;
   }
-  /* 44px touch target with the label centred; the collapsed card is no taller than its summary. */
+  /* 42px touch target with the label centred; the collapsed card is no taller than its summary. */
   .field-layers summary {
-    min-height: 44px;
-    padding-block: 12px;
+    min-height: 42px;
+    padding-block: 10px;
     line-height: 20px;
     box-sizing: border-box;
     margin-bottom: 0;
   }
   .field-layers[open] summary {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+  }
+}
+@media (max-width: 767px), (max-height: 600px) and (pointer: coarse) {
+  .field-house-map {
+    padding-bottom: calc(54px + env(safe-area-inset-bottom, 0px));
   }
   .field-map-body:has(.field-panel) .field-layers[open] {
-    max-height: calc(48% - 20px);
+    max-height: calc(46% - 16px);
   }
   .field-panel {
     top: auto;
@@ -347,28 +601,25 @@
     max-height: 52%;
     width: auto;
     padding: 10px;
-    border-radius: 14px;
+    border-radius: 12px;
     z-index: 3;
   }
   .field-panel-heading {
     top: -10px;
     padding: 6px 0;
   }
-  .field-house-map > header strong {
-    width: 100%;
-  }
   .field-error,
   .field-notice {
-    max-height: 72px;
+    max-height: 76px;
     overflow-y: auto;
     flex-shrink: 0;
-    padding: 6px 8px;
+    padding: 5px 8px;
     font-size: 12px;
   }
   .field-touch-help {
     display: block;
     position: absolute;
-    bottom: max(24px, env(safe-area-inset-bottom));
+    bottom: max(18px, env(safe-area-inset-bottom));
     left: 8px;
     right: 8px;
     pointer-events: none;
@@ -376,25 +627,5 @@
     text-shadow: 0 1px 3px #000; /* taste-skill-ignore: chữ trên ảnh bản đồ cần shadow để đọc được */
     font-size: 11px;
     text-align: center;
-  }
-}
-
-.field-mouse-help {
-  position: absolute;
-  left: 12px;
-  bottom: 30px;
-  z-index: 1;
-  max-width: calc(100% - 360px);
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: rgba(15, 23, 42, 0.85);
-  color: #e2e8f0;
-  font-size: 12px;
-  line-height: 1.7;
-  pointer-events: none;
-}
-@media (max-width: 760px), (max-height: 600px) and (pointer: coarse) {
-  .field-mouse-help {
-    display: none;
   }
 }

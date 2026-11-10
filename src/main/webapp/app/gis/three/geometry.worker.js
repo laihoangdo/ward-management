@@ -149,8 +149,12 @@ self.onmessage = async ({ data }) => {
         try {
           const rings = projectRings(part.coordinates, projection, ...sector.origin);
           const rectangle = options.instanceRectangles === false ? null : rectangleTemplate(rings);
-          if (options.realistic && rectangle && part.roofShape === 'gable') {
-            const rise = Math.min(2.4, Math.min(rectangle.width, rectangle.depth) * 0.25, part.height * 0.3);
+          const isQuad = rings.length === 1 && rings[0].length === 4;
+          if (options.realistic && (rectangle || isQuad) && part.roofShape === 'gable') {
+            const edgeA = Math.hypot(rings[0][1][0] - rings[0][0][0], rings[0][1][1] - rings[0][0][1]);
+            const edgeB = Math.hypot(rings[0][3][0] - rings[0][0][0], rings[0][3][1] - rings[0][0][1]);
+            const span = rectangle ? Math.min(rectangle.width, rectangle.depth) : Math.min(edgeA, edgeB);
+            const rise = Math.min(2.8, Math.max(1.0, span * 0.28), part.height * 0.34);
             appendExtrusion(streams, rings, part.height - rise, part.featureIndex);
             appendGableRoof(streams, rings[0], part.height - rise, rise, part.featureIndex);
             stats.gableParts++;

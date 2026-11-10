@@ -65,40 +65,44 @@ export default function FieldHousePropertiesEditor({ house, busy, onSave }: Prop
             Tên công trình
             <input maxLength={255} value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} />
           </label>
-          <label>
-            Số tầng
-            <input
-              type="number"
-              min={1}
-              max={MAX_BUILDING_FLOORS}
-              step={1}
-              value={draft.floors}
-              onChange={event => {
-                const floors = Number(event.target.value);
-                setDraft({ ...draft, floors, height: floors * DEFAULT_FLOOR_HEIGHT });
-              }}
-            />
-          </label>
-          <label>
-            Chiều cao (m)
-            <input
-              type="number"
-              min={0.5}
-              max={MAX_BUILDING_HEIGHT}
-              step={0.1}
-              value={draft.height}
-              onChange={event => setDraft({ ...draft, height: Number(event.target.value) })}
-            />
-          </label>
+          <div className="field-form-grid-2">
+            <label>
+              Số tầng
+              <input
+                type="number"
+                min={1}
+                max={MAX_BUILDING_FLOORS}
+                step={1}
+                value={draft.floors}
+                onChange={event => {
+                  const floors = Number(event.target.value);
+                  setDraft({ ...draft, floors, height: floors * DEFAULT_FLOOR_HEIGHT });
+                }}
+              />
+            </label>
+            <label>
+              Chiều cao (m)
+              <input
+                type="number"
+                min={0.5}
+                max={MAX_BUILDING_HEIGHT}
+                step={0.1}
+                value={draft.height}
+                onChange={event => setDraft({ ...draft, height: Number(event.target.value) })}
+              />
+            </label>
+          </div>
           <small>Tối đa 20 tầng / 70 m. Đổi số tầng tự gợi ý 3,5 m mỗi tầng; có thể chỉnh chiều cao trong giới hạn.</small>
-          <label>
-            Màu tường
-            <input type="color" value={draft.wallColor} onChange={event => setDraft({ ...draft, wallColor: event.target.value })} />
-          </label>
-          <label>
-            Màu mái
-            <input type="color" value={draft.roofColor} onChange={event => setDraft({ ...draft, roofColor: event.target.value })} />
-          </label>
+          <div className="field-form-grid-2">
+            <label>
+              Màu tường
+              <input type="color" value={draft.wallColor} onChange={event => setDraft({ ...draft, wallColor: event.target.value })} />
+            </label>
+            <label>
+              Màu mái
+              <input type="color" value={draft.roofColor} onChange={event => setDraft({ ...draft, roofColor: event.target.value })} />
+            </label>
+          </div>
           <label>
             Kiểu mái
             <select value={draft.roofShape} onChange={event => setDraft({ ...draft, roofShape: event.target.value })}>

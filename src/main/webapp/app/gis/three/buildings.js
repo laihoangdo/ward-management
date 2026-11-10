@@ -81,23 +81,41 @@ const fragmentShader = `
   }
   void main() {
     if (vVisible < 0.5) discard;
-    float lighting = 0.40 + 0.60 * max(dot(normalize(vNormal), normalize(vec3(0.5, 1.0, 0.3))), 0.0);
+    vec3 n = normalize(vNormal);
+    vec3 sunDir = normalize(vec3(0.55, 0.92, 0.38));
+    vec3 fillDir = normalize(vec3(-0.45, 0.65, -0.35));
+    float sun = max(dot(n, sunDir), 0.0);
+    float fill = max(dot(n, fillDir), 0.0);
+    float sky = 0.5 + 0.5 * n.y;
+    float lighting = 0.34 + 0.54 * sun + 0.14 * fill + 0.08 * sky;
     vec3 color = vColor * lighting;
     if (uRealistic) {
-      // Stylized base darkening, not screen-space AO or cast shadows.
-      color *= mix(0.64, 1.0, smoothstep(0.0, 2.0, vWorld.y));
-      if (uMode == 0 && abs(vNormal.y) < 0.2) {
-        vec2 facade = vec2(dot(vWorld.xz, normalize(vec2(-vNormal.z, vNormal.x))), vWorld.y);
-        vec2 cell = facade / vec2(2.5, vAppearance.z);
+      // Stylized base AO darkening + warm sunlit roof highlight
+      color *= mix(0.62, 1.04, smoothstep(0.0, 2.6, vWorld.y));
+      if (n.y > 0.35) {
+        // Subtle roof ridge/tile texture modulation
+        float roofWave = 0.96 + 0.04 * sin(dot(vWorld.xz, vec2(3.2, 3.2)));
+        color *= roofWave;
+      }
+      if (uMode == 0 && abs(n.y) < 0.2) {
+        float floorH = max(vAppearance.z, 2.6);
+        vec2 facade = vec2(dot(vWorld.xz, normalize(vec2(-n.z, n.x))), vWorld.y);
+        // Floor slab horizontal band (chỉ phân tầng)
+        float slabDist = abs(fract(vWorld.y / floorH) - 0.5);
+        float slabLine = 1.0 - smoothstep(0.45, 0.49, slabDist);
+        color = mix(color * 0.82, color, slabLine);
+
+        vec2 cell = facade / vec2(2.3, floorH);
         vec2 aa = max(fwidth(cell), vec2(0.001));
         vec2 pane = abs(fract(cell + vec2(vAppearance.w, 0.0)) - 0.5);
-        vec2 mask = 1.0 - smoothstep(vec2(0.22, 0.26) - aa, vec2(0.22, 0.26) + aa, pane);
-        float detail = 1.0 - smoothstep(0.12, 0.55, max(aa.x, aa.y));
-        float windowMask = mask.x * mask.y * detail * smoothstep(0.5, 1.0, vWorld.y);
-        color = mix(color, vec3(0.065, 0.10, 0.115) * lighting, windowMask * 0.82);
+        vec2 mask = 1.0 - smoothstep(vec2(0.21, 0.25) - aa, vec2(0.21, 0.25) + aa, pane);
+        float detail = 1.0 - smoothstep(0.14, 0.58, max(aa.x, aa.y));
+        float windowMask = mask.x * mask.y * detail * smoothstep(0.55, 1.15, vWorld.y);
+        vec3 glassColor = mix(vec3(0.07, 0.12, 0.15), vec3(0.16, 0.24, 0.29), clamp(vWorld.y / 14.0, 0.0, 1.0)) * lighting;
+        color = mix(color, glassColor, windowMask * 0.84);
       }
-      float haze = 1.0 - exp(-length(cameraPosition - vWorld) * 0.000025);
-      color = mix(color, vec3(0.23, 0.28, 0.30), min(haze, 0.25));
+      float haze = 1.0 - exp(-length(cameraPosition - vWorld) * 0.000022);
+      color = mix(color, vec3(0.25, 0.30, 0.32), min(haze, 0.22));
     }
     outColor = vec4(linearToSrgb(color), 1.0);
   }
