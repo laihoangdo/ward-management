@@ -90,7 +90,7 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 
 ## Current serving state (reviewed 2026-11-10)
 
-- Public site serves production: image `police-app-production:20261111-1` since 2026-11-10 (rollback candidates `20261108-1`, `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
+- Public site serves production: image `police-app-production:20261111-2` since 2026-11-10 17:49 UTC (rollback candidates `20261111-1`, `20261108-1`, `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
 - Read-only review evidence: public root 200, issuer `https://sunnytech.cloud/realms/jhipster`, anonymous RBAC 401, `staging-manifest.json`, `/admin/` and `/management/health` 404, MapLibre worker asset 200. `/realms/master/*` reaches only the application's SPA fallback, not Keycloak. Production, staging, audit-export and certbot units last ran with `Result=success`; root disk 52% used.
 - The staging application and realm `police-staging` remain publicly discoverable on the same host. Decide whether staging should stay public now that production is live.
 - Duplicate response headers: Cloudflare adds `Strict-Transport-Security: max-age=31536000; includeSubDomains` while the origin sends `max-age=86400`, and both the application CSP and an Nginx `frame-ancestors 'none'` CSP are present beside `X-Frame-Options: SAMEORIGIN`. Not a functional fault; unify deliberately (the Cloudflare value commits every subdomain to HTTPS for a year).
@@ -111,6 +111,13 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 - Second run (`systemd-run` unit, survives SSH loss) PASS: checksum, Trivy HIGH/CRITICAL clean (report `scans/20261111-1.json`), fresh offsite backup uploaded 2026-11-10T17:29:34Z, restore drill counts matched, Liquibase applied `20261108000000-1` and `20261108010000-1` (46 → 48 changesets, status up to date), image swapped, `verify-production-live.py` PASS. Logs: `/root/police-deployment-checkpoints/production-*-20261110T172928Z.log` and `release-20261111-1b.log`.
 - Independent checks: households 1,291 / residents 5,074 unchanged; buildings 392 → 733; household links 1 → 1,261 (299 drawing + 961 estimated + 1 pre-existing); `police_runtime` can read the provenance table; no drill database or temporary credential directory left; app healthy with no error logs; public root 200, RBAC 401, manifest/admin/management 404, realm discovery 200, logout redirect 302. Root disk 63% used.
 - Rollback: `update-production-app.py police-app-production:20261108-1 --rollback` (the schema change is additive; the old code ignores the new table and links).
+
+## Release 20261111-2 — first-login 403 fix (2026-11-10 17:49 UTC)
+
+- Source: commit `771ebbd` (clean tree). Frontend 451/451 tests; no backend source change since the full backend run for `960a3e8`. JAR SHA256 `a954506857aaac709693057e4c012bb1406efaccaa0f4b64af1f081289fe1996`, audit PASS; image `police-app-production:20261111-2` (`sha256:47f41a0f180a23ba00d666bbcb372dfe30989d22c431e1f73d1feff773e6f469`), files under `/opt/police-management/releases/20261111-2/`.
+- `update-production-app.py` PASS: checksum, Trivy clean, fresh offsite backup uploaded 2026-11-10T17:49:16Z, restore drill, Liquibase already up to date (no new changesets), image swap, live verification. App healthy with no error logs; public root, `/dashboard` and `/sign-in` 200, RBAC 401, manifest 404, realm discovery 200, logout redirect 302. The served app bundle is the one built from `771ebbd` (no protocol-relative sign-in link). Root disk 65% used.
+- Not verified by the agent: an actual browser sign-in with a real account.
+- Rollback: `update-production-app.py police-app-production:20261111-1 --rollback`.
 
 ## Release procedure for later production updates (from 2026-11-10)
 
