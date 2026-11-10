@@ -53,8 +53,10 @@ const REALISTIC_GABLE_ROOFS = ['#b85c42', '#a34832', '#c26a4a', '#486578', '#3f5
 const REALISTIC_FLAT_ROOFS = ['#7a8288', '#6c757d', '#868e88', '#737b80'];
 function hashUnit(text: string): number {
   let h = 2166136261;
+  /* eslint-disable no-bitwise */
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
   return (h >>> 0) / 4294967296;
+  /* eslint-enable no-bitwise */
 }
 type FieldEffects = ReturnType<typeof import('../three/field-effects.js').attachFieldEffects>;
 function territoryPolygons(value: unknown): (GeoJSON.Polygon | GeoJSON.MultiPolygon)[] {

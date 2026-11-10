@@ -20,6 +20,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  BookOpen,
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { NavigationTab, OfficerProfile, AppUser, DynamicMenuItemConfig } from '../types';
@@ -39,6 +40,7 @@ interface SidebarProps {
   onCloseMobile?: () => void;
   onLogout: () => void;
   onSwitchAccount: () => void;
+  onOpenGuide?: () => void;
 }
 
 /** Assigned territory: a short list is shown in full; a commune-wide list folds behind a count. */
@@ -65,6 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
   onLogout,
   onSwitchAccount,
+  onOpenGuide,
 }) => {
   const [isTabletExpanded, setIsTabletExpanded] = useState(false);
 
@@ -86,12 +89,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const effectiveMenus = React.useMemo(() => {
-    const list = dynamicMenus.filter(menu => !['spatial-3d-map', 'vietmap-compare'].includes(String(menu.id)));
+    const list = dynamicMenus.filter(menu => !['spatial-3d-map', 'vietmap-compare', 'advanced-map'].includes(String(menu.id)));
     if (!list.some(m => m.id === 'field-3d-map')) {
       const defF3D = INITIAL_DYNAMIC_MENUS.find(m => m.id === 'field-3d-map');
       if (defF3D) {
-        const idxVm = list.findIndex(m => m.id === 'advanced-map');
-        if (idxVm >= 0) list.splice(idxVm + 1, 0, defF3D);
+        const idxArea = list.findIndex(m => m.id === 'area-map');
+        if (idxArea >= 0) list.splice(idxArea + 1, 0, defF3D);
         else list.push(defF3D);
       }
     }
@@ -293,6 +296,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Portal
           </span>
         </Link>
+
+        {onOpenGuide && (
+          <button
+            type="button"
+            id="sidebar-btn-feature-guide"
+            onClick={() => {
+              onOpenGuide();
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className="gis-nav-guide w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors duration-150 min-h-[38px] cursor-pointer bg-emerald-950/60 hover:bg-emerald-900/70 text-emerald-200 hover:text-white border border-emerald-800/70 group mb-1.5"
+            title="Xem cẩm nang hướng dẫn sử dụng tất cả các menu chức năng"
+          >
+            <div className="flex items-center gap-2.5 truncate">
+              <BookOpen className="w-4 h-4 text-emerald-400 group-hover:text-white shrink-0" />
+              <span className="gis-nav-item-label truncate">Hướng dẫn sử dụng</span>
+            </div>
+            <span className="gis-nav-item-badge text-[10px] text-emerald-200 bg-emerald-900/70 px-1.5 py-0.5 rounded border border-emerald-700/60">
+              Cẩm nang
+            </span>
+          </button>
+        )}
         {groupedMenus.map((item, index) => {
           const Icon = iconMap[item.id] || LayoutDashboard;
           const isActive = activeTab === item.id;

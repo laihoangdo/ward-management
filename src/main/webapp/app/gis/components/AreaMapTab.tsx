@@ -472,13 +472,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 id="btn-navigate-gis-fullscreen"
                 onClick={() => {
                   setIsFullscreen(false);
-                  onNavigateTab('advanced-map');
+                  onNavigateTab('field-3d-map');
                 }}
                 className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-                title="Mở bản đồ vệ tinh GIS nâng cao"
+                title="Mở bản đồ không gian 3D thực địa"
               >
                 <Compass className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Bản đồ GIS nâng cao</span>
+                <span className="hidden sm:inline">Bản đồ 3D thực địa</span>
               </button>
             )}
 
@@ -544,16 +544,16 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 <span>Xóa lọc</span>
               </button>
 
-              {/* Navigate to GIS Advanced Map */}
+              {/* Navigate to GIS 3D Map */}
               {onNavigateTab && (
                 <button
                   id="map-nav-gis-button"
-                  onClick={() => onNavigateTab('advanced-map')}
+                  onClick={() => onNavigateTab('field-3d-map')}
                   className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold border border-slate-200 transition-colors flex items-center gap-1.5 min-h-[40px] cursor-pointer"
-                  title="Chuyển sang bản đồ số GIS vệ tinh"
+                  title="Chuyển sang Bản đồ không gian 3D thực địa"
                 >
                   <Compass className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Bản đồ GIS</span>
+                  <span>Bản đồ 3D</span>
                 </button>
               )}
 

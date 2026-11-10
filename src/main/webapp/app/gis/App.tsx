@@ -76,6 +76,10 @@ import { LoginScreen } from './components/LoginScreen';
 import { SuperAdminHubTab } from './components/SuperAdminHubTab';
 import { SuperAdminAccessGuard } from './components/SuperAdminAccessGuard';
 import { SubAdminDelegationTab } from './components/SubAdminDelegationTab';
+import { FeatureGuideModal, ActiveMenuGuideBanner } from './components/FeatureGuideModal';
+
+/** Menus temporarily hidden from navigation and direct URL access; code is kept for later reuse. */
+const HIDDEN_MENU_IDS: NavigationTab[] = ['advanced-map'];
 
 export default function App() {
   const dispatch = useAppDispatch();
@@ -159,6 +163,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   }, [dynamicMenus]);
 
   const canOpenMenu = (id: NavigationTab) =>
+    !HIDDEN_MENU_IDS.includes(id) &&
     effectiveDynamicMenus.some(
       menu =>
         menu.id === id &&
@@ -208,7 +213,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const [creatingDocument, setCreatingDocument] = useState(false);
   const [historyDocument, setHistoryDocument] = useState<DocumentRecord | null>(null);
   const [dataErrors, setDataErrors] = useState<string[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [, setLastUpdated] = useState<Date | null>(null);
   const [documentFilter, setDocumentFilter] = useState<'all' | 'expiring_soon' | 'valid'>('all');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [householdListVersion, setHouseholdListVersion] = useState(0);
@@ -265,6 +270,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedMapCoordinates, setSelectedMapCoordinates] = useState<[number, number] | null>(null);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   useEffect(() => {
     setSelectedHousehold(null);
     setIsAddModalOpen(false);
@@ -956,6 +962,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
           onLogout={handleLogout}
           onSwitchAccount={handleSwitchAccount}
+          onOpenGuide={() => setIsGuideOpen(true)}
         />
       )}
 
@@ -983,6 +990,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
             }}
             currentUser={currentUser}
             onLogout={handleLogout}
+            onOpenGuide={() => setIsGuideOpen(true)}
           />
         )}
 
@@ -1085,6 +1093,10 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                   user={currentUser}
                   householdCount={hasCompleteHouseholds ? assignedHouseholds.length : overviewScope?.total}
                 />
+              )}
+              {/* Per-menu usage guide (the full-height 3D map uses the header guide button instead). */}
+              {!isMapFullscreen && activeTab !== 'field-3d-map' && activeTab !== 'bando-3d' && (
+                <ActiveMenuGuideBanner activeTab={activeTab} onOpenFullGuide={() => setIsGuideOpen(true)} />
               )}
               {activeTab === 'overview' && (
                 <ServerOverviewTab
@@ -1424,6 +1436,19 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         }}
         onIpBlacklisted={ip => {
           showToast(`Đã đưa địa chỉ IP ${ip} vào danh sách đen & chặn quyền truy cập!`);
+        }}
+      />
+
+      <FeatureGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        activeTab={activeTab}
+        visibleMenus={effectiveDynamicMenus.filter(menu => canOpenMenu(menu.id))}
+        currentUser={currentUser}
+        onNavigateTab={tab => {
+          if (isMapFullscreen) setIsMapFullscreen(false);
+          setActiveTab(tab);
+          setSearchQuery('');
         }}
       />
 

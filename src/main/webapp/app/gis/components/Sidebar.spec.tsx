@@ -44,7 +44,9 @@ it('keeps every other menu navigable while hiding a retired server menu', () => 
   );
   expect(screen.queryByRole('button', { name: /Retired spatial menu/ })).toBeNull();
   expect(screen.queryByRole('button', { name: /Retired VietMap menu/ })).toBeNull();
-  for (const menu of INITIAL_DYNAMIC_MENUS) {
+  // The advanced grid map is temporarily hidden from navigation.
+  expect(screen.queryByRole('button', { name: name => name.startsWith('Bản đồ lưới chuyên sâu') })).toBeNull();
+  for (const menu of INITIAL_DYNAMIC_MENUS.filter(item => item.id !== 'advanced-map')) {
     const button = screen.getByRole('button', { name: name => name.startsWith(menu.label) });
     fireEvent.click(button);
     expect(onTabChange).toHaveBeenLastCalledWith(menu.id);
@@ -106,7 +108,8 @@ it('shows each map only when its separate view permission is granted', () => {
       <Sidebar {...props} currentUser={{ ...user }} />
     </MemoryRouter>,
   );
-  expect(screen.getByRole('button', { name: name => name.startsWith(menus[0].label) })).toBeTruthy();
+  // Still hidden: the advanced grid map is temporarily retired even when its permission is granted.
+  expect(screen.queryByRole('button', { name: name => name.startsWith(menus[0].label) })).toBeNull();
   expect(screen.queryByRole('button', { name: name => name.startsWith(menus[1].label) })).toBeNull();
 
   user.subAdminPermissions!.canViewField3DMap = true;

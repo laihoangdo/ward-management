@@ -14,6 +14,7 @@ import {
   Bell,
   PanelLeftClose,
   PanelLeftOpen,
+  HelpCircle,
 } from 'lucide-react';
 import { Link } from 'react-router';
 import { NavigationTab, AppUser } from '../types';
@@ -36,6 +37,7 @@ interface HeaderProps {
   currentUser?: AppUser;
   onLogout?: () => void;
   isRefreshing?: boolean;
+  onOpenGuide?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -55,6 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onLogout,
   isRefreshing = false,
+  onOpenGuide,
 }) => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
@@ -294,6 +297,21 @@ export const Header: React.FC<HeaderProps> = ({
           <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
           <span className="gis-header-shortcut-label hidden xl:inline whitespace-nowrap">Cập nhật</span>
         </button>
+
+        {/* Feature Guide button */}
+        {onOpenGuide && (
+          <button
+            type="button"
+            id="btn-header-feature-guide"
+            onClick={onOpenGuide}
+            aria-label="Hướng dẫn sử dụng"
+            title="Cẩm nang hướng dẫn sử dụng các chức năng"
+            className="flex h-9 w-9 xl:w-auto xl:px-2.5 justify-center text-[#1c4e3a] dark:text-emerald-300 bg-emerald-50/80 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-lg border border-emerald-200 dark:border-emerald-800 transition-colors items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="gis-header-shortcut-label hidden xl:inline whitespace-nowrap">Hướng dẫn</span>
+          </button>
+        )}
 
         {/* Real-time Clock Widget */}
         <div className="gis-clock flex flex-col items-end justify-center select-none shrink-0 px-0.5 sm:px-1 leading-tight text-right">
