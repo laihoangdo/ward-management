@@ -55,7 +55,7 @@ Chủ hộ kinh doanh: NGUYỄN THỊ AN`);
 
   it('rejects remote URLs and oversized images before starting a worker', async () => {
     const signal = new AbortController().signal;
-    await expect(scanDocument('https://example.com/id.jpg', 'auto', signal)).rejects.toThrow('PNG');
+    await expect(scanDocument('https://example.com/id.jpg', 'auto', signal)).rejects.toThrow('PNG'); // taste-skill-ignore: URL cố ý không hợp lệ trong test từ chối ảnh từ xa, không phải dữ liệu UI
     await expect(scanDocument('data:image/png;base64,' + 'a'.repeat(15 * 1024 * 1024), 'auto', signal)).rejects.toThrow('10 MB');
   });
 });

@@ -1,58 +1,66 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  Building,
-  Store,
-  AlertOctagon,
-  CalendarClock,
-  AlertTriangle,
-  Users,
-  ArrowRight,
-  FileCheck,
-  PhoneCall,
-  Clock,
-  CheckCircle,
-  MapPin,
-  UserCheck,
-} from 'lucide-react';
+import { Building, Store, AlertTriangle, Users, ArrowRight, FileCheck, CheckCircle, CheckCircle2, UserCheck } from 'lucide-react';
 import { HouseholdFacility, NavigationTab } from '../types';
 import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
 import { Pagination } from './Pagination';
+import { OverviewSummary } from '../services/overviewApi';
 
 interface OverviewTabProps {
   households: HouseholdFacility[];
   onNavigateTab: (tab: NavigationTab) => void;
+  canNavigate?: (tab: NavigationTab) => boolean;
+  onOpenExpiringDocuments?: () => void;
   onSelectHousehold: (household: HouseholdFacility) => void;
+  summary?: OverviewSummary;
+  warningPagination?: { page: number; size: number; onPageChange: (page: number) => void; onPageSizeChange: (size: number) => void };
 }
 
-export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigateTab, onSelectHousehold }) => {
-  const totalCount = households.length;
-  const businessCount = households.filter(h => h.type === 'business').length;
-  const alertCount = households.filter(h => h.type === 'special_monitoring').length;
-  const warningCount = households.filter(h => h.status === 'warning').length;
+export const OverviewTab: React.FC<OverviewTabProps> = ({
+  households,
+  onNavigateTab,
+  onSelectHousehold,
+  canNavigate = () => true,
+  onOpenExpiringDocuments,
+  summary,
+  warningPagination,
+}) => {
+  const totalCount = summary?.total ?? households.length;
+  const businessCount = summary?.business ?? households.filter(h => h.type === 'business').length;
+  const warningCount = summary?.warnings ?? households.filter(h => h.status === 'warning').length;
 
   // Demographics calculation grounded in real resident records
   const allResidents = useMemo(() => {
-    return households.flatMap(h => getEffectiveResidentsList(h));
-  }, [households]);
+    return summary ? [] : households.flatMap(h => getEffectiveResidentsList(h));
+  }, [households, summary]);
 
-  const totalResidents = allResidents.length > 0 ? allResidents.length : households.reduce((sum, h) => sum + (h.residentsCount || 0), 0);
+  const totalResidents =
+    summary?.residents ?? (allResidents.length > 0 ? allResidents.length : households.reduce((sum, h) => sum + (h.residentsCount || 0), 0));
 
   const totalFemale =
-    allResidents.length > 0
+    summary?.female ??
+    (allResidents.length > 0
       ? allResidents.filter(r => r.gender === 'Nữ').length
-      : households.reduce((sum, h) => sum + (h.femaleCount || 0), 0);
+      : households.reduce((sum, h) => sum + (h.femaleCount || 0), 0));
 
   const totalMale =
-    allResidents.length > 0
+    summary?.male ??
+    (allResidents.length > 0
       ? allResidents.filter(r => r.gender === 'Nam').length
-      : households.reduce((sum, h) => sum + (h.maleCount || 0), 0);
+      : households.reduce((sum, h) => sum + (h.maleCount || 0), 0));
 
   const totalUnder18 =
-    allResidents.length > 0
-      ? allResidents.filter(r => 2026 - (r.birthYear || 2000) < 18).length
-      : households.reduce((sum, h) => sum + (h.under18Count || 0), 0);
+    summary?.under18 ??
+    (allResidents.length > 0
+      ? allResidents.filter(r => r.birthYear != null && new Date().getFullYear() - r.birthYear < 18).length
+      : households.reduce((sum, h) => sum + (h.under18Count || 0), 0));
 
-  const totalAbove18 = Math.max(0, totalResidents - totalUnder18);
+  const totalAbove18 =
+    summary?.above18 ??
+    (allResidents.length > 0
+      ? allResidents.filter(r => r.birthYear != null && new Date().getFullYear() - r.birthYear >= 18).length
+      : households.reduce((sum, h) => sum + (h.above18Count ?? 0), 0));
+  const unknownAge = Math.max(0, totalResidents - totalAbove18 - totalUnder18);
+  const unknownGender = Math.max(0, totalResidents - totalMale - totalFemale);
 
   const femalePercent = totalResidents > 0 ? Math.round((totalFemale / totalResidents) * 100) : 0;
   const malePercent = totalResidents > 0 ? Math.round((totalMale / totalResidents) * 100) : 0;
@@ -60,52 +68,97 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
   const above18Percent = totalResidents > 0 ? Math.round((totalAbove18 / totalResidents) * 100) : 0;
 
   const hamletNames = useMemo(() => {
-    return Array.from(new Set(households.map(h => h.hamlet).filter(Boolean)));
-  }, [households]);
+    return summary?.hamlets ?? Array.from(new Set(households.map(h => h.hamlet).filter(Boolean)));
+  }, [households, summary]);
 
-  const warningHouseholds = households.filter(h => h.status === 'warning');
-  const [warningCurrentPage, setWarningCurrentPage] = useState<number>(1);
-  const [warningPageSize, setWarningPageSize] = useState<number>(10);
+  const warningHouseholds = summary?.warningItems ?? households.filter(h => h.status === 'warning');
+  const [localWarningPage, setLocalWarningPage] = useState<number>(1);
+  const [localWarningSize, setLocalWarningSize] = useState<number>(10);
+  const warningCurrentPage = warningPagination?.page ?? localWarningPage;
+  const warningPageSize = warningPagination?.size ?? localWarningSize;
+  const setWarningCurrentPage = warningPagination?.onPageChange ?? setLocalWarningPage;
+  const setWarningPageSize = warningPagination?.onPageSizeChange ?? setLocalWarningSize;
 
   useEffect(() => {
-    setWarningCurrentPage(1);
-  }, [warningHouseholds.length, warningPageSize]);
+    if (!summary) setLocalWarningPage(1);
+  }, [warningHouseholds.length, warningPageSize, summary]);
 
   const paginatedWarnings = useMemo(() => {
     const start = (warningCurrentPage - 1) * warningPageSize;
-    return warningHouseholds.slice(start, start + warningPageSize);
-  }, [warningHouseholds, warningCurrentPage, warningPageSize]);
+    return summary ? warningHouseholds : warningHouseholds.slice(start, start + warningPageSize);
+  }, [warningHouseholds, warningCurrentPage, warningPageSize, summary]);
+
+  // "Cần chú ý" leads the screen only when there is something to act on; otherwise it is one quiet line after the figures.
+  const attention = (
+    <section aria-labelledby="work-queue-title" className="rounded-xl border border-slate-200 bg-white dark:bg-slate-900 p-4 sm:p-5">
+      <h3 id="work-queue-title" className="gis-panel-title text-slate-900 dark:text-white">
+        Cần chú ý
+      </h3>
+      {warningCount === 0 ? (
+        <p className="m-0 mt-1 text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+          <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+          <span>Không có hộ mang trạng thái cảnh báo trong phạm vi đang xem.</span>
+        </p>
+      ) : (
+        <ul className="m-0 p-0 list-none divide-y divide-slate-100">
+          {(summary?.attentionItems ?? warningHouseholds.slice(0, 5)).map(household => (
+            <li key={household.id}>
+              <button
+                type="button"
+                onClick={() => onSelectHousehold(household)}
+                className="w-full py-3 text-left flex items-center gap-3 hover:bg-slate-50 rounded-lg"
+              >
+                <AlertTriangle aria-hidden="true" className="h-4 w-4 text-amber-600 shrink-0" />
+                <span className="flex-1 min-w-0">
+                  <strong className="block text-sm">
+                    {household.ownerName || household.businessName} · {household.code}
+                  </strong>
+                  <span className="text-xs text-slate-500">
+                    {household.houseNumber} {household.street} · {household.hamlet}
+                  </span>
+                </span>
+                <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {canNavigate('documents') && (
+        <button
+          type="button"
+          onClick={onOpenExpiringDocuments || (() => onNavigateTab('documents'))}
+          className="mt-3 min-h-[40px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          Xem hồ sơ sắp hết hạn
+        </button>
+      )}
+    </section>
+  );
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
+    <div className="gis-overview space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Overview Title Banner */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="gis-overview-heading bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div
-              id="overview-eyebrow"
-              className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1"
-            >
-              TRUNG TÂM ĐIỀU HÀNH
-            </div>
             <h2 id="overview-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Tổng quan địa bàn
             </h2>
             <p id="overview-description" className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-              Theo dõi nhanh tình hình an ninh, dân cư và cơ sở kinh doanh.
+              {hamletNames.length > 0 ? `Phạm vi đang xem: ${hamletNames.join(', ')}` : 'Chưa có địa bàn trong phạm vi được giao.'}
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
             <button
               onClick={() => onNavigateTab('area-map')}
-              className="flex-1 sm:flex-initial px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 min-h-[40px]"
+              className="flex-1 sm:flex-initial px-3.5 py-2 bg-[#1c4e3a] hover:bg-[#153d2e] text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 min-h-[40px]"
             >
               <span>Xem sơ đồ khối</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => onNavigateTab('households')}
-              className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-1.5 min-h-[40px]"
+              className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center justify-center gap-1.5 min-h-[40px]"
             >
               <span>Danh sách {totalCount} hộ</span>
             </button>
@@ -113,62 +166,76 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
         </div>
       </div>
 
+      {warningCount > 0 && attention}
+
       {/* Top 4 Key Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total card */}
         <div
           id="stat-total-card"
-          onClick={() => onNavigateTab('households')}
-          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group flex flex-col justify-between"
+          role="button"
+          tabIndex={canNavigate('households') ? 0 : -1}
+          aria-disabled={!canNavigate('households')}
+          onKeyDown={event => {
+            if (canNavigate('households') && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onNavigateTab('households');
+            }
+          }}
+          onClick={() => {
+            if (canNavigate('households')) onNavigateTab('households');
+          }}
+          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span id="stat-total-label" className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">
+          <div className="flex items-center justify-between gap-2">
+            <span id="stat-total-label" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Tổng hộ / Cơ sở
             </span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0">
-              <Building className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <Building aria-hidden="true" className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-            <span
-              id="stat-total-value"
-              className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight"
-            >
+            <span id="stat-total-value" className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white">
               {totalCount}
             </span>
-            <span className="text-[10px] sm:text-xs text-slate-400 font-medium">hộ & cơ sở</span>
+            <span className="text-xs text-slate-400 font-medium">hộ & cơ sở</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+          <div className="mt-2 sm:mt-3 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-            <span className="truncate">100% đã thu thập hồ sơ</span>
+            <span className="truncate">Hồ sơ trong phạm vi truy cập</span>
           </div>
         </div>
 
         {/* Business card */}
         <div
           id="stat-business-card"
-          onClick={() => onNavigateTab('households')}
-          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-700 transition-all cursor-pointer group flex flex-col justify-between"
+          role="button"
+          tabIndex={canNavigate('households') ? 0 : -1}
+          aria-disabled={!canNavigate('households')}
+          onKeyDown={event => {
+            if (canNavigate('households') && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onNavigateTab('households');
+            }
+          }}
+          onClick={() => {
+            if (canNavigate('households')) onNavigateTab('households');
+          }}
+          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer group flex flex-col justify-between"
         >
-          <div className="flex items-center justify-between">
-            <span id="stat-business-label" className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">
+          <div className="flex items-center justify-between gap-2">
+            <span id="stat-business-label" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               CSKD có điều kiện
             </span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors shrink-0">
-              <Store className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <Store aria-hidden="true" className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-            <span
-              id="stat-business-value"
-              className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight"
-            >
+            <span id="stat-business-value" className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white">
               {businessCount}
             </span>
-            <span className="text-[10px] sm:text-xs text-slate-400 font-medium">điểm kinh doanh</span>
+            <span className="text-xs text-slate-400 font-medium">điểm kinh doanh</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 font-medium flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0"></span>
+          <div className="mt-2 sm:mt-3 text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
             <span className="truncate">Quán net, cầm đồ, karaoke</span>
           </div>
         </div>
@@ -176,31 +243,55 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
         {/* Warning card */}
         <div
           id="stat-warning-card"
-          onClick={() => onNavigateTab('documents')}
-          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-amber-300 dark:border-amber-700/80 shadow-xs hover:border-amber-400 transition-all cursor-pointer group flex flex-col justify-between bg-amber-50/20 dark:bg-amber-950/20"
+          role="button"
+          tabIndex={canNavigate('documents') ? 0 : -1}
+          aria-disabled={!canNavigate('documents')}
+          onKeyDown={event => {
+            if (canNavigate('documents') && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onNavigateTab('documents');
+            }
+          }}
+          onClick={() => {
+            if (canNavigate('documents')) onNavigateTab('documents');
+          }}
+          className={`bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border transition-colors cursor-pointer group flex flex-col justify-between ${
+            warningCount > 0
+              ? 'border-amber-300 dark:border-amber-700/80 bg-amber-50/20 dark:bg-amber-950/20 hover:border-amber-400'
+              : 'border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-500'
+          }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <span
               id="stat-warning-label"
-              className="text-[10px] sm:text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider truncate"
+              className={`text-xs font-semibold ${warningCount > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-slate-500 dark:text-slate-400'}`}
             >
               Cảnh báo hồ sơ
             </span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors shrink-0">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <AlertTriangle
+              aria-hidden="true"
+              className={`w-4 h-4 shrink-0 ${warningCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}
+            />
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
             <span
               id="stat-warning-value"
-              className="text-2xl sm:text-3xl font-extrabold text-amber-900 dark:text-amber-200 font-mono tracking-tight"
+              className={`text-2xl sm:text-3xl font-semibold ${warningCount > 0 ? 'text-amber-900 dark:text-amber-200' : 'text-slate-900 dark:text-white'}`}
             >
               {warningCount}
             </span>
-            <span className="text-[10px] sm:text-xs text-amber-700/80 dark:text-amber-400/80 font-medium">sắp hết hạn</span>
+            <span className={`text-xs font-medium ${warningCount > 0 ? 'text-amber-700/80 dark:text-amber-400/80' : 'text-slate-400'}`}>
+              sắp hết hạn
+            </span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-amber-700 dark:text-amber-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-amber-200/60 dark:border-amber-800/60 truncate">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-ping"></span>
+          <div
+            className={`mt-2 sm:mt-3 text-[11px] flex items-center gap-1 pt-1.5 sm:pt-2 border-t truncate ${
+              warningCount > 0
+                ? 'text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60'
+                : 'text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
+            }`}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
             <span className="truncate">Cần kiểm tra gia hạn</span>
           </div>
         </div>
@@ -208,52 +299,58 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
         {/* Population card */}
         <div
           id="stat-population-card"
-          onClick={() => onNavigateTab('residents')}
-          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-all group flex flex-col justify-between cursor-pointer hover:shadow-sm"
+          role="button"
+          tabIndex={canNavigate('residents') ? 0 : -1}
+          aria-disabled={!canNavigate('residents')}
+          onKeyDown={event => {
+            if (canNavigate('residents') && (event.key === 'Enter' || event.key === ' ')) {
+              event.preventDefault();
+              onNavigateTab('residents');
+            }
+          }}
+          onClick={() => {
+            if (canNavigate('residents')) onNavigateTab('residents');
+          }}
+          className="bg-white dark:bg-slate-900 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-500 transition-colors group flex flex-col justify-between cursor-pointer"
           title="Bấm để mở danh sách Quản lý nhân khẩu & Định danh"
         >
-          <div className="flex items-center justify-between">
-            <span id="stat-population-label" className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">
+          <div className="flex items-center justify-between gap-2">
+            <span id="stat-population-label" className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Tổng nhân khẩu
             </span>
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
-              <UserCheck className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
+            <UserCheck aria-hidden="true" className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
           </div>
           <div className="mt-2 sm:mt-3 flex items-baseline gap-1.5 sm:gap-2">
-            <span
-              id="stat-population-value"
-              className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white font-mono tracking-tight"
-            >
+            <span id="stat-population-value" className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white">
               {totalResidents.toLocaleString('vi-VN')}
             </span>
-            <span className="text-[10px] sm:text-xs text-slate-400 font-medium">người dân</span>
+            <span className="text-xs text-slate-400 font-medium">người dân</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[10px] sm:text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+          <div className="mt-2 sm:mt-3 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
             <div className="flex items-center gap-1 truncate">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
               <span className="truncate">TB ~{totalCount > 0 ? (totalResidents / totalCount).toFixed(1) : 0} người / hộ</span>
             </div>
-            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 group-hover:underline flex items-center gap-0.5">
+            <span className="text-[11px] font-semibold text-[#1c4e3a] dark:text-[#a7dfbd] group-hover:underline flex items-center gap-0.5">
               Tra cứu <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </div>
         </div>
       </div>
 
+      {warningCount === 0 && attention}
+
       {/* Warning Box Banner */}
-      {warningHouseholds.length > 0 && (
+      {warningCount > 0 && (
         <div
           id="warning-box"
-          className="bg-[#fffbeb] dark:bg-amber-950/30 border-2 border-amber-300/90 dark:border-amber-700/80 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs"
+          className="bg-[#fffbeb] dark:bg-amber-950/30 border-2 border-amber-300/90 dark:border-amber-700/80 rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-100 dark:bg-amber-900/60 border border-amber-300 dark:border-amber-700 flex items-center justify-center text-amber-700 dark:text-amber-300 shrink-0">
-              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
+            <AlertTriangle aria-hidden="true" className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="flex-1 w-full min-w-0">
               <h3 id="warning-title" className="text-sm sm:text-base font-bold text-[#78350f] dark:text-amber-200 leading-snug">
-                CẢNH BÁO: {warningHouseholds.length} Cơ sở sắp hết hạn Giấy phép kinh doanh / An ninh trật tự
+                CẢNH BÁO: {warningCount} Cơ sở sắp hết hạn Giấy phép kinh doanh / An ninh trật tự
               </h3>
               <p className="text-xs text-amber-900/80 dark:text-amber-300/80 mt-1">
                 Cán bộ CSKV cần kiểm tra thực địa, đôn đốc cơ sở nộp hồ sơ gia hạn đúng quy định trước ngày hết hiệu lực:
@@ -281,17 +378,17 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
               </div>
 
               {/* Pagination controls with 10/20/50 format */}
-              {warningHouseholds.length > 0 && (
+              {warningCount > 0 && (
                 <div className="mt-3">
                   <Pagination
                     currentPage={warningCurrentPage}
-                    totalItems={warningHouseholds.length}
+                    totalItems={warningCount}
                     pageSize={warningPageSize}
                     pageSizeOptions={[10, 20, 50]}
                     onPageChange={setWarningCurrentPage}
                     onPageSizeChange={setWarningPageSize}
                     itemLabel="cơ sở cảnh báo"
-                    className="!bg-white/80 dark:!bg-slate-900/80 !border-amber-300/80 dark:!border-amber-700/80 shadow-xs"
+                    className="!bg-white/80 dark:!bg-slate-900/80 !border-amber-300/80 dark:!border-amber-700/80"
                   />
                 </div>
               )}
@@ -299,6 +396,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
               <div className="mt-3.5 sm:mt-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => onNavigateTab('documents')}
+                  disabled={!canNavigate('documents')}
                   className="px-3.5 py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 min-h-[40px]"
                 >
                   <FileCheck className="w-3.5 h-3.5" />
@@ -314,28 +412,30 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
       )}
 
       {/* Demographics & Population Stats */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
-            <div id="demographic-eyebrow" className="text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1">
-              THỐNG KÊ NHÂN KHẨU
-            </div>
-            <h3 id="demographic-stats-title" className="text-xl font-bold text-[#1e293b] dark:text-white tracking-tight">
+            <h3 id="demographic-stats-title" className="gis-section-title text-[#1e293b] dark:text-white">
               Cơ cấu nhân khẩu
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Tổng số{' '}
-              <span className="font-bold text-slate-800 dark:text-slate-200">{totalResidents.toLocaleString('vi-VN')} nhân khẩu</span> đang
-              cư trú tại <strong className="text-slate-800 dark:text-slate-200">{totalCount} hộ & cơ sở</strong>
+              <span className="font-bold text-slate-800 dark:text-slate-200">{totalResidents.toLocaleString('vi-VN')} nhân khẩu</span> có hồ
+              sơ tại <strong className="text-slate-800 dark:text-slate-200">{totalCount} hộ & cơ sở</strong>
               {hamletNames.length > 0
                 ? ` thuộc ${hamletNames.slice(0, 3).join(', ')}${hamletNames.length > 3 ? ` và ${hamletNames.length - 3} ấp khác` : ''}`
                 : ' thuộc địa bàn quản lý'}
             </p>
+            {(unknownAge > 0 || unknownGender > 0) && (
+              <p className="text-xs text-slate-500">
+                Chưa đủ dữ liệu phân loại tuổi: {unknownAge}; chưa có giới tính: {unknownGender}. Không tự suy đoán từ họ tên hoặc địa chỉ.
+              </p>
+            )}
           </div>
           <div className="self-start sm:self-auto">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-full text-xs font-bold">
               <CheckCircle className="w-3.5 h-3.5" />
-              Đã số hóa định danh VNeID
+              Theo dữ liệu đã ghi nhận
             </span>
           </div>
         </div>
@@ -347,24 +447,24 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
             className="p-5 rounded-2xl bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700"
           >
             <div className="flex items-center justify-between mb-4">
-              <h4 id="gender-orb-title" className="text-base font-bold text-[#1e293b] dark:text-white flex items-center gap-2">
+              <h4 id="gender-orb-title" className="gis-panel-title text-[#1e293b] dark:text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-600" />
                 <span>Tỷ lệ nam nữ</span>
               </h4>
-              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+              <span className="text-xs font-semibold tabular-nums text-slate-600 dark:text-slate-300">
                 {totalResidents.toLocaleString('vi-VN')} nhân khẩu
               </span>
             </div>
 
             {/* Visual ratio bar */}
-            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
+            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
               <div
-                className="h-full bg-pink-500 transition-all duration-500"
+                className="h-full bg-pink-500 transition-[width] duration-500"
                 style={{ width: `${femalePercent}%` }}
                 title={`Nữ: ${totalFemale} (${femalePercent}%)`}
               />
               <div
-                className="h-full bg-blue-600 transition-all duration-500"
+                className="h-full bg-blue-600 transition-[width] duration-500"
                 style={{ width: `${malePercent}%` }}
                 title={`Nam: ${totalMale} (${malePercent}%)`}
               />
@@ -372,7 +472,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
 
             {/* Gender labels */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-3 h-3 rounded-full bg-pink-500 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Giới tính Nữ</span>
@@ -382,7 +482,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
                 </div>
               </div>
 
-              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Giới tính Nam</span>
@@ -400,24 +500,24 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
             className="p-5 rounded-2xl bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700"
           >
             <div className="flex items-center justify-between mb-4">
-              <h4 id="age-orb-title" className="text-base font-bold text-[#1e293b] dark:text-white flex items-center gap-2">
+              <h4 id="age-orb-title" className="gis-panel-title text-[#1e293b] dark:text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-600" />
                 <span>Cơ cấu độ tuổi</span>
               </h4>
-              <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+              <span className="text-xs font-semibold tabular-nums text-slate-600 dark:text-slate-300">
                 {totalResidents.toLocaleString('vi-VN')} nhân khẩu
               </span>
             </div>
 
             {/* Visual ratio bar */}
-            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex shadow-inner">
+            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex">
               <div
-                className="h-full bg-emerald-600 transition-all duration-500"
+                className="h-full bg-emerald-600 transition-[width] duration-500"
                 style={{ width: `${above18Percent}%` }}
                 title={`Từ 18 trở lên: ${totalAbove18} (${above18Percent}%)`}
               />
               <div
-                className="h-full bg-amber-500 transition-all duration-500"
+                className="h-full bg-amber-500 transition-[width] duration-500"
                 style={{ width: `${under18Percent}%` }}
                 title={`Dưới 18: ${totalUnder18} (${under18Percent}%)`}
               />
@@ -425,7 +525,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
 
             {/* Age labels */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Độ tuổi trưởng thành</span>
@@ -435,7 +535,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
                 </div>
               </div>
 
-              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Trẻ em & Thiếu niên</span>
@@ -476,7 +576,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
             if (h.status === 'warning') {
               badgeBg =
                 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-300 hover:bg-amber-100 ring-2 ring-amber-400/50';
-              statusDot = 'bg-amber-500 animate-ping';
+              statusDot = 'bg-amber-500';
             } else if (h.status === 'alert') {
               badgeBg =
                 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-300 hover:bg-rose-100 ring-2 ring-rose-400/50';
@@ -491,7 +591,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
               <div
                 key={h.id}
                 onClick={() => onSelectHousehold(h)}
-                className={`p-2.5 rounded-xl border text-center cursor-pointer transition-all ${badgeBg}`}
+                className={`p-2.5 rounded-xl border text-center cursor-pointer transition-colors ${badgeBg}`}
                 title={`${h.houseNumber} ${h.street} - ${h.ownerName}`}
               >
                 <div className="flex items-center justify-center gap-1 mb-1">
@@ -499,15 +599,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ households, onNavigate
                   <span className="text-[11px] font-bold truncate">Số {h.houseNumber}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate font-medium">{h.street}</div>
-                <div className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-mono">{h.hamlet}</div>
+                <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{h.hamlet}</div>
               </div>
             );
           })}
 
-          {households.length > 16 && (
+          {totalCount > 16 && (
             <div
               onClick={() => onNavigateTab('households')}
-              className="p-2.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all flex flex-col items-center justify-center col-span-2 sm:col-span-4 lg:col-span-8 py-3"
+              className="p-2.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex flex-col items-center justify-center col-span-2 sm:col-span-4 lg:col-span-8 py-3"
             >
               <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
                 + Xem toàn bộ {totalCount} hộ dân và cơ sở trên địa bàn &rarr;

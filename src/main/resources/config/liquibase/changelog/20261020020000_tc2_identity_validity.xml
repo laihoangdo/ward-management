@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="20261020020000-1" author="codex" dbms="postgresql">
+ <sql splitStatements="false"><![CDATA[
+ ALTER TABLE tc2_roster.resident_identity ADD COLUMN active boolean NOT NULL DEFAULT true, ADD COLUMN valid_from date, ADD COLUMN valid_to date;
+ ALTER TABLE tc2_roster.resident_identity ADD CONSTRAINT ck_tc2_identity_period CHECK(valid_to IS NULL OR valid_from IS NULL OR valid_to>=valid_from);
+ DROP INDEX tc2_roster.ux_tc2_verified_identity;
+ CREATE UNIQUE INDEX ux_tc2_verified_identity ON tc2_roster.resident_identity(document_type,number_lookup) WHERE verified AND active;
+ ]]></sql>
+ </changeSet>
+</databaseChangeLog>

@@ -26,6 +26,9 @@ import tech.jhipster.service.QueryService;
 @Transactional(readOnly = true)
 public class ResidentQueryService extends QueryService<Resident> {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private static final Logger LOG = LoggerFactory.getLogger(ResidentQueryService.class);
 
     private final ResidentRepository residentRepository;
@@ -92,6 +95,6 @@ public class ResidentQueryService extends QueryService<Resident> {
                 )
             );
         }
-        return specification;
+        return specification.and(rbac.householdScope(true));
     }
 }

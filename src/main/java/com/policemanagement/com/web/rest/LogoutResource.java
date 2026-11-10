@@ -1,7 +1,10 @@
 package com.policemanagement.com.web.rest;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,12 +15,16 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * REST controller for managing global OIDC logout.
  */
 @RestController
 public class LogoutResource {
+
+    /** A browser origin: scheme and host[:port] only, nothing an attacker could append. */
+    private static final Pattern ORIGIN = Pattern.compile("^https?://[A-Za-z0-9.-]+(?::[0-9]{1,5})?$");
 
     private final ClientRegistrationRepository registrationRepository;
 
@@ -40,7 +47,11 @@ public class LogoutResource {
         @AuthenticationPrincipal OidcUser oidcUser
     ) {
         StringBuilder logoutUrl = new StringBuilder();
+        // Browsers may omit Origin; never send the literal "null" (Keycloak rejects it), fall back to this app's own URL.
         String originUrl = request.getHeader(HttpHeaders.ORIGIN);
+        if (originUrl == null || !ORIGIN.matcher(originUrl).matches()) {
+            originUrl = ServletUriComponentsBuilder.fromContextPath(request).replaceQuery(null).build().toUriString();
+        }
 
         ClientRegistration clientRegistration = registrationRepository.findByRegistrationId(
             oAuth2AuthenticationToken.getAuthorizedClientRegistrationId()
@@ -50,7 +61,7 @@ public class LogoutResource {
             .append("?id_token_hint=")
             .append(oidcUser.getIdToken().getTokenValue())
             .append("&post_logout_redirect_uri=")
-            .append(originUrl);
+            .append(URLEncoder.encode(originUrl, StandardCharsets.UTF_8));
 
         request.getSession().invalidate();
         return ResponseEntity.ok().body(Map.of("logoutUrl", logoutUrl.toString()));

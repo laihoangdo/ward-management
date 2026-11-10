@@ -1,8 +1,10 @@
 import axios from 'axios';
-import { HouseholdFacility, Resident, DocumentRecord, AuditLogEntry, AuditActionType, SecurityAlert } from '../types';
+import { fetchAuthorizedPages } from './authorizedPages';
+import { HouseholdFacility, HouseholdCreateInput, Resident, DocumentRecord, AuditLogEntry, AuditActionType, SecurityAlert } from '../types';
 import { IHousehold } from 'app/shared/model/household.model';
 import { IResident } from 'app/shared/model/resident.model';
 import { IDocumentRecord } from 'app/shared/model/document-record.model';
+import { mapDocumentDto } from './documentLifecycle';
 
 /**
  * Chuyển đổi từ Backend IHousehold (JHipster DTO) sang Frontend HouseholdFacility
@@ -13,14 +15,16 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
   // Tọa độ Bà Điểm mặc định nếu thiếu
   const lat = typeof dto.latitude === 'number' && !isNaN(dto.latitude) && dto.latitude !== 0 ? dto.latitude : 10.854;
   const lng = typeof dto.longitude === 'number' && !isNaN(dto.longitude) && dto.longitude !== 0 ? dto.longitude : 106.612;
-  const coordinatesEstimated = !(
-    typeof dto.latitude === 'number' &&
-    Number.isFinite(dto.latitude) &&
-    dto.latitude !== 0 &&
-    typeof dto.longitude === 'number' &&
-    Number.isFinite(dto.longitude) &&
-    dto.longitude !== 0
-  );
+  const coordinatesEstimated =
+    dto.coordinateMethod === 'RANDOM_WITHIN_TC2' ||
+    !(
+      typeof dto.latitude === 'number' &&
+      Number.isFinite(dto.latitude) &&
+      dto.latitude !== 0 &&
+      typeof dto.longitude === 'number' &&
+      Number.isFinite(dto.longitude) &&
+      dto.longitude !== 0
+    );
 
   // Chuyển đổi FacilityType
   let type: 'household' | 'business' | 'special_monitoring' = 'household';
@@ -31,8 +35,9 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
   }
 
   // Chuyển đổi SecurityStatus
-  let status: 'normal' | 'warning' | 'alert' | 'business' = 'normal';
-  if (dto.status === 'WARNING') {
+  let status: HouseholdFacility['status'] = 'unverified';
+  if (dto.status === 'NORMAL') status = type === 'business' ? 'business' : 'normal';
+  else if (dto.status === 'WARNING') {
     status = 'warning';
   } else if (dto.status === 'CRITICAL' || dto.status === 'DANGER') {
     status = 'alert';
@@ -40,21 +45,25 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
     status = 'business';
   }
 
-  const residentsCount = Number(dto.residentsCount ?? 1);
-  const maleCount = Number(dto.maleCount ?? Math.ceil(residentsCount / 2));
-  const femaleCount = Number(dto.femaleCount ?? residentsCount - maleCount);
+  const residentsCount = Number(dto.residentsCount ?? 0);
+  const maleCount = Number(dto.maleCount ?? 0);
+  const femaleCount = Number(dto.femaleCount ?? 0);
   const under18Count = Number(dto.under18Count ?? 0);
-  const above18Count = Number(dto.above18Count ?? residentsCount - under18Count);
+  const above18Count = Number(dto.above18Count ?? 0);
 
   return {
     id: idStr,
-    code: dto.code || `HK-BD-${String(dto.id || index + 1).padStart(3, '0')}`,
-    houseNumber: dto.houseNumber || '1',
-    street: dto.street || 'Đường Phan Văn Hớn',
-    hamlet: dto.hamlet || 'Ấp Bắc Lân',
-    neighborhoodGroup: dto.neighborhoodGroup || 'Tổ 1',
-    alley: dto.alley || 'Mặt tiền đường',
-    ownerName: dto.ownerName || 'Chưa cập nhật',
+    code: dto.code || '',
+    houseNumber: dto.houseNumber || '',
+    street: dto.street || dto.rawAddress || dto.legacyAddress || '',
+    streetName: dto.street?.trim() || undefined,
+    rawAddress: dto.rawAddress || dto.legacyAddress || undefined,
+    hamlet: dto.hamlet || '',
+    legacyHamlet: dto.legacyHamlet?.trim() || undefined,
+    hamletId: dto.hamletId || undefined,
+    neighborhoodGroup: dto.neighborhoodGroup || '',
+    alley: dto.alley || '',
+    ownerName: dto.ownerName || '',
     ownerPhone: dto.ownerPhone || '',
     type,
     businessName: dto.businessName || undefined,
@@ -70,13 +79,14 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
     licenseType: dto.licenseType || undefined,
     coordinates: [lat, lng],
     coordinatesEstimated,
+    coordinateMethod: dto.coordinateMethod,
     gridPosition: {
       row: Math.floor(index / 10),
       col: index % 10,
     },
-    notes: dto.notes || 'Hồ sơ quản lý địa bàn Xã Bà Điểm.',
-    lastCheckedDate: dto.lastCheckedDate || new Date().toLocaleDateString('vi-VN'),
-    officerInCharge: dto.officerInCharge || 'Cán bộ CSKV Xã Bà Điểm',
+    notes: dto.notes || '',
+    lastCheckedDate: dto.lastCheckedDate || '',
+    officerInCharge: dto.officerInCharge || '',
     residentsList: [],
     inspectionPhotos: [],
   };
@@ -85,6 +95,9 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
 /**
  * Chuyển đổi từ Frontend HouseholdFacility sang Backend IHousehold (JHipster DTO)
  */
+/** street đang là địa chỉ nguồn dùng để hiển thị (hộ chưa có tên đường thật và người dùng chưa chọn đường mới). */
+export const showsSourceAddress = (h: Partial<HouseholdFacility>): boolean => !h.streetName && !!h.rawAddress && h.street === h.rawAddress;
+
 export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => {
   const numericId = h.id && !isNaN(Number(h.id)) ? Number(h.id) : undefined;
 
@@ -97,43 +110,47 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
   }
 
   // Mapping status sang SecurityStatus enum
-  let status: 'NORMAL' | 'WARNING' | 'DANGER' | 'CRITICAL' = 'NORMAL';
-  if (h.status === 'warning') {
+  let status: IHousehold['status'];
+  if (h.status === 'normal' || h.status === 'business') status = 'NORMAL';
+  else if (h.status === 'warning') {
     status = 'WARNING';
   } else if (h.status === 'alert') {
     status = 'CRITICAL';
   }
 
-  const lat = Array.isArray(h.coordinates) && h.coordinates.length >= 2 ? h.coordinates[0] : 10.854;
-  const lng = Array.isArray(h.coordinates) && h.coordinates.length >= 2 ? h.coordinates[1] : 106.612;
+  const lat = !h.coordinatesEstimated && Array.isArray(h.coordinates) ? h.coordinates[0] : undefined;
+  const lng = !h.coordinatesEstimated && Array.isArray(h.coordinates) ? h.coordinates[1] : undefined;
 
   return {
     id: numericId,
-    code: h.code || `HK-BD-${Date.now().toString().slice(-4)}`,
-    houseNumber: h.houseNumber || '1',
-    street: h.street || 'Đường Phan Văn Hớn',
-    hamlet: h.hamlet || 'Ấp Bắc Lân',
-    neighborhoodGroup: h.neighborhoodGroup || 'Tổ 1',
-    alley: h.alley || 'Mặt tiền đường',
-    ownerName: h.ownerName || 'Chưa cập nhật',
-    ownerPhone: h.ownerPhone || '0901234567',
+    code: h.code || (numericId ? undefined : `HK-BD-${crypto.randomUUID()}`),
+    houseNumber: h.houseNumber || '',
+    // Khi chưa có tên đường, street đang hiển thị địa chỉ nguồn: không gửi lại để PATCH giữ nguyên cột street.
+    street: showsSourceAddress(h) ? undefined : h.street || '',
+    hamlet: h.hamlet || '',
+    hamletId: h.hamletId,
+    administrativeHamlet: h.hamletId ? { id: h.hamletId } : undefined,
+    neighborhoodGroup: h.neighborhoodGroup ?? '',
+    alley: h.alley ?? '',
+    ownerName: h.ownerName || '',
+    ownerPhone: h.ownerPhone ?? '',
     type,
     businessName: h.businessName || null,
     businessCategory: h.businessCategory || null,
-    residentsCount: Number(h.residentsCount ?? 1),
-    maleCount: Number(h.maleCount ?? 1),
-    femaleCount: Number(h.femaleCount ?? 0),
-    under18Count: Number(h.under18Count ?? 0),
-    above18Count: Number(h.above18Count ?? 1),
+    residentsCount: h.residentsCount ?? null,
+    maleCount: h.maleCount ?? null,
+    femaleCount: h.femaleCount ?? null,
+    under18Count: h.under18Count ?? null,
+    above18Count: h.above18Count ?? null,
     status,
     warningMessage: h.warningMessage || null,
     licenseExpiry: h.licenseExpiry || null,
     licenseType: h.licenseType || null,
     latitude: lat,
     longitude: lng,
-    notes: h.notes || 'Hồ sơ quản lý địa bàn Xã Bà Điểm.',
-    lastCheckedDate: h.lastCheckedDate || new Date().toISOString().split('T')[0],
-    officerInCharge: h.officerInCharge || 'Cán bộ CSKV Xã Bà Điểm',
+    notes: h.notes ?? '',
+    lastCheckedDate: h.lastCheckedDate || undefined,
+    officerInCharge: h.officerInCharge ?? '',
   };
 };
 
@@ -141,16 +158,17 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
  * Chuyển đổi từ IResident DTO sang Resident
  */
 export const mapResidentDtoToResident = (dto: IResident): Resident => {
-  let resType: 'Thường trú' | 'Tạm trú' | 'Lưu trú' = 'Thường trú';
+  let resType: Resident['residenceType'] = 'Chưa xác minh';
+  if (dto.residenceType === 'PERMANENT') resType = 'Thường trú';
   if (dto.residenceType === 'TEMPORARY') resType = 'Tạm trú';
   else if (dto.residenceType === 'STAY') resType = 'Lưu trú';
 
   return {
     id: String(dto.id),
     fullName: dto.fullName || 'Chưa đặt tên',
-    birthYear: dto.birthYear || 1990,
-    gender: dto.gender === 'FEMALE' ? 'Nữ' : 'Nam',
-    relationship: dto.relationship || 'Chủ hộ',
+    birthYear: dto.birthYear ?? undefined,
+    gender: dto.gender === 'FEMALE' ? 'Nữ' : dto.gender === 'MALE' ? 'Nam' : dto.gender === 'OTHER' ? 'Khác' : 'Chưa cập nhật',
+    relationship: dto.relationship || '',
     idCardNumber: dto.idCardNumber || undefined,
     residenceType: resType,
     notes: dto.notes || undefined,
@@ -162,7 +180,8 @@ export const mapResidentDtoToResident = (dto: IResident): Resident => {
  * Chuyển đổi từ Resident sang IResident DTO
  */
 export const mapResidentToDto = (r: Resident, householdId?: number | string): IResident => {
-  let residenceType: 'PERMANENT' | 'TEMPORARY' | 'STAY' = 'PERMANENT';
+  let residenceType: IResident['residenceType'] = 'UNVERIFIED';
+  if (r.residenceType === 'Thường trú') residenceType = 'PERMANENT';
   if (r.residenceType === 'Tạm trú') residenceType = 'TEMPORARY';
   else if (r.residenceType === 'Lưu trú') residenceType = 'STAY';
 
@@ -173,7 +192,7 @@ export const mapResidentToDto = (r: Resident, householdId?: number | string): IR
     fullName: r.fullName,
     idCardNumber: r.idCardNumber || null,
     birthYear: r.birthYear,
-    gender: r.gender === 'Nữ' ? 'FEMALE' : 'MALE',
+    gender: r.gender === 'Nữ' ? 'FEMALE' : r.gender === 'Nam' ? 'MALE' : r.gender === 'Khác' ? 'OTHER' : null,
     relationship: r.relationship,
     residenceType,
     notes: r.notes || null,
@@ -184,8 +203,9 @@ export const mapResidentToDto = (r: Resident, householdId?: number | string): IR
 /**
  * 1. Tải danh sách tất cả hộ dân từ PostgreSQL
  */
-export async function fetchAllHouseholds(size: number = 1000): Promise<HouseholdFacility[]> {
-  const res = await axios.get<IHousehold[]>(`/api/households?page=0&size=${size}&sort=id,asc&cacheBuster=${Date.now()}`);
+
+export async function fetchAllHouseholds(_size: number = 1000): Promise<HouseholdFacility[]> {
+  const res = await fetchAuthorizedPages<IHousehold>('/api/households');
   if (Array.isArray(res.data)) {
     return res.data.map((dto, idx) => mapDtoToHousehold(dto, idx));
   }
@@ -197,10 +217,8 @@ export async function fetchAllHouseholds(size: number = 1000): Promise<Household
  */
 export async function fetchCompleteHouseholdsFromBackend(): Promise<HouseholdFacility[]> {
   const [householdsRes, residentsRes] = await Promise.all([
-    axios.get<IHousehold[]>(`/api/households?page=0&size=1000&sort=id,asc&cacheBuster=${Date.now()}`),
-    axios
-      .get<IResident[]>(`/api/residents?page=0&size=3000&sort=id,asc&cacheBuster=${Date.now()}`)
-      .catch(() => ({ data: [] as IResident[] })),
+    fetchAuthorizedPages<IHousehold>('/api/households'),
+    fetchAuthorizedPages<IResident>('/api/residents'),
   ]);
 
   const rawHouseholds = Array.isArray(householdsRes.data) ? householdsRes.data : [];
@@ -222,22 +240,7 @@ export async function fetchCompleteHouseholdsFromBackend(): Promise<HouseholdFac
     const assignedResidents = dto.id ? residentsByHouseholdId.get(dto.id) || [] : [];
     const baseH = mapDtoToHousehold(dto, idx);
 
-    if (assignedResidents.length > 0) {
-      const maleCount = assignedResidents.filter(r => r.gender === 'Nam').length;
-      const femaleCount = assignedResidents.filter(r => r.gender === 'Nữ').length;
-      const under18Count = assignedResidents.filter(r => 2026 - r.birthYear < 18).length;
-      const above18Count = assignedResidents.length - under18Count;
-
-      return {
-        ...baseH,
-        residentsList: assignedResidents,
-        residentsCount: assignedResidents.length,
-        maleCount,
-        femaleCount,
-        under18Count,
-        above18Count,
-      };
-    }
+    if (assignedResidents.length > 0) return { ...baseH, residentsList: assignedResidents };
     return baseH;
   });
 }
@@ -245,30 +248,21 @@ export async function fetchCompleteHouseholdsFromBackend(): Promise<HouseholdFac
 /**
  * 2. Thêm mới một hộ dân vào PostgreSQL
  */
-export async function createHouseholdInBackend(newH: HouseholdFacility): Promise<HouseholdFacility> {
+export async function createHouseholdInBackend(newH: HouseholdCreateInput): Promise<HouseholdFacility> {
   const dto = mapHouseholdToDto(newH);
+  if (!dto.hamletId) {
+    const { data } = await axios.get<{ id: number; hamletName: string }[]>('/api/rbac/areas');
+    const matches = data.filter(area => area.hamletName === newH.hamlet);
+    if (matches.length !== 1) throw new Error('Chọn địa bàn thật, không trùng tên, trước khi thêm hộ dân.');
+    dto.hamletId = matches[0].id;
+  }
   delete dto.id; // Để database tự sinh ID
   const res = await axios.post<IHousehold>('/api/households', dto);
   const created = mapDtoToHousehold(res.data);
   const createdHouseholdId = res.data.id;
 
   if (createdHouseholdId) {
-    // Chuẩn bị danh sách nhân khẩu khởi tạo (nếu không có thì tạo mặc định 1 chủ hộ)
-    const listToSave: Resident[] =
-      Array.isArray(newH.residentsList) && newH.residentsList.length > 0
-        ? newH.residentsList
-        : [
-            {
-              id: `res-${Date.now()}-1`,
-              fullName: newH.ownerName || 'Chủ hộ',
-              birthYear: 1980,
-              gender: 'Nam',
-              relationship: 'Chủ hộ',
-              residenceType: newH.residenceType || 'Thường trú',
-              phone: newH.ownerPhone,
-              notes: `Chủ hộ mới đăng ký tại ${newH.hamlet || 'Xã Bà Điểm'}`,
-            },
-          ];
+    const listToSave: Resident[] = Array.isArray(newH.residentsList) ? newH.residentsList : [];
 
     const savedResidents: Resident[] = [];
     for (const r of listToSave) {
@@ -394,7 +388,7 @@ export async function updateHouseholdNotesInBackend(id: string | number, notes: 
  * 5. Cập nhật tọa độ GPS kéo thả trong PostgreSQL
  */
 export async function updateHouseholdCoordinatesInBackend(
-  updates: Array<{ id: string | number; coordinates: [number, number] }>,
+  updates: { id: string | number; coordinates: [number, number] }[],
 ): Promise<void> {
   for (const u of updates) {
     const numericId = Number(u.id);
@@ -470,54 +464,18 @@ export async function deleteResidentInBackend(residentId: string | number): Prom
 /**
  * 10. Tải danh sách tất cả nhân khẩu từ PostgreSQL
  */
-export async function fetchAllResidents(size: number = 3000): Promise<IResident[]> {
-  try {
-    const res = await axios.get<IResident[]>(`/api/residents?page=0&size=${size}&cacheBuster=${Date.now()}`);
-    return Array.isArray(res.data) ? res.data : [];
-  } catch (e) {
-    console.warn('Lỗi khi tải danh sách nhân khẩu từ backend:', e);
-    return [];
-  }
+export async function fetchAllResidents(_size: number = 3000): Promise<IResident[]> {
+  const res = await fetchAuthorizedPages<IResident>('/api/residents');
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 /**
  * 11. Tải danh sách hồ sơ giấy tờ từ PostgreSQL
  */
-export async function fetchAllDocumentRecords(size: number = 1000): Promise<DocumentRecord[]> {
-  try {
-    const res = await axios.get<IDocumentRecord[]>(`/api/document-records?page=0&size=${size}&cacheBuster=${Date.now()}`);
-    if (Array.isArray(res.data)) {
-      return res.data.map(dto => {
-        const idStr = String(dto.id || `doc-${Date.now()}`);
-        const statusVal = dto.status === 'EXPIRED' ? 'expired' : dto.status === 'EXPIRING_SOON' ? 'expiring_soon' : 'valid';
-        const urgencyVal = statusVal === 'expired' ? 'high' : statusVal === 'expiring_soon' ? 'medium' : 'normal';
-
-        let hamletName: any = 'Ấp Bắc Lân';
-        if (dto.address?.includes('Nam Lân')) hamletName = 'Ấp Nam Lân';
-        else if (dto.address?.includes('Tây Lân')) hamletName = 'Ấp Tây Lân';
-        else if (dto.address?.includes('Đông Lân')) hamletName = 'Ấp Đông Lân';
-        else if (dto.address?.includes('Hậu Lân')) hamletName = 'Ấp Hậu Lân';
-        else if (dto.address?.includes('Tiền Lân')) hamletName = 'Ấp Tiền Lân';
-
-        return {
-          id: idStr,
-          docCode: `HS-BD-${String(dto.id || 1).padStart(3, '0')}`,
-          title: dto.docName || 'Hồ sơ kiểm tra ANTT & PCCC',
-          targetName: dto.householdName || 'Cơ sở quản lý',
-          address: dto.address || 'Xã Bà Điểm, Hóc Môn',
-          hamlet: hamletName,
-          category: 'license_security',
-          categoryLabel: dto.docType || 'Giấy phép ANTT',
-          issueDate: '2026-01-01',
-          expiryDate: dto.expiryDate || '2027-01-01',
-          status: statusVal,
-          urgency: urgencyVal,
-          notes: dto.notes || 'Hồ sơ an ninh trật tự',
-        };
-      });
-    }
-  } catch (err) {
-    console.warn('Lỗi khi tải danh sách hồ sơ tài liệu từ backend:', err);
+export async function fetchAllDocumentRecords(_size: number = 1000): Promise<DocumentRecord[]> {
+  const res = await fetchAuthorizedPages<IDocumentRecord>('/api/document-records');
+  if (Array.isArray(res.data)) {
+    return res.data.map(dto => mapDocumentDto(dto));
   }
   return [];
 }
@@ -537,75 +495,75 @@ function inferActionType(action: string): AuditActionType {
  * 12. Tải danh sách nhật ký tuần tra / kiểm tra thực địa từ PostgreSQL
  */
 export async function fetchPatrolLogsFromBackend(size: number = 200): Promise<AuditLogEntry[]> {
-  try {
-    const res = await axios.get<any[]>(`/api/patrol-logs?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
-    if (Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map(dto => {
-        const d = dto.timestamp ? new Date(dto.timestamp) : new Date();
-        const pad = (n: number) => String(n).padStart(2, '0');
-        const formattedDate = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  const res = await axios.get<any[]>(`/api/patrol-logs?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
+  if (!Array.isArray(res.data)) throw new Error('Dữ liệu nhật ký từ máy chủ không hợp lệ.');
+  if (Array.isArray(res.data) && res.data.length > 0) {
+    return res.data.map(dto => {
+      const d = new Date(dto.timestamp ?? NaN);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const formattedDate = Number.isFinite(d.getTime())
+        ? `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+        : '';
 
-        let detailsText = dto.details || 'Ghi nhận kiểm tra thực địa.';
-        let actionType: AuditActionType = inferActionType(dto.action);
-        let targetType: 'household' | 'document' | 'officer' | 'system' = 'household';
-        let targetCode: string | undefined = undefined;
-        let previousValue: string | undefined = undefined;
-        let newValue: string | undefined = undefined;
-        let deviceInfo: string | undefined = 'Thiết bị nghiệp vụ tuần tra CSKV';
-        let integrityHash: string | undefined = `SHA256:${String(dto.id).padStart(8, '0')}...OK`;
-        let status: 'success' | 'warning' | 'info' = 'success';
+      let detailsText = dto.details || '';
+      let actionType: AuditActionType = inferActionType(dto.action);
+      let targetType: 'household' | 'document' | 'officer' | 'system' = 'household';
+      let targetCode: string | undefined = undefined;
+      let previousValue: string | undefined = undefined;
+      let newValue: string | undefined = undefined;
+      let deviceInfo: string | undefined;
+      let integrityHash: string | undefined;
+      let status: 'success' | 'warning' | 'info' = 'success';
 
-        // Nếu details được lưu dưới dạng JSON metadata
-        if (dto.details && typeof dto.details === 'string' && dto.details.trim().startsWith('{')) {
-          try {
-            const meta = JSON.parse(dto.details);
-            if (meta.text !== undefined) detailsText = meta.text;
-            if (meta.actionType) actionType = meta.actionType;
-            if (meta.targetType) targetType = meta.targetType;
-            if (meta.targetCode) targetCode = meta.targetCode;
-            if (meta.previousValue) previousValue = meta.previousValue;
-            if (meta.newValue) newValue = meta.newValue;
-            if (meta.deviceInfo) deviceInfo = meta.deviceInfo;
-            if (meta.integrityHash) integrityHash = meta.integrityHash;
-            if (meta.status) status = meta.status;
-          } catch {
-            // Giữ nguyên detailsText nếu không parse được JSON
-          }
+      // Nếu details được lưu dưới dạng JSON metadata
+      if (dto.details && typeof dto.details === 'string' && dto.details.trim().startsWith('{')) {
+        try {
+          const meta = JSON.parse(dto.details);
+          if (meta.text !== undefined) detailsText = meta.text;
+          if (meta.actionType) actionType = meta.actionType;
+          if (meta.targetType) targetType = meta.targetType;
+          if (meta.targetCode) targetCode = meta.targetCode;
+          if (meta.previousValue) previousValue = meta.previousValue;
+          if (meta.newValue) newValue = meta.newValue;
+          if (meta.deviceInfo) deviceInfo = meta.deviceInfo;
+          if (typeof meta.integrityHash === 'string' && /^SHA256:\s*[a-f\d]{64}$/i.test(meta.integrityHash))
+            integrityHash = meta.integrityHash;
+          if (meta.status) status = meta.status;
+        } catch {
+          // Giữ nguyên detailsText nếu không parse được JSON
         }
+      }
 
-        // Tách targetCode nếu có dạng "[CODE] Title"
-        let targetTitle = dto.target || 'Địa bàn Xã Bà Điểm';
-        if (targetTitle.startsWith('[') && targetTitle.includes('] ')) {
-          const closeIdx = targetTitle.indexOf('] ');
-          if (!targetCode) {
-            targetCode = targetTitle.slice(1, closeIdx);
-          }
-          targetTitle = targetTitle.slice(closeIdx + 2);
+      // Tách targetCode nếu có dạng "[CODE] Title"
+      let targetTitle = dto.target || '';
+      if (targetTitle.startsWith('[') && targetTitle.includes('] ')) {
+        const closeIdx = targetTitle.indexOf('] ');
+        if (!targetCode) {
+          targetCode = targetTitle.slice(1, closeIdx);
         }
+        targetTitle = targetTitle.slice(closeIdx + 2);
+      }
 
-        return {
-          id: `LOG-DB-${dto.id}`,
-          timestamp: formattedDate,
-          createdAt: d.getTime(),
-          actionType,
-          actionLabel: dto.action || 'Nhật ký công tác',
-          officerName: dto.officerName || 'Cán bộ CSKV',
-          officerBadge: dto.badgeNumber || 'CSKV-BADIEM',
-          targetType,
-          targetCode,
-          targetTitle,
-          details: detailsText,
-          previousValue,
-          newValue,
-          ipAddress: dto.ipAddress || '192.168.1.45',
-          deviceInfo,
-          integrityHash,
-          status,
-        };
-      });
-    }
-  } catch (err) {
-    console.warn('Lỗi khi tải danh sách nhật ký từ backend:', err);
+      return {
+        id: `LOG-DB-${dto.id}`,
+        timestamp: formattedDate,
+        createdAt: Number.isFinite(d.getTime()) ? d.getTime() : 0,
+        actionType,
+        actionLabel: dto.action || 'Nhật ký công tác',
+        officerName: dto.officerName || '',
+        officerBadge: dto.badgeNumber || '',
+        targetType,
+        targetCode,
+        targetTitle,
+        details: detailsText,
+        previousValue,
+        newValue,
+        ipAddress: dto.ipAddress || 'Không ghi nhận',
+        deviceInfo,
+        integrityHash,
+        status,
+      };
+    });
   }
   return [];
 }
@@ -623,12 +581,11 @@ export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promi
       targetCode: log.targetCode,
       previousValue: log.previousValue,
       newValue: log.newValue,
-      deviceInfo: log.deviceInfo || 'Máy trạm CSKV Bà Điểm',
-      integrityHash: log.integrityHash || `SHA256:${Date.now()}...OK`,
+      deviceInfo: log.deviceInfo,
       status: log.status || 'success',
     };
 
-    let targetStr = log.targetTitle || 'Địa bàn Xã Bà Điểm';
+    let targetStr = log.targetTitle || '';
     if (log.targetCode && !targetStr.includes(log.targetCode)) {
       targetStr = `[${log.targetCode}] ${targetStr}`;
     }
@@ -637,9 +594,8 @@ export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promi
       action: log.actionLabel || 'Nhật ký công tác',
       target: targetStr,
       details: JSON.stringify(metadata),
-      officerName: log.officerName || 'Cán bộ CSKV',
-      badgeNumber: log.officerBadge || 'CSKV-BADIEM',
-      ipAddress: log.ipAddress || '192.168.1.45',
+      officerName: log.officerName || '',
+      badgeNumber: log.officerBadge || '',
       timestamp: new Date(log.createdAt || Date.now()).toISOString(),
     };
 
@@ -656,17 +612,16 @@ export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promi
         createdAt: d.getTime(),
         actionType: log.actionType || 'profile_update',
         actionLabel: dto.action || 'Nhật ký công tác',
-        officerName: dto.officerName || 'Cán bộ CSKV',
-        officerBadge: dto.badgeNumber || 'CSKV-BADIEM',
+        officerName: dto.officerName || '',
+        officerBadge: dto.badgeNumber || '',
         targetType: log.targetType || 'household',
         targetCode: log.targetCode,
         targetTitle: log.targetTitle || dto.target || 'Địa bàn Xã Bà Điểm',
         details: rawDetails,
         previousValue: log.previousValue,
         newValue: log.newValue,
-        ipAddress: dto.ipAddress || '192.168.1.45',
-        deviceInfo: log.deviceInfo || 'Máy trạm CSKV Bà Điểm',
-        integrityHash: log.integrityHash || `SHA256:${String(dto.id).padStart(8, '0')}...OK`,
+        ipAddress: dto.ipAddress || undefined,
+        deviceInfo: log.deviceInfo,
         status: log.status || 'success',
       };
     }
@@ -680,35 +635,32 @@ export async function savePatrolLogInBackend(log: Partial<AuditLogEntry>): Promi
  * 13. Tải danh sách cảnh báo an ninh từ PostgreSQL
  */
 export async function fetchSecurityAlertsFromBackend(size: number = 100): Promise<SecurityAlert[]> {
-  try {
-    const res = await axios.get<any[]>(`/api/security-alerts?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
-    if (Array.isArray(res.data) && res.data.length > 0) {
-      return res.data.map(dto => {
-        const sevMap: Record<string, any> = {
-          CRITICAL: 'critical',
-          HIGH: 'high',
-          MEDIUM: 'medium',
-          LOW: 'low',
-          INFO: 'info',
-        };
+  const res = await axios.get<any[]>(`/api/security-alerts?page=0&size=${size}&sort=id,desc&cacheBuster=${Date.now()}`);
+  if (!Array.isArray(res.data)) throw new Error('Dữ liệu cảnh báo từ máy chủ không hợp lệ.');
+  if (Array.isArray(res.data) && res.data.length > 0) {
+    return res.data.map(dto => {
+      const sevMap: Record<string, any> = {
+        CRITICAL: 'critical',
+        HIGH: 'high',
+        MEDIUM: 'medium',
+        LOW: 'low',
+        INFO: 'info',
+      };
 
-        return {
-          id: `ALERT-DB-${dto.id}`,
-          timestamp: dto.reportedAt ? new Date(dto.reportedAt).toLocaleDateString('vi-VN') : '27/09/2026',
-          severity: sevMap[dto.severity] || 'medium',
-          title: dto.title || 'Cảnh báo an ninh trật tự',
-          details: dto.description || '',
-          sourceIp: dto.location || 'Xã Bà Điểm',
-          targetResource: '/api/security-alerts',
-          emailNotified: false,
-          adminEmailTarget: 'cong-an-ba-diem@tphcm.gov.vn',
-          resolved: !!dto.isResolved,
-          resolvedAt: dto.resolvedAt ? new Date(dto.resolvedAt).toLocaleDateString('vi-VN') : undefined,
-        };
-      });
-    }
-  } catch (err) {
-    console.warn('Lỗi khi tải danh sách cảnh báo từ backend:', err);
+      return {
+        id: `ALERT-DB-${dto.id}`,
+        timestamp: dto.reportedAt ? new Date(dto.reportedAt).toLocaleDateString('vi-VN') : '',
+        severity: sevMap[dto.severity] || 'medium',
+        title: dto.title || 'Cảnh báo an ninh trật tự',
+        details: dto.description || '',
+        sourceIp: '',
+        targetResource: '/api/security-alerts',
+        emailNotified: false,
+        adminEmailTarget: '',
+        resolved: !!dto.isResolved,
+        resolvedAt: dto.resolvedAt ? new Date(dto.resolvedAt).toLocaleDateString('vi-VN') : undefined,
+      };
+    });
   }
   return [];
 }

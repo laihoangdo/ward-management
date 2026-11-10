@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import { useAppDispatch, useAppSelector } from 'app/config/store';
-import { getEntities as getAreaZones } from 'app/entities/area-zone/area-zone.reducer';
+import { getEntities as getHamlets } from 'app/entities/area-zone/area-zone.reducer';
 import { FacilityType } from 'app/shared/model/enumerations/facility-type.model';
 import { SecurityStatus } from 'app/shared/model/enumerations/security-status.model';
 
@@ -20,7 +20,7 @@ export const HouseholdUpdate = () => {
   const { id } = useParams<'id'>();
   const isNew = id === undefined;
 
-  const areaZones = useAppSelector(state => state.areaZone.entities);
+  const administrativeHamlets = useAppSelector(state => state.areaZone.entities);
   const householdEntity = useAppSelector(state => state.household.entity);
   const loading = useAppSelector(state => state.household.loading);
   const updating = useAppSelector(state => state.household.updating);
@@ -39,7 +39,7 @@ export const HouseholdUpdate = () => {
       dispatch(getEntity(id));
     }
 
-    dispatch(getAreaZones({}));
+    dispatch(getHamlets({}));
   }, []);
 
   useEffect(() => {
@@ -77,7 +77,8 @@ export const HouseholdUpdate = () => {
     const entity = {
       ...householdEntity,
       ...values,
-      areaZone: areaZones.find(it => it.id.toString() === values.areaZone?.toString()),
+      hamletId: Number(values.administrativeHamlet) || undefined,
+      administrativeHamlet: administrativeHamlets.find(it => it.id.toString() === values.administrativeHamlet?.toString()),
     };
 
     if (isNew) {
@@ -94,7 +95,7 @@ export const HouseholdUpdate = () => {
           type: 'RESIDENTIAL',
           status: 'NORMAL',
           ...householdEntity,
-          areaZone: householdEntity?.areaZone?.id,
+          administrativeHamlet: householdEntity?.administrativeHamlet?.id,
         };
 
   return (
@@ -246,10 +247,16 @@ export const HouseholdUpdate = () => {
                 data-cy="officerInCharge"
                 type="text"
               />
-              <ValidatedField id="household-areaZone" name="areaZone" data-cy="areaZone" label="Area Zone" type="select">
+              <ValidatedField
+                id="household-administrativeHamlet"
+                name="administrativeHamlet"
+                data-cy="administrativeHamlet"
+                label="Area Zone"
+                type="select"
+              >
                 <option value="" key="0" />
-                {areaZones
-                  ? areaZones.map(otherEntity => (
+                {administrativeHamlets
+                  ? administrativeHamlets.map(otherEntity => (
                       <option value={otherEntity.id} key={otherEntity.id}>
                         {otherEntity.name}
                       </option>

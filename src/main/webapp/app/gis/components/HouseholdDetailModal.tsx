@@ -1,4 +1,9 @@
+import { Link } from 'react-router';
+import { DiscardChangesDialog } from './DiscardChangesDialog';
+import { useUnsavedPageGuard } from '../utils/useUnsavedPageGuard';
+import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -25,9 +30,13 @@ import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
 import { InspectionCameraModal } from './InspectionCameraModal';
 import { OcrScanModal } from './OcrScanModal';
 import { deleteInspectionPhotoFromHousehold } from '../services/firestoreService';
-import { decryptCccd, maskCccd, isEncryptedAes } from '../utils/cryptoUtils';
+import { showsSourceAddress } from '../services/householdApiService';
+import { BADIEM_51_HAMLETS } from '../data/baDiemHamlets';
 
-const BADIEM_HAMLETS = ['Ấp Bắc Lân', 'Ấp Nam Lân', 'Ấp Tây Lân', 'Ấp Đông Lân', 'Ấp Hậu Lân', 'Ấp Tiền Lân'];
+const ALLEY_BADGE_CLASS =
+  'text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700'; // taste-skill-ignore: màu phân loại tuyến hẻm đồng bộ sơ đồ địa bàn
+const PHOTO_SCRIM_CLASS =
+  'absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between'; // taste-skill-ignore: scrim trung tính trên ảnh thật để đọc caption và nút xoá
 
 const BADIEM_STREETS = [
   'Đường Phan Văn Hớn',
@@ -46,17 +55,23 @@ const BADIEM_STREETS = [
 
 interface HouseholdDetailModalProps {
   household: HouseholdFacility | null;
+  presentation?: 'dialog' | 'drawer';
   currentUser?: AppUser | null;
   onClose: () => void;
-  onUpdateNotes: (id: string, notes: string) => void;
+  onUpdateNotes: (id: string, notes: string) => Promise<void>;
   onPhotoAdded?: (photo: InspectionPhoto) => void;
-  onHouseholdUpdated?: (updatedHousehold: HouseholdFacility) => void;
+  onHouseholdUpdated?: (updatedHousehold: HouseholdFacility) => Promise<void>;
   onDeleteHousehold?: (id: string) => void;
   onShowToast?: (msg: string) => void;
+  onOpenRoster?: (household: HouseholdFacility, edit: boolean) => void;
 }
 
-export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
+export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = props =>
+  props.household ? <HouseholdDetailModalContent key={props.household.id} {...props} household={props.household} /> : null;
+
+const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { household: HouseholdFacility }> = ({
   household,
+  presentation = 'dialog',
   currentUser,
   onClose,
   onUpdateNotes,
@@ -64,20 +79,25 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   onHouseholdUpdated,
   onDeleteHousehold,
   onShowToast,
+  onOpenRoster,
 }) => {
-  if (!household) return null;
-
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesText, setNotesText] = useState(household.notes || '');
   const [savedAlert, setSavedAlert] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isOcrModalOpen, setIsOcrModalOpen] = useState(false);
   const [selectedPhotoForView, setSelectedPhotoForView] = useState<InspectionPhoto | null>(null);
   const [isDeletingPhotoId, setIsDeletingPhotoId] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<InspectionPhoto[]>(household.inspectionPhotos || []);
+  useEffect(() => {
+    setPhotos(household.inspectionPhotos || []);
+  }, [household.inspectionPhotos]);
 
   const handleTriggerCamera = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canUpdateInspection === false) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
+    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canUpdateInspection !== true) {
+      const msg = 'Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
       return;
@@ -86,8 +106,8 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   };
 
   const handleTriggerEditNotes = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canUpdateInspection === false) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
+    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canUpdateInspection !== true) {
+      const msg = 'Thẩm quyền bị khóa: Bạn chưa được phân quyền ghi nhận kết quả kiểm tra thực địa.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
       return;
@@ -96,8 +116,8 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   };
 
   const handleTriggerOcr = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canScanOcr === false) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền quét OCR Căn cước công dân.';
+    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canScanOcr !== true) {
+      const msg = 'Thẩm quyền bị khóa: Bạn chưa được phân quyền quét OCR Căn cước công dân.';
       if (onShowToast) onShowToast(msg);
       else alert(msg);
       return;
@@ -110,50 +130,70 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
   // Edit Household Information State
   const [isEditingInfo, setIsEditingInfo] = useState(false);
-  const [editForm, setEditForm] = useState({
+  const originalForm = {
     ownerName: household.ownerName || '',
     ownerPhone: household.ownerPhone || '',
     houseNumber: household.houseNumber || '',
-    street: household.street || 'Đường Phan Văn Hớn',
-    hamlet: household.hamlet || 'Ấp Bắc Lân',
-    neighborhoodGroup: household.neighborhoodGroup || 'Tổ 1',
-    alley: household.alley || 'Mặt tiền đường',
+    // Hộ chưa có tên đường: không đưa địa chỉ nguồn vào ô chọn tuyến đường.
+    street: showsSourceAddress(household) ? '' : household.street || '',
+    hamlet: household.hamlet || '',
+    hamletId: household.hamletId,
+    neighborhoodGroup: household.neighborhoodGroup || '',
+    alley: household.alley || '',
     type: household.type || 'household',
     businessName: household.businessName || '',
     businessCategory: household.businessCategory || '',
     status: household.status || 'normal',
     warningMessage: household.warningMessage || '',
-    residentsCount: household.residentsCount || 1,
-    maleCount: household.maleCount || 1,
+    residentsCount: household.residentsCount ?? 0,
+    maleCount: household.maleCount ?? 0,
     femaleCount: household.femaleCount || 0,
-  });
-
-  useEffect(() => {
-    if (household) {
-      setNotesText(household.notes || '');
-      setEditForm({
-        ownerName: household.ownerName || '',
-        ownerPhone: household.ownerPhone || '',
-        houseNumber: household.houseNumber || '',
-        street: household.street || 'Đường Phan Văn Hớn',
-        hamlet: household.hamlet || 'Ấp Bắc Lân',
-        neighborhoodGroup: household.neighborhoodGroup || 'Tổ 1',
-        alley: household.alley || 'Mặt tiền đường',
-        type: household.type || 'household',
-        businessName: household.businessName || '',
-        businessCategory: household.businessCategory || '',
-        status: household.status || 'normal',
-        warningMessage: household.warningMessage || '',
-        residentsCount: household.residentsCount || 1,
-        maleCount: household.maleCount || 1,
-        femaleCount: household.femaleCount || 0,
-      });
+  };
+  const [editForm, setEditForm] = useState(originalForm);
+  const [showDiscard, setShowDiscard] = useState(false);
+  const [discardAction, setDiscardAction] = useState<'close' | 'info' | 'notes'>('close');
+  const infoDirty = isEditingInfo && JSON.stringify(editForm) !== JSON.stringify(originalForm);
+  const notesDirty = isEditingNotes && notesText !== (household.notes || '');
+  useUnsavedPageGuard(infoDirty || notesDirty);
+  const requestDiscard = (action: 'close' | 'info' | 'notes') => {
+    if (isSaving) return;
+    const changed = action === 'close' ? infoDirty || notesDirty : action === 'info' ? infoDirty : notesDirty;
+    if (changed) {
+      setDiscardAction(action);
+      setShowDiscard(true);
+      return;
+    }
+    if (action === 'close') onClose();
+    if (action === 'info') {
+      setEditForm(originalForm);
       setIsEditingInfo(false);
+    }
+    if (action === 'notes') {
+      setNotesText(household.notes || '');
       setIsEditingNotes(false);
     }
-  }, [household]);
+  };
+  const confirmDiscard = () => {
+    setShowDiscard(false);
+    if (discardAction === 'close') onClose();
+    if (discardAction === 'info') {
+      setEditForm(originalForm);
+      setIsEditingInfo(false);
+    }
+    if (discardAction === 'notes') {
+      setNotesText(household.notes || '');
+      setIsEditingNotes(false);
+    }
+  };
+  const canInspect = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canUpdateInspection === true;
+  const canScan = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canScanOcr === true;
+  const canReveal = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canRevealIdentity === true;
+  useEffect(() => {
+    if (!isEditingNotes) setNotesText(household.notes || '');
+  }, [household.notes, isEditingNotes]);
 
-  const toggleDecryptCccd = async (residentId: string, rawEncryptedVal?: string) => {
+  // Full identity numbers come only from the audited backend endpoint; the client never holds the key.
+  const revealCccd = async (residentId: string) => {
     if (showCccdMap[residentId]) {
       setShowCccdMap(prev => ({ ...prev, [residentId]: false }));
       return;
@@ -164,41 +204,62 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
       return;
     }
 
-    if (!rawEncryptedVal) return;
-
     setIsDecryptingId(residentId);
     try {
-      const decrypted = await decryptCccd(rawEncryptedVal);
-      setDecryptedCccds(prev => ({ ...prev, [residentId]: decrypted }));
+      const { data } = await axios.post<{ idCardNumber: string }>(`/api/residents/${residentId}/reveal-id`, {});
+      setDecryptedCccds(prev => ({ ...prev, [residentId]: data.idCardNumber }));
       setShowCccdMap(prev => ({ ...prev, [residentId]: true }));
     } catch {
-      setSavedAlert('Không thể giải mã CCCD!');
+      setSavedAlert('Không thể xem số CCCD. Cần quyền xem số định danh đầy đủ.');
     } finally {
       setIsDecryptingId(null);
     }
   };
 
-  const handleHouseholdOcrUpdated = (updated: HouseholdFacility) => {
-    setSavedAlert('Đã cập nhật dữ liệu hồ sơ từ ảnh quét OCR thành công!');
-    setTimeout(() => setSavedAlert(null), 3000);
-    if (onHouseholdUpdated) {
-      onHouseholdUpdated(updated);
+  const handleHouseholdOcrUpdated = async (updated: HouseholdFacility) => {
+    if (!onHouseholdUpdated || isSaving) return;
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onHouseholdUpdated(updated);
+      setSavedAlert('Đã lưu dữ liệu hồ sơ từ ảnh quét OCR.');
+      setTimeout(() => setSavedAlert(null), 3000);
+    } catch (error) {
+      setSaveError('Chưa lưu đầy đủ dữ liệu OCR. Kiểm tra lại hồ sơ trước khi thử lại.');
+      throw error;
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleSaveNotes = () => {
-    onUpdateNotes(household.id, notesText);
-    setIsEditingNotes(false);
-    setSavedAlert('Đã lưu ghi chú kiểm tra thực địa vào database thành công!');
-    setTimeout(() => setSavedAlert(null), 2500);
+  const handleSaveNotes = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onUpdateNotes(household.id, notesText);
+      setIsEditingNotes(false);
+      setSavedAlert('Đã lưu ghi chú kiểm tra.');
+      setTimeout(() => setSavedAlert(null), 2500);
+    } catch {
+      setSaveError('Không thể lưu ghi chú. Nội dung nhập được giữ lại; vui lòng thử lại.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSaveInfo = () => {
+  const handleSaveInfo = async () => {
+    if (isSaving) return;
     if (!editForm.ownerName.trim() || !editForm.houseNumber.trim()) {
-      alert('Vui lòng nhập đầy đủ tên chủ hộ và số nhà!');
+      setSaveError('Nhập đầy đủ tên chủ hộ và số nhà trước khi lưu.');
       return;
     }
 
+    if (!Number.isInteger(editForm.residentsCount) || editForm.residentsCount < 0) {
+      setSaveError('Tổng nhân khẩu phải là số nguyên từ 0 trở lên.');
+      document.getElementById('household-edit-field-9')?.focus();
+      return;
+    }
     const updatedResidentsList = (household.residentsList || []).map(r => {
       if (r.relationship === 'Chủ hộ') {
         return { ...r, fullName: editForm.ownerName.trim(), phone: editForm.ownerPhone.trim() };
@@ -211,8 +272,10 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
       ownerName: editForm.ownerName.trim(),
       ownerPhone: editForm.ownerPhone.trim(),
       houseNumber: editForm.houseNumber.trim(),
-      street: editForm.street,
+      // Không chọn đường mới thì giữ địa chỉ nguồn để hiển thị; mapper sẽ không ghi nó vào cột street.
+      street: editForm.street || (showsSourceAddress(household) ? household.street : ''),
       hamlet: editForm.hamlet,
+      hamletId: editForm.hamletId,
       neighborhoodGroup: editForm.neighborhoodGroup,
       alley: editForm.alley,
       type: editForm.type as any,
@@ -220,18 +283,25 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
       businessCategory: editForm.type === 'business' ? editForm.businessCategory.trim() : undefined,
       status: editForm.status as any,
       warningMessage: editForm.warningMessage.trim() || undefined,
-      residentsCount: Number(editForm.residentsCount) || 1,
+      residentsCount: Number(editForm.residentsCount),
       maleCount: Number(editForm.maleCount) || 0,
       femaleCount: Number(editForm.femaleCount) || 0,
       residentsList: updatedResidentsList,
     };
 
-    if (onHouseholdUpdated) {
-      onHouseholdUpdated(updated);
+    if (!onHouseholdUpdated) return;
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onHouseholdUpdated(updated);
+      setIsEditingInfo(false);
+      setSavedAlert('Đã cập nhật thông tin hộ dân.');
+      setTimeout(() => setSavedAlert(null), 3000);
+    } catch {
+      setSaveError('Chưa lưu đầy đủ hồ sơ. Nội dung nhập được giữ lại. Kiểm tra dữ liệu trước khi thử lại.');
+    } finally {
+      setIsSaving(false);
     }
-    setIsEditingInfo(false);
-    setSavedAlert('Đã cập nhật thông tin hộ dân vào database PostgreSQL thành công!');
-    setTimeout(() => setSavedAlert(null), 3000);
   };
 
   const handleDeleteHouseholdClick = () => {
@@ -248,6 +318,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
   };
 
   const handlePhotoSaved = (newPhoto: InspectionPhoto) => {
+    setPhotos(previous => [newPhoto, ...previous]);
     setSavedAlert('Đã lưu ảnh hiện trạng thành công!');
     setTimeout(() => setSavedAlert(null), 3000);
     if (onPhotoAdded) {
@@ -264,10 +335,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
     try {
       setIsDeletingPhotoId(photoId);
       await deleteInspectionPhotoFromHousehold(household.id, photoId, household.inspectionPhotos || []);
-      if (onHouseholdUpdated) {
-        const remaining = (household.inspectionPhotos || []).filter(p => p.id !== photoId);
-        onHouseholdUpdated({ ...household, inspectionPhotos: remaining });
-      }
+      setPhotos(previous => previous.filter(p => p.id !== photoId));
       setSavedAlert('Đã xóa ảnh kiểm tra khỏi hồ sơ.');
       setTimeout(() => setSavedAlert(null), 2500);
     } catch (err) {
@@ -278,12 +346,36 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
     }
   };
 
-  const photos = household.inspectionPhotos || [];
   const effectiveResidents = useMemo(() => getEffectiveResidentsList(household), [household]);
 
+  const dialogRef = useDialogFocus(true, () => requestDiscard('close'), isSaving);
+  const unified = household.code.startsWith('TC2');
   const content = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Hồ sơ ${household.code}`}
+      tabIndex={-1}
+      className={`gis-household-dialog ${presentation === 'drawer' ? 'gis-household-drawer' : ''} fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto`}
+    >
       <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[92vh] flex flex-col">
+        {unified && (
+          <div className="p-4 bg-amber-50 text-amber-950">
+            <p>Vị trí tạm; thông tin hộ và nhân khẩu cần đối chiếu nguồn.</p>
+            <Link
+              to={`/dashboard?tab=households&legacyHousehold=${encodeURIComponent(household.id)}`}
+              onClick={event => {
+                if (onOpenRoster && event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+                  event.preventDefault();
+                  onOpenRoster(household, false);
+                }
+              }}
+            >
+              Mở hồ sơ đầy đủ · chỉnh sửa · nguồn · lịch sử
+            </Link>
+          </div>
+        )}
         {/* Modal Header */}
         <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -302,13 +394,10 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                   {household.code}
                 </span>
                 <span className="text-[11px] sm:text-xs text-slate-300 font-semibold">
-                  {household.hamlet} • {household.neighborhoodGroup || 'Tổ 1'} • Xã Bà Điểm, Hóc Môn
+                  {household.hamlet || 'Chưa có địa bàn'} • {household.neighborhoodGroup || 'Chưa có tổ dân phố'} • Xã Bà Điểm, TP. Hồ Chí
+                  Minh
                 </span>
-                {household.alley && (
-                  <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700">
-                    {household.alley}
-                  </span>
-                )}
+                {household.alley && <span className={ALLEY_BADGE_CLASS}>{household.alley}</span>}
                 {(() => {
                   const resType = getHouseholdResidenceType(household);
                   const config = RESIDENCE_TYPE_CONFIG[resType];
@@ -322,7 +411,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                   );
                 })()}
               </div>
-              <h3 className="text-sm sm:text-lg font-bold text-white mt-0.5 leading-snug">
+              <h3 className="gis-dialog-title text-sm sm:text-lg font-bold text-white mt-0.5 leading-snug">
                 {household.businessName
                   ? `${household.businessName} (Số ${household.houseNumber})`
                   : `Số ${household.houseNumber} ${household.street}`}
@@ -333,8 +422,9 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               id="btn-open-ocr-header"
-              onClick={() => setIsOcrModalOpen(true)}
-              className="px-2.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              disabled={isSaving || !canScan}
+              onClick={handleTriggerOcr}
+              className="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
               title="Quét OCR CCCD"
             >
               <ScanLine className="w-3.5 h-3.5" />
@@ -343,8 +433,9 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
             <button
               id="btn-open-camera-header"
-              onClick={() => setIsCameraModalOpen(true)}
-              className="px-2.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold rounded-lg text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              disabled={isSaving || !canInspect}
+              onClick={handleTriggerCamera}
+              className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
               title="Bật Camera chụp ảnh hiện trạng"
             >
               <Camera className="w-3.5 h-3.5" />
@@ -352,7 +443,9 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             </button>
 
             <button
-              onClick={onClose}
+              disabled={isSaving}
+              aria-label="Đóng hồ sơ"
+              onClick={() => requestDiscard('close')}
               className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -360,8 +453,49 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
           </div>
         </div>
 
+        <DiscardChangesDialog open={showDiscard} onContinue={() => setShowDiscard(false)} onDiscard={confirmDiscard} />
+        <nav
+          aria-label="Mục hồ sơ hộ dân"
+          className="gis-record-sections flex gap-2 overflow-x-auto border-b border-slate-200 bg-white dark:bg-slate-900 px-4 py-2 shrink-0"
+        >
+          {[
+            ['household-info', 'Thông tin'],
+            ['household-residents', 'Nhân khẩu'],
+            ['household-photos', 'Ảnh kiểm tra'],
+            ['household-notes', 'Ghi chú'],
+          ].map(([id, label]) => (
+            <button
+              type="button"
+              key={id}
+              onClick={() => {
+                const section = document.getElementById(id);
+                section?.scrollIntoView({ block: 'start' });
+                section?.focus({ preventScroll: true });
+              }}
+              className="rounded-lg px-3 py-2 text-sm font-semibold whitespace-nowrap hover:bg-slate-100"
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        {(!canInspect || !canScan) && (
+          <p className="mb-0 px-4 py-2 text-xs text-slate-600 dark:text-slate-300">
+            {!canInspect ? 'Bạn chưa được cấp quyền chỉnh sửa hoặc ghi nhận kiểm tra. ' : ''}
+            {!canScan ? 'Bạn chưa được cấp quyền quét OCR.' : ''}
+          </p>
+        )}
         {/* Modal Body */}
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 text-xs overflow-y-auto flex-1">
+          {saveError && (
+            <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              {saveError}
+            </p>
+          )}
+          {isSaving && (
+            <p role="status" className="text-sm text-slate-600">
+              Đang lưu hồ sơ…
+            </p>
+          )}
           {savedAlert && (
             <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 font-bold flex items-center gap-2 animate-in fade-in duration-150">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -369,11 +503,24 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             </div>
           )}
 
+          <div id="household-info" tabIndex={-1} className="scroll-mt-4" />
           {/* Action Toolbar: Edit Info & Delete */}
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setIsEditingInfo(!isEditingInfo)}
+                disabled={isSaving || !canInspect}
+                onClick={() => {
+                  if (unified) {
+                    if (onOpenRoster) onOpenRoster(household, true);
+                    else window.location.assign(`/dashboard?tab=households&legacyHousehold=${encodeURIComponent(household.id)}&edit=true`);
+                    return;
+                  }
+                  if (isEditingInfo) requestDiscard('info');
+                  else {
+                    setEditForm(originalForm);
+                    setIsEditingInfo(true);
+                  }
+                }}
                 className={`px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
                   isEditingInfo
                     ? 'bg-amber-100 text-amber-900 border border-amber-300'
@@ -385,9 +532,16 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
               </button>
 
               <button
-                onClick={handleDeleteHouseholdClick}
+                onClick={() => {
+                  if (infoDirty || notesDirty) {
+                    setSaveError('Lưu hoặc bỏ nội dung đang chỉnh sửa trước khi xóa hồ sơ.');
+                    return;
+                  }
+                  handleDeleteHouseholdClick();
+                }}
                 className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                title="Xóa vĩnh viễn hộ dân khỏi cơ sở dữ liệu PostgreSQL"
+                title="Dữ liệu thật được giữ lịch sử; không xóa cứng"
+                disabled={unified || isSaving}
               >
                 <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                 <span>Xóa hộ</span>
@@ -395,7 +549,10 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             </div>
 
             <div className="text-[11px] text-slate-500 font-mono">
-              ID: {household.id} | GPS: [{household.coordinates[0].toFixed(4)}, {household.coordinates[1].toFixed(4)}]
+              ID: {household.id} | GPS:{' '}
+              {household.coordinatesEstimated
+                ? 'Vị trí tạm / chưa xác minh'
+                : `[${household.coordinates[0].toFixed(4)}, ${household.coordinates[1].toFixed(4)}]`}
             </div>
           </div>
 
@@ -409,8 +566,12 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Chủ hộ / Đại diện:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-1">
+                    Chủ hộ / Đại diện:
+                  </label>
                   <input
+                    disabled={isSaving}
+                    id="household-edit-field-1"
                     type="text"
                     value={editForm.ownerName}
                     onChange={e => setEditForm({ ...editForm, ownerName: e.target.value })}
@@ -419,8 +580,12 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Số điện thoại liên lạc:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-2">
+                    Số điện thoại liên lạc:
+                  </label>
                   <input
+                    disabled={isSaving}
+                    id="household-edit-field-2"
                     type="text"
                     value={editForm.ownerPhone}
                     onChange={e => setEditForm({ ...editForm, ownerPhone: e.target.value })}
@@ -429,8 +594,12 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Số nhà:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-3">
+                    Số nhà:
+                  </label>
                   <input
+                    disabled={isSaving}
+                    id="household-edit-field-3"
                     type="text"
                     value={editForm.houseNumber}
                     onChange={e => setEditForm({ ...editForm, houseNumber: e.target.value })}
@@ -439,12 +608,20 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Tuyến đường:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-4">
+                    Tuyến đường:
+                  </label>
                   <select
+                    disabled={isSaving}
+                    id="household-edit-field-4"
                     value={editForm.street}
                     onChange={e => setEditForm({ ...editForm, street: e.target.value })}
                     className="w-full p-2 bg-white rounded-lg border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
                   >
+                    <option value="">Chưa xác định tuyến đường</option>
+                    {editForm.street && !BADIEM_STREETS.includes(editForm.street) && (
+                      <option value={editForm.street}>{editForm.street}</option>
+                    )}
                     {BADIEM_STREETS.map(st => (
                       <option key={st} value={st}>
                         {st}
@@ -454,23 +631,43 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Ấp trực thuộc (Xã Bà Điểm):</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-5">
+                    Ấp trực thuộc (51 ấp sau sáp nhập):
+                  </label>
                   <select
+                    disabled={isSaving}
+                    id="household-edit-field-5"
                     value={editForm.hamlet}
-                    onChange={e => setEditForm({ ...editForm, hamlet: e.target.value })}
+                    onChange={e => {
+                      const selectedFullName = e.target.value;
+                      const matched = BADIEM_51_HAMLETS.find(h => h.fullName === selectedFullName);
+                      setEditForm({
+                        ...editForm,
+                        hamlet: selectedFullName,
+                        hamletId: matched?.id || editForm.hamletId,
+                      });
+                    }}
                     className="w-full p-2 bg-white rounded-lg border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
                   >
-                    {BADIEM_HAMLETS.map(h => (
-                      <option key={h} value={h}>
-                        {h}
+                    <option value="">Chưa xác định ấp</option>
+                    {editForm.hamlet && !BADIEM_51_HAMLETS.some(h => h.fullName === editForm.hamlet) && (
+                      <option value={editForm.hamlet}>{editForm.hamlet}</option>
+                    )}
+                    {BADIEM_51_HAMLETS.map(h => (
+                      <option key={h.id} value={h.fullName}>
+                        {h.fullName} ({h.group})
                       </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Tổ dân phố / Tổ nhân dân:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-6">
+                    Tổ dân phố / Tổ nhân dân:
+                  </label>
                   <input
+                    disabled={isSaving}
+                    id="household-edit-field-6"
                     type="text"
                     value={editForm.neighborhoodGroup}
                     onChange={e => setEditForm({ ...editForm, neighborhoodGroup: e.target.value })}
@@ -479,8 +676,12 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Loại hình cơ sở:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-7">
+                    Loại hình cơ sở:
+                  </label>
                   <select
+                    disabled={isSaving}
+                    id="household-edit-field-7"
                     value={editForm.type}
                     onChange={e => setEditForm({ ...editForm, type: e.target.value as any })}
                     className="w-full p-2 bg-white rounded-lg border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
@@ -492,8 +693,12 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Tình trạng ANTT & PCCC:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-8">
+                    Tình trạng ANTT & PCCC:
+                  </label>
                   <select
+                    disabled={isSaving}
+                    id="household-edit-field-8"
                     value={editForm.status}
                     onChange={e => setEditForm({ ...editForm, status: e.target.value as any })}
                     className="w-full p-2 bg-white rounded-lg border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
@@ -505,11 +710,15 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Tổng nhân khẩu cư trú:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-9">
+                    Tổng nhân khẩu cư trú:
+                  </label>
                   <input
+                    disabled={isSaving}
+                    id="household-edit-field-9"
                     type="number"
-                    min={1}
-                    max={20}
+                    min={0}
+                    step={1}
                     value={editForm.residentsCount}
                     onChange={e => setEditForm({ ...editForm, residentsCount: Number(e.target.value) })}
                     className="w-full p-2 bg-white rounded-lg border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
@@ -517,8 +726,12 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Cảnh báo / Nhắc nhở nghiệp vụ:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-10">
+                    Cảnh báo / Nhắc nhở nghiệp vụ:
+                  </label>
                   <input
+                    disabled={isSaving}
+                    id="household-edit-field-10"
                     type="text"
                     value={editForm.warningMessage}
                     onChange={e => setEditForm({ ...editForm, warningMessage: e.target.value })}
@@ -530,17 +743,19 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-blue-200">
                 <button
-                  onClick={() => setIsEditingInfo(false)}
+                  disabled={isSaving}
+                  onClick={() => requestDiscard('info')}
                   className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   onClick={handleSaveInfo}
+                  disabled={isSaving}
                   className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Lưu vào database PostgreSQL</span>
+                  <span>Lưu thông tin</span>
                 </button>
               </div>
             </div>
@@ -595,6 +810,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             </div>
           )}
 
+          <div id="household-photos" tabIndex={-1} className="scroll-mt-4" />
           {/* CAMERA & INSPECTION PHOTOS SECTION */}
           <div className="p-3.5 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -606,7 +822,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                   <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                     <span>Ảnh chụp hiện trạng thực tế</span>
                     <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
-                      {photos.length} ảnh
+                      {household.inspectionPhotosError ? 'Chưa tải đầy đủ' : `${photos.length} ảnh`}
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500">Minh chứng kiểm tra thực địa lưu trữ đồng bộ</div>
@@ -615,8 +831,9 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
               <button
                 id="btn-trigger-inspection-camera"
+                disabled={isSaving || !canInspect}
                 onClick={handleTriggerCamera}
-                className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer min-h-[36px]"
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[36px]"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>Chụp ảnh mới</span>
@@ -624,6 +841,11 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             </div>
 
             {/* Photo Gallery Grid */}
+            {household.inspectionPhotosError && (
+              <p role="alert" className="text-sm text-amber-800">
+                {household.inspectionPhotosError}
+              </p>
+            )}
             {photos.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
                 {photos.map(photo => (
@@ -637,11 +859,11 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                       alt={photo.caption || 'Ảnh hiện trạng'}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between">
+                    <div className={PHOTO_SCRIM_CLASS}>
                       <div className="flex justify-end">
                         <button
                           onClick={e => handleDeletePhoto(photo.id, e)}
-                          disabled={isDeletingPhotoId === photo.id}
+                          disabled={isSaving || isDeletingPhotoId === photo.id}
                           className="p-1 rounded-md bg-rose-600/90 text-white hover:bg-rose-600 transition-colors shadow-xs"
                           title="Xóa ảnh này"
                         >
@@ -659,7 +881,9 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             ) : (
               <div className="p-6 bg-white rounded-xl border border-dashed border-slate-300 text-center space-y-1.5">
                 <ImageIcon className="w-8 h-8 text-slate-300 mx-auto stroke-1" />
-                <div className="text-slate-600 font-bold text-xs">Chưa có ảnh chụp thực tế</div>
+                <div className="text-slate-600 font-bold text-xs">
+                  {household.inspectionPhotosError ? 'Danh sách ảnh chưa tải được' : 'Chưa có ảnh trong cơ sở dữ liệu'}
+                </div>
                 <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
                   Cán bộ CSKV có thể bật Camera thiết bị để lưu lại minh chứng kiểm tra số nhà, bảng hiệu hoặc an toàn PCCC.
                 </p>
@@ -667,6 +891,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             )}
           </div>
 
+          <div id="household-residents" tabIndex={-1} className="scroll-mt-4" />
           {/* RESIDENTS ROSTER TABLE */}
           <div className="p-3.5 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
@@ -678,7 +903,8 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                   <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                     <span>Danh sách nhân khẩu cư trú</span>
                     <span className="px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
-                      {household.residentsCount} nhân khẩu ({household.maleCount} Nam, {household.femaleCount} Nữ)
+                      {effectiveResidents.length} nhân khẩu đã ghi nhận ({effectiveResidents.filter(r => r.gender === 'Nam').length} Nam,{' '}
+                      {effectiveResidents.filter(r => r.gender === 'Nữ').length} Nữ)
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500">Dữ liệu cư dân quản lý tại địa bàn Xã Bà Điểm</div>
@@ -699,14 +925,16 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
+                  {effectiveResidents.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-2.5 text-slate-600">
+                        Chưa có danh sách nhân khẩu từ cơ sở dữ liệu. Không tự tạo nhân khẩu từ số liệu tổng hợp.
+                      </td>
+                    </tr>
+                  )}
                   {effectiveResidents.map((r, idx) => {
-                    const isEncrypted = isEncryptedAes(r.idCardNumber);
                     const isDecrypted = showCccdMap[r.id];
-                    const displayedCccd = isDecrypted
-                      ? decryptedCccds[r.id]
-                      : isEncrypted
-                        ? maskCccd(r.idCardNumber)
-                        : r.idCardNumber || 'Chưa nộp';
+                    const displayedCccd = isDecrypted ? decryptedCccds[r.id] : r.idCardNumber || 'Chưa có dữ liệu';
 
                     return (
                       <tr key={r.id || idx} className="hover:bg-slate-50/80 transition-colors">
@@ -716,8 +944,8 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                             <span className="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.2 rounded">Chủ hộ</span>
                           )}
                         </td>
-                        <td className="p-2.5 text-slate-600">{r.relationship}</td>
-                        <td className="p-2.5 font-mono text-slate-700">{r.birthYear}</td>
+                        <td className="p-2.5 text-slate-600">{r.relationship || 'Chưa xác minh'}</td>
+                        <td className="p-2.5 font-mono text-slate-700">{r.birthYear ?? 'Chưa cập nhật'}</td>
                         <td className="p-2.5">
                           <span
                             className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${r.gender === 'Nam' ? 'bg-sky-50 text-sky-700' : 'bg-rose-50 text-rose-700'}`}
@@ -728,12 +956,12 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                         <td className="p-2.5 font-mono text-slate-600">
                           <div className="flex items-center gap-1">
                             <span>{displayedCccd}</span>
-                            {isEncrypted && (
+                            {canReveal && r.idCardNumber && (
                               <button
-                                onClick={() => toggleDecryptCccd(r.id, r.idCardNumber)}
+                                onClick={() => revealCccd(r.id)}
                                 disabled={isDecryptingId === r.id}
                                 className="p-0.5 text-blue-600 hover:text-blue-800 cursor-pointer"
-                                title={isDecrypted ? 'Ẩn số CCCD' : 'Xem số CCCD đầy đủ'}
+                                title={isDecrypted ? 'Ẩn số CCCD' : 'Xem số CCCD đầy đủ (ghi nhật ký)'}
                               >
                                 {isDecrypted ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                               </button>
@@ -742,7 +970,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                         </td>
                         <td className="p-2.5">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                            {r.residenceType || 'Thường trú'}
+                            {r.residenceType || 'Chưa xác minh'}
                           </span>
                         </td>
                       </tr>
@@ -753,6 +981,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             </div>
           </div>
 
+          <div id="household-notes" tabIndex={-1} className="scroll-mt-4" />
           {/* INSPECTION NOTES SECTION */}
           <div className="p-3.5 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2.5">
             <div className="flex items-center justify-between">
@@ -769,8 +998,24 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 </div>
               </div>
 
-              {!isEditingNotes && (
+              {/* Roster-managed (TC2) households are written only through the audited roster workflow; the legacy
+                  notes API refuses every write, so send the officer there instead of typing a note that cannot save. */}
+              {!isEditingNotes && unified && (
                 <button
+                  disabled={isSaving || !canInspect}
+                  onClick={() => {
+                    if (onOpenRoster) onOpenRoster(household, false);
+                    else window.location.assign(`/dashboard?tab=households&legacyHousehold=${encodeURIComponent(household.id)}`);
+                  }}
+                  className="px-2.5 py-1 text-blue-700 hover:bg-blue-50 rounded-lg font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <Edit3 aria-hidden="true" className="w-3.5 h-3.5" />
+                  <span>Cập nhật trong hồ sơ hộ</span>
+                </button>
+              )}
+              {!isEditingNotes && !unified && (
+                <button
+                  disabled={isSaving || !canInspect}
                   onClick={handleTriggerEditNotes}
                   className="px-2.5 py-1 text-blue-600 hover:bg-blue-50 rounded-lg font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
                 >
@@ -783,6 +1028,8 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
             {isEditingNotes ? (
               <div className="space-y-2 pt-1">
                 <textarea
+                  disabled={isSaving}
+                  aria-label="Ghi chú kiểm tra thực địa"
                   value={notesText}
                   onChange={e => setNotesText(e.target.value)}
                   rows={3}
@@ -791,20 +1038,19 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                 />
                 <div className="flex justify-end gap-2">
                   <button
-                    onClick={() => {
-                      setNotesText(household.notes || '');
-                      setIsEditingNotes(false);
-                    }}
+                    disabled={isSaving}
+                    onClick={() => requestDiscard('notes')}
                     className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     onClick={handleSaveNotes}
+                    disabled={isSaving}
                     className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
-                    <span>Lưu vào database</span>
+                    <span>Lưu ghi chú</span>
                   </button>
                 </div>
               </div>
@@ -819,15 +1065,19 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
         {/* Modal Footer */}
         <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 shrink-0">
           <div className="flex items-center gap-2">
-            <a
-              href={`tel:${household.ownerPhone}`}
-              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs min-h-[40px]"
-            >
-              <Phone className="w-3.5 h-3.5 text-blue-600" />
-              <span>Gọi ({household.ownerPhone})</span>
-            </a>
+            {/* No number on file: no empty "Gọi ()" link that dials nothing. */}
+            {household.ownerPhone?.trim() && (
+              <a
+                href={`tel:${household.ownerPhone}`}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs min-h-[40px]"
+              >
+                <Phone aria-hidden="true" className="w-3.5 h-3.5 text-blue-600" />
+                <span>Gọi ({household.ownerPhone})</span>
+              </a>
+            )}
 
             <button
+              disabled={isSaving || !canInspect}
               onClick={handleTriggerCamera}
               className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs min-h-[40px] cursor-pointer"
             >
@@ -837,6 +1087,7 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
 
             <button
               id="btn-footer-ocr-scan"
+              disabled={isSaving || !canScan}
               onClick={handleTriggerOcr}
               className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 text-xs min-h-[40px] cursor-pointer border border-emerald-200"
               title="Quét OCR CCCD"
@@ -847,7 +1098,8 @@ export const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
           </div>
 
           <button
-            onClick={onClose}
+            disabled={isSaving}
+            onClick={() => requestDiscard('close')}
             className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-colors text-xs min-h-[40px] cursor-pointer"
           >
             Đóng cửa sổ

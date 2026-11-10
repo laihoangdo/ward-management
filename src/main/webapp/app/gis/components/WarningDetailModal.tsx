@@ -1,22 +1,5 @@
 import React, { useState } from 'react';
-import {
-  X,
-  AlertTriangle,
-  Send,
-  CheckCircle2,
-  Clock,
-  MapPin,
-  Store,
-  Phone,
-  ShieldAlert,
-  ShieldCheck,
-  Ban,
-  Lock,
-  UserCheck,
-  Check,
-  AlertOctagon,
-  FileCheck,
-} from 'lucide-react';
+import { X, AlertTriangle, Send, CheckCircle2, MapPin, Store, ShieldAlert, Ban, Lock, AlertOctagon, FileCheck } from 'lucide-react';
 import { HouseholdFacility, SecurityAlert, AppUser } from '../types';
 import { resolveSecurityAlert, addIpToBlacklist } from '../services/authService';
 import { Pagination } from './Pagination';
@@ -42,8 +25,6 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
   onAlertResolved,
   onIpBlacklisted,
 }) => {
-  if (!isOpen) return null;
-
   const warningHouseholds = households.filter(h => h.status === 'warning');
   const [remindedList, setRemindedList] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'security' | 'licenses'>('security');
@@ -92,17 +73,11 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
   };
 
   const handleConfirmResolve = async (alert: SecurityAlert) => {
-    const adminUser = currentUser || {
-      id: 'USR-SUPERADMIN-01',
-      username: 'superadmin',
-      fullName: 'Đại tá Trần Quốc Huy',
-      role: 'superadmin',
-      rank: 'Đại tá',
-      position: 'Trưởng Công an Quận',
-      badgeNumber: '001-999',
-      assignedDistrict: 'Quận Bình Tân',
-      status: 'active',
-    };
+    if (!currentUser) {
+      setFeedbackMsg('Không xác định được người dùng. Vui lòng đăng nhập lại.');
+      return;
+    }
+    const adminUser = currentUser;
 
     setResolvingId(alert.id);
     try {
@@ -142,17 +117,11 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
   const handleQuickBlacklist = async (alert: SecurityAlert) => {
     if (!alert.sourceIp) return;
-    const adminUser = currentUser || {
-      id: 'USR-SUPERADMIN-01',
-      username: 'superadmin',
-      fullName: 'Đại tá Trần Quốc Huy',
-      role: 'superadmin',
-      rank: 'Đại tá',
-      position: 'Trưởng Công an Quận',
-      badgeNumber: '001-999',
-      assignedDistrict: 'Quận Bình Tân',
-      status: 'active',
-    };
+    if (!currentUser) {
+      setFeedbackMsg('Không xác định được người dùng. Vui lòng đăng nhập lại.');
+      return;
+    }
+    const adminUser = currentUser;
 
     setBlockingIp(alert.sourceIp);
     try {
@@ -177,20 +146,22 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
   const unresolvedCount = localAlerts.filter(a => !a.resolved).length;
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[94vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/75 p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl border border-slate-200 overflow-hidden animate-in fade-in duration-150 my-auto max-h-[94vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-red-700 via-amber-700 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 bg-red-800 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-800/90 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-800/90 flex items-center justify-center font-bold text-white shrink-0">
               <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
+              <h3 className="gis-dialog-title text-sm sm:text-base font-bold flex items-center gap-2">
                 Trung Tâm Cảnh Báo An Ninh & Giám Sát Địa Bàn
                 {unresolvedCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-extrabold animate-pulse">
+                  <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[11px] font-extrabold tabular-nums">
                     {unresolvedCount} cần xử lý
                   </span>
                 )}
@@ -200,7 +171,12 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10">
+          <button
+            type="button"
+            aria-label="Đóng cảnh báo"
+            onClick={onClose}
+            className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -257,7 +233,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
               {paginatedAlerts.map(alert => (
                 <div
                   key={alert.id}
-                  className={`p-4 rounded-xl border-2 transition-all space-y-3 ${
+                  className={`p-4 rounded-xl border-2 transition-colors space-y-3 ${
                     alert.resolved
                       ? 'bg-slate-50/80 border-slate-200 opacity-90'
                       : alert.severity === 'critical'
@@ -271,7 +247,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] uppercase font-black ${
+                          className={`px-2 py-0.5 rounded text-[11px] font-black ${
                             alert.severity === 'critical'
                               ? 'bg-red-700 text-white'
                               : alert.severity === 'high'
@@ -285,12 +261,12 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
                         {/* Resolved Status Badge */}
                         {alert.resolved ? (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                             Đã xác minh & Xử lý xong
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold flex items-center gap-1 animate-pulse">
+                          <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-[11px] font-bold flex items-center gap-1">
                             <AlertOctagon className="w-3 h-3 text-rose-600" />
                             Chưa xử lý
                           </span>
@@ -329,15 +305,15 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                         <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Biên bản hoàn tất xử lý sự cố an ninh:</span>
                       </div>
-                      <div className="text-[10px] text-emerald-800">
+                      <div className="text-[11px] text-emerald-800">
                         Thời gian giải quyết: <strong>{alert.resolvedAt || 'Vừa xong'}</strong>
                       </div>
                       {alert.resolvedBy && (
-                        <div className="text-[10px] text-emerald-800">
+                        <div className="text-[11px] text-emerald-800">
                           Cán bộ xác nhận: <strong>{alert.resolvedBy}</strong>
                         </div>
                       )}
-                      {alert.resolvedNotes && <div className="text-[10px] italic text-emerald-700">Ghi chú: "{alert.resolvedNotes}"</div>}
+                      {alert.resolvedNotes && <div className="text-[11px] italic text-emerald-700">Ghi chú: "{alert.resolvedNotes}"</div>}
                     </div>
                   )}
 
@@ -358,7 +334,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                         type="button"
                         onClick={() => handleConfirmResolve(alert)}
                         disabled={resolvingId === alert.id}
-                        className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 shadow-xs transition-colors"
+                        className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>{resolvingId === alert.id ? 'Đang ghi nhận...' : 'Đã xác minh & Xử lý xong'}</span>
@@ -403,7 +379,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                         <Store className="w-4 h-4 text-amber-800 shrink-0" />
                         <span className="font-extrabold text-xs sm:text-sm text-slate-900">{h.businessName}</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0">
+                      <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-bold text-[11px] shrink-0">
                         Hạn: {h.licenseExpiry}
                       </span>
                     </div>
@@ -412,7 +388,6 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>
                         Số {h.houseNumber} {h.street}, {h.hamlet}
-                        {h.ward ? `, ${h.ward}` : ''}
                       </span>
                     </div>
 

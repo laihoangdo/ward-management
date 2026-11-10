@@ -1,15 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { matchesHouseholdSearch } from '../utils/householdSearch';
+import { exportRbacCsv } from '../services/rbacApiService';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { browseHouseholds, loadHouseholdDetail, HouseholdBrowsePage } from '../services/householdBrowse';
 import {
-  Users,
   Plus,
   Search,
-  Filter,
   Eye,
   Phone,
   Building,
   Store,
   AlertOctagon,
-  CheckCircle,
   FileSpreadsheet,
   Home,
   Clock,
@@ -20,7 +20,6 @@ import {
   List,
   RotateCcw,
   Sparkles,
-  MapPin,
   Calendar,
   Trash2,
 } from 'lucide-react';
@@ -29,8 +28,13 @@ import { getHouseholdResidenceType, RESIDENCE_TYPE_CONFIG } from '../utils/resid
 import { Pagination } from './Pagination';
 
 interface HouseholdsTabProps {
+  serverPaging?: boolean;
+  refreshKey?: number;
   households: HouseholdFacility[];
   currentUser?: AppUser | null;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  isLoading?: boolean;
   onSelectHousehold: (household: HouseholdFacility) => void;
   onOpenAddModal: () => void;
   onDeleteHousehold?: (id: string) => void;
@@ -38,58 +42,136 @@ interface HouseholdsTabProps {
 }
 
 export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
-  households,
+  households: initialHouseholds,
+  serverPaging = false,
+  refreshKey = 0,
   currentUser,
+  searchQuery,
+  onSearchChange,
+  isLoading: externalLoading = false,
   onSelectHousehold,
   onOpenAddModal,
   onDeleteHousehold,
   onShowToast,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
+  const searchTerm = searchQuery ?? localSearchTerm;
+  const setSearchTerm = onSearchChange ?? setLocalSearchTerm;
   const [selectedHamlet, setSelectedHamlet] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<'all' | 'household' | 'business' | 'special_monitoring'>('all');
   const [selectedResidenceType, setSelectedResidenceType] = useState<'all' | ResidenceType>('all');
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
+  const [serverPage, setServerPage] = useState<HouseholdBrowsePage | null>(null);
+  const [pageLoading, setPageLoading] = useState(serverPaging);
+  const [pageError, setPageError] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const detailRequestRef = useRef<AbortController | null>(null);
+  const households = serverPaging ? (serverPage?.items ?? []) : initialHouseholds;
+  const isLoading = serverPaging ? pageLoading : externalLoading;
+  const totalItems = serverPaging ? (serverPage?.total ?? 0) : undefined;
+  const scopeTotal = serverPaging ? (serverPage?.scopeTotal ?? 0) : households.length;
+  useEffect(() => {
+    if (!serverPaging) return;
+    const controller = new AbortController();
+    setPageLoading(true);
+    const timer = setTimeout(() => {
+      void browseHouseholds(
+        {
+          page: currentPage - 1,
+          size: pageSize,
+          search: searchTerm,
+          hamlet: selectedHamlet,
+          type: selectedType,
+          residence: selectedResidenceType,
+        },
+        controller.signal,
+      )
+        .then(data => {
+          if (!controller.signal.aborted) {
+            setServerPage(data);
+            setCurrentPage(data.page + 1);
+            setPageError('');
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setPageError('Chưa tải được trang hộ dân. Dữ liệu đang hiển thị là lần tải trước.');
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setPageLoading(false);
+        });
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [
+    serverPaging,
+    currentPage,
+    pageSize,
+    searchTerm,
+    selectedHamlet,
+    selectedType,
+    selectedResidenceType,
+    initialHouseholds,
+    retry,
+    refreshKey,
+  ]);
+  useEffect(() => () => detailRequestRef.current?.abort(), []);
+  const selectHousehold = (household: HouseholdFacility) => {
+    if (!serverPaging) {
+      onSelectHousehold(household);
+      return;
+    }
+    detailRequestRef.current?.abort();
+    const controller = new AbortController();
+    detailRequestRef.current = controller;
+    setDetailLoading(true);
+    void loadHouseholdDetail(household.id, controller.signal)
+      .then(data => {
+        if (!controller.signal.aborted) onSelectHousehold(data);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setPageError('Không tải được hồ sơ đầy đủ. Hãy thử lại trước khi chỉnh sửa.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDetailLoading(false);
+      });
+  };
 
   const hamletList = useMemo(() => {
+    if (serverPaging) return Object.keys(serverPage?.hamlets ?? {}).sort();
     return Array.from(new Set(households.map(h => h.hamlet).filter(Boolean))).sort();
-  }, [households]);
+  }, [households, serverPaging, serverPage]);
 
   // Calculate dynamic counts for residence type quick chips
   const residenceCounts = {
-    all: households.length,
+    all: scopeTotal,
     'Thường trú': households.filter(h => getHouseholdResidenceType(h) === 'Thường trú').length,
     'Tạm trú': households.filter(h => getHouseholdResidenceType(h) === 'Tạm trú').length,
     'Lưu trú': households.filter(h => getHouseholdResidenceType(h) === 'Lưu trú').length,
   };
+  if (serverPaging) {
+    residenceCounts['Thường trú'] = serverPage?.residenceCounts.permanent ?? 0;
+    residenceCounts['Tạm trú'] = serverPage?.residenceCounts.temporary ?? 0;
+    residenceCounts['Lưu trú'] = serverPage?.residenceCounts.stay ?? 0;
+  }
 
   const filtered = useMemo(() => {
+    if (serverPaging) return households;
     return households.filter(h => {
       if (selectedHamlet !== 'all' && h.hamlet !== selectedHamlet) return false;
       if (selectedType !== 'all' && h.type !== selectedType) return false;
       if (selectedResidenceType !== 'all' && getHouseholdResidenceType(h) !== selectedResidenceType) return false;
 
-      if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase();
-        const matchOwner = h.ownerName ? h.ownerName.toLowerCase().includes(q) : false;
-        const matchHouse = h.houseNumber ? h.houseNumber.toLowerCase().includes(q) : false;
-        const matchStreet = h.street ? h.street.toLowerCase().includes(q) : false;
-        const matchPhone = h.ownerPhone ? h.ownerPhone.includes(q) : false;
-        const matchBiz = h.businessName?.toLowerCase().includes(q) || false;
-        const matchCode = h.code ? h.code.toLowerCase().includes(q) : false;
-        const resType = getHouseholdResidenceType(h);
-        const matchRes = resType ? resType.toLowerCase().includes(q) : false;
-        if (!matchOwner && !matchHouse && !matchStreet && !matchPhone && !matchBiz && !matchCode && !matchRes) {
-          return false;
-        }
-      }
+      if (!matchesHouseholdSearch(h, searchTerm)) return false;
       return true;
     });
-  }, [households, selectedHamlet, selectedType, selectedResidenceType, searchTerm]);
+  }, [households, selectedHamlet, selectedType, selectedResidenceType, searchTerm, serverPaging]);
 
   // Reset pagination to first page when filtering
   useEffect(() => {
@@ -98,9 +180,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
 
   // Slice paginated items for smooth and fast rendering
   const paginatedHouseholds = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
+    if (serverPaging) return filtered;
+    const safePage = Math.min(currentPage, Math.max(1, Math.ceil(filtered.length / pageSize)));
+    const start = (safePage - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
-  }, [filtered, currentPage, pageSize]);
+  }, [filtered, currentPage, pageSize, serverPaging]);
+
+  useEffect(() => {
+    if (serverPaging) return;
+    setCurrentPage(page => Math.min(page, Math.max(1, Math.ceil(filtered.length / pageSize))));
+  }, [filtered.length, pageSize, serverPaging]);
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -113,53 +202,13 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
   const isAnyFilterActive =
     searchTerm.trim() !== '' || selectedHamlet !== 'all' || selectedType !== 'all' || selectedResidenceType !== 'all';
 
-  const handleExportCSV = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canExportReports === false) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền xuất báo cáo danh sách CSV/Excel.';
-      if (onShowToast) onShowToast(msg);
-      else alert(msg);
-      return;
+  const handleExportCSV = async () => {
+    try {
+      await exportRbacCsv('households');
+      onShowToast?.('Exported authorized area data.');
+    } catch {
+      onShowToast?.('Export was denied or the server is unavailable.');
     }
-
-    const headers = [
-      'Mã Quản Lý',
-      'Số Nhà',
-      'Đường',
-      'Khu Vực',
-      'Chủ Hộ / Cơ Sở',
-      'SĐT',
-      'Phân Loại',
-      'Loại Hình Cư Trú',
-      'Tổng Nhân Khẩu',
-      'Nam',
-      'Nữ',
-      'Trạng Thái',
-      'Ghi Chú',
-    ];
-    const rows = filtered.map(h => [
-      h.code,
-      h.houseNumber,
-      h.street,
-      h.hamlet,
-      h.businessName || h.ownerName,
-      h.ownerPhone,
-      h.type === 'business' ? 'Cơ sở kinh doanh' : h.type === 'special_monitoring' ? 'Đối tượng chú ý' : 'Hộ dân',
-      getHouseholdResidenceType(h),
-      h.residentsCount,
-      h.maleCount,
-      h.femaleCount,
-      h.status,
-      `"${(h.notes || '').replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `danh_sach_dia_ban_P_An_Lac_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   // Helper renderer for status badge
@@ -182,15 +231,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700 shadow-2xs">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-          GPKD hợp lệ
+          Cơ sở kinh doanh
         </span>
       );
     }
 
+    if (item.status === 'unverified') return <span className="text-xs text-slate-600">Chưa xác minh</span>;
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 shadow-2xs">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-        Hợp lệ
+        Không có cảnh báo đã ghi nhận
       </span>
     );
   };
@@ -210,23 +260,33 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5 max-w-7xl mx-auto">
+    <div className="gis-records space-y-4 sm:space-y-5 max-w-7xl mx-auto" aria-busy={isLoading}>
+      {detailLoading && <p role="status">Đang tải hồ sơ và nhân khẩu đầy đủ…</p>}
+      {pageError && (
+        <div role="alert" className="rounded-lg bg-red-50 text-red-800 p-3">
+          {pageError}{' '}
+          <button type="button" onClick={() => setRetry(value => value + 1)}>
+            Thử lại
+          </button>
+        </div>
+      )}
       {/* Top Banner */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
             <div
               id="household-eyebrow"
-              className="text-[11px] sm:text-xs font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase mb-1 flex items-center gap-1.5"
+              className="text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>DỮ LIỆU ĐỊA BÀN & CƯ TRÚ</span>
+              <span>Dữ liệu địa bàn & cư trú</span>
             </div>
             <h2 id="household-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Danh sách hộ dân & Cơ sở
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-              Quản lý toàn bộ {households.length} hộ dân, cơ sở kinh doanh và đối tượng theo dõi thuộc Xã Bà Điểm, Hóc Môn.
+              Quản lý {scopeTotal} hộ dân và cơ sở trong phạm vi truy cập
+              {currentUser?.assignedWard ? ` • ${currentUser.assignedWard}` : '.'}
             </p>
           </div>
 
@@ -257,7 +317,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         {/* Header line for quick filter chips */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Bộ lọc nhanh cư trú:</span>
             </span>
@@ -386,7 +446,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                 ? RESIDENCE_TYPE_CONFIG['Lưu trú'].activeChipBg +
                   ' ' +
                   RESIDENCE_TYPE_CONFIG['Lưu trú'].activeChipText +
-                  ' shadow-md shadow-purple-500/20 ' +
+                  ' ' +
                   RESIDENCE_TYPE_CONFIG['Lưu trú'].activeChipRing +
                   ' border ' +
                   RESIDENCE_TYPE_CONFIG['Lưu trú'].activeChipBorder
@@ -402,10 +462,10 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
             <Building2 className="w-3.5 h-3.5 shrink-0" />
             <span>Lưu trú</span>
             <span
-              className={`px-1.5 py-0.2 text-[10px] font-mono rounded-full font-bold ${
+              className={`px-1.5 py-0.2 text-[10px] tabular-nums rounded-full font-bold ${
                 selectedResidenceType === 'Lưu trú'
-                  ? 'bg-purple-700 text-white'
-                  : 'bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                  ? 'bg-purple-700 text-white' // taste-skill-ignore: màu phân loại loại cư trú
+                  : 'bg-white dark:bg-slate-900 text-purple-900 dark:text-purple-300 border border-purple-200 dark:border-purple-800' // taste-skill-ignore: màu phân loại loại cư trú
               }`}
             >
               {residenceCounts['Lưu trú']}
@@ -419,7 +479,8 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
+              type="search"
+              aria-label="Tìm hộ dân và cơ sở"
               placeholder="Tìm tên chủ hộ, cơ sở, số nhà, SĐT, loại cư trú..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
@@ -439,10 +500,10 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                Tất cả ấp ({households.length})
+                Tất cả ấp ({scopeTotal})
               </button>
               {hamletList.map(hamlet => {
-                const count = households.filter(h => h.hamlet === hamlet).length;
+                const count = serverPaging ? (serverPage?.hamlets[hamlet] ?? 0) : households.filter(h => h.hamlet === hamlet).length;
                 return (
                   <button
                     key={hamlet}
@@ -579,7 +640,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               </span>
             )}
             <span className="text-slate-400 text-[11px] ml-auto">
-              Tìm thấy <strong className="text-slate-700 dark:text-slate-200 font-bold">{filtered.length}</strong> kết quả
+              Tìm thấy <strong className="text-slate-700 dark:text-slate-200 font-bold">{totalItems ?? filtered.length}</strong> kết quả
             </span>
           </div>
         )}
@@ -596,8 +657,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
               return (
                 <div
                   key={item.id}
-                  onClick={() => onSelectHousehold(item)}
-                  className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:border-blue-400/80 dark:hover:border-blue-500/80 hover:bg-linear-to-b hover:from-blue-50/25 dark:hover:from-blue-950/30 hover:to-white dark:hover:to-slate-900 cursor-pointer active:scale-[0.985] flex flex-col justify-between select-none"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={event => {
+                    if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault();
+                      selectHousehold(item);
+                    }
+                  }}
+                  onClick={() => selectHousehold(item)}
+                  className="group relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 sm:p-4.5 shadow-xs transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-xl hover:border-blue-400/80 dark:hover:border-blue-500/80 hover:bg-blue-50/40 dark:hover:bg-blue-950/30 cursor-pointer active:scale-[0.985] flex flex-col justify-between select-none"
                 >
                   {/* Top Bar: Code + Hamlet + Badges */}
                   <div className="space-y-2.5">
@@ -706,7 +775,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                         type="button"
                         onClick={e => {
                           e.stopPropagation();
-                          onSelectHousehold(item);
+                          selectHousehold(item);
                         }}
                         className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all duration-200 shadow-xs hover:shadow-md inline-flex items-center gap-1.5 min-h-[34px] cursor-pointer"
                       >
@@ -725,7 +794,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         {viewMode === 'table' && (
           <div className="hidden md:block bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[1000px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px] tracking-wider">
                     <th className="py-3.5 px-4">Mã số</th>
@@ -747,7 +816,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                     return (
                       <tr
                         key={item.id}
-                        onClick={() => onSelectHousehold(item)}
+                        onClick={() => selectHousehold(item)}
                         className="hover:bg-blue-50/50 dark:hover:bg-blue-950/40 transition-all duration-150 cursor-pointer group"
                       >
                         <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300">
@@ -823,7 +892,7 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
                               type="button"
                               onClick={e => {
                                 e.stopPropagation();
-                                onSelectHousehold(item);
+                                selectHousehold(item);
                               }}
                               className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-[11px] font-bold border border-slate-200 dark:border-slate-700 transition-all duration-150 inline-flex items-center gap-1 cursor-pointer"
                             >
@@ -842,7 +911,12 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         )}
 
         {/* Empty state when no households match filters */}
-        {filtered.length === 0 && (
+        {isLoading && (
+          <p role="status" className="p-4 text-sm text-slate-600 dark:text-slate-300">
+            Đang cập nhật dữ liệu hộ dân…
+          </p>
+        )}
+        {!isLoading && !pageError && (totalItems ?? filtered.length) === 0 && (
           <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-6 space-y-3">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
               <Search className="w-6 h-6" />
@@ -862,16 +936,16 @@ export const HouseholdsTab: React.FC<HouseholdsTabProps> = ({
         )}
 
         {/* Bottom Pagination Control */}
-        {filtered.length > 0 && (
+        {(totalItems ?? filtered.length) > 0 && (
           <div className="mt-4 space-y-3">
             <Pagination
               currentPage={currentPage}
-              totalItems={filtered.length}
+              totalItems={totalItems ?? filtered.length}
               pageSize={pageSize}
               onPageChange={page => {
                 setCurrentPage(page);
                 const el = document.getElementById('household-content-panel');
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
               }}
               onPageSizeChange={size => {
                 setPageSize(size);

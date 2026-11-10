@@ -1,4 +1,5 @@
-import maplibregl, { CustomLayerInterface, Map as MapLibreMap } from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+import type { CustomLayerInterface, Map as MapLibreMap } from 'maplibre-gl';
 import * as THREE from 'three';
 
 export interface ThreeBuilding {
@@ -71,6 +72,7 @@ export class ThreeBuildingLayer implements CustomLayerInterface {
   private rebuild(): void {
     for (const mesh of this.meshes) {
       this.scene.remove(mesh);
+      mesh.dispose();
       mesh.geometry.dispose();
       (mesh.material as THREE.Material).dispose();
     }
@@ -149,7 +151,7 @@ export class ThreeBuildingLayer implements CustomLayerInterface {
   }
 
   render(
-    gl: WebGLRenderingContext | WebGL2RenderingContext,
+    _gl: WebGLRenderingContext | WebGL2RenderingContext,
     { modelViewProjectionMatrix }: { modelViewProjectionMatrix: ArrayLike<number> },
   ): void {
     if (!this.visible || !this.renderer || !this.origin || !this.meshes.length) return;
@@ -164,10 +166,14 @@ export class ThreeBuildingLayer implements CustomLayerInterface {
 
   onRemove(): void {
     for (const mesh of this.meshes) {
+      this.scene.remove(mesh);
+      mesh.dispose();
       mesh.geometry.dispose();
       (mesh.material as THREE.Material).dispose();
     }
     this.meshes = [];
+    this.instanceColors.clear();
+    this.scene.clear();
     this.renderer?.dispose();
     this.renderer = undefined;
     this.map = undefined;

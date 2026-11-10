@@ -1,26 +1,9 @@
+import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  Camera,
-  X,
-  RefreshCw,
-  Upload,
-  Check,
-  AlertCircle,
-  Sparkles,
-  ShieldCheck,
-  Building,
-  Store,
-  Calendar,
-  Clock,
-  MapPin,
-  CheckCircle2,
-  FileText,
-  RotateCcw,
-  Zap,
-  Info,
-} from 'lucide-react';
+import { Camera, X, RefreshCw, Upload, Check, AlertCircle, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react';
 import { HouseholdFacility, InspectionPhoto } from '../types';
 import { addInspectionPhotoToHousehold } from '../services/firestoreService';
+import { cameraErrorMessage, isExpectedCameraError, shouldRetryCameraConstraints } from '../utils/cameraErrors';
 
 interface InspectionCameraModalProps {
   isOpen: boolean;
@@ -37,9 +20,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
   onClose,
   onPhotoSaved,
 }) => {
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -49,23 +30,24 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
   const [isFlashing, setIsFlashing] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const cameraRequestRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Stop video tracks helper
   const stopStream = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
+    cameraRequestRef.current++;
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
   };
 
   // Start video stream
   const startCamera = async (mode: 'environment' | 'user') => {
     stopStream();
+    const requestId = cameraRequestRef.current;
     setErrorMessage(null);
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setHasPermission(false);
       setErrorMessage('Trình duyệt không hỗ trợ trực tiếp Web Camera. Bạn có thể sử dụng tính năng tải ảnh từ máy.');
       return;
     }
@@ -81,34 +63,36 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
       };
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      setStream(mediaStream);
-      setHasPermission(true);
+      if (requestId !== cameraRequestRef.current) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      streamRef.current = mediaStream;
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
     } catch (err: unknown) {
-      console.warn('Camera stream error:', err);
+      if (requestId !== cameraRequestRef.current) return;
+      if (!shouldRetryCameraConstraints(err)) {
+        setErrorMessage(cameraErrorMessage(err));
+        return;
+      }
       // Fallback try simple video constraint
       try {
         const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        setStream(fallbackStream);
-        setHasPermission(true);
+        if (requestId !== cameraRequestRef.current) {
+          fallbackStream.getTracks().forEach(track => track.stop());
+          return;
+        }
+        streamRef.current = fallbackStream;
         if (videoRef.current) {
           videoRef.current.srcObject = fallbackStream;
         }
       } catch (fallbackErr: unknown) {
-        setHasPermission(false);
-        const errObj = fallbackErr as { name?: string; message?: string };
-        if (errObj.name === 'NotAllowedError' || errObj.name === 'PermissionDeniedError') {
-          setErrorMessage(
-            'Quyền truy cập Camera bị từ chối. Vui lòng cho phép quyền truy cập máy ảnh hoặc sử dụng tính năng tải ảnh từ thư viện.',
-          );
-        } else if (errObj.name === 'NotFoundError' || errObj.name === 'DevicesNotFoundError') {
-          setErrorMessage('Không tìm thấy thiết bị Camera nào trên máy. Bạn có thể tải ảnh chụp sẵn từ thiết bị.');
-        } else {
-          setErrorMessage('Không thể khởi động Camera. Bạn có thể sử dụng nút tải ảnh từ thiết bị bên dưới.');
-        }
+        if (requestId !== cameraRequestRef.current) return;
+        if (!isExpectedCameraError(fallbackErr)) console.warn('Camera stream error:', fallbackErr);
+        setErrorMessage(cameraErrorMessage(fallbackErr));
       }
     }
   };
@@ -225,7 +209,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     // Text formatting
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(`${h.ward ? `CÔNG AN ${h.ward.toUpperCase()}` : 'CÔNG AN ĐỊA BÀN'} • CSKV PHỤ TRÁCH [${h.hamlet}]`, 16, bannerY + 22);
+    ctx.fillText(`CÔNG AN ĐỊA BÀN • CSKV PHỤ TRÁCH [${h.hamlet}]`, 16, bannerY + 22);
 
     ctx.font = 'normal 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.fillStyle = '#cbd5e1';
@@ -307,55 +291,63 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     };
 
     try {
-      await addInspectionPhotoToHousehold(household.id, newPhoto, household.inspectionPhotos || []);
+      const savedPhoto = await addInspectionPhotoToHousehold(household.id, newPhoto);
 
       if (onPhotoSaved) {
-        onPhotoSaved(newPhoto);
+        onPhotoSaved(savedPhoto);
       }
 
       handleClose();
     } catch (err) {
-      console.error('Lỗi khi lưu ảnh vào Firestore:', err);
-      alert('Không thể lưu ảnh vào Firestore. Vui lòng thử lại.');
+      console.error('Lỗi khi lưu ảnh vào máy chủ:', err);
+      setErrorMessage('Không thể lưu ảnh vào cơ sở dữ liệu. Ảnh chưa được xác nhận lưu; vui lòng thử lại.');
     } finally {
       setIsSaving(false);
     }
   };
 
+  const dialogRef = useDialogFocus(
+    isOpen && Boolean(household),
+    () => {
+      if (!isSaving) handleClose();
+    },
+    isSaving,
+  );
   if (!isOpen || !household) return null;
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       id="modal-inspection-camera-overlay"
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200"
-      onClick={handleClose}
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 animate-in fade-in duration-200"
+      onClick={() => {
+        if (!isSaving) handleClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="camera-modal-title"
     >
       <div
         id="modal-inspection-camera-container"
-        className="relative w-full max-w-2xl bg-slate-900 rounded-3xl shadow-2xl border border-slate-700 overflow-hidden flex flex-col my-auto max-h-[95vh] text-white"
+        className="relative w-full max-w-2xl bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden flex flex-col my-auto max-h-[95vh] text-white"
         onClick={e => e.stopPropagation()}
       >
         {/* Flash Effect on capture */}
         {isFlashing && <div className="absolute inset-0 bg-white z-50 pointer-events-none animate-out fade-out duration-200" />}
 
         {/* Top Header */}
-        <div className="px-4 sm:px-6 py-3.5 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div className="px-4 sm:px-6 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold shadow-md shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-emerald-800 flex items-center justify-center text-white font-bold shrink-0">
               <Camera className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/80">
+                <span className="text-[11px] font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/80">
                   {household.code}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">
-                  {household.hamlet}
-                  {household.ward ? ` • ${household.ward}` : ''}
-                </span>
+                <span className="text-xs text-slate-400 font-medium">{household.hamlet}</span>
               </div>
               <h3 id="camera-modal-title" className="text-sm sm:text-base font-bold text-white mt-0.5 leading-tight">
                 Chụp ảnh hiện trạng: Số {household.houseNumber} {household.street}
@@ -365,7 +357,10 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
 
           <button
             id="btn-close-camera-modal"
-            onClick={handleClose}
+            disabled={isSaving}
+            onClick={() => {
+              if (!isSaving) handleClose();
+            }}
             className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             title="Đóng Camera"
             aria-label="Đóng"
@@ -395,7 +390,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
 
               {/* Watermark Notice Tag on Live View */}
               {addWatermark && (
-                <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-amber-500/50 text-[10px] font-mono text-amber-300 flex items-center gap-1.5 shadow-sm">
+                <div className="absolute top-3 left-3 bg-slate-950/90 px-2.5 py-1 rounded-lg border border-amber-500/50 text-[11px] font-semibold text-amber-300 flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
                   <span>Đóng dấu công vụ CSKV tự động</span>
                 </div>
@@ -405,7 +400,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
               <button
                 id="btn-switch-camera"
                 onClick={handleToggleCamera}
-                className="absolute top-3 right-3 w-10 h-10 rounded-full bg-slate-900/80 backdrop-blur-xs border border-white/20 text-white flex items-center justify-center hover:bg-slate-800 transition-all cursor-pointer shadow-lg"
+                className="absolute top-3 right-3 w-10 h-10 rounded-full bg-slate-900/90 border border-white/20 text-white flex items-center justify-center hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Đổi camera trước/sau"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -413,21 +408,21 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
 
               {/* Fallback error message if camera denied/unavailable */}
               {errorMessage && (
-                <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 bg-slate-900/95 p-5 rounded-2xl border border-rose-500/60 shadow-2xl text-center space-y-3 z-20">
+                <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 bg-slate-900/95 p-5 rounded-2xl border border-rose-500/60 text-center space-y-3 z-20">
                   <AlertCircle className="w-10 h-10 text-rose-400 mx-auto" />
                   <div className="text-sm font-bold text-white">Chưa kích hoạt được Camera</div>
                   <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">{errorMessage}</p>
                   <div className="pt-1 flex items-center justify-center gap-2">
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer"
+                      className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <Upload className="w-4 h-4" />
                       <span>Chọn ảnh từ thiết bị</span>
                     </button>
                     <button
                       onClick={() => startCamera(facingMode)}
-                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Thử lại</span>
@@ -440,7 +435,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
             /* Captured Photo Preview */
             <div className="relative w-full h-full flex items-center justify-center bg-black">
               <img src={capturedImage} alt="Ảnh hiện trạng chụp được" className="w-full h-full object-contain" />
-              <div className="absolute top-3 left-3 bg-emerald-600/90 text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-md">
+              <div className="absolute top-3 left-3 bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Ảnh đã chụp thành công</span>
               </div>
@@ -470,14 +465,14 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                     type="checkbox"
                     checked={addWatermark}
                     onChange={e => setAddWatermark(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-700 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="w-4 h-4 rounded border-slate-700 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                   />
                   <span className="text-slate-300 font-medium">Tự động đóng dấu GPS, Thời gian & Thẩm quyền CSKV lên ảnh</span>
                 </label>
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-blue-400 hover:text-blue-300 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                  className="text-emerald-400 hover:text-emerald-300 font-bold text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   <span>Tải ảnh từ máy</span>
@@ -489,10 +484,10 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                 <button
                   id="btn-trigger-shutter"
                   onClick={handleCapturePhoto}
-                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full border-4 border-white bg-red-600 hover:bg-red-500 active:scale-95 transition-all shadow-xl shadow-red-600/30 flex items-center justify-center cursor-pointer group"
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-full border-4 border-white bg-red-600 hover:bg-red-500 transition-colors flex items-center justify-center cursor-pointer"
                   title="Chụp ảnh ngay"
                 >
-                  <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white group-hover:scale-90 transition-transform" />
+                  <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white" />
                 </button>
               </div>
             </div>
@@ -506,7 +501,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                   <select
                     value={category}
                     onChange={e => setCategory(e.target.value as any)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                   >
                     <option value="facade">Mặt tiền / Biển số nhà</option>
                     <option value="business_sign">Biển hiệu kinh doanh / Cửa hàng</option>
@@ -523,7 +518,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                     value={caption}
                     onChange={e => setCaption(e.target.value)}
                     placeholder="Nhập ghi chú hiện trạng (tùy chọn)..."
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
@@ -534,7 +529,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                   id="btn-retake-photo"
                   onClick={handleRetake}
                   disabled={isSaving}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Chụp lại</span>
@@ -542,7 +537,9 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={handleClose}
+                    onClick={() => {
+                      if (!isSaving) handleClose();
+                    }}
                     disabled={isSaving}
                     className="px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white rounded-xl transition-colors cursor-pointer"
                   >
@@ -553,7 +550,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                     id="btn-save-photo-firestore"
                     onClick={handleSaveToFirestore}
                     disabled={isSaving}
-                    className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>

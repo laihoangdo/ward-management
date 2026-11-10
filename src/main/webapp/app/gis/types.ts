@@ -2,6 +2,8 @@ export type NavigationTab =
   | 'overview'
   | 'area-map'
   | 'advanced-map'
+  | 'field-3d-map'
+  | 'bando-3d'
   | 'households'
   | 'residents'
   | 'documents'
@@ -14,6 +16,8 @@ export type NavigationTab =
 export type UserRole = 'superadmin' | 'admin' | 'sub-admin' | 'officer';
 
 export interface SubAdminFeaturePermissions {
+  canViewAdvancedMap: boolean;
+  canViewField3DMap: boolean;
   canEditCoordinates: boolean; // Được hiệu chỉnh tọa độ nhà trên bản đồ
   canAddHouseholds: boolean; // Được đăng ký hồ sơ hộ dân mới
   canScanOcr: boolean; // Được sử dụng camera quét căn cước / OCR
@@ -22,9 +26,13 @@ export interface SubAdminFeaturePermissions {
   canSendReminders: boolean; // Được phát hành thông báo đôn đốc
   canUpdateInspection: boolean; // Được ghi nhận kết quả kiểm tra thực địa
   canManageStreets: boolean; // Được phân tuyến đường hẻm phụ trách
+  canRevealIdentity: boolean; // Được xem số CCCD đầy đủ (mỗi lần xem đều ghi nhật ký)
 }
 
 export interface AppUser {
+  hamletIds?: number[];
+  version?: number;
+  temporaryPassword?: string;
   id: string;
   username: string;
   email?: string;
@@ -32,12 +40,12 @@ export interface AppUser {
   role: UserRole;
   rank: string; // Cấp bậc CAND: Đại tá, Thượng tá, Thiếu tá, Đại úy, Thượng úy, Trung úy...
   position: string; // Chức vụ: Quản trị viên tối cao, Trưởng Công an Xã, CSKV Quản lý Ấp, Công an viên Phụ trách Tuyến
-  unit: string; // Đơn vị: CATP.HCM / Công an Quận Bình Tân / Công an Xã (Phường) An Lạc
+  unit: string; // Đơn vị: CATP.HCM / Công an Xã Bà Điểm, TP.HCM
   badgeNumber: string; // Số hiệu CAND
   phone: string;
-  assignedWard: string; // Phường/Xã phụ trách (e.g. "Phường An Lạc")
-  assignedHamlets: string[]; // Các ấp phụ trách (e.g. ['Ấp 1', 'Ấp 2'])
-  assignedStreets: string[]; // Các tuyến đường, hẻm phụ trách (e.g. ['Đường Kinh Dương Vương', 'Hẻm 418', 'Đường Hồ Học Lãm'])
+  assignedWard: string; // Phường/Xã phụ trách (e.g. "Xã Bà Điểm")
+  assignedHamlets: string[]; // Các ấp phụ trách (e.g. ['Ấp Bắc Lân', 'Ấp Đông Lân'])
+  assignedStreets: string[]; // Các tuyến đường, hẻm phụ trách (e.g. ['Đường Phan Văn Hớn', 'Đường Nguyễn Ảnh Thủ', 'Đường Bà Điểm 4'])
   subAdminPermissions?: SubAdminFeaturePermissions; // Áp dụng cho cấp dưới (officer) do sub-admin phân quyền
   status: 'active' | 'suspended' | 'locked';
   createdAt: string;
@@ -74,10 +82,10 @@ export interface DynamicMenuItemConfig {
 
 export interface HcmAdminUnit {
   id: string;
-  district: string; // Quận/Huyện TP.HCM (e.g. "Quận Bình Tân", "Huyện Bình Chánh", "TP. Thủ Đức")
-  ward: string; // Phường/Xã (e.g. "Phường An Lạc", "Phường An Lạc A", "Xã Vĩnh Lộc A")
-  hamlet: string; // Ấp/Khu phố (e.g. "Ấp 1", "Ấp 2", "Khu phố 3")
-  streetsAndAlleys: string[]; // Tuyến đường & danh mục hẻm mới nhất (e.g. ["Đường Kinh Dương Vương", "Hẻm 418 KDV", "Hẻm 432", "Đường Hồ Học Lãm"])
+  district: string; // Đơn vị hành chính cấp trên (e.g. "TP. Hồ Chí Minh")
+  ward: string; // Xã/Phường phụ trách (e.g. "Xã Bà Điểm")
+  hamlet: string; // Ấp phụ trách (e.g. "Ấp Bắc Lân", "Ấp Tiền Lân", "Ấp Xuân Thới Thượng")
+  streetsAndAlleys: string[]; // Tuyến đường & danh mục hẻm mới nhất (e.g. ["Đường Phan Văn Hớn", "Đường Nguyễn Ảnh Thủ", "Đường Bà Điểm 4", "Quốc Lộ 22"])
   totalHouseholds: number;
   officerInChargeId?: string;
   officerInChargeName?: string;
@@ -115,18 +123,18 @@ export interface BlacklistedIpEntry {
   hitCount?: number;
 }
 
-export type HouseholdStatus = 'normal' | 'warning' | 'alert' | 'business';
+export type HouseholdStatus = 'normal' | 'warning' | 'alert' | 'business' | 'unverified';
 
-export type ResidenceType = 'Thường trú' | 'Tạm trú' | 'Lưu trú';
+export type ResidenceType = 'Thường trú' | 'Tạm trú' | 'Lưu trú' | 'Chưa xác minh';
 
 export interface Resident {
   id: string;
   fullName: string;
-  birthYear: number;
-  gender: 'Nam' | 'Nữ';
+  birthYear?: number;
+  gender: 'Nam' | 'Nữ' | 'Khác' | 'Chưa cập nhật';
   relationship: string;
   idCardNumber?: string;
-  residenceType: 'Thường trú' | 'Tạm trú' | 'Lưu trú';
+  residenceType: ResidenceType;
   isMonitored?: boolean;
   phone?: string;
   occupation?: string;
@@ -145,14 +153,18 @@ export interface InspectionPhoto {
 }
 
 export type HamletName =
-  'Ấp Bắc Lân' | 'Ấp Nam Lân' | 'Ấp Tây Lân' | 'Ấp Đông Lân' | 'Ấp Hậu Lân' | 'Ấp Tiền Lân' | 'Ấp 1' | 'Ấp 2' | string;
+  'Ấp Bắc Lân' | 'Ấp Nam Lân' | 'Ấp Tây Lân' | 'Ấp Đông Lân' | 'Ấp Hậu Lân' | 'Ấp Tiền Lân' | 'Ấp 1' | 'Ấp 2' | (string & {}); // Known names stay as editor hints; any server hamlet name is accepted.
 
 export interface HouseholdFacility {
+  hamletId?: number;
   id: string;
   code: string;
   houseNumber: string;
-  street: string;
+  street: string; // Địa chỉ hiển thị: tên đường hoặc, khi chưa tách được, địa chỉ nguồn nguyên văn
+  streetName?: string; // Chỉ tên đường thật (cột street); trống khi địa chỉ nguồn chưa tách tên đường
+  rawAddress?: string; // Chỉ đọc: địa chỉ nguồn nguyên văn dùng để hiển thị khi chưa có tên đường; không bao giờ ghi vào cột street
   hamlet: HamletName;
+  legacyHamlet?: string; // Ấp cũ trước sáp nhập (61/62/63/69…), lấy từ nguồn nhập, không suy từ địa chỉ
   neighborhoodGroup?: string; // Tổ dân phố (e.g. 'Tổ 1', 'Tổ 2', 'Tổ 3', 'Tổ 4'...)
   alley?: string; // Tuyến hẻm (e.g. 'Mặt tiền đường', 'Hẻm 418', 'Hẻm 432'...)
   ownerName: string;
@@ -170,7 +182,9 @@ export interface HouseholdFacility {
   licenseExpiry?: string;
   licenseType?: string;
   coordinates: [number, number]; // Latitude, Longitude in An Lac, Binh Tan
-  coordinatesEstimated?: boolean; // True when the backend had no complete coordinate pair.
+  coordinatesEstimated?: boolean; // Missing/fallback or explicitly temporary coordinates.
+  coordinatesFromBuilding?: boolean; // Display-only position taken from the linked building; never saved.
+  coordinateMethod?: string;
   gridPosition: {
     row: number;
     col: number;
@@ -181,6 +195,7 @@ export interface HouseholdFacility {
   residenceType?: ResidenceType;
   residentsList?: Resident[];
   inspectionPhotos?: InspectionPhoto[];
+  inspectionPhotosError?: string;
 }
 
 export interface DocumentRecord {
@@ -189,16 +204,29 @@ export interface DocumentRecord {
   title: string;
   targetName: string;
   address: string;
-  hamlet: HamletName;
+  hamlet: string;
   category: 'license_security' | 'business_permit' | 'temporary_stay' | 'special_record' | 'fire_safety';
   categoryLabel: string;
   issueDate: string;
   expiryDate: string;
-  status: 'valid' | 'expiring_soon' | 'expired' | 'pending_renewal';
+  status: 'valid' | 'expiring_soon' | 'expired' | 'pending_renewal' | 'unverified';
   urgency: 'high' | 'medium' | 'normal';
   notes: string;
   daysRemaining?: number;
+  householdId?: number;
+  expiryOn?: string;
+  legacyExpiryDate?: string;
+  documentNumber?: string;
+  issuingAuthority?: string;
+  version?: number;
 }
+
+/** Unknown demographic totals can be omitted when creating a record. */
+export type HouseholdCreateInput = Omit<
+  HouseholdFacility,
+  'residentsCount' | 'maleCount' | 'femaleCount' | 'under18Count' | 'above18Count'
+> &
+  Partial<Pick<HouseholdFacility, 'residentsCount' | 'maleCount' | 'femaleCount' | 'under18Count' | 'above18Count'>>;
 
 export interface OfficerProfile {
   officerName: string;
@@ -213,15 +241,15 @@ export interface OfficerProfile {
 }
 
 export const DEFAULT_OFFICER: OfficerProfile = {
-  officerName: 'Nguyễn Văn Bình',
-  rank: 'CSKV — P.An Lạc',
-  unit: 'Công an Phường An Lạc, Quận Bình Tân, TP.HCM',
-  badgeNumber: '284-912',
-  username: 'cskv_binh',
-  permissions: 'Chỉ xem và quản lý [ẤP 1 & ẤP 2] thuộc P. An Lạc',
-  isOnline: true,
-  phone: '0908.123.456',
-  assignedHamlets: ['Ấp 1', 'Ấp 2'],
+  officerName: '',
+  rank: '',
+  unit: '',
+  badgeNumber: '',
+  username: '',
+  permissions: '',
+  isOnline: false,
+  phone: '',
+  assignedHamlets: [],
 };
 
 export interface OcrExtractedData {
@@ -251,6 +279,7 @@ export interface OcrExtractedData {
 }
 
 export type AuditActionType =
+  | 'map_3d'
   | 'coordinate_update' // Chỉnh sửa tọa độ
   | 'profile_update' // Cập nhật hồ sơ / ghi chú kiểm tra
   | 'reminder_sent' // Nhắc nhở & đôn đốc

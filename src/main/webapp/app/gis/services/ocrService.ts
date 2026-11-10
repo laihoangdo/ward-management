@@ -80,6 +80,8 @@ export async function scanDocument(
     workerPath: `${assetBase}worker.min.js`,
     corePath: `${assetBase}core`,
     langPath: `${assetBase}lang`,
+    // Do not reuse pre-compatibility models stored by previous app versions.
+    cachePath: 'ocr-tesseract7-compat-v2',
     workerBlobURL: false,
     logger(message) {
       if (!signal.aborted) onProgress(message.status === 'recognizing text' ? Math.round(message.progress * 100) : 0);

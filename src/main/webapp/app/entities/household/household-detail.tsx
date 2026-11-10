@@ -128,7 +128,7 @@ export const HouseholdDetail = () => {
           </dt>
           <dd>{householdEntity.officerInCharge}</dd>
           <dt>Area Zone</dt>
-          <dd>{householdEntity.areaZone ? householdEntity.areaZone.name : ''}</dd>
+          <dd>{householdEntity.administrativeHamlet ? householdEntity.administrativeHamlet.name : ''}</dd>
         </dl>
         <Button as={Link as any} to="/household" replace variant="info" data-cy="entityDetailsBackButton">
           <FontAwesomeIcon icon="arrow-left" /> <span className="d-none d-md-inline">Quay lại</span>

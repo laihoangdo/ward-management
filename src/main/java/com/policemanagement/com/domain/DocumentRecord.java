@@ -4,15 +4,13 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
+import java.time.LocalDate;
 
 /**
  * Hồ sơ / Biên bản kiểm tra an ninh trật tự & PCCC
  */
 @Entity
 @Table(name = "document_record")
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class DocumentRecord implements Serializable {
 
@@ -58,6 +56,72 @@ public class DocumentRecord implements Serializable {
 
     @Column(name = "reminder_sent")
     private Boolean reminderSent;
+
+    @Column(name = "household_id")
+    private Long householdId;
+
+    @Column(name = "expiry_on")
+    private LocalDate expiryOn;
+
+    @Column(name = "issued_on")
+    private LocalDate issuedOn;
+
+    @Column(name = "document_number")
+    private String documentNumber;
+
+    @Column(name = "issuing_authority")
+    private String issuingAuthority;
+
+    @Column(name = "version")
+    private Long version;
+
+    public Long getHouseholdId() {
+        return householdId;
+    }
+
+    public void setHouseholdId(Long value) {
+        householdId = value;
+    }
+
+    public LocalDate getExpiryOn() {
+        return expiryOn;
+    }
+
+    public void setExpiryOn(LocalDate value) {
+        expiryOn = value;
+    }
+
+    public LocalDate getIssuedOn() {
+        return issuedOn;
+    }
+
+    public void setIssuedOn(LocalDate value) {
+        issuedOn = value;
+    }
+
+    public String getDocumentNumber() {
+        return documentNumber;
+    }
+
+    public void setDocumentNumber(String value) {
+        documentNumber = value;
+    }
+
+    public String getIssuingAuthority() {
+        return issuingAuthority;
+    }
+
+    public void setIssuingAuthority(String value) {
+        issuingAuthority = value;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long value) {
+        version = value;
+    }
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 

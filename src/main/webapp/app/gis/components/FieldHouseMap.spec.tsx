@@ -1,0 +1,731 @@
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import axios from 'axios';
+import FieldHouseMap from './FieldHouseMap';
+import { FieldHouse } from '../utils/fieldHouseGeometry';
+import { HouseholdFacility } from '../types';
+
+const mocks = vi.hoisted(() => ({
+  handlers: new Map<string, (event?: unknown) => void>(),
+  setLayoutProperty: vi.fn(),
+  setFilter: vi.fn(),
+  queryRenderedFeatures: vi.fn(),
+  setData: vi.fn(),
+  setHouseholdData: vi.fn(),
+  setTemporaryData: vi.fn(),
+  setHamletData: vi.fn(),
+  setTerritoryData: vi.fn(),
+  fitBounds: vi.fn(),
+  mapOptions: vi.fn(),
+  missingSources: new Set<string>(),
+  addSource: vi.fn(),
+  setPaintProperty: vi.fn(),
+  effectsAttach: vi.fn(),
+  effectsDisplay: vi.fn(),
+  effectsDispose: vi.fn(),
+  mapRemove: vi.fn(),
+}));
+vi.mock('../three/field-effects.js', () => ({ attachFieldEffects: mocks.effectsAttach }));
+vi.mock('axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), isAxiosError: vi.fn(() => false) } }));
+vi.mock('maplibre-gl', () => ({
+  Map: class {
+    addControl = vi.fn();
+    addSource = mocks.addSource;
+    addLayer = vi.fn();
+    setGlyphs = vi.fn();
+    setSprite = vi.fn();
+    remove = mocks.mapRemove;
+    resize = vi.fn();
+    easeTo = vi.fn();
+    doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
+    scrollZoom = { setWheelZoomRate: vi.fn(), setZoomRate: vi.fn() };
+    setPaintProperty = mocks.setPaintProperty;
+    setLayoutProperty = mocks.setLayoutProperty;
+    setFilter = mocks.setFilter;
+    queryRenderedFeatures = mocks.queryRenderedFeatures;
+    fitBounds = mocks.fitBounds;
+    constructor(options: unknown) {
+      mocks.mapOptions(options);
+    }
+    on = (name: string, handler: (event?: unknown) => void) => {
+      mocks.handlers.set(name, handler);
+      return this;
+    };
+    getCanvas = () => ({ style: {} });
+    getLayer = () => ({});
+    getSource = (id: string) =>
+      mocks.missingSources.has(id)
+        ? undefined
+        : {
+            setData:
+              id === 'temporary-households'
+                ? mocks.setTemporaryData
+                : id === 'households'
+                  ? mocks.setHouseholdData
+                  : id === 'hamlets'
+                    ? mocks.setHamletData
+                    : id === 'assigned-territories'
+                      ? mocks.setTerritoryData
+                      : mocks.setData,
+          };
+  },
+  NavigationControl: class {},
+  setWorkerUrl: vi.fn(),
+}));
+const house: FieldHouse = {
+  type: 'Feature',
+  id: 'badiem-test',
+  geometry: {
+    type: 'Polygon',
+    coordinates: [
+      [
+        [106, 10],
+        [106.001, 10],
+        [106.001, 10.001],
+        [106, 10],
+      ],
+    ],
+  },
+  properties: { buildingId: 'badiem-test', height: 7 },
+};
+const household = {
+  id: '1',
+  code: 'HK-1',
+  ownerName: 'Nguyễn A',
+  houseNumber: '1',
+  street: 'Đường A',
+  coordinates: [11, 107],
+  coordinatesEstimated: false,
+  status: 'normal',
+} as HouseholdFacility;
+async function mount(households = [household], canLink = true) {
+  render(<FieldHouseMap households={households} canAdd canLink={canLink} onAdd={vi.fn()} onSelect={vi.fn()} />);
+  act(() => {
+    mocks.handlers.get('load')?.();
+  });
+  await screen.findByText('1 công trình');
+}
+function selectHouse() {
+  mocks.queryRenderedFeatures.mockReturnValue([{ layer: { id: 'houses-3d' }, properties: { buildingId: 'badiem-test' } }]);
+  act(() => {
+    mocks.handlers.get('click')?.({ point: {}, lngLat: { lng: 106.0005, lat: 10.0004 } });
+  });
+}
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.handlers.clear();
+  mocks.missingSources.clear();
+  mocks.effectsAttach.mockImplementation(() => ({
+    ready: Promise.resolve({}),
+    setDisplayState: mocks.effectsDisplay,
+    dispose: mocks.effectsDispose,
+  }));
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  );
+  vi.mocked(axios.get).mockImplementation(url =>
+    Promise.resolve({
+      data: String(url).endsWith('/access')
+        ? { global: true, territories: [] }
+        : { type: 'FeatureCollection', features: String(url).includes('/api/') ? [] : [house] },
+    }),
+  );
+  vi.mocked(axios.put).mockImplementation((_url, data) => Promise.resolve({ data }));
+  vi.mocked(axios.post).mockImplementation((_url, data) => Promise.resolve({ data: { type: 'FeatureCollection', features: data } }));
+});
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
+describe('field map controls', () => {
+  const streetsLabel = 'Bản đồ đường phố (trên vệ tinh)';
+  it('replaces every backdrop with the dark street view and restores them when turned off', async () => {
+    const fetchStyle = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          version: 8,
+          sources: { streets: { type: 'vector', url: 'https://example.test/planet' } },
+          layers: [{ id: 'road', type: 'line', source: 'streets', 'source-layer': 'transportation' }],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchStyle);
+    await mount([]);
+    const darkLabel = 'Đường phố nền tối (cần Internet)';
+
+    fireEvent.click(screen.getByRole('checkbox', { name: darkLabel }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('basemap-road', 'visibility', 'visible'));
+    expect(fetchStyle).toHaveBeenCalledTimes(1);
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite', 'visibility', 'none');
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('streets', 'visibility', 'none');
+    expect(mocks.setPaintProperty).toHaveBeenCalledWith('ground', 'background-color', '#3a4036');
+
+    mocks.setLayoutProperty.mockClear();
+    fireEvent.click(screen.getByRole('checkbox', { name: darkLabel }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite', 'visibility', 'visible'));
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('basemap-road', 'visibility', 'none');
+  });
+
+  it('loads online streets only after the street layer is turned on', async () => {
+    const fetchStyle = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          version: 8,
+          sources: { streets: { type: 'vector', url: 'https://example.test/planet' } },
+          layers: [{ id: 'road', type: 'line', source: 'streets', 'source-layer': 'transportation' }],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchStyle);
+    await mount([]);
+    expect(fetchStyle).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: streetsLabel }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('basemap-road', 'visibility', 'visible'));
+    expect(fetchStyle).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Ảnh vệ tinh' }));
+    await waitFor(() => expect(mocks.setPaintProperty).toHaveBeenCalledWith('ground', 'background-color', '#f2efe9'));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Ảnh vệ tinh' }));
+
+    fireEvent.click(screen.getByRole('checkbox', { name: streetsLabel }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('basemap-road', 'visibility', 'none'));
+  });
+
+  it('keeps the offline map working when online streets are unreachable', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    await mount([]);
+    fireEvent.click(screen.getByRole('checkbox', { name: streetsLabel }));
+    expect(await screen.findByText(/Không tải được nền đường phố trực tuyến/)).toBeTruthy();
+    expect(screen.getByText('1 công trình')).toBeTruthy();
+  });
+
+  it('toggles the surrounding imagery together with the satellite layer', async () => {
+    await mount([]);
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite-context', 'visibility', 'visible'));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Ảnh vệ tinh' }));
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite-context', 'visibility', 'none'));
+  });
+
+  const mountFramed = async (territories: unknown[], communeOverview: boolean) => {
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories }
+          : { type: 'FeatureCollection', features: String(url).includes('/api/') ? [] : [house] },
+      }),
+    );
+    render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} communeOverview={communeOverview} />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('1 công trình');
+  };
+
+  it('opens on the assigned hamlet in 3D for a hamlet-level user', async () => {
+    await mountFramed([house], false);
+    await waitFor(() => expect(mocks.fitBounds).toHaveBeenCalledTimes(1));
+    expect(mocks.fitBounds).toHaveBeenCalledWith(
+      [
+        [106, 10],
+        [106.001, 10.001],
+      ],
+      expect.objectContaining({ pitch: 55 }),
+    );
+  });
+
+  it('opens on the whole commune from above for a commune-level user, even with an assigned hamlet', async () => {
+    await mountFramed([house], true);
+    await waitFor(() => expect(mocks.fitBounds).toHaveBeenCalledTimes(1));
+    expect(mocks.fitBounds.mock.calls[0][0]).not.toEqual([
+      [106, 10],
+      [106.001, 10.001],
+    ]);
+    expect(mocks.fitBounds).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ pitch: 0, bearing: 0 }));
+  });
+
+  it('saves selected building properties through the existing permission-checked endpoint', async () => {
+    await mount([], true);
+    selectHouse();
+    fireEvent.click(screen.getByText('Sửa thuộc tính khối nhà'));
+    fireEvent.change(screen.getByLabelText('Số tầng'), { target: { value: '20' } });
+    fireEvent.change(screen.getByLabelText('Màu mái'), { target: { value: '#aabbcc' } });
+    fireEvent.submit(screen.getByText('Lưu thuộc tính khối nhà').closest('form')!);
+    await screen.findByText('Đã lưu thuộc tính khối nhà.');
+    const [url, payload] = vi.mocked(axios.put).mock.calls[0];
+    expect(url).toBe('/api/gis/field-buildings/badiem-test');
+    expect((payload as FieldHouse).geometry).toEqual(house.geometry);
+    expect((payload as FieldHouse).properties).toMatchObject({ floors: 20, height: 70, roofColor: '#aabbcc', appearanceSource: 'manual' });
+  });
+
+  it('does not expose the property editor without coordinate-edit permission', async () => {
+    await mount([], false);
+    selectHouse();
+    expect(screen.queryByText('Sửa thuộc tính khối nhà')).toBeNull();
+  });
+  it('removes a manual household link after an inline confirmation, but not a link kept by verified coordinates', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/badiem-houses.geojson')
+        ? Promise.resolve({
+            data: { type: 'FeatureCollection', features: [{ ...house, properties: { ...house.properties, householdIds: ['1', '2'] } }] },
+          })
+        : originalGet(url, config),
+    );
+    const insideFootprint = {
+      ...household,
+      id: '2',
+      code: 'HK-2',
+      ownerName: 'Trần B',
+      coordinates: [10.0002, 106.0008],
+    } as HouseholdFacility;
+    await mount([household, insideFootprint], true);
+    selectHouse();
+
+    expect(screen.queryByRole('button', { name: 'Gỡ liên kết hộ HK-2' })).toBeNull();
+    expect(screen.getByText('Khớp theo tọa độ đã xác minh')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Gỡ liên kết hộ HK-1' }));
+    expect(axios.put).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gỡ liên kết hộ HK-1' }));
+    await waitFor(() => expect(axios.put).toHaveBeenCalledOnce());
+    expect((vi.mocked(axios.put).mock.calls[0][1] as FieldHouse).properties.householdIds).toEqual(['2']);
+    expect(await screen.findByText('Đã gỡ liên kết hộ HK-1 khỏi công trình.')).toBeDefined();
+  });
+  it('keeps synthetic appearance out of household-link persistence', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/badiem-houses.geojson')
+        ? Promise.resolve({
+            data: {
+              type: 'FeatureCollection',
+              features: [
+                {
+                  ...house,
+                  properties: { ...house.properties, height: 12.8, wallColor: '#e2d9c8', roofColor: '#727d83', roofShape: 'flat' },
+                },
+              ],
+            },
+          })
+        : originalGet(url, config),
+    );
+    await mount([household], true);
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledOnce());
+    selectHouse();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Chọn hộ dân để liên kết' }), { target: { value: '1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu liên kết hộ dân' }));
+    await waitFor(() => expect(axios.put).toHaveBeenCalledOnce());
+    const payload = vi.mocked(axios.put).mock.calls[0][1] as FieldHouse;
+    expect(payload.properties.height).toBe(12.8);
+    expect(payload.properties).not.toHaveProperty('wallColor');
+    expect(payload.properties).not.toHaveProperty('roofShape');
+    expect(payload.properties.householdIds).toEqual(['1']);
+  });
+  it('applies effects on the existing map, preserves selection and restores native rendering when disabled', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/badiem-houses.geojson')
+        ? Promise.resolve({
+            data: {
+              type: 'FeatureCollection',
+              features: [
+                {
+                  ...house,
+                  properties: { ...house.properties, height: 12.8, wallColor: '#e2d9c8', roofColor: '#727d83', roofShape: 'flat' },
+                },
+              ],
+            },
+          })
+        : originalGet(url, config),
+    );
+    await mount([], false);
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.setPaintProperty).toHaveBeenCalledWith('houses-3d', 'fill-extrusion-opacity', 0));
+    const input = mocks.effectsAttach.mock.calls[0][1].collection.features[0];
+    expect(input.properties.height).toBe(12.8);
+    expect(input.properties.wallColor).toBe('#e2d9c8');
+    selectHouse();
+    await waitFor(() =>
+      expect(mocks.effectsDisplay).toHaveBeenLastCalledWith([
+        expect.objectContaining({ id: 'badiem-test', color: '#fbbf24', visible: true }),
+      ]),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Tắt hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsDispose).toHaveBeenCalledOnce());
+    expect(mocks.setPaintProperty).toHaveBeenLastCalledWith('houses-3d', 'fill-extrusion-opacity', 0.88);
+    expect(axios.put).not.toHaveBeenCalled();
+    expect(vi.mocked(axios.get).mock.calls.filter(([url]) => String(url).includes('.geojson'))).toHaveLength(1);
+  });
+
+  it('applies Three.js undulating effects only to buildings inside managed territory and keeps outside buildings on houses-3d-outside', async () => {
+    const insideHouse: FieldHouse = {
+      ...house,
+      id: 'inside-1',
+      properties: { buildingId: 'inside-1', height: 6.4, estimated: true },
+    };
+    const outsideHouse: FieldHouse = {
+      type: 'Feature',
+      id: 'outside-1',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [106.5, 10.5],
+            [106.501, 10.5],
+            [106.501, 10.501],
+            [106.5, 10.5],
+          ],
+        ],
+      },
+      properties: { buildingId: 'outside-1', height: 6.4, estimated: true },
+    };
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories: [house.geometry] }
+          : String(url).endsWith('/badiem-houses.geojson')
+            ? { type: 'FeatureCollection', features: [insideHouse, outsideHouse] }
+            : { type: 'FeatureCollection', features: [] },
+      }),
+    );
+    render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('2 công trình');
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledTimes(1));
+    const passedFeatures = mocks.effectsAttach.mock.calls[0][1].collection.features as FieldHouse[];
+    expect(passedFeatures).toHaveLength(1);
+    expect(passedFeatures[0].properties.buildingId).toBe('inside-1');
+    expect(passedFeatures[0].properties.levels).toBeGreaterThanOrEqual(1);
+    expect(['flat', 'gable']).toContain(passedFeatures[0].properties.roofShape);
+    await waitFor(() => expect(mocks.setLayoutProperty).toHaveBeenCalledWith('houses-3d-outside', 'visibility', 'visible'));
+    expect(mocks.setFilter).toHaveBeenCalledWith('houses-3d-outside', expect.arrayContaining([['==', ['get', 'inThreeScope'], false]]));
+  });
+
+  it('disposes shared-context effects before destroying the host map', async () => {
+    await mount([], false);
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledOnce());
+    cleanup();
+    expect(mocks.effectsDispose).toHaveBeenCalled();
+    expect(mocks.mapRemove).toHaveBeenCalledOnce();
+    expect(mocks.effectsDispose.mock.invocationCallOrder[0]).toBeLessThan(mocks.mapRemove.mock.invocationCallOrder[0]);
+  });
+
+  it('keeps native buildings visible when effects cannot initialize', async () => {
+    mocks.effectsAttach.mockImplementation(() => ({
+      ready: Promise.reject(new Error('Worker failed')),
+      setDisplayState: mocks.effectsDisplay,
+      dispose: mocks.effectsDispose,
+    }));
+    await mount([], false);
+    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    await screen.findByText('Không khởi tạo được hiệu ứng; bản đồ gốc vẫn hoạt động.');
+    expect(mocks.effectsAttach).toHaveBeenCalledOnce();
+    expect(mocks.setPaintProperty).not.toHaveBeenCalledWith('houses-3d', 'fill-extrusion-opacity', 0);
+  });
+  it('shows temporary points separately, toggles their layer, and never auto-links their coordinates', async () => {
+    const temporary = {
+      ...household,
+      id: 'temp',
+      coordinates: [10.0005, 106.0005],
+      coordinatesEstimated: true,
+      coordinateMethod: 'RANDOM_WITHIN_TC2',
+    } as HouseholdFacility;
+    const fallback = { ...temporary, id: 'fallback', coordinateMethod: undefined };
+    const onSelect = vi.fn();
+    render(<FieldHouseMap households={[temporary, fallback]} canAdd canLink onAdd={vi.fn()} onSelect={onSelect} />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('1 công trình');
+    await waitFor(() =>
+      expect(mocks.setTemporaryData).toHaveBeenLastCalledWith(
+        expect.objectContaining({ features: [expect.objectContaining({ properties: expect.objectContaining({ id: 'temp' }) })] }),
+      ),
+    );
+    expect(mocks.setHouseholdData).toHaveBeenLastCalledWith({ type: 'FeatureCollection', features: [] });
+    expect(axios.post).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Hộ dân — vị trí tạm' }));
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('temporary-households', 'visibility', 'none');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Hộ dân — vị trí tạm' }));
+    mocks.queryRenderedFeatures.mockReturnValue([{ layer: { id: 'temporary-households' }, properties: { id: 'temp' } }]);
+    act(() => {
+      mocks.handlers.get('click')?.({ point: {}, lngLat: { lng: 106.0005, lat: 10.0005 } });
+    });
+    expect(onSelect).toHaveBeenCalledWith(temporary);
+  });
+
+  it('does not expose temporary points outside assigned map territory', async () => {
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories: [house] }
+          : { type: 'FeatureCollection', features: String(url).includes('/api/') ? [] : [house] },
+      }),
+    );
+    const inside = {
+      ...household,
+      id: 'inside',
+      coordinates: [10.00025, 106.0005],
+      coordinatesEstimated: true,
+      coordinateMethod: 'RANDOM_WITHIN_TC2',
+    } as HouseholdFacility;
+    const outside = { ...inside, id: 'outside', coordinates: [11, 107] } as HouseholdFacility;
+    await mount([inside, outside], false);
+    await waitFor(() =>
+      expect(mocks.setTemporaryData).toHaveBeenLastCalledWith(
+        expect.objectContaining({ features: [expect.objectContaining({ properties: expect.objectContaining({ id: 'inside' }) })] }),
+      ),
+    );
+  });
+
+  it('does not update missing sources while the map style is being recreated', async () => {
+    const view = render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('1 công trình');
+    for (const source of ['houses', 'house-points', 'hamlets', 'assigned-territories', 'households', 'draft'])
+      mocks.missingSources.add(source);
+    expect(() => view.rerender(<FieldHouseMap households={[household]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} />)).not.toThrow();
+    mocks.missingSources.clear();
+    view.rerender(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} />);
+    expect(mocks.setData).toHaveBeenCalled();
+  });
+
+  it('ignores a delayed load callback from a removed map instance', async () => {
+    const view = render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} />);
+    const oldLoad = mocks.handlers.get('load');
+    view.unmount();
+    render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} />);
+    mocks.addSource.mockClear();
+    act(() => {
+      oldLoad?.();
+    });
+    expect(mocks.addSource).not.toHaveBeenCalled();
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('1 công trình');
+    expect(mocks.addSource).toHaveBeenCalled();
+  });
+
+  it('explains a foreign household link separately from building geometry access', async () => {
+    const restricted = {
+      ...house,
+      properties: { ...house.properties, canManage: false, accessReason: 'linked-household-outside-scope' },
+    };
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories: [house] }
+          : { type: 'FeatureCollection', features: String(url).endsWith('/boundaries') ? [] : [restricted] },
+      }),
+    );
+    vi.mocked(axios.post).mockResolvedValue({ data: { allowed: true } });
+    await mount([]);
+    selectHouse();
+    expect(await screen.findByText(/Công trình có liên kết hộ dân ngoài phạm vi hồ sơ được giao/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Lưu liên kết hộ dân' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Di chuyển khối nhà' })).toBeNull();
+  });
+
+  it('enables two-finger 3D gestures and caps high-DPI touch rendering with layers initially collapsed', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true })),
+    );
+    vi.stubGlobal('devicePixelRatio', 3);
+    await mount([]);
+    expect(mocks.mapOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ touchZoomRotate: true, touchPitch: true, pixelRatio: 1.5, clickTolerance: 8 }),
+    );
+    expect(screen.getByText('Layer & bộ lọc').closest('details').open).toBe(false);
+    expect(screen.getByText(/Một ngón: di chuyển/)).toBeTruthy();
+  });
+
+  it('keeps selected building zoom padding proportional to the mobile map height', async () => {
+    await mount([]);
+    const canvas = document.querySelector('.field-map-canvas');
+    Object.defineProperties(canvas, { clientWidth: { value: 390 }, clientHeight: { value: 400 } });
+    selectHouse();
+    fireEvent.click(await screen.findByRole('button', { name: 'Zoom tới khối nhà' }));
+    expect(mocks.fitBounds).toHaveBeenLastCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ padding: { top: 48, bottom: 216, left: 20, right: 20 } }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    expect(screen.queryByLabelText('Thông tin công trình')).toBeNull();
+  });
+
+  it('shows all hamlet outlines, highlights only assigned territory and marks provisional boundaries', async () => {
+    const outlines = {
+      type: 'FeatureCollection',
+      features: [{ ...house, properties: { hamletId: 1, name: 'Bắc Lân', provisional: true } }],
+    };
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/boundaries')
+          ? outlines
+          : String(url).endsWith('/access')
+            ? { global: false, territories: [house] }
+            : { type: 'FeatureCollection', features: String(url).includes('/api/') ? [] : [house] },
+      }),
+    );
+    await mount([]);
+    expect(await screen.findByText(/Ranh giới ấp tạm dựng từ PDF/)).toBeTruthy();
+    await waitFor(() => expect(mocks.setHamletData).toHaveBeenCalledWith(outlines));
+    expect(mocks.setTerritoryData.mock.calls.at(-1)[0].features).toEqual([{ type: 'Feature', properties: {}, geometry: house.geometry }]);
+    fireEvent.click(screen.getByLabelText('Ranh giới ấp / phạm vi được giao'));
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('hamlet-boundaries', 'visibility', 'none');
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('assigned-territories', 'visibility', 'none');
+  });
+
+  it('keeps all building shapes visible but hides household actions outside assigned hamlets', async () => {
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories: [] }
+          : { type: 'FeatureCollection', features: String(url).includes('/api/') ? [] : [house] },
+      }),
+    );
+    vi.mocked(axios.post).mockResolvedValue({ data: { allowed: false } });
+    await mount();
+    selectHouse();
+    expect(await screen.findByText('Công trình · Chỉ xem hình khối')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Zoom tới khối nhà' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Thêm hộ dân tại công trình' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Lưu liên kết hộ dân' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Di chuyển khối nhà' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '+ Vẽ khối nhà' })).toBeNull();
+    expect(screen.queryByText(/Nguyễn A/)).toBeNull();
+    expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toEqual([]);
+    expect(mocks.setData.mock.calls.some(([data]) => data.features.some(feature => feature.properties?.buildingId === 'badiem-test'))).toBe(
+      true,
+    );
+    expect(axios.put).not.toHaveBeenCalled();
+    expect(axios.post).not.toHaveBeenCalledWith('/api/gis/field-buildings/auto-link', expect.anything());
+  });
+  it('enables household actions only after the backend confirms assigned geometry', async () => {
+    vi.mocked(axios.get).mockImplementation(url =>
+      Promise.resolve({
+        data: String(url).endsWith('/access')
+          ? { global: false, territories: [house.geometry] }
+          : { type: 'FeatureCollection', features: String(url).includes('/api/') ? [] : [house] },
+      }),
+    );
+    vi.mocked(axios.post).mockResolvedValue({ data: { allowed: true } });
+    await mount();
+    selectHouse();
+    expect(await screen.findByRole('button', { name: 'Thêm hộ dân tại công trình' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Di chuyển khối nhà' })).toBeTruthy();
+    expect(axios.post).toHaveBeenCalledWith('/api/gis/field-buildings/access/check', house.geometry, expect.any(Object));
+  });
+  it('materializes coordinate matches once and hides the point only after confirmation', async () => {
+    const inferred = { ...household, coordinates: [10.0002, 106.0005] as [number, number] };
+    await mount([inferred]);
+    await waitFor(() => expect(axios.post).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toEqual([]));
+    selectHouse();
+    expect(await screen.findByText('1 hộ dân đã liên kết')).toBeTruthy();
+    expect(axios.post).toHaveBeenCalledWith('/api/gis/field-buildings/auto-link', [
+      expect.objectContaining({
+        properties: expect.objectContaining({ householdIds: ['1'] }),
+      }),
+    ]);
+    expect(axios.post).toHaveBeenCalledTimes(1);
+  });
+  it('keeps inferred matches visibly unsaved on API failure and retries explicitly', async () => {
+    vi.mocked(axios.post).mockRejectedValueOnce(Error('offline'));
+    await mount([{ ...household, coordinates: [10.0002, 106.0005] as [number, number] }]);
+    await screen.findByText(/Chưa lưu được liên kết tự nhận diện/);
+    selectHouse();
+    expect(await screen.findByText('Chưa có liên kết hộ dân đã lưu')).toBeTruthy();
+    expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Thử lưu lại' }));
+    await screen.findByText('1 hộ dân đã liên kết');
+    await waitFor(() => expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toEqual([]));
+    expect(axios.post).toHaveBeenCalledTimes(2);
+  });
+  it('does not auto-write without coordinate permission', async () => {
+    await mount([{ ...household, coordinates: [10.0002, 106.0005] as [number, number] }], false);
+    selectHouse();
+    expect(screen.getByText(/Cần quyền chỉnh sửa tọa độ/)).toBeTruthy();
+    expect(axios.post).not.toHaveBeenCalled();
+    expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toHaveLength(1);
+  });
+  it('switches basemap, representation and status filters', async () => {
+    await mount();
+    fireEvent.click(screen.getByLabelText('Ảnh vệ tinh'));
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite', 'visibility', 'none');
+    fireEvent.change(screen.getByLabelText('Hiển thị công trình'), { target: { value: 'point' } });
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('house-points', 'visibility', 'visible');
+    expect(mocks.setLayoutProperty).toHaveBeenCalledWith('houses-3d', 'visibility', 'none');
+    fireEvent.change(screen.getByLabelText('Trạng thái hộ dân'), { target: { value: 'alert' } });
+    expect(mocks.setFilter).toHaveBeenCalledWith('households', ['==', ['get', 'status'], 'alert']);
+  });
+  it('saves explicit household links and reports API failures without a success message', async () => {
+    await mount();
+    await waitFor(() => expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features.map(feature => feature.properties.id)).toEqual(['1']));
+    selectHouse();
+    const select = screen.getByLabelText('Chọn hộ dân để liên kết');
+    fireEvent.change(select, { target: { value: '1' } });
+    vi.mocked(axios.put).mockRejectedValueOnce(Error('API unavailable'));
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu liên kết hộ dân' }));
+    await screen.findByRole('alert');
+    expect(screen.queryByText('Đã lưu liên kết hộ dân vào công trình.')).toBeNull();
+    expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features.map(feature => feature.properties.id)).toEqual(['1']);
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu liên kết hộ dân' }));
+    await screen.findByText('Đã lưu liên kết hộ dân vào công trình.');
+    await waitFor(() => expect(mocks.setHouseholdData.mock.calls.at(-1)[0].features).toEqual([]));
+    expect(screen.getByRole('button', { name: /Nguyễn A · HK-1/ })).toBeTruthy();
+    expect(axios.put).toHaveBeenLastCalledWith(
+      '/api/gis/field-buildings/badiem-test',
+      expect.objectContaining({ properties: expect.objectContaining({ householdIds: ['1'] }) }),
+    );
+  });
+  it('draws and persists a closed polygon', async () => {
+    await mount();
+    fireEvent.click(screen.getByRole('button', { name: '+ Vẽ khối nhà' }));
+    for (const [lng, lat] of [
+      [106, 10],
+      [106.001, 10],
+      [106.001, 10.001],
+    ])
+      act(() => {
+        mocks.handlers.get('click')?.({ lngLat: { lng, lat } });
+      });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu khối nhà' }));
+    await screen.findByText('Đã lưu khối nhà vào cơ sở dữ liệu.');
+    const saved = vi.mocked(axios.put).mock.calls[0][1] as FieldHouse;
+    expect(saved.geometry.coordinates[0]).toEqual([
+      [106, 10],
+      [106.001, 10],
+      [106.001, 10.001],
+      [106, 10],
+    ]);
+    expect(saved.id).toMatch(/^custom-/);
+  });
+  it('previews and saves a new footprint location', async () => {
+    await mount();
+    selectHouse();
+    fireEvent.click(screen.getByRole('button', { name: 'Di chuyển khối nhà' }));
+    fireEvent.change(screen.getByLabelText('Vĩ độ'), { target: { value: '11' } });
+    fireEvent.change(screen.getByLabelText('Kinh độ'), { target: { value: '107' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu vị trí khối nhà' }));
+    await waitFor(() => expect(axios.put).toHaveBeenCalled());
+    const saved = vi.mocked(axios.put).mock.calls[0][1] as FieldHouse;
+    expect(saved.geometry.coordinates[0][0][0]).toBeGreaterThan(106.99);
+    await screen.findByText('Đã lưu vị trí mới và giữ liên kết hộ dân.');
+  });
+});

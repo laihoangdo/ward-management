@@ -1,17 +1,25 @@
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useAppDispatch, useAppSelector } from 'app/config/store';
 import { getSession } from 'app/shared/reducers/authentication';
-import { mapAccountToGisUser, logoutBackendSession } from './services/backendSession';
+import { logoutBackendSession } from './services/backendSession';
 import './index.css';
-import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu, AlertTriangle, Database, CloudCheck, MapPin } from 'lucide-react';
+import { RenewDocumentDialog } from './components/RenewDocumentDialog';
+import { DocumentHistoryDialog } from './components/DocumentHistoryDialog';
+import { DocumentCommand, saveLegalDocument } from './services/documentLifecycle';
+import { matchesHouseholdSearch } from './utils/householdSearch';
+import { loadOperationalData, OPERATIONAL_DATA_LABELS } from './utils/operationalData';
+import { useDeferredOperationalData } from './utils/useDeferredOperationalData';
+import { LayoutDashboard, Map, Users, UserCheck, FileText, Menu } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { OverviewTab } from './components/OverviewTab';
+import { ServerOverviewTab } from './components/ServerOverviewTab';
+import { fetchOverviewSummary, OverviewScope } from './services/overviewApi';
 import { AreaMapTab } from './components/AreaMapTab';
-import { AdvancedMapTab } from './components/AdvancedMapTab';
+import { TerritoryScopeBar } from './components/TerritoryScopeBar';
+import { BaDiem3DMapEditor } from './components/BaDiem3DMapEditor';
+const FieldHouseMap = React.lazy(() => import('./components/FieldHouseMap'));
 const MapLibreAreaMap = React.lazy(() => import('./components/MapLibreAreaMap'));
-import { HouseholdsTab } from './components/HouseholdsTab';
-import { ResidentsTab } from './components/ResidentsTab';
+const UnifiedRoster = React.lazy(() => import('../roster/RosterPage'));
 import { DocumentsTab } from './components/DocumentsTab';
 import { AreasTab } from './components/AreasTab';
 import { LogsTab } from './components/LogsTab';
@@ -19,23 +27,26 @@ import { SettingsTab } from './components/SettingsTab';
 import { HouseholdDetailModal } from './components/HouseholdDetailModal';
 import { AddHouseholdModal } from './components/AddHouseholdModal';
 import { WarningDetailModal } from './components/WarningDetailModal';
-import { normalizeHousehold, normalizeHouseholdList } from './utils/householdUtils';
+import { normalizeHousehold } from './utils/householdUtils';
+import { canViewMapTab } from './utils/mapViewAccess';
+import { useRouteQuery, RECORD_QUERY_KEYS } from './utils/useRouteQuery';
+import { useIdleSessionTimeout } from './utils/useIdleSessionTimeout';
+import { loadHouseholdDetail } from './services/householdBrowse';
 import {
-  fetchCompleteHouseholdsFromBackend,
   createHouseholdInBackend,
   updateHouseholdInBackend,
   updateHouseholdNotesInBackend,
   updateHouseholdCoordinatesInBackend,
   deleteHouseholdInBackend,
   fetchAllDocumentRecords,
-  fetchPatrolLogsFromBackend,
   savePatrolLogInBackend,
-  fetchSecurityAlertsFromBackend,
+  fetchPatrolLogsFromBackend,
 } from './services/householdApiService';
 
 import {
   NavigationTab,
   HouseholdFacility,
+  HouseholdCreateInput,
   DocumentRecord,
   OfficerProfile,
   DEFAULT_OFFICER,
@@ -46,23 +57,8 @@ import {
   HcmAdminUnit,
   SecurityAlert,
 } from './types';
-import { INITIAL_AUDIT_LOGS } from './data/initialAuditLogs';
-import { INITIAL_USERS, INITIAL_DYNAMIC_MENUS, INITIAL_ALLOWED_EMAILS, INITIAL_HCM_ADMIN_UNITS } from './data/initialAuthData';
-import {
-  seedInitialFirestoreData,
-  subscribeHouseholds,
-  subscribeDocuments,
-  subscribeOfficerProfile,
-  subscribeAuditLogs,
-  addHouseholdToFirestore,
-  updateHouseholdNotesInFirestore,
-  updateHouseholdCoordinatesInFirestore,
-  updateHouseholdDataInFirestore,
-  sendDocReminderInFirestore,
-  updateOfficerProfileInFirestore,
-  addAuditLogInFirestore,
-  checkBackendHealth,
-} from './services/firestoreService';
+import { DEFAULT_MENUS as INITIAL_DYNAMIC_MENUS } from './data/defaultMenus';
+import { sendDocReminderInFirestore, checkBackendHealth } from './services/firestoreService';
 import {
   subscribeUsers,
   subscribeAllowedEmails,
@@ -70,17 +66,53 @@ import {
   subscribeHcmAdminUnits,
   subscribeSecurityAlerts,
   seedAuthAndRbacData,
+  subscribeCurrentRbac,
+  retryCurrentRbac,
+  resetRbacEventSession,
+  updateOwnAccount,
   logSecurityAlert,
 } from './services/authService';
 import { LoginScreen } from './components/LoginScreen';
 import { SuperAdminHubTab } from './components/SuperAdminHubTab';
 import { SuperAdminAccessGuard } from './components/SuperAdminAccessGuard';
 import { SubAdminDelegationTab } from './components/SubAdminDelegationTab';
+import { FeatureGuideModal, ActiveMenuGuideBanner } from './components/FeatureGuideModal';
+
+/** Menus temporarily hidden from navigation and direct URL access; code is kept for later reuse. */
+const HIDDEN_MENU_IDS: NavigationTab[] = ['advanced-map'];
 
 export default function App() {
   const dispatch = useAppDispatch();
   const { account, isAuthenticated, sessionHasBeenFetched, errorMessage } = useAppSelector(state => state.authentication);
-  const currentUser = useMemo(() => (isAuthenticated ? mapAccountToGisUser(account) : null), [account, isAuthenticated]);
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [policyError, setPolicyError] = useState('');
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setCurrentUser(null);
+      return;
+    }
+    setCurrentUser(null);
+    setPolicyError('');
+    const stop = subscribeCurrentRbac(
+      user => {
+        setCurrentUser(user);
+        setPolicyError('');
+      },
+      () => {
+        setCurrentUser(null);
+        setPolicyError('Không thể xác nhận quyền truy cập. Liên hệ quản trị đơn vị hoặc thử đăng nhập lại.');
+      },
+      () => {
+        // Discard cached screens immediately when a rights/scope notification arrives.
+        setCurrentUser(null);
+        setPolicyError('');
+      },
+    );
+    return () => {
+      stop();
+      resetRbacEventSession();
+    };
+  }, [isAuthenticated, account.login]);
   if (!sessionHasBeenFetched)
     return (
       <div role="status" className="p-8">
@@ -101,51 +133,158 @@ export default function App() {
   if (!currentUser)
     return (
       <div role="alert" className="p-8">
-        Tài khoản chưa được cấp quyền truy cập GIS.
+        {policyError || 'Đang tải quyền truy cập từ máy chủ...'}
+        {policyError && (
+          <button type="button" className="ml-3 rounded border px-3 py-2" onClick={retryCurrentRbac}>
+            Thử tải lại quyền
+          </button>
+        )}
       </div>
     );
-  return <AuthenticatedDashboard key={currentUser.id} currentUser={currentUser} />;
+  return <AuthenticatedDashboard key={`${currentUser.id}:${currentUser.version}:${currentUser.role}`} currentUser={currentUser} />;
 }
 
 function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
-  const [usersList, setUsersList] = useState<AppUser[]>(INITIAL_USERS);
-  const [allowedEmails, setAllowedEmails] = useState<AllowedEmailEntry[]>(INITIAL_ALLOWED_EMAILS);
-  const [dynamicMenus, setDynamicMenus] = useState<DynamicMenuItemConfig[]>(INITIAL_DYNAMIC_MENUS);
-  const [hcmUnits, setHcmUnits] = useState<HcmAdminUnit[]>(INITIAL_HCM_ADMIN_UNITS);
+  const { params: routeParams, updateQuery } = useRouteQuery();
+  const [usersList, setUsersList] = useState<AppUser[]>([]);
+  const [allowedEmails, setAllowedEmails] = useState<AllowedEmailEntry[]>([]);
+  const [dynamicMenus, setDynamicMenus] = useState<DynamicMenuItemConfig[]>([]);
+
+  // Supplement default system menus when the database has not yet been synchronized.
+  const effectiveDynamicMenus = useMemo(() => {
+    const list = [...dynamicMenus];
+    INITIAL_DYNAMIC_MENUS.forEach(def => {
+      const existingIdx = list.findIndex(m => m.id === def.id);
+      if (existingIdx === -1) {
+        list.push(def);
+      }
+    });
+    return list;
+  }, [dynamicMenus]);
+
+  const canOpenMenu = (id: NavigationTab) =>
+    !HIDDEN_MENU_IDS.includes(id) &&
+    effectiveDynamicMenus.some(
+      menu =>
+        menu.id === id &&
+        canViewMapTab(currentUser, id) &&
+        menu.visibleRoles.includes(currentUser.role) &&
+        (currentUser.role === 'superadmin' ||
+          !menu.requiredPermission ||
+          currentUser.subAdminPermissions?.[menu.requiredPermission] === true),
+    );
+
+  const [hcmUnits, setHcmUnits] = useState<HcmAdminUnit[]>([]);
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
 
-  const [activeTab, setActiveTab] = useState<NavigationTab>('overview');
-  const [useMapLibre, setUseMapLibre] = useState(false);
+  const requestedTab = (routeParams.get('tab') || 'overview') as NavigationTab;
+  const activeTab = canOpenMenu(requestedTab) ? requestedTab : (effectiveDynamicMenus.find(menu => canOpenMenu(menu.id))?.id ?? 'overview');
+  const setActiveTab = (tab: NavigationTab) => {
+    if (canOpenMenu(tab)) updateQuery({ tab, ...RECORD_QUERY_KEYS, page: null, section: null, rosterTab: null });
+  };
+  useEffect(() => {
+    if (requestedTab !== activeTab) updateQuery({ tab: activeTab, ...RECORD_QUERY_KEYS, page: null, section: null, rosterTab: null }, true);
+  }, [requestedTab, activeTab, updateQuery]);
   const [households, setHouseholds] = useState<HouseholdFacility[]>([]);
+  const [hasCompleteHouseholds, setHasCompleteHouseholds] = useState(false);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [officer, setOfficer] = useState<OfficerProfile>(DEFAULT_OFFICER);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  useEffect(() => {
+    if (activeTab !== 'logs' || !currentUser) return;
+    let active = true;
+    void (async () => {
+      if (!active) return;
+      try {
+        const logs = await fetchPatrolLogsFromBackend();
+        if (active) {
+          setAuditLogs(logs);
+          setDataErrors(errors => errors.filter(label => label !== OPERATIONAL_DATA_LABELS[2]));
+        }
+      } catch {
+        if (active) setDataErrors(errors => [...new Set([...errors, OPERATIONAL_DATA_LABELS[2]])]);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [activeTab, currentUser?.id]);
+  const [renewingDocument, setRenewingDocument] = useState<DocumentRecord | null>(null);
+  const [creatingDocument, setCreatingDocument] = useState(false);
+  const [historyDocument, setHistoryDocument] = useState<DocumentRecord | null>(null);
+  const [dataErrors, setDataErrors] = useState<string[]>([]);
+  const [, setLastUpdated] = useState<Date | null>(null);
+  const [documentFilter, setDocumentFilter] = useState<'all' | 'expiring_soon' | 'valid'>('all');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [householdListVersion, setHouseholdListVersion] = useState(0);
+  const [overviewVersion, setOverviewVersion] = useState(0);
+  const [overviewScope, setOverviewScope] = useState<OverviewScope>();
+  const handleOverviewScope = useCallback((scope: OverviewScope) => {
+    setOverviewScope(scope);
+    setLastUpdated(new Date());
+    setDataErrors(errors => errors.filter(label => label !== 'Thống kê địa bàn'));
+  }, []);
+  useEffect(() => {
+    setOverviewVersion(version => version + 1);
+  }, [households]);
   // Connection & Backend status
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
   // Mobile sidebar drawer state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Territory scope for sub-admin and officer ('assigned' | 'all')
-  const [territoryScope, setTerritoryScope] = useState<'assigned' | 'all'>('assigned');
-
-  // Reset territory scope to assigned area whenever logged in user changes
-  useEffect(() => {
-    setTerritoryScope('assigned');
-  }, [currentUser?.id]);
-
   // Modals
   const [selectedHousehold, setSelectedHousehold] = useState<HouseholdFacility | null>(null);
+  const [householdRouteError, setHouseholdRouteError] = useState('');
+  const [householdRouteLoading, setHouseholdRouteLoading] = useState(false);
+  const gisHouseholdId = routeParams.get('gisHousehold');
+  const openHousehold = (household: HouseholdFacility) => updateQuery({ ...RECORD_QUERY_KEYS, gisHousehold: household.id });
+  useEffect(() => {
+    const controller = new AbortController();
+    setSelectedHousehold(null);
+    setHouseholdRouteError('');
+    setHouseholdRouteLoading(false);
+    if (!gisHouseholdId || requestedTab !== activeTab) return () => controller.abort();
+    if (!/^\d+$/.test(gisHouseholdId)) {
+      setHouseholdRouteError('Mã hộ trên URL không hợp lệ.');
+      return () => controller.abort();
+    }
+    setHouseholdRouteLoading(true);
+    void loadHouseholdDetail(gisHouseholdId, controller.signal)
+      .then(household => {
+        if (!controller.signal.aborted) setSelectedHousehold(household);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setHouseholdRouteError('Không mở được hồ sơ hộ. Hồ sơ không tồn tại hoặc bạn không có quyền truy cập.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setHouseholdRouteLoading(false);
+      });
+    return () => controller.abort();
+  }, [gisHouseholdId, activeTab, requestedTab, currentUser.id, currentUser.version]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedMapCoordinates, setSelectedMapCoordinates] = useState<[number, number] | null>(null);
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  useEffect(() => {
+    setSelectedHousehold(null);
+    setIsAddModalOpen(false);
+    setSelectedMapCoordinates(null);
+  }, [currentUser.id, currentUser.version]);
 
   // Fullscreen map mode for Advanced Map
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  useEffect(() => {
+    setIsMapFullscreen(false);
+    setIsAddModalOpen(false);
+    setIsWarningModalOpen(false);
+    setSelectedMapCoordinates(null);
+  }, [activeTab]);
 
   // Toggle map fullscreen safely via pure viewport mode (no browser gesture restrictions)
   const handleToggleMapFullscreen = () => {
@@ -175,6 +314,23 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         jhCard.style.border = 'none';
         jhCard.style.boxShadow = 'none';
         jhCard.style.borderRadius = '0px';
+      }
+    } else {
+      if (appHeader) appHeader.style.display = '';
+      if (appContainer) {
+        appContainer.style.paddingTop = '';
+        appContainer.style.height = '';
+      }
+      if (viewContainer) {
+        viewContainer.style.padding = '';
+        viewContainer.style.height = '';
+        viewContainer.style.maxWidth = '';
+      }
+      if (jhCard) {
+        jhCard.style.padding = '';
+        jhCard.style.border = '';
+        jhCard.style.boxShadow = '';
+        jhCard.style.borderRadius = '';
       }
     }
   }, [isMapFullscreen]);
@@ -246,10 +402,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // Initialize Firestore and Backend on app load
   useEffect(() => {
-    let unsubscribeHouseholds: () => void = () => {};
-    let unsubscribeDocuments: () => void = () => {};
-    let unsubscribeOfficer: () => void = () => {};
-    let unsubscribeAuditLogs: () => void = () => {};
+    const onRbacError = (event: Event) => showToast((event as CustomEvent<string>).detail);
+    window.addEventListener('rbac-error', onRbacError);
+    const unsubscribeHouseholds: () => void = () => {};
+    const unsubscribeDocuments: () => void = () => {};
+    const unsubscribeOfficer: () => void = () => {};
+    const unsubscribeAuditLogs: () => void = () => {};
 
     let cancelled = false;
     const refreshHealth = async () => {
@@ -261,80 +419,40 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     void refreshHealth();
     const healthTimer = window.setInterval(refreshHealth, 30000);
 
-    // 1. Tải toàn bộ dữ liệu hộ dân & nhân khẩu thực tế từ PostgreSQL
-    fetchCompleteHouseholdsFromBackend()
-      .then(realHouseholds => {
-        if (realHouseholds && realHouseholds.length > 0) {
-          setHouseholds(realHouseholds);
-        }
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.warn('Lỗi khi tải dữ liệu từ PostgreSQL:', err);
-        setIsLoading(false);
-      });
-
-    // 2. Tải danh sách hồ sơ giấy tờ thực tế từ PostgreSQL
-    fetchAllDocumentRecords(1000)
-      .then(docs => {
-        if (Array.isArray(docs) && docs.length > 0) {
-          setDocuments(docs);
-        }
-      })
-      .catch(err => {
-        console.warn('Lỗi khi tải danh sách hồ sơ giấy tờ:', err);
-      });
-
-    // 3. Tải danh sách nhật ký tuần tra thực địa từ PostgreSQL
-    fetchPatrolLogsFromBackend(200)
-      .then(logs => {
-        if (Array.isArray(logs) && logs.length > 0) {
-          setAuditLogs(logs);
-        }
-      })
-      .catch(err => {
-        console.warn('Lỗi khi tải nhật ký tuần tra:', err);
-      });
-
-    // 4. Tải danh sách cảnh báo an ninh từ PostgreSQL
-    fetchSecurityAlertsFromBackend(100)
-      .then(alerts => {
-        if (Array.isArray(alerts) && alerts.length > 0) {
-          setSecurityAlerts(alerts);
-        }
-      })
-      .catch(err => {
-        console.warn('Lỗi khi tải cảnh báo an ninh:', err);
-      });
-
-    unsubscribeOfficer = subscribeOfficerProfile(data => {
-      if (data) {
-        setOfficer(data);
-      }
-    });
-
     // 4. Seed initial RBAC, Allowed Emails, and Dynamic Menus if empty
     seedAuthAndRbacData().catch(console.warn);
 
     // 5. Attach real-time listeners for RBAC, Menus, Units, and Security Alerts
-    const unsubUsers = subscribeUsers(users => {
-      if (users && users.length > 0) setUsersList(users);
-    });
-    const unsubEmails = subscribeAllowedEmails(emails => {
-      if (emails && emails.length > 0) setAllowedEmails(emails);
-    });
+    const unsubUsers = ['superadmin', 'admin', 'sub-admin'].includes(currentUser.role)
+      ? subscribeUsers(users => {
+          setUsersList(users);
+        })
+      : () => {};
+    const unsubEmails =
+      currentUser.role === 'superadmin'
+        ? subscribeAllowedEmails(emails => {
+            setAllowedEmails(emails);
+          })
+        : () => {};
     const unsubMenus = subscribeDynamicMenus(menus => {
-      if (menus && menus.length > 0) setDynamicMenus(menus);
+      setDynamicMenus(menus);
     });
-    const unsubUnits = subscribeHcmAdminUnits(units => {
-      if (units && units.length > 0) setHcmUnits(units);
-    });
-    const unsubAlerts = subscribeSecurityAlerts(alerts => {
-      if (alerts) setSecurityAlerts(alerts);
-    });
+    const unsubUnits =
+      currentUser.role === 'superadmin'
+        ? subscribeHcmAdminUnits(units => {
+            setHcmUnits(units);
+          })
+        : () => {};
+    const unsubAlerts =
+      currentUser.role === 'superadmin'
+        ? subscribeSecurityAlerts(alerts => {
+            if (alerts) setSecurityAlerts(alerts);
+          })
+        : () => {};
 
     return () => {
       cancelled = true;
+      window.removeEventListener('rbac-error', onRbacError);
       window.clearInterval(healthTimer);
       unsubscribeHouseholds();
       unsubscribeDocuments();
@@ -355,10 +473,14 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         ...prev,
         officerName: currentUser.fullName,
         rank: currentUser.rank,
+        unit: currentUser.unit,
         badgeNumber: currentUser.badgeNumber,
         username: currentUser.username,
         permissions: currentUser.position,
-        assignedArea: `${currentUser.assignedWard}${
+        phone: currentUser.phone || '',
+        assignedHamlets: currentUser.assignedHamlets ?? [],
+        isOnline: true,
+        assignedArea: `${currentUser.assignedWard || ''}${
           currentUser.assignedHamlets && currentUser.assignedHamlets.length > 0 ? ` (${currentUser.assignedHamlets.join(', ')})` : ''
         }`,
       }));
@@ -374,8 +496,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     }
   };
   const handleSwitchAccount = handleLogout;
-
-  const warningCount = households.filter(h => h.status === 'warning').length;
+  // Sign an unattended console out before the 15-minute server session expires.
+  const idleSession = useIdleSessionTimeout(handleLogout);
 
   // Helper date-time and integrity hash generators for audit logs
   const formatDateTime = (d: Date): string => {
@@ -383,38 +505,24 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
 
-  const generateSimpleHash = (seed: string): string => {
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      hash = (hash << 5) - hash + seed.charCodeAt(i);
-      hash |= 0;
-    }
-    const hex = Math.abs(hash).toString(16).padStart(8, '0');
-    const rand = Math.floor(Math.random() * 0xffffff)
-      .toString(16)
-      .padStart(6, '0');
-    return `SHA256: ${hex}${rand}...${hex.slice(0, 4)}`;
-  };
-
   // Record audit log helper with PostgreSQL Backend Persistence
   const recordAuditLog = async (log: AuditLogEntry) => {
-    // 1. Optimistic UI update
-    setAuditLogs(prev => [log, ...prev]);
-
     // 2. Lưu trực tiếp vào PostgreSQL backend (/api/patrol-logs)
     try {
       const saved = await savePatrolLogInBackend(log);
       if (saved) {
-        setAuditLogs(prev => prev.map(item => (item.id === log.id ? saved : item)));
+        setAuditLogs(prev => [saved, ...prev]);
+      } else {
+        showToast('Máy chủ chưa xác nhận lưu nhật ký. Vui lòng kiểm tra lại.');
+        return false;
       }
     } catch (err) {
       console.warn('Lỗi lưu nhật ký backend:', err);
+      showToast('Không thể lưu nhật ký kiểm tra. Vui lòng thử lại.');
+      return false;
     }
 
-    // 3. Phụ trợ đồng bộ Firestore nếu có
-    addAuditLogInFirestore(log).catch(err => {
-      console.warn('Persist audit log firestore notice:', err);
-    });
+    return true;
   };
 
   const handleAddManualLog = async (partial: Partial<AuditLogEntry>) => {
@@ -425,37 +533,35 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: partial.actionType || 'profile_update',
       actionLabel: partial.actionLabel || 'Tuần tra thực địa',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: partial.targetType || 'household',
       targetCode: partial.targetCode,
       targetTitle: partial.targetTitle || 'Địa bàn Xã Bà Điểm',
       details: partial.details || 'Ghi nhận tuần tra thực địa',
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Tablet tuần tra chuyên dụng CSKV #01',
-      integrityHash: generateSimpleHash(`MAN-${Date.now()}`),
+      integrityHash: undefined,
       status: partial.status || 'info',
     };
-    await recordAuditLog(newLog);
-    showToast('Đã lưu nhật ký tuần tra thực địa vào cơ sở dữ liệu PostgreSQL.');
+    const saved = await recordAuditLog(newLog);
+    if (saved) showToast('Đã lưu nhật ký tuần tra thực địa vào cơ sở dữ liệu PostgreSQL.');
+    return saved;
   };
 
   // Handlers with Backend PostgreSQL Persistence & Audit Logging
   const handleUpdateNotes = async (id: string, notes: string) => {
-    const target = households.find(h => h.id === id);
+    const target = households.find(h => h.id === id) ?? (selectedHousehold?.id === id ? selectedHousehold : undefined);
     const today = new Date().toLocaleDateString('vi-VN');
-    // Optimistic UI update
-    setHouseholds(prev => prev.map(h => (h.id === id ? { ...h, notes, lastCheckedDate: today } : h)));
-    if (selectedHousehold && selectedHousehold.id === id) {
-      setSelectedHousehold(prev => (prev ? { ...prev, notes, lastCheckedDate: today } : null));
-    }
-
     try {
       await updateHouseholdNotesInBackend(id, notes);
+      setHouseholds(prev => prev.map(h => (h.id === id ? { ...h, notes, lastCheckedDate: today } : h)));
+      setSelectedHousehold(prev => (prev?.id === id ? { ...prev, notes, lastCheckedDate: today } : prev));
       showToast('Đã lưu ghi chú kiểm tra vào cơ sở dữ liệu PostgreSQL.');
     } catch (err) {
       console.error('Lỗi khi lưu ghi chú backend:', err);
-      showToast('Đã lưu ghi chú kiểm tra thực địa thành công.');
+      showToast('Không thể lưu ghi chú. Nội dung nhập được giữ lại để thử lại.');
+      throw err;
     }
 
     // Record audit log for profile / inspection update
@@ -474,60 +580,26 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       details: `Cập nhật kết quả kiểm tra thực địa định kỳ: "${notes}"`,
       previousValue: target?.notes || 'Chưa có ghi chú',
       newValue: notes,
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Tablet tuần tra chuyên dụng CSKV #01',
-      integrityHash: generateSimpleHash(`NOTE-${Date.now()}`),
+      integrityHash: undefined,
       status: 'success',
     };
     recordAuditLog(noteLog);
   };
 
-  const handleHouseholdUpdated = async (updated: HouseholdFacility) => {
-    setHouseholds(prev => prev.map(h => (h.id === updated.id ? updated : h)));
-    setSelectedHousehold(updated);
-
-    try {
-      await updateHouseholdInBackend(updated);
-      showToast(`Đã đồng bộ hồ sơ hộ ${updated.code} vào PostgreSQL.`);
-    } catch (err) {
-      console.error('Lỗi khi đồng bộ OCR vào backend:', err);
-      showToast(`Đã đồng bộ thông tin hồ sơ hộ ${updated.code} từ kết quả quét OCR.`);
-    }
-
-    // Record audit log for OCR scan / profile sync
-    const ocrLog: AuditLogEntry = {
-      id: `LOG-OCR-${Date.now()}`,
-      timestamp: formatDateTime(new Date()),
-      createdAt: Date.now(),
-      actionType: 'ocr_scan',
-      actionLabel: 'Trích xuất OCR CCCD',
-      officerName: currentUser?.fullName || officer.officerName || 'Cán bộ CSKV',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV',
-      targetType: 'household',
-      targetId: updated.id,
-      targetCode: updated.code,
-      targetTitle: `${updated.houseNumber} ${updated.street} (${updated.ownerName})`,
-      details: `Trích xuất dữ liệu thẻ CCCD/giấy phép, đồng bộ nhân khẩu cư trú: ${updated.residentsCount} nhân khẩu.`,
-      newValue: `Chủ hộ: ${updated.ownerName}, SĐT: ${updated.ownerPhone}`,
-      ipAddress: '192.168.1.45',
-      deviceInfo: 'Camera quét di động thiết bị CSKV',
-      integrityHash: generateSimpleHash(`OCR-${Date.now()}`),
-      status: 'info',
-    };
-    recordAuditLog(ocrLog);
-  };
-
   const handleUpdateHouseholdFull = async (updated: HouseholdFacility) => {
-    setHouseholds(prev => prev.map(h => (h.id === updated.id ? updated : h)));
-    if (selectedHousehold && selectedHousehold.id === updated.id) {
-      setSelectedHousehold(updated);
-    }
     try {
-      await updateHouseholdInBackend(updated);
+      const persisted = await updateHouseholdInBackend(updated);
+      // These presentation/capture fields are held outside the household API.
+      const saved = { ...persisted, gridPosition: updated.gridPosition, inspectionPhotos: updated.inspectionPhotos };
+      setHouseholds(prev => prev.map(h => (h.id === saved.id ? saved : h)));
+      setSelectedHousehold(prev => (prev?.id === saved.id ? saved : prev));
       showToast(`Đã cập nhật hộ ${updated.code} vào PostgreSQL thành công!`);
     } catch (err) {
       console.error('Lỗi khi lưu cập nhật vào PostgreSQL:', err);
-      showToast('Lỗi khi lưu thông tin vào cơ sở dữ liệu.');
+      showToast('Chưa lưu đầy đủ hồ sơ. Kiểm tra lại dữ liệu trước khi thử lại.');
+      throw err;
     }
 
     // Audit log
@@ -537,17 +609,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: 'profile_update',
       actionLabel: 'Cập nhật nhân khẩu hộ',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: 'household',
       targetId: updated.id,
       targetCode: updated.code,
       targetTitle: `${updated.houseNumber} ${updated.street} (${updated.ownerName})`,
       details: `Cập nhật danh sách nhân khẩu: ${updated.residentsList?.length || updated.residentsCount} người.`,
       newValue: `Nhân khẩu: ${updated.residentsCount} (Nam: ${updated.maleCount}, Nữ: ${updated.femaleCount})`,
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Thiết bị quản lý nhân khẩu CSKV',
-      integrityHash: generateSimpleHash(`RES-${Date.now()}`),
+      integrityHash: undefined,
       status: 'success',
     };
     recordAuditLog(log);
@@ -555,12 +627,13 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   const handleDeleteHousehold = async (id: string | number) => {
     const idStr = String(id);
-    const target = households.find(h => h.id === idStr);
+    const target = households.find(h => h.id === idStr) ?? (selectedHousehold?.id === idStr ? selectedHousehold : undefined);
 
     // Optimistic UI update
     setHouseholds(prev => prev.filter(h => h.id !== idStr));
     if (selectedHousehold && selectedHousehold.id === idStr) {
       setSelectedHousehold(null);
+      updateQuery({ gisHousehold: null }, true);
     }
 
     try {
@@ -578,30 +651,30 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: 'system',
       actionLabel: 'Xóa hộ dân',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: 'household',
       targetId: idStr,
       targetCode: target?.code,
       targetTitle: target ? `${target.houseNumber} ${target.street} (${target.ownerName})` : idStr,
       details: `Xóa hộ dân ${target?.ownerName || idStr} khỏi cơ sở dữ liệu quản lý.`,
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Thiết bị quản lý CSKV',
-      integrityHash: generateSimpleHash(`DEL-${Date.now()}`),
+      integrityHash: undefined,
       status: 'warning',
     };
     recordAuditLog(delLog);
   };
 
-  const handleUpdateCoordinates = async (updates: Array<{ id: string; coordinates: [number, number] }>) => {
+  const handleUpdateCoordinates = async (updates: { id: string; coordinates: [number, number] }[]) => {
     // RBAC Check for Officer
-    if (currentUser?.role === 'officer' && currentUser.subAdminPermissions?.canEditCoordinates === false) {
-      showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền nắn chỉnh tọa độ.');
+    if (currentUser?.role !== 'superadmin' && currentUser.subAdminPermissions?.canEditCoordinates !== true) {
+      showToast('Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền nắn chỉnh tọa độ.');
       logSecurityAlert({
         level: 'warning',
         title: 'Cố gắng sửa đổi tọa độ ngoài thẩm quyền',
         description: `Tài khoản ${currentUser.fullName} (${currentUser.badgeNumber}) đã thử nắn chỉnh tọa độ mà chưa có quyền canEditCoordinates.`,
-        sourceIp: '192.168.1.45',
+        sourceIp: '',
         actorId: currentUser.id,
         actorName: currentUser.fullName,
       }).catch(console.warn);
@@ -648,27 +721,27 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: 'coordinate_update',
       actionLabel: 'Chỉnh sửa tọa độ GPS',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: 'household',
       targetCode: targetHouses[0]?.code,
       targetTitle: targetTitles,
       details: `Hiệu chỉnh mốc tọa độ thực địa cho ${updates.length} vị trí nhà tại Xã Bà Điểm (${targetTitles}).`,
       previousValue: 'Tọa độ ước lượng ban đầu',
       newValue: updates.map(u => `[${u.coordinates.map(c => c.toFixed(5)).join(', ')}]`).join('; '),
-      ipAddress: '192.168.1.45',
+      ipAddress: undefined,
       deviceInfo: 'Tablet tuần tra chuyên dụng CSKV #01',
-      integrityHash: generateSimpleHash(`GEO-${Date.now()}`),
+      integrityHash: undefined,
       status: 'success',
     };
     recordAuditLog(geoLog);
   };
 
-  const handleAddHousehold = async (newH: HouseholdFacility) => {
+  const handleAddHousehold = async (newH: HouseholdCreateInput) => {
     // RBAC Check for Officer
-    if (currentUser?.role === 'officer' && currentUser.subAdminPermissions?.canAddHouseholds === false) {
-      showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền đăng ký hộ dân mới.');
-      return;
+    if (currentUser?.role !== 'superadmin' && currentUser?.subAdminPermissions?.canAddHouseholds !== true) {
+      showToast('Thẩm quyền bị khóa: Bạn chưa được Công an phụ trách phân quyền đăng ký hộ dân mới.');
+      return false;
     }
 
     try {
@@ -677,9 +750,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       showToast(`Đã thêm số nhà ${created.houseNumber} (${created.hamlet}) vào PostgreSQL thành công!`);
     } catch (err) {
       console.error('Lỗi khi thêm vào PostgreSQL:', err);
-      // Fallback optimistic
-      setHouseholds(prev => [normalizeHousehold(newH), ...prev]);
-      showToast(`Đã thêm số nhà ${newH.houseNumber} (${newH.hamlet}).`);
+      showToast('Không thể lưu hộ dân vào cơ sở dữ liệu. Vui lòng kiểm tra thông tin và thử lại.');
+      return false;
     }
 
     // Record audit log for adding new household
@@ -689,164 +761,115 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       createdAt: Date.now(),
       actionType: 'household_add',
       actionLabel: 'Đăng ký hộ dân mới',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
+      officerName: currentUser.fullName || '',
+      officerBadge: currentUser.badgeNumber || '',
       targetType: 'household',
       targetId: newH.id,
       targetCode: newH.code,
       targetTitle: `${newH.houseNumber} ${newH.street} (${newH.ownerName})`,
       details: `Lập hồ sơ quản lý cư trú mới cho hộ ${newH.ownerName}, ${newH.residentsCount} nhân khẩu tại ${newH.hamlet}, Xã Bà Điểm.`,
       newValue: `Mã hồ sơ: ${newH.code}, Số nhà: ${newH.houseNumber} ${newH.street}`,
-      ipAddress: '192.168.1.15',
+      ipAddress: undefined,
       deviceInfo: 'Máy trạm CSKV Bà Điểm',
-      integrityHash: generateSimpleHash(`ADD-${Date.now()}`),
+      integrityHash: undefined,
       status: 'success',
     };
     recordAuditLog(addLog);
+    return true;
   };
 
   const handleRenewDocument = (docId: string) => {
-    // RBAC Check for Officer
-    if (currentUser?.role === 'officer' && currentUser.subAdminPermissions?.canRenewDocs === false) {
-      showToast('⚠️ Thẩm quyền bị khóa: Thẩm quyền duyệt gia hạn giấy tờ thuộc Trưởng CAX hoặc Công an phụ trách Ấp.');
+    if (currentUser.role !== 'superadmin' && currentUser.subAdminPermissions?.canRenewDocs !== true) {
+      showToast('Chưa được cấp quyền gia hạn hồ sơ');
       return;
     }
-
-    const targetDoc = documents.find(d => d.id === docId);
-    setDocuments(prev =>
-      prev.map(doc =>
-        doc.id === docId
-          ? {
-              ...doc,
-              status: 'valid',
-              expiryDate: '20/09/2027',
-              daysRemaining: 370,
-              notes: 'Cơ sở đã hoàn tất hồ sơ gia hạn và được xác nhận trên hệ thống.',
-            }
-          : doc,
-      ),
-    );
-
-    // Also update matching household warning status dynamically
-    if (targetDoc) {
-      setHouseholds(prev =>
-        prev.map(h => {
-          const matchByName =
-            targetDoc.targetName && h.businessName ? targetDoc.targetName.toLowerCase().includes(h.businessName.toLowerCase()) : false;
-          const matchByOwner =
-            targetDoc.targetName && h.ownerName ? targetDoc.targetName.toLowerCase().includes(h.ownerName.toLowerCase()) : false;
-          const matchByAddr = targetDoc.address && h.houseNumber ? targetDoc.address.includes(h.houseNumber) : false;
-          if ((matchByName || matchByOwner || matchByAddr) && h.status === 'warning') {
-            return { ...h, status: 'business', warningMessage: undefined, licenseExpiry: '20/09/2027' };
-          }
-          return h;
-        }),
-      );
+    const record = documents.find(document => document.id === docId);
+    if (record) setRenewingDocument(record);
+  };
+  const saveDocumentRenewal = async (command: DocumentCommand) => {
+    await saveLegalDocument(creatingDocument ? null : renewingDocument!.id, command);
+    try {
+      setDocuments(await fetchAllDocumentRecords());
+    } catch {
+      showToast('Đã lưu hồ sơ, nhưng chưa tải lại được danh sách. Vui lòng cập nhật dữ liệu.');
+      return;
     }
-
-    showToast('Đã cập nhật gia hạn hồ sơ thành công trên Cloud Firestore.');
-
-    // Record audit log for document renewal
-    const renewLog: AuditLogEntry = {
-      id: `LOG-REN-${Date.now()}`,
-      timestamp: formatDateTime(new Date()),
-      createdAt: Date.now(),
-      actionType: 'document_renew',
-      actionLabel: 'Gia hạn giấy phép ANTT',
-      officerName: currentUser?.fullName || officer.officerName || 'Đại úy Nguyễn Văn Bình',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV-0912',
-      targetType: 'document',
-      targetId: docId,
-      targetCode: targetDoc?.docCode,
-      targetTitle: targetDoc?.targetName || 'Cơ sở',
-      details: `Xác nhận gia hạn thời hạn giấy chứng nhận đủ điều kiện ANTT/PCCC cho ${targetDoc?.targetName} đến 20/09/2027.`,
-      previousValue: targetDoc?.expiryDate || 'Sắp hết hạn',
-      newValue: '20/09/2027',
-      ipAddress: '192.168.1.15',
-      deviceInfo: 'Máy trạm chuyên dụng CSKV',
-      integrityHash: generateSimpleHash(`REN-${Date.now()}`),
-      status: 'success',
-    };
-    recordAuditLog(renewLog);
+    showToast('Đã lưu hồ sơ và lịch sử thay đổi.');
   };
 
   const handleSendReminder = async (docId: string) => {
-    // RBAC Check for Officer
-    if (currentUser?.role === 'officer' && currentUser.subAdminPermissions?.canSendReminders === false) {
-      showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được cấp quyền phát hành văn bản nhắc nhở.');
-      return;
-    }
-
-    const targetDoc = documents.find(d => d.id === docId);
     try {
       await sendDocReminderInFirestore(docId);
-      showToast('Đã gửi thông báo đôn đốc gia hạn giấy tờ và lưu vết kiểm tra vào Firestore.');
-    } catch (err) {
-      showToast('Đã gửi thông báo đôn đốc gia hạn giấy tờ tới cơ sở qua tin nhắn và văn bản.');
+      showToast('Đã lưu yêu cầu nhắc nhở; đang chờ gửi');
+    } catch {
+      showToast('Không thể lưu yêu cầu nhắc nhở');
     }
-
-    // Record audit log for sending reminder
-    const remLog: AuditLogEntry = {
-      id: `LOG-REM-${Date.now()}`,
-      timestamp: formatDateTime(new Date()),
-      createdAt: Date.now(),
-      actionType: 'reminder_sent',
-      actionLabel: 'Gửi nhắc nhở & đôn đốc',
-      officerName: currentUser?.fullName || officer.officerName || 'Cán bộ CSKV',
-      officerBadge: currentUser?.badgeNumber || officer.badgeNumber || 'CSKV',
-      targetType: 'document',
-      targetId: docId,
-      targetCode: targetDoc?.docCode,
-      targetTitle: targetDoc?.targetName || targetDoc?.title || 'Hồ sơ',
-      details: `Phát hành thông báo đôn đốc kiểm tra và gia hạn giấy tờ ANTT cho ${targetDoc?.targetName || 'cơ sở'} (${targetDoc?.docCode || docId}).`,
-      previousValue: 'Chưa phát hành đôn đốc',
-      newValue: 'Đã gửi thông báo đôn đốc trực tiếp và qua hệ thống',
-      ipAddress: '192.168.1.15',
-      deviceInfo: 'Máy trạm chuyên dụng CSKV',
-      integrityHash: generateSimpleHash(`REM-${Date.now()}`),
-      status: 'warning',
-    };
-    recordAuditLog(remLog);
   };
 
-  const handleRefresh = async () => {
-    try {
-      setIsLoading(true);
-      const [data, docs, logs, alerts] = await Promise.all([
-        fetchCompleteHouseholdsFromBackend(),
-        fetchAllDocumentRecords(1000).catch(() => []),
-        fetchPatrolLogsFromBackend(200).catch(() => []),
-        fetchSecurityAlertsFromBackend(100).catch(() => []),
-      ]);
+  const applyOperationalData = (results: Awaited<ReturnType<typeof loadOperationalData>>) => {
+    const [householdResult, documentResult, logResult, alertResult] = results;
+    if (householdResult.status === 'fulfilled') {
+      setHouseholds(householdResult.value);
+      setHasCompleteHouseholds(true);
+    }
+    if (documentResult.status === 'fulfilled') setDocuments(documentResult.value);
+    if (logResult.status === 'fulfilled') setAuditLogs(logResult.value);
+    if (alertResult.status === 'fulfilled') setSecurityAlerts(alertResult.value);
+    const failed = results.flatMap((result, index) => (result.status === 'rejected' ? [OPERATIONAL_DATA_LABELS[index]] : []));
+    setDataErrors(failed);
+    if (!failed.length) setLastUpdated(new Date());
+    return failed;
+  };
 
-      if (data && data.length > 0) {
-        setHouseholds(data);
-      }
-      if (docs && docs.length > 0) {
-        setDocuments(docs);
-      }
-      if (logs && logs.length > 0) {
-        setAuditLogs(logs);
-      }
-      if (alerts && alerts.length > 0) {
-        setSecurityAlerts(alerts);
-      }
-      showToast(`Đã đồng bộ cơ sở dữ liệu PostgreSQL (${data.length} hộ dân, ${docs.length} hồ sơ, ${logs.length} nhật ký).`);
-    } catch (err) {
-      console.warn('Lỗi khi làm mới dữ liệu từ PostgreSQL:', err);
-      showToast('Đã làm mới dữ liệu từ hệ thống.');
+  // Overview/list use bounded APIs. Other existing screens still require complete data.
+  const needsFullData = !['overview', 'households', 'residents'].includes(activeTab) || isWarningModalOpen;
+  const { load: ensureFullData } = useDeferredOperationalData(needsFullData, applyOperationalData, setIsLoading);
+  const warningCount = hasCompleteHouseholds ? households.filter(h => h.status === 'warning').length : (overviewScope?.warnings ?? 0);
+
+  useEffect(() => {
+    if (activeTab !== 'households') return;
+    const controller = new AbortController();
+    void fetchOverviewSummary('', 0, 10, controller.signal)
+      .then(data => {
+        if (!controller.signal.aborted) {
+          setOverviewScope(data.scope);
+          setDataErrors(errors => errors.filter(label => label !== 'Thống kê địa bàn'));
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setDataErrors(errors => [...new Set([...errors, 'Thống kê địa bàn'])]);
+      });
+    return () => controller.abort();
+  }, [activeTab, households, householdListVersion]);
+
+  const handleRefresh = async () => {
+    if (activeTab === 'overview' && !isWarningModalOpen) {
+      setOverviewVersion(version => version + 1);
+      return;
+    }
+    if (activeTab === 'households' || activeTab === 'residents') {
+      setHouseholdListVersion(version => version + 1);
+      return;
+    }
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const results = await ensureFullData();
+      const failed = results.filter(result => result.status === 'rejected');
+      showToast(failed.length ? 'Một số dữ liệu chưa cập nhật. Xem thông báo để thử lại.' : 'Đã cập nhật đầy đủ dữ liệu địa bàn.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleUpdateOfficer = async (updated: Partial<OfficerProfile>) => {
-    setOfficer(prev => ({ ...prev, ...updated }));
     try {
-      await updateOfficerProfileInFirestore(updated);
-      showToast('Đã cập nhật thông tin cán bộ phụ trách lên Cloud Firestore.');
-    } catch {
-      showToast('Đã cập nhật thông tin cán bộ phụ trách.');
+      const user = await updateOwnAccount(updated.officerName ?? currentUser?.fullName ?? '', updated.rank ?? currentUser?.rank ?? '');
+      setOfficer(prev => ({ ...prev, officerName: user.fullName, rank: user.rank }));
+      showToast('Đã lưu thông tin tài khoản vào database.');
+    } catch (error) {
+      showToast('Không thể lưu thông tin tài khoản. Vui lòng thử lại.');
+      throw error;
     }
 
     // Record audit log for officer profile update
@@ -861,9 +884,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
       targetType: 'officer',
       targetTitle: updated.officerName || officer.officerName,
       details: `Cập nhật thông tin hồ sơ cán bộ phụ trách địa bàn (${updated.rank || officer.rank})`,
-      ipAddress: '192.168.1.15',
+      ipAddress: undefined,
       deviceInfo: 'Máy trạm chuyên dụng CSKV',
-      integrityHash: generateSimpleHash(`OFF-${Date.now()}`),
+      integrityHash: undefined,
       status: 'info',
     };
     recordAuditLog(offLog);
@@ -873,12 +896,13 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const isTerritoryRestricted = currentUser?.role === 'sub-admin' || currentUser?.role === 'officer';
 
   const matchesHamlet = (h: HouseholdFacility, user: AppUser | null) => {
-    if (!user || !user.assignedHamlets || user.assignedHamlets.length === 0) return true;
+    if (user?.hamletIds) return h.hamletId != null && user.hamletIds.includes(h.hamletId);
+    if (!user || !user.assignedHamlets || user.assignedHamlets.length === 0) return false;
     if (!h.hamlet) return false;
     return user.assignedHamlets.some(ah => {
       const ahNorm = ah.toLowerCase().trim();
       const hNorm = h.hamlet.toLowerCase().trim();
-      return ahNorm === hNorm || hNorm.includes(ahNorm) || ahNorm.includes(hNorm);
+      return ahNorm === hNorm;
     });
   };
 
@@ -888,47 +912,37 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   }, [households, currentUser, isTerritoryRestricted]);
 
   const scopedHouseholds = useMemo(() => {
-    if (!isTerritoryRestricted || territoryScope === 'all') return households;
+    if (!isTerritoryRestricted) return households;
     return assignedHouseholds;
-  }, [households, assignedHouseholds, territoryScope, isTerritoryRestricted]);
-
-  const assignedResidentsCount = useMemo(() => {
-    return assignedHouseholds.reduce((acc, h) => acc + (h.residentsCount || 1), 0);
-  }, [assignedHouseholds]);
+  }, [households, assignedHouseholds, isTerritoryRestricted]);
 
   // If user searched in header and pressed or typed, filter scoped view
   const displayedHouseholds = useMemo(() => {
+    if (activeTab === 'households') return scopedHouseholds;
     if (!searchQuery.trim()) return scopedHouseholds;
-    const q = searchQuery.toLowerCase();
-    return scopedHouseholds.filter(h => {
-      return (
-        (h.code && h.code.toLowerCase().includes(q)) ||
-        (h.ownerName && h.ownerName.toLowerCase().includes(q)) ||
-        (h.houseNumber && h.houseNumber.toLowerCase().includes(q)) ||
-        (h.street && h.street.toLowerCase().includes(q)) ||
-        (h.hamlet && h.hamlet.toLowerCase().includes(q)) ||
-        (h.ownerPhone && h.ownerPhone.includes(q)) ||
-        (h.businessName && h.businessName.toLowerCase().includes(q)) ||
-        (h.businessCategory && h.businessCategory.toLowerCase().includes(q)) ||
-        (h.residentsList &&
-          h.residentsList.some(
-            r =>
-              (r.fullName && r.fullName.toLowerCase().includes(q)) ||
-              (r.idCardNumber && r.idCardNumber.includes(q)) ||
-              (r.phone && r.phone.includes(q)),
-          )) ||
-        (q === 'cảnh báo' && h.status === 'warning') ||
-        (q === 'kinh doanh' && h.type === 'business') ||
-        (q === 'hộ gia đình' && h.type === 'household')
-      );
-    });
-  }, [scopedHouseholds, searchQuery]);
+    return scopedHouseholds.filter(household => matchesHouseholdSearch(household, searchQuery));
+  }, [scopedHouseholds, searchQuery, activeTab]);
 
   return (
     <div
       id="__page-root"
       className={`flex h-screen h-[100dvh] w-full bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 font-sans overflow-hidden ${isMapFullscreen ? 'p-0' : ''}`}
     >
+      {idleSession.secondsLeft !== null && (
+        <div
+          role="alert"
+          className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-center gap-3 bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950"
+        >
+          <span>Không có hoạt động — phiên sẽ kết thúc sau {idleSession.secondsLeft} giây.</span>
+          <button
+            type="button"
+            onClick={idleSession.extend}
+            className="rounded border border-slate-950/40 px-2 py-0.5 hover:bg-slate-950/10"
+          >
+            Tiếp tục phiên
+          </button>
+        </div>
+      )}
       {/* Left Sidebar (Desktop + Mobile Drawer) */}
       {!isMapFullscreen && (
         <Sidebar
@@ -941,17 +955,19 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           }}
           officer={officer}
           currentUser={currentUser}
-          dynamicMenus={dynamicMenus}
+          dynamicMenus={effectiveDynamicMenus}
           warningCount={warningCount}
           isOpenMobile={isMobileSidebarOpen}
+          isOpenDesktop={isDesktopSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
           onLogout={handleLogout}
           onSwitchAccount={handleSwitchAccount}
+          onOpenGuide={() => setIsGuideOpen(true)}
         />
       )}
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 h-full overflow-hidden relative ${isMapFullscreen ? 'w-full' : ''}`}>
+      <div className={`gis-workspace flex-1 flex flex-col min-w-0 h-full overflow-hidden relative ${isMapFullscreen ? 'w-full' : ''}`}>
         {/* Top Header */}
         {!isMapFullscreen && (
           <Header
@@ -959,9 +975,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
             warningCount={warningCount}
             onOpenWarnings={() => setIsWarningModalOpen(true)}
             onRefresh={handleRefresh}
+            isRefreshing={isLoading}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
+            onToggleDesktopSidebar={() => setIsDesktopSidebarOpen(open => !open)}
+            isDesktopSidebarOpen={isDesktopSidebarOpen}
             backendStatus={backendStatus}
             theme={theme}
             onToggleTheme={handleToggleTheme}
@@ -971,142 +990,145 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
             }}
             currentUser={currentUser}
             onLogout={handleLogout}
+            onOpenGuide={() => setIsGuideOpen(true)}
           />
         )}
 
-        {/* Dynamic Tab Body with bottom padding for mobile navigation bar */}
         <main
-          className={`flex-1 ${isMapFullscreen ? 'w-full h-full p-0 overflow-hidden flex flex-col' : 'overflow-y-auto p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-6 scroll-smooth'}`}
+          id="gis-main-content"
+          tabIndex={-1}
+          className={`flex-1 min-w-0 min-h-0 ${
+            isMapFullscreen
+              ? 'w-full h-full p-0 overflow-hidden flex flex-col'
+              : activeTab === 'field-3d-map'
+                ? 'w-full h-full p-0 pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0 overflow-hidden flex flex-col'
+                : 'overflow-y-auto p-2.5 sm:p-4 lg:p-5 pb-20 md:pb-6 scroll-smooth'
+          }`}
         >
-          {/* Active Search Banner when filter is engaged */}
-          {searchQuery.trim() && !isMapFullscreen && (
-            <div className="mb-4 p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900 rounded-xl flex items-center justify-between gap-3 text-xs animate-in fade-in slide-in-from-top-1 duration-150">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
-                <span className="text-slate-600 dark:text-slate-300">Kết quả lọc tìm kiếm:</span>
-                <span className="font-bold text-blue-900 dark:text-blue-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-800">
-                  "{searchQuery}"
-                </span>
-                <span className="text-slate-500 font-mono text-[11px] hidden sm:inline">({displayedHouseholds.length} hồ sơ phù hợp)</span>
-              </div>
-              <button
-                type="button"
-                id="btn-clear-active-search"
-                onClick={() => setSearchQuery('')}
-                className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer shadow-xs"
-              >
-                <span>Xóa bộ lọc</span>
-              </button>
+          {householdRouteLoading && <p role="status">Đang tải hồ sơ hộ…</p>}
+          {householdRouteError && <p role="alert">{householdRouteError}</p>}
+          {!isMapFullscreen && (isLoading || dataErrors.length > 0) && (
+            <div className="mb-3 space-y-2">
+              {isLoading && (
+                <p role="status" className="text-sm text-slate-600 dark:text-slate-300">
+                  Đang tải dữ liệu địa bàn…
+                </p>
+              )}
+              {dataErrors.length > 0 && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <strong>Chưa tải được: {dataErrors.join(', ')}.</strong>
+                    <p className="mb-0 mt-1">
+                      Dữ liệu đã tải trước đó được giữ lại và có thể chưa cập nhật. Kiểm tra kết nối hoặc quyền truy cập.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => void handleRefresh()}
+                    className="rounded-lg border border-amber-400 px-3 py-2 font-semibold"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Territory Scope Control Bar for Sub-Admin and Officer */}
-          {isTerritoryRestricted && !isMapFullscreen && (
-            <div className="mb-4 p-3.5 sm:p-4 bg-gradient-to-r from-blue-900/30 via-slate-900/70 to-indigo-950/40 dark:from-blue-950/60 dark:via-slate-900/80 dark:to-indigo-950/60 border border-blue-700/40 dark:border-blue-800/60 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
-              <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 sm:mt-0">
-                  <MapPin className="w-5 h-5 text-amber-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-white text-sm">{currentUser?.assignedHamlets?.join(', ') || 'Địa bàn phân công'}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                      {currentUser?.role === 'sub-admin' ? 'Sub-Admin Quản Lý Ấp' : 'Công An Viên Tuyến'}
-                    </span>
-                    <span className="text-slate-400 text-[11px]">
-                      • {currentUser?.rank} {currentUser?.fullName}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
-                    <span>
-                      Tuyến phụ trách:{' '}
-                      <strong className="text-slate-100 font-medium">
-                        {currentUser?.assignedStreets && currentUser.assignedStreets.length > 0
-                          ? currentUser.assignedStreets.join(', ')
-                          : 'Toàn bộ địa bàn ấp'}
-                      </strong>
-                    </span>
-                    <span>•</span>
-                    <span className="text-emerald-400 font-semibold">
-                      {assignedHouseholds.length} hộ dân / {assignedResidentsCount} nhân khẩu
-                    </span>
-                    {territoryScope === 'all' && (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-700/60">
-                        Đang xem đối chiếu toàn xã (360 hộ)
+          {canOpenMenu(activeTab) ? (
+            <>
+              {/* Active Search Banner when filter is engaged */}
+              {searchQuery.trim() &&
+                !isMapFullscreen &&
+                activeTab !== 'households' &&
+                activeTab !== 'residents' &&
+                activeTab !== 'overview' && (
+                  <div className="mb-3 p-2.5 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                      <span className="text-slate-600 dark:text-slate-300">Kết quả lọc tìm kiếm:</span>
+                      <span className="font-bold text-emerald-900 dark:text-emerald-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                        "{searchQuery}"
                       </span>
-                    )}
+                      <span className="text-slate-600 dark:text-slate-300 tabular-nums text-[11px] font-semibold">
+                        ({displayedHouseholds.length} hộ phù hợp)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {canOpenMenu('households') && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('households')}
+                          className="px-2.5 py-1 bg-[#1c4e3a] hover:bg-[#153c2c] text-white font-semibold rounded-lg border border-[#1c4e3a] transition-colors text-[11px] cursor-pointer"
+                        >
+                          Xem danh sách hộ ({displayedHouseholds.length})
+                        </button>
+                      )}
+                      {canOpenMenu('area-map') && activeTab !== 'area-map' && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('area-map')}
+                          className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-200 font-semibold rounded-lg border border-emerald-300 dark:border-emerald-700 transition-colors text-[11px] cursor-pointer"
+                        >
+                          Xem trên sơ đồ
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        id="btn-clear-active-search"
+                        onClick={() => setSearchQuery('')}
+                        className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Xóa bộ lọc</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </div>
+                )}
 
-              {/* Territory Switcher Buttons */}
-              <div className="flex items-center gap-1.5 p-1 bg-slate-950/90 rounded-xl border border-slate-800 shrink-0 self-start md:self-auto">
-                <button
-                  type="button"
-                  id="btn-scope-assigned"
-                  onClick={() => setTerritoryScope('assigned')}
-                  className={`px-3 py-1.5 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                    territoryScope === 'assigned'
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-900/40'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                  }`}
-                  title="Chỉ hiển thị dữ liệu hộ dân và bản đồ thuộc ấp được phân công"
-                >
-                  <span>📍 Địa bàn được giao</span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{assignedHouseholds.length}</span>
-                </button>
-                <button
-                  type="button"
-                  id="btn-scope-all"
-                  onClick={() => setTerritoryScope('all')}
-                  className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition cursor-pointer flex items-center gap-1.5 ${
-                    territoryScope === 'all'
-                      ? 'bg-amber-600 text-white shadow-md shadow-amber-900/40'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                  }`}
-                  title="Xem toàn bộ hộ dân xã Bà Điểm để đối chiếu"
-                >
-                  <span>🌐 Toàn xã (Đối chiếu)</span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-black/40 font-mono">{households.length}</span>
-                </button>
-              </div>
-            </div>
-          )}
-          {activeTab === 'overview' && (
-            <OverviewTab
-              households={displayedHouseholds}
-              onNavigateTab={tab => {
-                if (isMapFullscreen) setIsMapFullscreen(false);
-                setActiveTab(tab);
-              }}
-              onSelectHousehold={setSelectedHousehold}
-            />
-          )}
+              {/* Territory Scope Control Bar for Sub-Admin and Officer */}
+              {isTerritoryRestricted && !isMapFullscreen && (
+                <TerritoryScopeBar
+                  user={currentUser}
+                  householdCount={hasCompleteHouseholds ? assignedHouseholds.length : overviewScope?.total}
+                />
+              )}
+              {/* Per-menu usage guide (the full-height 3D map uses the header guide button instead). */}
+              {!isMapFullscreen && activeTab !== 'field-3d-map' && activeTab !== 'bando-3d' && (
+                <ActiveMenuGuideBanner activeTab={activeTab} onOpenFullGuide={() => setIsGuideOpen(true)} />
+              )}
+              {activeTab === 'overview' && (
+                <ServerOverviewTab
+                  search={searchQuery}
+                  refreshKey={overviewVersion}
+                  onScopeLoaded={handleOverviewScope}
+                  canNavigate={canOpenMenu}
+                  onOpenExpiringDocuments={() => {
+                    setDocumentFilter('expiring_soon');
+                    setActiveTab('documents');
+                  }}
+                  onNavigateTab={tab => {
+                    if (isMapFullscreen) setIsMapFullscreen(false);
+                    setActiveTab(tab);
+                  }}
+                  onSelectHousehold={openHousehold}
+                />
+              )}
 
-          {activeTab === 'area-map' && (
-            <AreaMapTab
-              households={displayedHouseholds}
-              onSelectHousehold={setSelectedHousehold}
-              onRefresh={handleRefresh}
-              onNavigateTab={tab => {
-                if (isMapFullscreen) setIsMapFullscreen(false);
-                setActiveTab(tab);
-              }}
-            />
-          )}
+              {activeTab === 'area-map' && (
+                <AreaMapTab
+                  households={displayedHouseholds}
+                  onSelectHousehold={openHousehold}
+                  onRefresh={handleRefresh}
+                  onNavigateTab={tab => {
+                    if (isMapFullscreen) setIsMapFullscreen(false);
+                    setActiveTab(tab);
+                  }}
+                />
+              )}
 
-          {activeTab === 'advanced-map' && (
-            <div className="space-y-3">
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setUseMapLibre(value => !value)}
-                  className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-                >
-                  {useMapLibre ? 'Bản đồ hiện tại' : 'Thử bản đồ MapLibre 2D/3D'}
-                </button>
-              </div>
-              {useMapLibre ? (
+              {activeTab === 'advanced-map' && (
                 <Suspense
                   fallback={
                     <div role="status" className="p-6">
@@ -1116,193 +1138,297 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                 >
                   <MapLibreAreaMap
                     households={displayedHouseholds}
-                    onSelectHousehold={setSelectedHousehold}
+                    onSelectHousehold={openHousehold}
                     onUpdateCoordinates={handleUpdateCoordinates}
                   />
                 </Suspense>
-              ) : (
-                <AdvancedMapTab
-                  households={displayedHouseholds}
-                  currentUser={currentUser}
-                  onSelectHousehold={setSelectedHousehold}
+              )}
+
+              {(activeTab === 'field-3d-map' || (activeTab === 'bando-3d' && currentUser?.role !== 'superadmin')) && (
+                <Suspense
+                  fallback={
+                    <div role="status" className="p-6">
+                      Đang tải bản đồ 3D...
+                    </div>
+                  }
+                >
+                  <div className="flex-1 min-h-0">
+                    <FieldHouseMap
+                      captureOfficer={{
+                        fullName: currentUser.fullName,
+                        rank: currentUser.rank,
+                        unit: currentUser.unit,
+                        area: currentUser.assignedHamlets?.join(', ') || currentUser.assignedWard,
+                      }}
+                      key={`${currentUser.id}:${currentUser.version ?? 0}`}
+                      households={displayedHouseholds}
+                      communeOverview={currentUser.role === 'superadmin' || currentUser.role === 'admin'}
+                      canAdd={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canAddHouseholds === true}
+                      canLink={currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canEditCoordinates === true}
+                      onSelect={openHousehold}
+                      onAdd={() => {
+                        // The legacy household API is read-only (409 on every write); create through the audited roster
+                        // flow instead, then link the new household to this building with the map's link action.
+                        if (!canOpenMenu('households')) {
+                          showToast('Bạn không có quyền mở danh sách hộ.');
+                          return;
+                        }
+                        showToast('Tạo hộ trong Hồ sơ dân cư, sau đó liên kết hộ với công trình trên bản đồ.');
+                        setIsMapFullscreen(false);
+                        updateQuery({ ...RECORD_QUERY_KEYS, tab: 'households', newHousehold: 'true', page: null, rosterTab: null });
+                      }}
+                      isFullscreen={isMapFullscreen}
+                      onToggleFullscreen={handleToggleMapFullscreen}
+                    />
+                  </div>
+                </Suspense>
+              )}
+              {activeTab === 'bando-3d' && currentUser?.role === 'superadmin' && (
+                <BaDiem3DMapEditor
                   isFullscreen={isMapFullscreen}
                   onToggleFullscreen={handleToggleMapFullscreen}
                   onNavigateTab={tab => {
                     if (isMapFullscreen) setIsMapFullscreen(false);
                     setActiveTab(tab);
                   }}
-                  onUpdateCoordinates={handleUpdateCoordinates}
+                  onShowToast={showToast}
                 />
               )}
+
+              {(activeTab === 'households' || activeTab === 'residents') && (
+                <Suspense fallback={<p>Đang tải hồ sơ dân cư…</p>}>
+                  <UnifiedRoster
+                    key={`${currentUser.id}:${currentUser.version ?? 0}`}
+                    initialTab={activeTab}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    refreshKey={householdListVersion}
+                    embedded
+                  />
+                </Suspense>
+              )}
+
+              {activeTab === 'documents' && (
+                <DocumentsTab
+                  canRenew={currentUser.role === 'superadmin' || currentUser.subAdminPermissions?.canRenewDocs === true}
+                  canRemind={currentUser.role === 'superadmin' || currentUser.subAdminPermissions?.canSendReminders === true}
+                  filterStatus={documentFilter}
+                  onFilterStatusChange={setDocumentFilter}
+                  documents={documents}
+                  onRenewDocument={handleRenewDocument}
+                  onSendReminder={handleSendReminder}
+                  onCreateDocument={() => setCreatingDocument(true)}
+                  onHistory={document => setHistoryDocument(document)}
+                />
+              )}
+
+              {activeTab === 'areas' && <AreasTab households={displayedHouseholds} onSelectHousehold={openHousehold} />}
+
+              {activeTab === 'logs' && (
+                <LogsTab logs={auditLogs} households={households} onSelectHousehold={openHousehold} onAddManualLog={handleAddManualLog} />
+              )}
+
+              {activeTab === 'subadmin-delegation' && (
+                <SubAdminDelegationTab currentUser={currentUser} usersList={usersList} onShowToast={showToast} />
+              )}
+
+              {activeTab === 'superadmin-hub' &&
+                (currentUser.role === 'superadmin' ? (
+                  <SuperAdminHubTab
+                    currentUser={currentUser}
+                    dynamicMenus={dynamicMenus}
+                    dynamicMenusList={dynamicMenus}
+                    hcmUnits={hcmUnits}
+                    hcmUnitsList={hcmUnits}
+                    usersList={usersList}
+                    allowedEmails={allowedEmails}
+                    allowedEmailsList={allowedEmails}
+                    securityAlerts={securityAlerts}
+                    securityAlertsList={securityAlerts}
+                    onShowToast={showToast}
+                    onSwitchAccount={handleSwitchAccount}
+                  />
+                ) : (
+                  <SuperAdminAccessGuard
+                    currentUser={currentUser}
+                    onSwitchToSuperAdmin={handleSwitchAccount}
+                    onSwitchAccount={handleSwitchAccount}
+                    onBackToOverview={() => setActiveTab('overview')}
+                  />
+                ))}
+
+              {activeTab === 'settings' && (
+                <SettingsTab
+                  officer={officer}
+                  onUpdateOfficer={handleUpdateOfficer}
+                  backendStatus={backendStatus}
+                  theme={theme}
+                  onSetTheme={handleSetTheme}
+                />
+              )}
+            </>
+          ) : (
+            <div role="status" className="p-6">
+              Menu chưa được cấp phép hoặc đang tải cấu hình từ máy chủ.
             </div>
-          )}
-
-          {activeTab === 'households' && (
-            <HouseholdsTab
-              households={displayedHouseholds}
-              currentUser={currentUser}
-              onSelectHousehold={setSelectedHousehold}
-              onOpenAddModal={() => {
-                if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canAddHouseholds === false) {
-                  showToast('⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền đăng ký hộ dân mới.');
-                  return;
-                }
-                setIsAddModalOpen(true);
-              }}
-              onDeleteHousehold={handleDeleteHousehold}
-              onShowToast={showToast}
-            />
-          )}
-
-          {activeTab === 'residents' && (
-            <ResidentsTab
-              households={displayedHouseholds}
-              allHouseholds={households}
-              onSelectHousehold={setSelectedHousehold}
-              onUpdateHousehold={handleUpdateHouseholdFull}
-              currentUser={currentUser}
-              onShowToast={showToast}
-            />
-          )}
-
-          {activeTab === 'documents' && (
-            <DocumentsTab documents={documents} onRenewDocument={handleRenewDocument} onSendReminder={handleSendReminder} />
-          )}
-
-          {activeTab === 'areas' && <AreasTab households={displayedHouseholds} onSelectHousehold={setSelectedHousehold} />}
-
-          {activeTab === 'logs' && (
-            <LogsTab
-              logs={auditLogs}
-              households={households}
-              onSelectHousehold={setSelectedHousehold}
-              onAddManualLog={handleAddManualLog}
-            />
-          )}
-
-          {activeTab === 'subadmin-delegation' && (
-            <SubAdminDelegationTab currentUser={currentUser} usersList={usersList} onShowToast={showToast} />
-          )}
-
-          {activeTab === 'superadmin-hub' &&
-            (currentUser.role === 'superadmin' ? (
-              <SuperAdminHubTab
-                currentUser={currentUser}
-                dynamicMenus={dynamicMenus}
-                dynamicMenusList={dynamicMenus}
-                hcmUnits={hcmUnits}
-                hcmUnitsList={hcmUnits}
-                usersList={usersList}
-                allowedEmails={allowedEmails}
-                allowedEmailsList={allowedEmails}
-                securityAlerts={securityAlerts}
-                securityAlertsList={securityAlerts}
-                onShowToast={showToast}
-                onSwitchAccount={handleSwitchAccount}
-              />
-            ) : (
-              <SuperAdminAccessGuard
-                currentUser={currentUser}
-                onSwitchToSuperAdmin={handleSwitchAccount}
-                onSwitchAccount={handleSwitchAccount}
-                onBackToOverview={() => setActiveTab('overview')}
-              />
-            ))}
-
-          {activeTab === 'settings' && (
-            <SettingsTab
-              officer={officer}
-              onUpdateOfficer={handleUpdateOfficer}
-              backendStatus={backendStatus}
-              theme={theme}
-              onSetTheme={handleSetTheme}
-            />
           )}
         </main>
 
         {/* Mobile Bottom Navigation Bar (Fixed for quick thumb access on phones) */}
         {!isMapFullscreen && (
-          <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-2 py-1.5 flex items-center justify-around shadow-lg">
+          <nav
+            aria-label="Điều hướng nhanh trên thiết bị di động"
+            className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-1.5 pt-1 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex items-center justify-around"
+          >
             <button
+              type="button"
               onClick={() => setActiveTab('overview')}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
-                activeTab === 'overview' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              style={{ display: canOpenMenu('overview') ? undefined : 'none' }}
+              aria-current={activeTab === 'overview' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                activeTab === 'overview'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <LayoutDashboard className={`w-5 h-5 ${activeTab === 'overview' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Tổng quan</span>
+              <LayoutDashboard
+                className={`w-4.5 h-4.5 ${activeTab === 'overview' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+              />
+              <span className="text-[11px] mt-0.5 leading-tight">Tổng quan</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('area-map')}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
-                activeTab === 'area-map' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              style={{ display: canOpenMenu('area-map') ? undefined : 'none' }}
+              aria-current={activeTab === 'area-map' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                activeTab === 'area-map'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Map className={`w-5 h-5 ${activeTab === 'area-map' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Sơ đồ</span>
+              <Map className={`w-4.5 h-4.5 ${activeTab === 'area-map' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`} />
+              <span className="text-[11px] mt-0.5 leading-tight">Sơ đồ</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('households')}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
-                activeTab === 'households' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              style={{ display: canOpenMenu('households') ? undefined : 'none' }}
+              aria-current={activeTab === 'households' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                activeTab === 'households'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Users className={`w-5 h-5 ${activeTab === 'households' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Hộ dân</span>
+              <Users className={`w-4.5 h-4.5 ${activeTab === 'households' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`} />
+              <span className="text-[11px] mt-0.5 leading-tight">Hộ dân</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('residents')}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] ${
-                activeTab === 'residents' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              style={{ display: canOpenMenu('residents') ? undefined : 'none' }}
+              aria-current={activeTab === 'residents' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+                activeTab === 'residents'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <UserCheck className={`w-5 h-5 ${activeTab === 'residents' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Nhân khẩu</span>
+              <UserCheck
+                className={`w-4.5 h-4.5 ${activeTab === 'residents' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+              />
+              <span className="text-[11px] mt-0.5 leading-tight">Nhân khẩu</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab('documents')}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] relative ${
-                activeTab === 'documents' ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              style={{ display: canOpenMenu('documents') ? undefined : 'none' }}
+              aria-current={activeTab === 'documents' ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] relative ${
+                activeTab === 'documents'
+                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <FileText className={`w-5 h-5 ${activeTab === 'documents' ? 'text-blue-600' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-0.5">Hồ sơ</span>
+              <FileText
+                className={`w-4.5 h-4.5 ${activeTab === 'documents' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+              />
+              <span className="text-[11px] mt-0.5 leading-tight">Hồ sơ</span>
               {warningCount > 0 && <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />}
             </button>
 
             <button
+              type="button"
               onClick={() => setIsMobileSidebarOpen(true)}
-              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-w-[56px] text-slate-500 hover:text-slate-800"
+              className="flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
             >
-              <Menu className="w-5 h-5 text-slate-400" />
-              <span className="text-[10px] mt-0.5">Thêm</span>
+              <Menu className="w-4.5 h-4.5 text-slate-400" />
+              <span className="text-[11px] mt-0.5 leading-tight">Thêm</span>
             </button>
           </nav>
         )}
       </div>
 
       {/* Modals & Dialogs */}
+      {(renewingDocument || creatingDocument) && (
+        <RenewDocumentDialog
+          document={renewingDocument}
+          onClose={() => {
+            setRenewingDocument(null);
+            setCreatingDocument(false);
+          }}
+          onSave={saveDocumentRenewal}
+        />
+      )}
+      {historyDocument && <DocumentHistoryDialog document={historyDocument} onClose={() => setHistoryDocument(null)} />}
       <HouseholdDetailModal
+        presentation={['area-map', 'advanced-map', 'field-3d-map'].includes(activeTab) ? 'drawer' : 'dialog'}
         household={selectedHousehold}
         currentUser={currentUser}
-        onClose={() => setSelectedHousehold(null)}
+        onClose={() => updateQuery({ gisHousehold: null })}
         onUpdateNotes={handleUpdateNotes}
         onHouseholdUpdated={handleUpdateHouseholdFull}
         onDeleteHousehold={handleDeleteHousehold}
         onShowToast={showToast}
+        onOpenRoster={(household, edit) => {
+          if (!canOpenMenu('households')) {
+            showToast('Bạn không có quyền mở danh sách hộ.');
+            return;
+          }
+          updateQuery({
+            ...RECORD_QUERY_KEYS,
+            tab: 'households',
+            legacyHousehold: household.id,
+            edit: edit ? 'true' : null,
+            page: null,
+            rosterTab: null,
+          });
+          setSearchQuery('');
+          setIsMapFullscreen(false);
+        }}
       />
 
-      <AddHouseholdModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAddHousehold={handleAddHousehold} />
+      <AddHouseholdModal
+        allowedHamletIds={currentUser.role === 'superadmin' ? undefined : (currentUser.hamletIds ?? [])}
+        isOpen={isAddModalOpen}
+        initialCoordinates={selectedMapCoordinates}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setSelectedMapCoordinates(null);
+        }}
+        onAddHousehold={handleAddHousehold}
+      />
 
       <WarningDetailModal
         isOpen={isWarningModalOpen}
         onClose={() => setIsWarningModalOpen(false)}
         households={households}
-        onSelectHousehold={setSelectedHousehold}
+        onSelectHousehold={openHousehold}
         securityAlerts={securityAlerts}
         currentUser={currentUser}
         onAlertResolved={alertId => {
@@ -1313,10 +1439,23 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         }}
       />
 
+      <FeatureGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        activeTab={activeTab}
+        visibleMenus={effectiveDynamicMenus.filter(menu => canOpenMenu(menu.id))}
+        currentUser={currentUser}
+        onNavigateTab={tab => {
+          if (isMapFullscreen) setIsMapFullscreen(false);
+          setActiveTab(tab);
+          setSearchQuery('');
+        }}
+      />
+
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 text-xs font-semibold flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200 max-w-[90vw]">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-ping"></span>
+        <div className="fixed bottom-16 md:bottom-6 right-4 sm:right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl border border-slate-700 text-xs font-semibold flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200 max-w-[90vw]">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
           <span className="truncate">{toastMessage}</span>
         </div>
       )}

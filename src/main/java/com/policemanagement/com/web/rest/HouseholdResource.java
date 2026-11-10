@@ -1,6 +1,7 @@
 package com.policemanagement.com.web.rest;
 
 import com.policemanagement.com.repository.HouseholdRepository;
+import com.policemanagement.com.service.HouseholdLegacyHamletLookup;
 import com.policemanagement.com.service.HouseholdQueryService;
 import com.policemanagement.com.service.HouseholdService;
 import com.policemanagement.com.service.criteria.HouseholdCriteria;
@@ -46,14 +47,18 @@ public class HouseholdResource {
 
     private final HouseholdQueryService householdQueryService;
 
+    private final HouseholdLegacyHamletLookup legacyHamletLookup;
+
     public HouseholdResource(
         HouseholdService householdService,
         HouseholdRepository householdRepository,
-        HouseholdQueryService householdQueryService
+        HouseholdQueryService householdQueryService,
+        HouseholdLegacyHamletLookup legacyHamletLookup
     ) {
         this.householdService = householdService;
         this.householdRepository = householdRepository;
         this.householdQueryService = householdQueryService;
+        this.legacyHamletLookup = legacyHamletLookup;
     }
 
     /**
@@ -159,6 +164,7 @@ public class HouseholdResource {
         LOG.debug("REST request to get Households by criteria: {}", criteria);
 
         Page<HouseholdDTO> page = householdQueryService.findByCriteria(criteria, pageable);
+        legacyHamletLookup.enrich(page.getContent());
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }

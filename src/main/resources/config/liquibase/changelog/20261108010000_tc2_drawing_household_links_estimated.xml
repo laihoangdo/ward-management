@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261108010000-1" author="claude">
+        <comment>Best-effort links for the remaining Trung Chanh 2 households; officers correct these on the 3D map. Tier and source are kept in gis_field_building_household_import.</comment>
+        <sqlFile path="config/liquibase/sql/tc2_drawing_household_links_estimated.sql" splitStatements="false" stripComments="false"/>
+        <rollback>
+            <sql splitStatements="false">
+                UPDATE public.gis_field_building b
+                SET feature_json = jsonb_set(b.feature_json::jsonb, '{properties,householdIds}',
+                    (SELECT coalesce(jsonb_agg(v), '[]'::jsonb)
+                     FROM jsonb_array_elements(b.feature_json::jsonb #> '{properties,householdIds}') v
+                     WHERE NOT EXISTS (SELECT 1 FROM public.gis_field_building_household_import i
+                                       WHERE i.source = 'tc2-drawing-20261108-estimated' AND i.building_id = b.id AND i.household_id::text = v #>> '{}')), true)::text
+                WHERE b.id IN (SELECT building_id FROM public.gis_field_building_household_import WHERE source = 'tc2-drawing-20261108-estimated');
+                DELETE FROM public.gis_field_building b
+                USING (SELECT DISTINCT building_id, created_feature_md5 FROM public.gis_field_building_household_import WHERE source = 'tc2-drawing-20261108-estimated' AND building_created) i
+                WHERE b.id = i.building_id
+                  AND jsonb_array_length(b.feature_json::jsonb #> '{properties,householdIds}') = 0
+                  AND md5((b.feature_json::jsonb #- '{properties,householdIds}')::text) = i.created_feature_md5;
+                DELETE FROM public.gis_field_building_household_import WHERE source = 'tc2-drawing-20261108-estimated';
+                ALTER TABLE public.gis_field_building_household_import DROP CONSTRAINT gis_field_building_household_import_match_tier_check;
+                ALTER TABLE public.gis_field_building_household_import ADD CONSTRAINT gis_field_building_household_import_match_tier_check CHECK (match_tier IN ('exact','hamlet','base'));
+                ALTER TABLE public.gis_field_building_household_import ALTER COLUMN match_tier TYPE varchar(16);
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

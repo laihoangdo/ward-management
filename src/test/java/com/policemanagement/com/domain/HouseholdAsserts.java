@@ -83,6 +83,8 @@ public class HouseholdAsserts {
     public static void assertHouseholdUpdatableRelationshipsEquals(Household expected, Household actual) {
         assertThat(actual)
             .as("Verify Household relationships")
-            .satisfies(a -> assertThat(a.getAreaZone()).as("check areaZone").isEqualTo(expected.getAreaZone()));
+            .satisfies(a ->
+                assertThat(a.getAdministrativeHamlet()).as("check administrativeHamlet").isEqualTo(expected.getAdministrativeHamlet())
+            );
     }
 }

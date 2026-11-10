@@ -46,6 +46,9 @@ class AuthorityResourceIT {
     @Autowired
     private MockMvc restAuthorityMockMvc;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private Authority authority;
 
     private Authority insertedAuthority;
@@ -72,6 +75,7 @@ class AuthorityResourceIT {
 
     @BeforeEach
     void initTest() {
+        RbacTestSupport.communeWide(rbac);
         authority = createEntity();
     }
 

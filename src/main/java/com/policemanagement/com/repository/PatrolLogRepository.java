@@ -9,4 +9,4 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface PatrolLogRepository extends JpaRepository<PatrolLog, Long> {}
+public interface PatrolLogRepository extends JpaRepository<PatrolLog, Long>, JpaSpecificationExecutor<PatrolLog> {}

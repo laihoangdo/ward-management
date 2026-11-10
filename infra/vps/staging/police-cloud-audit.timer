@@ -1,0 +1,11 @@
+[Unit]
+Description=Export police audit and heartbeat every two minutes
+
+[Timer]
+OnBootSec=90s
+OnUnitInactiveSec=120s
+RandomizedDelaySec=10s
+Unit=police-cloud-audit.service
+
+[Install]
+WantedBy=timers.target

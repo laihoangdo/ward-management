@@ -25,4 +25,25 @@
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
     <include file="config/liquibase/changelog/20261008190000_gis_3d_model.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261008210000_postgis_foundation.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261009190000_rbac.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261012000000_administrative_units.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261013000000_hamlet_assignment_bridge.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261014000000_direct_hamlet.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261014010000_map_view_roles.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261017010000_field_buildings.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261018010000_hamlet_pdf_boundaries.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261018020000_household_browse_index.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261019000000_remove_vietmap_menu.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261020000000_tc2_roster.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261020010000_tc2_review.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261020020000_tc2_identity_validity.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261027000000_tc2_unify_core.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261027010000_tc2_legacy_projections.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261028000000_database_integrity.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261028010000_document_lifecycle.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261029000000_postgis_operational.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261029010000_postgis_restore_safe.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261102000000_inspection_photos.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261108000000_tc2_drawing_household_links.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261108010000_tc2_drawing_household_links_estimated.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

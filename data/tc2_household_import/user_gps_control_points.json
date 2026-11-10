@@ -1,0 +1,61 @@
+{
+  "source": "User-supplied GPS, 2026-10-13",
+  "duplicate_G1_removed": true,
+  "local_correspondences_pending": false,
+  "points": [
+    {
+      "id": "G1",
+      "description": "QL22 x Nguyen Anh Thu",
+      "latitude": 10.855687108611988,
+      "longitude": 106.60714413637943,
+      "local_x": 19.23395413680687,
+      "local_y": 26.8512518192568,
+      "candidate_blender_x": -176.82,
+      "candidate_blender_y": 104.56,
+      "candidate_dxf_x": 19.23395413680687,
+      "candidate_dxf_y": 26.8512518192568,
+      "local_correspondence_status": "CONFIRMED_BY_USER"
+    },
+    {
+      "id": "G2",
+      "description": "Nguyen Anh Thu x Hem 17",
+      "latitude": 10.8585915212406,
+      "longitude": 106.6090190820041,
+      "local_x": 34.218861986413565,
+      "local_y": 1.2436950070480617,
+      "candidate_blender_x": -80.94,
+      "candidate_blender_y": -58.65,
+      "candidate_dxf_x": 34.218861986413565,
+      "candidate_dxf_y": 1.2436950070480617,
+      "local_correspondence_status": "CONFIRMED_BY_USER"
+    },
+    {
+      "id": "G3",
+      "description": "Bottom-right drawing corner as described by user",
+      "latitude": 10.861680282273326,
+      "longitude": 106.60698692011118,
+      "local_x": 60.76679495832129,
+      "local_y": -2.224791086471229,
+      "candidate_blender_x": 88.47,
+      "candidate_blender_y": -80.49,
+      "candidate_dxf_x": 60.76679495832129,
+      "candidate_dxf_y": -2.224791086471229,
+      "local_correspondence_status": "CONFIRMED_BY_USER"
+    },
+    {
+      "id": "G4",
+      "description": "Top-right drawing corner as described by user",
+      "latitude": 10.86165245797089,
+      "longitude": 106.60303429681296,
+      "local_x": 70.6666562019598,
+      "local_y": 26.28558267818603,
+      "candidate_blender_x": 151.32,
+      "candidate_blender_y": 101.51,
+      "candidate_dxf_x": 70.6666562019598,
+      "candidate_dxf_y": 26.28558267818603,
+      "local_correspondence_status": "CONFIRMED_BY_USER"
+    }
+  ],
+  "local_correspondences_confirmed": true,
+  "confirmation_source": "User explicitly confirmed G1-G4 in the annotated diagram, 2026-10-13"
+}

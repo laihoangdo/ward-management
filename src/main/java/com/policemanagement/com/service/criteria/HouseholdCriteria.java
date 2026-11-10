@@ -112,7 +112,7 @@ public class HouseholdCriteria implements Serializable, Criteria {
 
     private LongFilter residentsId;
 
-    private LongFilter areaZoneId;
+    private LongFilter hamletId;
 
     private Boolean distinct;
 
@@ -145,7 +145,7 @@ public class HouseholdCriteria implements Serializable, Criteria {
         this.lastCheckedDate = other.optionalLastCheckedDate().map(StringFilter::copy).orElse(null);
         this.officerInCharge = other.optionalOfficerInCharge().map(StringFilter::copy).orElse(null);
         this.residentsId = other.optionalResidentsId().map(LongFilter::copy).orElse(null);
-        this.areaZoneId = other.optionalAreaZoneId().map(LongFilter::copy).orElse(null);
+        this.hamletId = other.optionalHamletId().map(LongFilter::copy).orElse(null);
         this.distinct = other.distinct;
     }
 
@@ -648,23 +648,23 @@ public class HouseholdCriteria implements Serializable, Criteria {
         this.residentsId = residentsId;
     }
 
-    public LongFilter getAreaZoneId() {
-        return areaZoneId;
+    public LongFilter getHamletId() {
+        return hamletId;
     }
 
-    public Optional<LongFilter> optionalAreaZoneId() {
-        return Optional.ofNullable(areaZoneId);
+    public Optional<LongFilter> optionalHamletId() {
+        return Optional.ofNullable(hamletId);
     }
 
-    public LongFilter areaZoneId() {
-        if (areaZoneId == null) {
-            setAreaZoneId(new LongFilter());
+    public LongFilter hamletId() {
+        if (hamletId == null) {
+            setHamletId(new LongFilter());
         }
-        return areaZoneId;
+        return hamletId;
     }
 
-    public void setAreaZoneId(LongFilter areaZoneId) {
-        this.areaZoneId = areaZoneId;
+    public void setHamletId(LongFilter hamletId) {
+        this.hamletId = hamletId;
     }
 
     public Boolean getDistinct() {
@@ -722,7 +722,7 @@ public class HouseholdCriteria implements Serializable, Criteria {
             Objects.equals(lastCheckedDate, that.lastCheckedDate) &&
             Objects.equals(officerInCharge, that.officerInCharge) &&
             Objects.equals(residentsId, that.residentsId) &&
-            Objects.equals(areaZoneId, that.areaZoneId) &&
+            Objects.equals(hamletId, that.hamletId) &&
             Objects.equals(distinct, that.distinct)
         );
     }
@@ -756,7 +756,7 @@ public class HouseholdCriteria implements Serializable, Criteria {
             lastCheckedDate,
             officerInCharge,
             residentsId,
-            areaZoneId,
+            hamletId,
             distinct
         );
     }
@@ -791,7 +791,7 @@ public class HouseholdCriteria implements Serializable, Criteria {
             optionalLastCheckedDate().map(f -> "lastCheckedDate=" + f + ", ").orElse("") +
             optionalOfficerInCharge().map(f -> "officerInCharge=" + f + ", ").orElse("") +
             optionalResidentsId().map(f -> "residentsId=" + f + ", ").orElse("") +
-            optionalAreaZoneId().map(f -> "areaZoneId=" + f + ", ").orElse("") +
+            optionalHamletId().map(f -> "hamletId=" + f + ", ").orElse("") +
             optionalDistinct().map(f -> "distinct=" + f + ", ").orElse("") +
         "}";
     }

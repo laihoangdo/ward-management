@@ -7,6 +7,13 @@ import viteConfig from './vite.config.ts';
 export default mergeConfig(
   viteConfig,
   defineConfig({
+    resolve: {
+      // Test files are excluded from the application tsconfig, so resolve this
+      // shared import prefix explicitly for the test runner.
+      alias: {
+        app: fileURLToPath(new URL('./src/main/webapp/app/', import.meta.url)),
+      },
+    },
     test: {
       globals: true,
       environment: 'happy-dom',

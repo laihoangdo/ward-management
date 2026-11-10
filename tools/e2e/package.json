@@ -1,0 +1,14 @@
+{
+  "name": "police-jhip-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "list": "playwright test --list",
+    "report": "playwright show-report ../../target/e2e/report",
+    "smoke": "playwright test --grep @smoke",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  }
+}

@@ -69,6 +69,59 @@ class GisSecurityTest {
         mvc.perform(get("/api/households").with(user("officer").roles("USER"))).andExpect(status().isOk());
     }
 
+    @ParameterizedTest
+    @ValueSource(
+        strings = {
+            "/content/data/badiem-houses.geojson",
+            "/content/assets/badiem_satellite/8/203/120.jpg",
+            "/content/assets/badiem_map/18/1/1.png",
+        }
+    )
+    void authenticatedReferenceMapReadsWorkButWritesAndAnonymousReadsRemainBlocked(String path) throws Exception {
+        mvc.perform(get(path).accept(MediaType.APPLICATION_JSON)).andExpect(status().isUnauthorized());
+        mvc.perform(get(path).with(user("officer").roles("USER"))).andExpect(status().isOk());
+        mvc.perform(head(path).with(user("officer").roles("USER"))).andExpect(status().isOk());
+        mvc.perform(post(path).with(user("officer").roles("USER")).with(csrf())).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void referenceMapAllowlistDoesNotExposeOtherContent() throws Exception {
+        mvc.perform(get("/content/private.jpg").with(user("officer").roles("USER"))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void inspectionPhotoEndpointsRequireAuthenticationAndCsrfForSessionWrites() throws Exception {
+        String path = "/api/gis/households/1/inspection-photos";
+        mvc.perform(get(path).accept(MediaType.APPLICATION_JSON)).andExpect(status().isUnauthorized());
+        mvc.perform(post(path).with(csrf()).accept(MediaType.APPLICATION_JSON)).andExpect(status().isUnauthorized());
+        mvc.perform(
+            delete(path + "/1")
+                .with(csrf())
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(status().isUnauthorized());
+        mvc.perform(post(path).with(user("officer").roles("USER"))).andExpect(status().isForbidden());
+        mvc.perform(delete(path + "/1").with(user("officer").roles("USER"))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void anonymousCannotOpenTheSseEndpoint() throws Exception {
+        mvc.perform(get("/api/rbac/events").accept(MediaType.TEXT_EVENT_STREAM)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void authenticatedSseCanCompleteItsAsyncDispatch() throws Exception {
+        var result = mvc
+            .perform(
+                get("/api/rbac/events")
+                    .servletPath("/api/rbac/events")
+                    .with(user("officer").roles("USER"))
+                    .accept(MediaType.TEXT_EVENT_STREAM)
+            )
+            .andExpect(status().isOk())
+            .andReturn();
+        mvc.perform(asyncDispatch(result)).andExpect(status().isOk());
+    }
+
     @Configuration
     @EnableWebSecurity
     @EnableWebMvc
@@ -93,6 +146,19 @@ class GisSecurityTest {
 
     @RestController
     static class ProbeController {
+
+        @RequestMapping("/content/**")
+        Map<String, String> referenceAsset() {
+            return Map.of("status", "ok");
+        }
+
+        @org.springframework.web.bind.annotation.GetMapping(value = "/api/rbac/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+        org.springframework.web.servlet.mvc.method.annotation.SseEmitter events() throws java.io.IOException {
+            var emitter = new org.springframework.web.servlet.mvc.method.annotation.SseEmitter();
+            emitter.send(org.springframework.web.servlet.mvc.method.annotation.SseEmitter.event().name("ready").data("{}"));
+            emitter.complete();
+            return emitter;
+        }
 
         @RequestMapping("/api/{resource}")
         Map<String, String> businessData() {

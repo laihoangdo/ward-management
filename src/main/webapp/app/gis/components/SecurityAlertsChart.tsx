@@ -26,10 +26,10 @@ import {
   Layers,
   PieChart as PieIcon,
   BarChart3,
-  Clock,
   Ban,
 } from 'lucide-react';
-import { SecurityAlert, SecurityAlertSeverity } from '../types';
+import { SecurityAlert } from '../types';
+import { buildSecurityTimeline } from '../utils/securityAlertData';
 
 interface SecurityAlertsChartProps {
   alerts: SecurityAlert[];
@@ -64,7 +64,7 @@ const SEVERITY_COLORS = {
 const CATEGORY_COLORS = [
   '#ef4444', // Đột nhập/Sửa Database
   '#f59e0b', // Brute-force/Đăng nhập
-  '#8b5cf6', // Xâm nhập Whitelist
+  '#8b5cf6', // taste-skill-ignore: hue phân loại Xâm nhập Whitelist, có legend
   '#06b6d4', // Leo thang đặc quyền / Quét IP
   '#64748b', // Khác
 ];
@@ -87,6 +87,30 @@ function categorizeAlert(alert: SecurityAlert): string {
   return 'Cảnh báo an ninh khác';
 }
 
+// Chart tooltip; defined at module level so Recharts keeps one stable component type.
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-950 border border-slate-700 p-3 rounded-xl text-xs space-y-1.5">
+        <div className="font-bold text-white flex items-center gap-1.5 border-b border-slate-800 pb-1">
+          <Calendar className="w-3.5 h-3.5 text-amber-400" />
+          <span>Thời điểm: {label}</span>
+        </div>
+        {payload.map((entry: any, index: number) => (
+          <div key={`item-${index}`} className="flex items-center justify-between gap-4 text-[11px]">
+            <span className="flex items-center gap-1.5" style={{ color: entry.color }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
+              {entry.name}:
+            </span>
+            <strong className="tabular-nums text-white">{entry.value} vụ</strong>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts = [], blacklistedCount = 0 }) => {
   const [timeRange, setTimeRange] = useState<TimeRangeMode>('week');
   const [viewMode, setViewMode] = useState<MetricViewMode>('severity');
@@ -101,7 +125,7 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
     const low = alerts.filter(a => a.severity === 'low' || a.severity === 'info' || a.severity === 'warning').length;
     const resolved = alerts.filter(a => a.resolved).length;
     const unresolved = total - resolved;
-    const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 100;
+    const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : null;
 
     return { total, critical, high, medium, low, resolved, unresolved, resolutionRate };
   }, [alerts]);
@@ -125,325 +149,68 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
       }
     });
 
-    // If alerts are few, add baseline trend weights for clear representation
-    if (alerts.length <= 3) {
-      counts['Cơ sở dữ liệu'] = Math.max(counts['Cơ sở dữ liệu'], 3);
-      counts['Xác thực / Đăng nhập'] = Math.max(counts['Xác thực / Đăng nhập'], 2);
-      counts['Vi phạm Whitelist'] = Math.max(counts['Vi phạm Whitelist'], 2);
-      counts['Quét lỗ hổng / Leo quyền'] = Math.max(counts['Quét lỗ hổng / Leo quyền'], 1);
-    }
-
     return Object.entries(counts)
       .map(([name, value]) => ({ name, value }))
       .filter(item => item.value > 0);
   }, [alerts]);
 
-  // Generate Weekly or Monthly Timeline Data
-  const timelineData = useMemo<TimePointData[]>(() => {
-    if (timeRange === 'week') {
-      // 7 days of the week (Thứ 2 to Chủ Nhật)
-      const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
-
-      // Base historical model weighted to current alerts
-      const baseWeek: TimePointData[] = [
-        {
-          timeLabel: 'T2 (14/09)',
-          total: 2,
-          critical: 0,
-          high: 1,
-          medium: 1,
-          low: 0,
-          resolved: 2,
-          unresolved: 0,
-          database: 1,
-          auth: 1,
-          whitelist: 0,
-          other: 0,
-        },
-        {
-          timeLabel: 'T3 (15/09)',
-          total: 1,
-          critical: 0,
-          high: 0,
-          medium: 1,
-          low: 0,
-          resolved: 1,
-          unresolved: 0,
-          database: 0,
-          auth: 1,
-          whitelist: 0,
-          other: 0,
-        },
-        {
-          timeLabel: 'T4 (16/09)',
-          total: 3,
-          critical: 1,
-          high: 1,
-          medium: 1,
-          low: 0,
-          resolved: 3,
-          unresolved: 0,
-          database: 1,
-          auth: 1,
-          whitelist: 1,
-          other: 0,
-        },
-        {
-          timeLabel: 'T5 (17/09)',
-          total: 2,
-          critical: 0,
-          high: 1,
-          medium: 1,
-          low: 0,
-          resolved: 2,
-          unresolved: 0,
-          database: 1,
-          auth: 0,
-          whitelist: 1,
-          other: 0,
-        },
-        {
-          timeLabel: 'T6 (18/09)',
-          total: 4,
-          critical: 1,
-          high: 2,
-          medium: 1,
-          low: 0,
-          resolved: 3,
-          unresolved: 1,
-          database: 1,
-          auth: 2,
-          whitelist: 1,
-          other: 0,
-        },
-        {
-          timeLabel: 'T7 (19/09)',
-          total: 5,
-          critical: 2,
-          high: 2,
-          medium: 1,
-          low: 0,
-          resolved: 2,
-          unresolved: 3,
-          database: 3,
-          auth: 1,
-          whitelist: 1,
-          other: 0,
-        },
-        {
-          timeLabel: 'CN (20/09)',
-          total: 1,
-          critical: 0,
-          high: 0,
-          medium: 1,
-          low: 0,
-          resolved: 1,
-          unresolved: 0,
-          database: 0,
-          auth: 1,
-          whitelist: 0,
-          other: 0,
-        },
-      ];
-
-      // Blend real alerts into the current week days
-      alerts.forEach(a => {
-        if (a.timestamp.includes('19/09') || a.timestamp.includes('19/9')) {
-          const t7 = baseWeek[5];
-          if (a.severity === 'critical') t7.critical++;
-          else if (a.severity === 'high') t7.high++;
-          else t7.medium++;
-          t7.total++;
-          if (a.resolved) t7.resolved++;
-          else t7.unresolved++;
-        } else if (a.timestamp.includes('18/09') || a.timestamp.includes('18/9')) {
-          const t6 = baseWeek[4];
-          if (a.severity === 'critical') t6.critical++;
-          else if (a.severity === 'high') t6.high++;
-          else t6.medium++;
-          t6.total++;
-          if (a.resolved) t6.resolved++;
-          else t6.unresolved++;
-        }
-      });
-
-      return baseWeek;
-    } else {
-      // 6 months timeline (Tháng 4 to Tháng 9 / 2026)
-      const baseMonths: TimePointData[] = [
-        {
-          timeLabel: 'Tháng 4',
-          total: 6,
-          critical: 1,
-          high: 2,
-          medium: 2,
-          low: 1,
-          resolved: 6,
-          unresolved: 0,
-          database: 2,
-          auth: 2,
-          whitelist: 1,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 5',
-          total: 9,
-          critical: 2,
-          high: 3,
-          medium: 3,
-          low: 1,
-          resolved: 9,
-          unresolved: 0,
-          database: 3,
-          auth: 3,
-          whitelist: 2,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 6',
-          total: 12,
-          critical: 3,
-          high: 4,
-          medium: 4,
-          low: 1,
-          resolved: 11,
-          unresolved: 1,
-          database: 4,
-          auth: 4,
-          whitelist: 3,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 7',
-          total: 8,
-          critical: 1,
-          high: 3,
-          medium: 3,
-          low: 1,
-          resolved: 8,
-          unresolved: 0,
-          database: 2,
-          auth: 3,
-          whitelist: 2,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 8',
-          total: 14,
-          critical: 4,
-          high: 5,
-          medium: 4,
-          low: 1,
-          resolved: 13,
-          unresolved: 1,
-          database: 5,
-          auth: 5,
-          whitelist: 3,
-          other: 1,
-        },
-        {
-          timeLabel: 'Tháng 9',
-          total: 18,
-          critical: 5,
-          high: 7,
-          medium: 5,
-          low: 1,
-          resolved: 14,
-          unresolved: 4,
-          database: 7,
-          auth: 5,
-          whitelist: 4,
-          other: 2,
-        },
-      ];
-
-      return baseMonths;
-    }
-  }, [timeRange, alerts]);
-
-  // Filter timeline points based on selected severity filter
-  const filteredTimeline = useMemo(() => {
-    if (selectedSeverity === 'all') return timelineData;
-    return timelineData.map(pt => {
-      if (selectedSeverity === 'critical') {
-        return { ...pt, total: pt.critical, high: 0, medium: 0, low: 0 };
-      }
-      if (selectedSeverity === 'high') {
-        return { ...pt, total: pt.high, critical: 0, medium: 0, low: 0 };
-      }
-      if (selectedSeverity === 'medium') {
-        return { ...pt, total: pt.medium, critical: 0, high: 0, low: 0 };
-      }
-      return pt;
-    });
-  }, [timelineData, selectedSeverity]);
-
-  // Custom Tooltip Component
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-slate-950/95 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs space-y-1.5 backdrop-blur-md">
-          <div className="font-bold text-white flex items-center gap-1.5 border-b border-slate-800 pb-1">
-            <Calendar className="w-3.5 h-3.5 text-amber-400" />
-            <span>Thời điểm: {label}</span>
-          </div>
-          {payload.map((entry: any, index: number) => (
-            <div key={`item-${index}`} className="flex items-center justify-between gap-4 text-[11px]">
-              <span className="flex items-center gap-1.5" style={{ color: entry.color }}>
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
-                {entry.name}:
-              </span>
-              <strong className="font-mono text-white">{entry.value} vụ</strong>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+  const filteredTimeline = useMemo<TimePointData[]>(
+    () =>
+      buildSecurityTimeline(
+        alerts.filter(
+          alert =>
+            selectedSeverity === 'all' ||
+            alert.severity === selectedSeverity ||
+            (selectedSeverity === 'low' && ['info', 'warning'].includes(alert.severity)),
+        ),
+        timeRange,
+        categorizeAlert,
+      ),
+    [alerts, timeRange, selectedSeverity],
+  );
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-6 shadow-xl">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 space-y-5">
       {/* HEADER & CONTROLS */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="p-1.5 rounded-lg bg-red-950 text-red-400 border border-red-800/60">
               <TrendingUp className="w-4 h-4" />
             </span>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">Biểu Đồ Thống Kê & Xu Hướng Cảnh Báo An Ninh Địa Bàn</h2>
-            <span className="px-2 py-0.5 rounded-md bg-red-900/60 text-red-200 text-[10px] font-mono font-bold uppercase border border-red-700/50">
-              Realtime Recharts
+            <h2 className="text-base font-bold text-white flex items-center gap-2">Biểu đồ thống kê & xu hướng cảnh báo an ninh địa bàn</h2>
+            <span className="px-2 py-0.5 rounded-md bg-red-900/60 text-red-200 text-[11px] font-bold border border-red-700/50">
+              Dữ liệu thời gian thực
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Phân tích tự động tần suất nguy cơ an ninh theo thời gian thực (tuần/tháng), cơ cấu loại hình xâm nhập & hiệu suất xử lý sự cố.
+            Thống kê các cảnh báo đã tải từ máy chủ trong 7 ngày hoặc 6 tháng gần nhất. Nhóm cảnh báo được phân loại từ nội dung bản ghi.
           </p>
         </div>
 
         {/* TIME RANGE & VIEW TOGGLES */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Week / Month Toggle */}
           <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex items-center">
             <button
               type="button"
               onClick={() => setTimeRange('week')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-                timeRange === 'week' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                timeRange === 'week' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
               <Calendar className="w-3.5 h-3.5" />
-              Theo Tuần
+              Theo tuần
             </button>
             <button
               type="button"
               onClick={() => setTimeRange('month')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
-                timeRange === 'month' ? 'bg-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                timeRange === 'month' ? 'bg-red-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
               <Activity className="w-3.5 h-3.5" />
-              Theo Tháng
+              Theo tháng
             </button>
           </div>
 
@@ -452,35 +219,35 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
             <button
               type="button"
               onClick={() => setViewMode('severity')}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                viewMode === 'severity' ? 'bg-slate-800 text-amber-300 shadow' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'severity' ? 'bg-slate-800 text-amber-300' : 'text-slate-400 hover:text-slate-200'
               }`}
               title="Phân loại theo mức độ nghiêm trọng"
             >
               <ShieldAlert className="w-3.5 h-3.5" />
-              Mức Độ
+              Mức độ
             </button>
             <button
               type="button"
               onClick={() => setViewMode('status')}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                viewMode === 'status' ? 'bg-slate-800 text-emerald-400 shadow' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'status' ? 'bg-slate-800 text-emerald-400' : 'text-slate-400 hover:text-slate-200'
               }`}
               title="Phân loại theo trạng thái xử lý"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Xử Lý
+              Xử lý
             </button>
             <button
               type="button"
               onClick={() => setViewMode('category')}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                viewMode === 'category' ? 'bg-slate-800 text-blue-400 shadow' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                viewMode === 'category' ? 'bg-slate-800 text-blue-400' : 'text-slate-400 hover:text-slate-200'
               }`}
               title="Phân loại theo danh mục tấn công"
             >
               <Layers className="w-3.5 h-3.5" />
-              Loại Hình
+              Loại hình
             </button>
           </div>
 
@@ -516,17 +283,17 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
             <span className="text-[11px] text-slate-400 font-medium">Tổng số cảnh báo</span>
             <ShieldAlert className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-white">{stats.total}</div>
-          <div className="text-[10px] text-slate-500">Ghi nhận toàn hệ thống</div>
+          <div className="text-2xl font-bold tabular-nums text-white">{stats.total}</div>
+          <div className="text-[11px] text-slate-500">Ghi nhận toàn hệ thống</div>
         </div>
 
         <div className="bg-red-950/20 border border-red-900/40 p-3.5 rounded-xl space-y-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-red-300 font-medium">Nghiêm trọng (Critical)</span>
-            <AlertOctagon className="w-4 h-4 text-red-400 animate-pulse" />
+            <AlertOctagon className="w-4 h-4 text-red-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-red-400">{stats.critical}</div>
-          <div className="text-[10px] text-red-400/70">Yêu cầu can thiệp khẩn cấp</div>
+          <div className="text-2xl font-bold tabular-nums text-red-400">{stats.critical}</div>
+          <div className="text-[11px] text-red-400/70">Yêu cầu can thiệp khẩn cấp</div>
         </div>
 
         <div className="bg-emerald-950/20 border border-emerald-900/40 p-3.5 rounded-xl space-y-1">
@@ -534,34 +301,36 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
             <span className="text-[11px] text-emerald-300 font-medium">Tỷ lệ xử lý xong</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-emerald-400">{stats.resolutionRate}%</div>
-          <div className="text-[10px] text-emerald-400/70">
+          <div className="text-2xl font-bold tabular-nums text-emerald-400">
+            {stats.resolutionRate === null ? 'Chưa có dữ liệu' : `${stats.resolutionRate}%`}
+          </div>
+          <div className="text-[11px] text-emerald-400/70 tabular-nums">
             Đã lưu Audit Log an ninh ({stats.resolved}/{stats.total})
           </div>
         </div>
 
         <div className="bg-rose-950/20 border border-rose-900/40 p-3.5 rounded-xl space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-rose-300 font-medium">IP Đã Chặn Tường Lửa</span>
+            <span className="text-[11px] text-rose-300 font-medium">IP đã chặn tường lửa</span>
             <Ban className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-2xl font-bold font-mono text-rose-300">{blacklistedCount}</div>
-          <div className="text-[10px] text-rose-400/70">Khóa truy cập API & DB realtime</div>
+          <div className="text-2xl font-bold tabular-nums text-rose-300">{blacklistedCount}</div>
+          <div className="text-[11px] text-rose-400/70">Khóa truy cập API & DB</div>
         </div>
       </div>
 
       {/* CHARTS GRID: MAIN AREA/BAR CHART + PIE CHART */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* MAIN CHART (2 COLS): TREND OVER TIME */}
-        <div className="lg:col-span-2 bg-slate-950/90 border border-slate-800 rounded-xl p-4.5 space-y-4">
+        <div className="lg:col-span-2 bg-slate-950/90 border border-slate-800 rounded-xl p-4 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-red-400" />
-                {timeRange === 'week' ? 'Biến Động Tần Suất Theo Ngày Trong Tuần' : 'Biến Động Tần Suất Theo Các Tháng'}
+                {timeRange === 'week' ? 'Biến động tần suất theo ngày trong tuần' : 'Biến động tần suất theo các tháng'}
               </h3>
               <span className="text-[11px] text-slate-400">
-                Hiển thị theo: <strong className="text-amber-300 uppercase">{viewMode}</strong>
+                Hiển thị theo: <strong className="text-amber-300">{viewMode}</strong>
               </span>
             </div>
 
@@ -651,7 +420,7 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
                   <Legend wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
                   <Bar dataKey="database" name="Cơ sở dữ liệu" fill="#ef4444" stackId="a" />
                   <Bar dataKey="auth" name="Đăng nhập" fill="#f59e0b" stackId="a" />
-                  <Bar dataKey="whitelist" name="Whitelist" fill="#8b5cf6" stackId="a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="whitelist" name="Whitelist" fill={CATEGORY_COLORS[2]} stackId="a" radius={[4, 4, 0, 0]} />
                 </BarChart>
               )}
             </ResponsiveContainer>
@@ -659,14 +428,14 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
         </div>
 
         {/* SECONDARY CHART (1 COL): PIE/DONUT CHART FOR INCIDENT TYPES */}
-        <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4.5 space-y-4 flex flex-col justify-between">
+        <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 space-y-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <PieIcon className="w-4 h-4 text-amber-400" />
-                Cơ Cấu Nguy Cơ An Ninh
+                Cơ cấu nguy cơ an ninh
               </h3>
-              <span className="text-[10px] text-slate-500 font-mono">Tỷ trọng %</span>
+              <span className="text-[11px] text-slate-500">Tỷ trọng %</span>
             </div>
             <p className="text-[11px] text-slate-400 mt-1">Phân loại theo hành vi xâm nhập, cập nhật database và tài khoản trái phép.</p>
           </div>
@@ -688,8 +457,8 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
 
             {/* Center Donut Label */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-lg font-bold font-mono text-white leading-none">{stats.total}</span>
-              <span className="text-[10px] text-slate-400">Sự cố</span>
+              <span className="text-lg font-bold tabular-nums text-white leading-none">{stats.total}</span>
+              <span className="text-[11px] text-slate-400">Sự cố</span>
             </div>
           </div>
 
@@ -704,7 +473,7 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
                   />
                   <span className="text-slate-300 truncate">{item.name}</span>
                 </div>
-                <span className="font-mono font-bold text-white ml-2">{item.value} vụ</span>
+                <span className="tabular-nums font-bold text-white ml-2">{item.value} vụ</span>
               </div>
             ))}
           </div>
@@ -719,7 +488,7 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
             Hệ thống an ninh địa bàn tự động ghi log mọi biến động và cảnh báo qua email quản trị viên <strong>24/7</strong>.
           </span>
         </div>
-        <div className="text-[10px] font-mono text-slate-500">Recharts Security Engine • Chu kỳ quét: 30 giây/lần</div>
+        <div className="text-[11px] text-slate-500">Chu kỳ quét: 30 giây/lần</div>
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ const initialState: EntityState<IAreaZone> = {
   updateSuccess: false,
 };
 
-const apiUrl = 'api/area-zones';
+const apiUrl = 'api/hamlets';
 
 // Actions
 

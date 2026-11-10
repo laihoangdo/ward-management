@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261029010000-1" author="opencode" dbms="postgresql">
+        <preConditions onFail="CONTINUE">
+            <sqlCheck expectedResult="1">SELECT CASE WHEN to_regprocedure('public.gis_polygon(jsonb)') IS NOT NULL THEN 1 ELSE 0 END</sqlCheck>
+        </preConditions>
+        <!-- Generated expressions execute during COPY with pg_restore's empty search_path. -->
+        <sql>
+            ALTER FUNCTION public.gis_polygon(jsonb) SET search_path=pg_catalog,public;
+            ALTER FUNCTION public.sync_legacy_gis_geometry() SET search_path=pg_catalog,public;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

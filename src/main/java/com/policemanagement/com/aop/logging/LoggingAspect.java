@@ -38,7 +38,8 @@ public class LoggingAspect {
         """
     )
     public void springBeanPointcut() {
-        // Method is empty as this is just a Pointcut, the implementations are in the advice methods.
+        // Method is empty as this is just a Pointcut, the implementations are in the
+        // advice methods.
     }
 
     /**
@@ -52,7 +53,8 @@ public class LoggingAspect {
         """
     )
     public void applicationPackagePointcut() {
-        // Method is empty as this is just a Pointcut, the implementations are in the advice methods.
+        // Method is empty as this is just a Pointcut, the implementations are in the
+        // advice methods.
     }
 
     /**
@@ -69,7 +71,7 @@ public class LoggingAspect {
      * Advice that logs methods throwing exceptions.
      *
      * @param joinPoint join point for advice.
-     * @param e exception.
+     * @param e         exception.
      */
     @AfterThrowing(pointcut = "applicationPackagePointcut() && springBeanPointcut()", throwing = "e")
     public void logAfterThrowing(JoinPoint joinPoint, Throwable e) {
@@ -101,7 +103,8 @@ public class LoggingAspect {
 
     private void logExit(Logger log, JoinPoint joinPoint, Object result) {
         if (log.isDebugEnabled()) {
-            log.debug("Exit: {}() with result = {}", joinPoint.getSignature().getName(), result);
+            // log.debug("Exit: {}() with result = {}", joinPoint.getSignature().getName(),
+            // result);
         }
     }
 

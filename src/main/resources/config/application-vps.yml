@@ -1,0 +1,59 @@
+# Required secrets/config; no fallback to local .rbac, sample credentials or the legacy database.
+spring:
+  config:
+    import: configtree:/run/secrets/app/
+  docker:
+    compose:
+      enabled: false
+  liquibase:
+    enabled: false
+  datasource:
+    url: jdbc:postgresql://database:5432/Monolithic
+    username: police_runtime
+    password: ${runtime_database_password}
+  security:
+    oauth2:
+      client:
+        provider:
+          oidc:
+            issuer-uri: https://sunnytech.cloud/realms/police-staging
+        registration:
+          oidc:
+            client-id: web_app
+            client-secret: ${oidc_client_secret}
+            scope: openid,profile,email
+
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 15m
+      cookie:
+        secure: true
+        http-only: true
+        same-site: lax
+
+rbac:
+  keycloak:
+    issuer-uri: https://sunnytech.cloud:18443/realms/police-staging
+    client-id: rbac-admin
+    client-secret: ${rbac_client_secret}
+
+application:
+  roster:
+    key-file: /run/secrets/app/data.key
+  liquibase:
+    async-start: false
+
+gis:
+  postgis:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

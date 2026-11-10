@@ -71,11 +71,32 @@ class LogoutResourceIT {
             .getConfigurationMetadata()
             .get("end_session_endpoint")
             .toString();
-        logoutUrl = logoutUrl + "?id_token_hint=" + ID_TOKEN + "&post_logout_redirect_uri=" + ORIGIN_URL;
+        logoutUrl = logoutUrl + "?id_token_hint=" + ID_TOKEN + "&post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A8080";
         restLogoutMockMvc
             .perform(post("http://localhost:8080/api/logout").header(HttpHeaders.ORIGIN, ORIGIN_URL))
             .andExpect(status().isOk())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.logoutUrl").value(logoutUrl));
+    }
+
+    @Test
+    void fallsBackToTheAppUrlWhenTheBrowserSendsNoUsableOrigin() throws Exception {
+        String expected =
+            this.registrations.findByRegistrationId("oidc").getProviderDetails().getConfigurationMetadata().get("end_session_endpoint") +
+            "?id_token_hint=" +
+            ID_TOKEN +
+            "&post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A8080";
+        // No Origin header at all, and the opaque "null" origin sent by some privacy modes.
+        restLogoutMockMvc
+            .perform(post("http://localhost:8080/api/logout"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.logoutUrl").value(expected));
+        SecurityContextHolder.getContext().setAuthentication(
+            registerAuthenticationToken(authorizedClientService, clientRegistration, authenticationToken(claims))
+        );
+        restLogoutMockMvc
+            .perform(post("http://localhost:8080/api/logout").header(HttpHeaders.ORIGIN, "null"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.logoutUrl").value(expected));
     }
 }

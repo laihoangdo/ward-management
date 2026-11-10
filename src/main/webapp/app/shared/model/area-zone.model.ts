@@ -1,5 +1,12 @@
 export interface IAreaZone {
   id?: number;
+  communeId?: number;
+  unitType?: string;
+  nameNormalized?: string;
+  fullName?: string;
+  sortOrder?: number;
+  validFrom?: string;
+  validTo?: string;
   code?: string;
   name?: string;
   hamletName?: string;

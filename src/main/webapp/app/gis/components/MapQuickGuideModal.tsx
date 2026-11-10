@@ -1,19 +1,5 @@
 import React, { useState } from 'react';
-import {
-  X,
-  Move,
-  Camera,
-  PanelRight,
-  Maximize2,
-  Layers,
-  ShieldAlert,
-  Check,
-  HelpCircle,
-  Sparkles,
-  MapPin,
-  CheckCircle2,
-  ArrowRight,
-} from 'lucide-react';
+import { X, Move, Camera, PanelRight, Maximize2, Layers, ShieldAlert, Check, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface MapQuickGuideModalProps {
   isOpen: boolean;
@@ -53,7 +39,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
       description:
         'Nhấp để kích hoạt chế độ chỉnh sửa. Toàn bộ ghim nhà trên bản đồ sẽ cho phép nhấp giữ và kéo thả trực tiếp đến vị trí thực tế chính xác.',
       step: 'Bước 1: Bấm nút "Đổi tọa độ nhà" → Bước 2: Kéo ghim nhà đến vị trí mới → Bước 3: Bấm nút "Hoàn thành" màu xanh để đồng bộ lên hệ thống.',
-      tip: 'Ghim đã đổi vị trí sẽ hiển thị nhãn "✓ Đã dời" và viền xanh ngọc bích để bạn dễ kiểm tra trước khi lưu.',
+      tip: 'Ghim đã đổi vị trí sẽ hiển thị nhãn "✓ Đã dời" và viền xanh ngọc bích để bạn dễ kiểm tra trước khi lưu.', // taste-skill-ignore: trích nguyên nhãn trạng thái hiện có, không phải icon trang trí
     },
     {
       id: 'capture-map',
@@ -94,7 +80,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
       icon: Maximize2,
       color: 'indigo',
       badgeBg: 'bg-slate-900',
-      tagColor: 'text-indigo-700 bg-indigo-50 border-indigo-200',
+      tagColor: 'text-slate-700 bg-slate-100 border-slate-200',
       title: 'Chế độ toàn màn hình (Full Screen)',
       buttonPreview: (
         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-bold shadow-xs">
@@ -157,10 +143,10 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-between shrink-0 border-b border-slate-700/50">
+        <div className="px-6 py-5 bg-slate-900 text-white flex items-center justify-between shrink-0 border-b border-slate-700/50">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 text-slate-950 font-black shrink-0">
-              <Sparkles className="w-6 h-6 text-slate-950" />
+            <div className="w-11 h-11 flex items-center justify-center text-amber-400 shrink-0">
+              <Sparkles className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -188,7 +174,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
 
         {/* Navigation Tabs (Quick selector for items) */}
         <div className="bg-slate-50 border-b border-slate-200 px-4 py-2.5 overflow-x-auto scrollbar-none flex items-center gap-2 shrink-0">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0 mr-1 hidden md:inline">Xem tính năng:</span>
+          <span className="text-xs font-semibold text-slate-500 shrink-0 mr-1 hidden md:inline">Xem tính năng:</span>
           {guideItems.map((item, idx) => {
             const Icon = item.icon;
             const isActive = activeFeatureIndex === idx;
@@ -216,7 +202,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
             const active = guideItems[activeFeatureIndex];
             const Icon = active.icon;
             return (
-              <div className="p-5 bg-white rounded-2xl border-2 border-indigo-100 shadow-sm space-y-3">
+              <div className="p-5 bg-white rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-3">
                     <div
@@ -242,7 +228,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
 
                 <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80 text-xs text-slate-700 space-y-1.5">
                   <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                    <ArrowRight className="w-3.5 h-3.5 text-indigo-600" />
+                    <ArrowRight className="w-3.5 h-3.5 text-blue-600" />
                     <span>Quy trình thao tác:</span>
                   </div>
                   <p className="pl-5 text-slate-600">{active.step}</p>
@@ -259,7 +245,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
 
           {/* Grid Overview of all 6 Features */}
           <div>
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+            <h4 className="text-sm font-semibold text-slate-600 mb-3 flex items-center gap-1.5">
               <span>Danh mục toàn bộ các công cụ bản đồ</span>
               <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full font-bold">6 công cụ</span>
             </h4>
@@ -274,7 +260,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                     onClick={() => setActiveFeatureIndex(idx)}
                     className={`p-4 rounded-2xl border transition-all cursor-pointer text-left relative flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-white border-indigo-500 ring-2 ring-indigo-200 shadow-md'
+                        ? 'bg-white border-blue-500 ring-2 ring-blue-200'
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
                     }`}
                   >
@@ -287,7 +273,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                           <span className="text-xs font-bold text-slate-900">{item.title}</span>
                         </div>
                         {isSelected && (
-                          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px]">
+                          <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]">
                             <Check className="w-3 h-3" />
                           </span>
                         )}
@@ -314,7 +300,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
               id="cb-dont-show-map-guide-again"
               checked={dontShowAgain}
               onChange={e => setDontShowAgain(e.target.checked)}
-              className="w-4 h-4 rounded-sm border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              className="w-4 h-4 rounded-sm border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
             <span className="font-medium">Không tự động hiển thị lại khi mở bản đồ</span>
           </label>
@@ -331,7 +317,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
             <button
               id="btn-confirm-map-guide-start"
               onClick={handleFinish}
-              className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20 hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer"
             >
               <span>Bắt đầu sử dụng bản đồ</span>
               <ArrowRight className="w-4 h-4" />

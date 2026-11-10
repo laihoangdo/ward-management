@@ -8,15 +8,12 @@ import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 /**
  * Nhân khẩu / Cư dân cư trú
  */
 @Entity
 @Table(name = "resident")
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Resident implements Serializable {
 
@@ -60,7 +57,7 @@ public class Resident implements Serializable {
     private String notes;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "residentses", "areaZone" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "residentses", "administrativeHamlet" }, allowSetters = true)
     private Household household;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

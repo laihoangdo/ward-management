@@ -1,27 +1,25 @@
+import { normalizeSearch } from '../utils/householdSearch';
+import { exportRbacCsv } from '../services/rbacApiService';
+import axios from 'axios';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   UserCheck,
   UserPlus,
   Search,
-  Filter,
   Eye,
+  EyeOff,
   Edit,
   Trash2,
   Phone,
-  Shield,
   ShieldAlert,
   AlertTriangle,
-  CheckCircle2,
-  Building2,
   MapPin,
-  Calendar,
   CreditCard,
   X,
   PieChart,
   BarChart3,
   Home,
-  ArrowRight,
   RotateCcw,
   FileSpreadsheet,
   LayoutGrid,
@@ -30,7 +28,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { HouseholdFacility, Resident, ResidenceType, AppUser } from '../types';
-import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
+import { getEffectiveResidentsList, residentAge } from '../utils/residentRosterUtils';
 import { Pagination } from './Pagination';
 import { HouseholdSearchSelect } from './HouseholdSearchSelect';
 
@@ -51,10 +49,19 @@ interface ResidentsTabProps {
   households: HouseholdFacility[];
   allHouseholds?: HouseholdFacility[];
   onSelectHousehold: (household: HouseholdFacility) => void;
-  onUpdateHousehold: (updated: HouseholdFacility) => void;
+  onUpdateHousehold: (updated: HouseholdFacility) => Promise<void>;
   currentUser?: AppUser | null;
   onShowToast?: (msg: string) => void;
 }
+
+// Thẻ thống kê "Độ tuổi lao động" dùng indigo theo bộ màu thẻ nhân khẩu học (mỗi nhóm chỉ số một hue),
+// đồng bộ với các thẻ nhân khẩu học còn lại của tab. Màu phân loại dữ liệu, không phải accent trang trí.
+const DEMOGRAPHIC_LABOR_STYLES = {
+  card: 'p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-900/50', // taste-skill-ignore: màu phân loại thẻ nhân khẩu học
+  label: 'text-[11px] font-medium text-indigo-800 dark:text-indigo-300', // taste-skill-ignore: màu phân loại thẻ nhân khẩu học
+  value: 'text-xl font-bold text-indigo-700 dark:text-indigo-300 mt-0.5', // taste-skill-ignore: màu phân loại thẻ nhân khẩu học
+  caption: 'text-[10px] text-indigo-600 dark:text-indigo-400 mt-1', // taste-skill-ignore: màu phân loại thẻ nhân khẩu học
+};
 
 export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   households,
@@ -64,6 +71,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   currentUser,
   onShowToast,
 }) => {
+  const [isSavingResident, setIsSavingResident] = useState(false);
+  const [residentSaveError, setResidentSaveError] = useState('');
   // Filters & State
   const [searchTerm, setSearchTerm] = useState('');
   const [residenceFilter, setResidenceFilter] = useState<'all' | ResidenceType>('all');
@@ -73,6 +82,29 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   const [neighborhoodFilter, setNeighborhoodFilter] = useState<string>('all');
   const [ageGroupFilter, setAgeGroupFilter] = useState<'all' | 'under18' | 'labor' | 'elderly'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  // Full identity numbers come only from the audited backend reveal endpoint.
+  const [revealedCccds, setRevealedCccds] = useState<Record<string, string>>({});
+  const [revealingCccd, setRevealingCccd] = useState<string | null>(null);
+  const canReveal = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canRevealIdentity === true;
+  const revealCccd = async (residentId: string) => {
+    if (revealedCccds[residentId]) {
+      setRevealedCccds(prev => {
+        const next = { ...prev };
+        delete next[residentId];
+        return next;
+      });
+      return;
+    }
+    setRevealingCccd(residentId);
+    try {
+      const { data } = await axios.post<{ idCardNumber: string }>(`/api/residents/${residentId}/reveal-id`, {});
+      setRevealedCccds(prev => ({ ...prev, [residentId]: data.idCardNumber }));
+    } catch {
+      onShowToast?.('Không thể xem số CCCD. Cần quyền xem số định danh đầy đủ.');
+    } finally {
+      setRevealingCccd(null);
+    }
+  };
 
   // Modals
   const [selectedResident, setSelectedResident] = useState<ResidentRecord | null>(null);
@@ -86,18 +118,18 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   // Form State for Adding / Editing
   const [formHouseholdId, setFormHouseholdId] = useState('');
   const [formFullName, setFormFullName] = useState('');
-  const [formBirthYear, setFormBirthYear] = useState<number>(1995);
-  const [formGender, setFormGender] = useState<'Nam' | 'Nữ'>('Nam');
-  const [formRelationship, setFormRelationship] = useState('Chủ hộ');
+  const [formBirthYear, setFormBirthYear] = useState<number | ''>('');
+  const [formGender, setFormGender] = useState<Resident['gender']>('Chưa cập nhật');
+  const [formRelationship, setFormRelationship] = useState('');
   const [formIdCardNumber, setFormIdCardNumber] = useState('');
-  const [formResidenceType, setFormResidenceType] = useState<ResidenceType>('Thường trú');
+  const [formResidenceType, setFormResidenceType] = useState<ResidenceType>('Chưa xác minh');
   const [formIsMonitored, setFormIsMonitored] = useState(false);
   const [formPhone, setFormPhone] = useState('');
   const [formOccupation, setFormOccupation] = useState('');
-  const [formEthnicity, setFormEthnicity] = useState('Kinh');
+  const [formEthnicity, setFormEthnicity] = useState('');
   const [formNotes, setFormNotes] = useState('');
 
-  const currentYear = 2026;
+  const currentYear = new Date().getFullYear();
   const effectiveHouseholds = allHouseholds && allHouseholds.length > 0 ? allHouseholds : households;
 
   // Extract all residents flattened from households with unified effective list for all households
@@ -164,24 +196,25 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
       if (securityFilter === 'normal' && r.isMonitored) return false;
 
       // Age bracket
-      const age = currentYear - r.birthYear;
+      const age = residentAge(r, currentYear);
+      if (ageGroupFilter !== 'all' && !Number.isFinite(age)) return false;
       if (ageGroupFilter === 'under18' && age >= 18) return false;
       if (ageGroupFilter === 'labor' && (age < 18 || age > 60)) return false;
       if (ageGroupFilter === 'elderly' && age <= 60) return false;
 
       // Search term
       if (searchTerm.trim()) {
-        const q = searchTerm.toLowerCase().trim();
-        const matchName = r.fullName ? r.fullName.toLowerCase().includes(q) : false;
-        const matchId = r.idCardNumber ? r.idCardNumber.toLowerCase().includes(q) : false;
+        const q = normalizeSearch(searchTerm);
+        const matchName = r.fullName ? normalizeSearch(r.fullName).includes(q) : false;
+        const matchId = r.idCardNumber ? normalizeSearch(r.idCardNumber).includes(q) : false;
         const matchPhone = r.phone ? r.phone.includes(q) : false;
         const matchOwnerPhone = r.ownerPhone ? r.ownerPhone.includes(q) : false;
-        const matchHouse = r.houseNumber ? r.houseNumber.toLowerCase().includes(q) : false;
-        const matchStreet = r.street ? r.street.toLowerCase().includes(q) : false;
-        const matchOwner = r.ownerName ? r.ownerName.toLowerCase().includes(q) : false;
-        const matchRel = r.relationship ? r.relationship.toLowerCase().includes(q) : false;
-        const matchJob = r.occupation ? r.occupation.toLowerCase().includes(q) : false;
-        const matchCode = r.householdCode ? r.householdCode.toLowerCase().includes(q) : false;
+        const matchHouse = r.houseNumber ? normalizeSearch(r.houseNumber).includes(q) : false;
+        const matchStreet = r.street ? normalizeSearch(r.street).includes(q) : false;
+        const matchOwner = r.ownerName ? normalizeSearch(r.ownerName).includes(q) : false;
+        const matchRel = r.relationship ? normalizeSearch(r.relationship).includes(q) : false;
+        const matchJob = r.occupation ? normalizeSearch(r.occupation).includes(q) : false;
+        const matchCode = r.householdCode ? normalizeSearch(r.householdCode).includes(q) : false;
 
         if (
           !matchName &&
@@ -226,12 +259,27 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   const monitoredCount = allResidents.filter(r => r.isMonitored).length;
   const maleCount = allResidents.filter(r => r.gender === 'Nam').length;
   const femaleCount = allResidents.filter(r => r.gender === 'Nữ').length;
-  const under18Count = allResidents.filter(r => currentYear - r.birthYear < 18).length;
+  const under18Count = allResidents.filter(r => residentAge(r, currentYear) < 18).length;
   const laborCount = allResidents.filter(r => {
-    const age = currentYear - r.birthYear;
+    const age = residentAge(r, currentYear);
     return age >= 18 && age <= 60;
   }).length;
-  const elderlyCount = allResidents.filter(r => currentYear - r.birthYear > 60).length;
+  const elderlyCount = allResidents.filter(r => residentAge(r, currentYear) > 60).length;
+
+  // Chart calculation metrics for circular charts
+  const totalRes = totalCount > 0 ? totalCount : 1;
+  const malePct = totalCount > 0 ? Math.round((maleCount / totalCount) * 100) : 0;
+  const femalePct = totalCount > 0 ? Math.round((femaleCount / totalCount) * 100) : 0;
+  const thuongTruPct = totalCount > 0 ? Math.round((thuongTruCount / totalCount) * 100) : 0;
+  const tamTruPct = totalCount > 0 ? Math.round((tamTruCount / totalCount) * 100) : 0;
+  const luuTruPct = totalCount > 0 ? Math.round((luuTruCount / totalCount) * 100) : 0;
+
+  const circ = 282.743; // Circumference for r=45
+  const maleDash = (maleCount / totalRes) * circ;
+  const femaleDash = (femaleCount / totalRes) * circ;
+  const ttDash = (thuongTruCount / totalRes) * circ;
+  const tamTruDash = (tamTruCount / totalRes) * circ;
+  const luuTruDash = (luuTruCount / totalRes) * circ;
 
   const isAnyFilterActive =
     searchTerm.trim() !== '' ||
@@ -254,66 +302,12 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
   };
 
   // Export CSV Handler
-  const handleExportCSV = () => {
-    if (currentUser?.role === 'officer' && currentUser?.subAdminPermissions?.canExportReports === false) {
-      const msg = '⚠️ Thẩm quyền bị khóa: Bạn chưa được phân quyền xuất báo cáo danh sách CSV/Excel.';
-      if (onShowToast) onShowToast(msg);
-      else alert(msg);
-      return;
-    }
-
-    const headers = [
-      'STT',
-      'Họ và Tên',
-      'Năm Sinh',
-      'Tuổi',
-      'Giới Tính',
-      'Số CCCD/Định Danh',
-      'Loại Cư Trú',
-      'Quan Hệ Với Chủ Hộ',
-      'Số Nhà',
-      'Tuyến Đường',
-      'Tổ Dân Phố',
-      'Khu Vực (Ấp)',
-      'Tên Chủ Hộ',
-      'SĐT Liên Hệ',
-      'Nghề Nghiệp',
-      'Đối Tượng Theo Dõi ANTT',
-      'Ghi Chú',
-    ];
-
-    const rows = filteredResidents.map((r, index) => [
-      index + 1,
-      `"${r.fullName}"`,
-      r.birthYear,
-      currentYear - r.birthYear,
-      `"${r.gender}"`,
-      r.idCardNumber ? `"'${r.idCardNumber}"` : 'Chưa có',
-      `"${r.residenceType}"`,
-      `"${r.relationship}"`,
-      `"${r.houseNumber}"`,
-      `"${r.street}"`,
-      `"${r.neighborhoodGroup || ''}"`,
-      `"${r.hamlet}"`,
-      `"${r.ownerName}"`,
-      `"${r.phone || r.ownerPhone || ''}"`,
-      `"${r.occupation || 'Tự do'}"`,
-      r.isMonitored ? 'CẦN CHÚ Ý ANTT' : 'Bình thường',
-      `"${(r.notes || '').replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Danh_sach_nhan_khau_P_An_Lac_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    if (onShowToast) {
-      onShowToast(`Đã xuất báo cáo danh sách ${filteredResidents.length} nhân khẩu ra file Excel (CSV)!`);
+  const handleExportCSV = async () => {
+    try {
+      await exportRbacCsv('residents');
+      onShowToast?.('Exported authorized area data.');
+    } catch {
+      onShowToast?.('Export was denied or the server is unavailable.');
     }
   };
 
@@ -325,75 +319,84 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
     }
     setFormHouseholdId(effectiveHouseholds[0].id);
     setFormFullName('');
-    setFormBirthYear(1995);
-    setFormGender('Nam');
-    setFormRelationship('Con');
+    setFormBirthYear('');
+    setFormGender('Chưa cập nhật');
+    setFormRelationship('');
     setFormIdCardNumber('');
-    setFormResidenceType('Thường trú');
+    setFormResidenceType('Chưa xác minh');
     setFormIsMonitored(false);
     setFormPhone('');
     setFormOccupation('');
-    setFormEthnicity('Kinh');
+    setFormEthnicity('');
     setFormNotes('');
     setIsAddModalOpen(true);
   };
 
   // Submit Add Resident
-  const handleSaveAddResident = (e: React.FormEvent) => {
+  const handleSaveAddResident = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formFullName.trim()) {
-      alert('Vui lòng nhập họ và tên nhân khẩu.');
-      return;
-    }
-    if (!formHouseholdId) {
-      alert('Vui lòng chọn hộ dân tiếp nhận.');
-      return;
-    }
+    if (isSavingResident) return;
+    setIsSavingResident(true);
+    setResidentSaveError('');
+    try {
+      if (!formFullName.trim()) {
+        alert('Vui lòng nhập họ và tên nhân khẩu.');
+        return;
+      }
+      if (!formHouseholdId) {
+        alert('Vui lòng chọn hộ dân tiếp nhận.');
+        return;
+      }
 
-    const targetH = effectiveHouseholds.find(h => h.id === formHouseholdId);
-    if (!targetH) {
-      alert('Không tìm thấy hộ dân đã chọn.');
-      return;
-    }
+      const targetH = effectiveHouseholds.find(h => h.id === formHouseholdId);
+      if (!targetH) {
+        alert('Không tìm thấy hộ dân đã chọn.');
+        return;
+      }
 
-    const newResident: Resident = {
-      id: `res-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      fullName: formFullName.trim(),
-      birthYear: Number(formBirthYear) || 1995,
-      gender: formGender,
-      relationship: formRelationship.trim() || 'Thành viên',
-      idCardNumber: formIdCardNumber.trim() || undefined,
-      residenceType: formResidenceType,
-      isMonitored: formIsMonitored,
-      phone: formPhone.trim() || undefined,
-      occupation: formOccupation.trim() || undefined,
-      ethnicity: formEthnicity.trim() || 'Kinh',
-      notes: formNotes.trim() || undefined,
-      startDate: new Date().toLocaleDateString('vi-VN'),
-    };
+      const newResident: Resident = {
+        id: `res-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        fullName: formFullName.trim(),
+        birthYear: formBirthYear === '' ? undefined : Number(formBirthYear),
+        gender: formGender,
+        relationship: formRelationship.trim(),
+        idCardNumber: formIdCardNumber.trim() || undefined,
+        residenceType: formResidenceType,
+        isMonitored: formIsMonitored,
+        phone: formPhone.trim() || undefined,
+        occupation: formOccupation.trim() || undefined,
+        ethnicity: formEthnicity.trim() || undefined,
+        notes: formNotes.trim() || undefined,
+        startDate: new Date().toLocaleDateString('vi-VN'),
+      };
 
-    // Calculate updated household residents and demographics
-    const existingList = targetH.residentsList || [];
-    const updatedResidentsList = [...existingList, newResident];
+      // Calculate updated household residents and demographics
+      const existingList = targetH.residentsList || [];
+      const updatedResidentsList = [...existingList, newResident];
 
-    const age = currentYear - newResident.birthYear;
-    const isUnder18 = age < 18;
+      const age = residentAge(newResident, currentYear);
+      const isUnder18 = age < 18;
 
-    const updatedHousehold: HouseholdFacility = {
-      ...targetH,
-      residentsList: updatedResidentsList,
-      residentsCount: (targetH.residentsCount || existingList.length) + 1,
-      maleCount: (targetH.maleCount || 0) + (newResident.gender === 'Nam' ? 1 : 0),
-      femaleCount: (targetH.femaleCount || 0) + (newResident.gender === 'Nữ' ? 1 : 0),
-      under18Count: (targetH.under18Count || 0) + (isUnder18 ? 1 : 0),
-      above18Count: (targetH.above18Count || 0) + (isUnder18 ? 0 : 1),
-    };
+      const updatedHousehold: HouseholdFacility = {
+        ...targetH,
+        residentsList: updatedResidentsList,
+        residentsCount: (targetH.residentsCount || existingList.length) + 1,
+        maleCount: (targetH.maleCount || 0) + (newResident.gender === 'Nam' ? 1 : 0),
+        femaleCount: (targetH.femaleCount || 0) + (newResident.gender === 'Nữ' ? 1 : 0),
+        under18Count: (targetH.under18Count || 0) + (isUnder18 ? 1 : 0),
+        above18Count: (targetH.above18Count || 0) + (age >= 18 ? 1 : 0),
+      };
 
-    onUpdateHousehold(updatedHousehold);
-    setIsAddModalOpen(false);
+      await onUpdateHousehold(updatedHousehold);
+      setIsAddModalOpen(false);
 
-    if (onShowToast) {
-      onShowToast(`Đã đăng ký thêm nhân khẩu ${newResident.fullName} vào hộ ${targetH.code} (${targetH.houseNumber} ${targetH.street})`);
+      if (onShowToast) {
+        onShowToast(`Đã đăng ký thêm nhân khẩu ${newResident.fullName} vào hộ ${targetH.code} (${targetH.houseNumber} ${targetH.street})`);
+      }
+    } catch {
+      setResidentSaveError('Chưa lưu đầy đủ nhân khẩu. Nội dung nhập được giữ lại. Kiểm tra dữ liệu trước khi thử lại.');
+    } finally {
+      setIsSavingResident(false);
     }
   };
 
@@ -402,7 +405,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
     setResidentToEdit(r);
     setFormHouseholdId(r.householdId);
     setFormFullName(r.fullName);
-    setFormBirthYear(r.birthYear);
+    setFormBirthYear(r.birthYear ?? '');
     setFormGender(r.gender);
     setFormRelationship(r.relationship);
     setFormIdCardNumber(r.idCardNumber || '');
@@ -410,125 +413,143 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
     setFormIsMonitored(!!r.isMonitored);
     setFormPhone(r.phone || '');
     setFormOccupation(r.occupation || '');
-    setFormEthnicity(r.ethnicity || 'Kinh');
+    setFormEthnicity(r.ethnicity || '');
     setFormNotes(r.notes || '');
     setIsEditModalOpen(true);
   };
 
   // Submit Edit Resident
-  const handleSaveEditResident = (e: React.FormEvent) => {
+  const handleSaveEditResident = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!residentToEdit) return;
-    if (!formFullName.trim()) {
-      alert('Vui lòng nhập họ và tên.');
-      return;
-    }
+    if (isSavingResident) return;
+    setIsSavingResident(true);
+    setResidentSaveError('');
+    try {
+      if (!residentToEdit) return;
+      if (!formFullName.trim()) {
+        alert('Vui lòng nhập họ và tên.');
+        return;
+      }
 
-    const currentH = effectiveHouseholds.find(h => h.id === residentToEdit.householdId);
-    if (!currentH) return;
+      const currentH = effectiveHouseholds.find(h => h.id === residentToEdit.householdId);
+      if (!currentH) return;
 
-    const updatedResidentData: Resident = {
-      ...residentToEdit,
-      fullName: formFullName.trim(),
-      birthYear: Number(formBirthYear) || 1995,
-      gender: formGender,
-      relationship: formRelationship.trim(),
-      idCardNumber: formIdCardNumber.trim() || undefined,
-      residenceType: formResidenceType,
-      isMonitored: formIsMonitored,
-      phone: formPhone.trim() || undefined,
-      occupation: formOccupation.trim() || undefined,
-      ethnicity: formEthnicity.trim() || 'Kinh',
-      notes: formNotes.trim() || undefined,
-    };
-
-    // If staying in same household
-    if (formHouseholdId === residentToEdit.householdId) {
-      const list = currentH.residentsList || [];
-      const updatedList = list.some(item => item.id === residentToEdit.id)
-        ? list.map(item => (item.id === residentToEdit.id ? updatedResidentData : item))
-        : [...list, updatedResidentData];
-
-      // Recalculate demographic counts
-      const maleC = updatedList.filter(x => x.gender === 'Nam').length;
-      const femaleC = updatedList.filter(x => x.gender === 'Nữ').length;
-      const under18C = updatedList.filter(x => currentYear - x.birthYear < 18).length;
-      const above18C = updatedList.length - under18C;
-
-      const updatedHousehold: HouseholdFacility = {
-        ...currentH,
-        residentsList: updatedList,
-        residentsCount: updatedList.length,
-        maleCount: maleC,
-        femaleCount: femaleC,
-        under18Count: under18C,
-        above18Count: above18C,
+      const updatedResidentData: Resident = {
+        ...residentToEdit,
+        fullName: formFullName.trim(),
+        birthYear: formBirthYear === '' ? undefined : Number(formBirthYear),
+        gender: formGender,
+        relationship: formRelationship.trim(),
+        idCardNumber: formIdCardNumber.trim() || undefined,
+        residenceType: formResidenceType,
+        isMonitored: formIsMonitored,
+        phone: formPhone.trim() || undefined,
+        occupation: formOccupation.trim() || undefined,
+        ethnicity: formEthnicity.trim() || undefined,
+        notes: formNotes.trim() || undefined,
       };
 
-      onUpdateHousehold(updatedHousehold);
-    } else {
-      // Moved to different household
-      const targetH = effectiveHouseholds.find(h => h.id === formHouseholdId);
-      if (targetH) {
-        // Remove from current household
-        const oldList = (currentH.residentsList || []).filter(x => x.id !== residentToEdit.id);
-        const oldH: HouseholdFacility = {
+      // If staying in same household
+      if (formHouseholdId === residentToEdit.householdId) {
+        const list = currentH.residentsList || [];
+        const updatedList = list.some(item => item.id === residentToEdit.id)
+          ? list.map(item => (item.id === residentToEdit.id ? updatedResidentData : item))
+          : [...list, updatedResidentData];
+
+        // Recalculate demographic counts
+        const maleC = updatedList.filter(x => x.gender === 'Nam').length;
+        const femaleC = updatedList.filter(x => x.gender === 'Nữ').length;
+        const under18C = updatedList.filter(x => residentAge(x, currentYear) < 18).length;
+        const above18C = updatedList.filter(x => residentAge(x, currentYear) >= 18).length;
+
+        const updatedHousehold: HouseholdFacility = {
           ...currentH,
-          residentsList: oldList,
-          residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
-          maleCount: oldList.filter(x => x.gender === 'Nam').length,
-          femaleCount: oldList.filter(x => x.gender === 'Nữ').length,
-          under18Count: oldList.filter(x => currentYear - x.birthYear < 18).length,
-          above18Count: oldList.filter(x => currentYear - x.birthYear >= 18).length,
+          residentsList: updatedList,
+          residentsCount: updatedList.length,
+          maleCount: maleC,
+          femaleCount: femaleC,
+          under18Count: under18C,
+          above18Count: above18C,
         };
-        onUpdateHousehold(oldH);
 
-        // Add to new household
-        const newList = [...(targetH.residentsList || []), updatedResidentData];
-        const newH: HouseholdFacility = {
-          ...targetH,
-          residentsList: newList,
-          residentsCount: (targetH.residentsCount || 0) + 1,
-          maleCount: newList.filter(x => x.gender === 'Nam').length,
-          femaleCount: newList.filter(x => x.gender === 'Nữ').length,
-          under18Count: newList.filter(x => currentYear - x.birthYear < 18).length,
-          above18Count: newList.filter(x => currentYear - x.birthYear >= 18).length,
-        };
-        onUpdateHousehold(newH);
+        await onUpdateHousehold(updatedHousehold);
+      } else {
+        // Moved to different household
+        const targetH = effectiveHouseholds.find(h => h.id === formHouseholdId);
+        if (targetH) {
+          // Remove from current household
+          const oldList = (currentH.residentsList || []).filter(x => x.id !== residentToEdit.id);
+          const oldH: HouseholdFacility = {
+            ...currentH,
+            residentsList: oldList,
+            residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
+            maleCount: oldList.filter(x => x.gender === 'Nam').length,
+            femaleCount: oldList.filter(x => x.gender === 'Nữ').length,
+            under18Count: oldList.filter(x => residentAge(x, currentYear) < 18).length,
+            above18Count: oldList.filter(x => residentAge(x, currentYear) >= 18).length,
+          };
+          await onUpdateHousehold(oldH);
+
+          // Add to new household
+          const newList = [...(targetH.residentsList || []), updatedResidentData];
+          const newH: HouseholdFacility = {
+            ...targetH,
+            residentsList: newList,
+            residentsCount: (targetH.residentsCount || 0) + 1,
+            maleCount: newList.filter(x => x.gender === 'Nam').length,
+            femaleCount: newList.filter(x => x.gender === 'Nữ').length,
+            under18Count: newList.filter(x => residentAge(x, currentYear) < 18).length,
+            above18Count: newList.filter(x => residentAge(x, currentYear) >= 18).length,
+          };
+          await onUpdateHousehold(newH);
+        }
       }
-    }
 
-    setIsEditModalOpen(false);
-    setResidentToEdit(null);
-    if (onShowToast) {
-      onShowToast(`Đã cập nhật hồ sơ nhân khẩu ${updatedResidentData.fullName}!`);
+      setIsEditModalOpen(false);
+      setResidentToEdit(null);
+      if (onShowToast) {
+        onShowToast(`Đã cập nhật hồ sơ nhân khẩu ${updatedResidentData.fullName}!`);
+      }
+    } catch {
+      setResidentSaveError('Chưa lưu đầy đủ nhân khẩu. Nội dung nhập được giữ lại. Kiểm tra dữ liệu trước khi thử lại.');
+    } finally {
+      setIsSavingResident(false);
     }
   };
 
   // Delete Resident
-  const handleConfirmDelete = () => {
-    if (!residentToDelete) return;
-    const currentH = effectiveHouseholds.find(h => h.id === residentToDelete.householdId);
-    if (!currentH) {
+  const handleConfirmDelete = async () => {
+    if (isSavingResident) return;
+    setIsSavingResident(true);
+    setResidentSaveError('');
+    try {
+      if (!residentToDelete) return;
+      const currentH = effectiveHouseholds.find(h => h.id === residentToDelete.householdId);
+      if (!currentH) {
+        setResidentToDelete(null);
+        return;
+      }
+
+      const updatedList = (currentH.residentsList || []).filter(r => r.id !== residentToDelete.id);
+      const updatedH: HouseholdFacility = {
+        ...currentH,
+        residentsList: updatedList,
+        residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
+        maleCount: updatedList.filter(x => x.gender === 'Nam').length,
+        femaleCount: updatedList.filter(x => x.gender === 'Nữ').length,
+        under18Count: updatedList.filter(x => residentAge(x, currentYear) < 18).length,
+        above18Count: updatedList.filter(x => residentAge(x, currentYear) >= 18).length,
+      };
+
+      await onUpdateHousehold(updatedH);
       setResidentToDelete(null);
-      return;
-    }
-
-    const updatedList = (currentH.residentsList || []).filter(r => r.id !== residentToDelete.id);
-    const updatedH: HouseholdFacility = {
-      ...currentH,
-      residentsList: updatedList,
-      residentsCount: Math.max(0, (currentH.residentsCount || 1) - 1),
-      maleCount: updatedList.filter(x => x.gender === 'Nam').length,
-      femaleCount: updatedList.filter(x => x.gender === 'Nữ').length,
-      under18Count: updatedList.filter(x => currentYear - x.birthYear < 18).length,
-      above18Count: updatedList.filter(x => currentYear - x.birthYear >= 18).length,
-    };
-
-    onUpdateHousehold(updatedH);
-    setResidentToDelete(null);
-    if (onShowToast) {
-      onShowToast(`Đã xóa nhân khẩu ${residentToDelete.fullName} khỏi hộ ${currentH.code}.`);
+      if (onShowToast) {
+        onShowToast(`Đã xóa nhân khẩu ${residentToDelete.fullName} khỏi hộ ${currentH.code}.`);
+      }
+    } catch {
+      setResidentSaveError('Không thể hoàn tất xóa nhân khẩu. Kiểm tra lại hồ sơ trước khi thử lại.');
+    } finally {
+      setIsSavingResident(false);
     }
   };
 
@@ -560,6 +581,11 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
 
   return (
     <div id="residents-management-tab" className="space-y-5">
+      {residentSaveError && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          {residentSaveError}
+        </p>
+      )}
       {/* Top Banner / Title */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -659,10 +685,10 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             <div className="text-[10px] text-rose-600 dark:text-rose-400 mt-1">Quản lý nghiệp vụ CSKV</div>
           </div>
 
-          <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-900/50">
-            <div className="text-[11px] font-medium text-indigo-800 dark:text-indigo-300">Độ tuổi lao động</div>
-            <div className="text-xl font-bold text-indigo-700 dark:text-indigo-300 mt-0.5">{laborCount}</div>
-            <div className="text-[10px] text-indigo-600 dark:text-indigo-400 mt-1">
+          <div className={DEMOGRAPHIC_LABOR_STYLES.card}>
+            <div className={DEMOGRAPHIC_LABOR_STYLES.label}>Độ tuổi lao động</div>
+            <div className={DEMOGRAPHIC_LABOR_STYLES.value}>{laborCount}</div>
+            <div className={DEMOGRAPHIC_LABOR_STYLES.caption}>
               Dưới 18: {under18Count} • Trên 60: {elderlyCount}
             </div>
           </div>
@@ -882,7 +908,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {paginatedResidents.map((r, index) => {
                   const badge = getResidenceBadge(r.residenceType);
-                  const age = currentYear - r.birthYear;
+                  const age = residentAge(r, currentYear);
                   const parentHousehold = effectiveHouseholds.find(h => h.id === r.householdId);
 
                   return (
@@ -915,7 +941,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                             </button>
                             <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
                               <span>
-                                Sinh: {r.birthYear} ({age} tuổi)
+                                Sinh: {r.birthYear ?? 'Chưa cập nhật'} {Number.isFinite(age) ? `(${age} tuổi)` : ''}
                               </span>
                               <span>•</span>
                               <span className={r.gender === 'Nam' ? 'text-blue-600' : 'text-rose-600'}>{r.gender}</span>
@@ -928,7 +954,18 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                         {r.idCardNumber ? (
                           <div className="font-mono text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5">
                             <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{r.idCardNumber}</span>
+                            <span>{revealedCccds[r.id] ?? r.idCardNumber}</span>
+                            {canReveal && (
+                              <button
+                                type="button"
+                                onClick={() => revealCccd(r.id)}
+                                disabled={revealingCccd === r.id}
+                                className="p-0.5 text-blue-600 hover:text-blue-800 cursor-pointer"
+                                title={revealedCccds[r.id] ? 'Ẩn số CCCD' : 'Xem số CCCD đầy đủ (ghi nhật ký)'}
+                              >
+                                {revealedCccds[r.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium italic">Chưa có CCCD</span>
@@ -1037,7 +1074,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {paginatedResidents.map(r => {
             const badge = getResidenceBadge(r.residenceType);
-            const age = currentYear - r.birthYear;
+            const age = residentAge(r, currentYear);
             const parentHousehold = effectiveHouseholds.find(h => h.id === r.householdId);
 
             return (
@@ -1069,7 +1106,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                         </h4>
                         <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
                           <span>
-                            {r.birthYear} ({age} tuổi)
+                            {r.birthYear ?? 'Chưa cập nhật'} {Number.isFinite(age) ? `(${age} tuổi)` : ''}
                           </span>
                           <span>•</span>
                           <span className={r.gender === 'Nam' ? 'text-blue-600' : 'text-rose-600'}>{r.gender}</span>
@@ -1204,7 +1241,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                   <h3 className="text-base font-bold">Hồ Sơ Nhân Khẩu & Cư Trú</h3>
                   <div className="text-xs text-slate-400">
                     Mã nhân khẩu: {selectedResident.id}
-                    {selectedResident.residentType ? ` • ${selectedResident.residentType}` : ''}
+                    {selectedResident.residenceType ? ` • ${selectedResident.residenceType}` : ''}
                   </div>
                 </div>
               </div>
@@ -1232,7 +1269,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                   <div>
                     <div className="text-lg font-bold text-slate-900 dark:text-white">{selectedResident.fullName}</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Năm sinh: {selectedResident.birthYear} ({currentYear - selectedResident.birthYear} tuổi) • {selectedResident.gender}
+                      Năm sinh: {selectedResident.birthYear ?? 'Chưa cập nhật'} • {selectedResident.gender}
                     </div>
                   </div>
                 </div>
@@ -1270,7 +1307,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Dân tộc:</span>
-                    <span className="text-slate-700 dark:text-slate-300">{selectedResident.ethnicity || 'Kinh'}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{selectedResident.ethnicity || 'Chưa cập nhật'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Nghề nghiệp:</span>
@@ -1380,7 +1417,13 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveAddResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form aria-busy={isSavingResident} onSubmit={handleSaveAddResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {residentSaveError && (
+                <p role="alert" className="text-sm text-red-700">
+                  {residentSaveError}
+                </p>
+              )}
+              {isSavingResident && <p role="status">Đang lưu nhân khẩu…</p>}
               {/* Chọn Hộ Dân Tiếp Nhận với tìm kiếm tối ưu */}
               <div>
                 <HouseholdSearchSelect
@@ -1416,6 +1459,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     onChange={e => setFormGender(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   >
+                    <option value="Chưa cập nhật">Chưa cập nhật</option>
+                    <option value="Khác">Khác</option>
                     <option value="Nam">Nam</option>
                     <option value="Nữ">Nữ</option>
                   </select>
@@ -1434,10 +1479,12 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     max={currentYear}
                     required
                     value={formBirthYear}
-                    onChange={e => setFormBirthYear(Number(e.target.value))}
+                    onChange={e => setFormBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   />
-                  <div className="text-[10px] text-slate-400 mt-0.5">Tuổi hiện tại: {currentYear - formBirthYear} tuổi</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Tuổi hiện tại: {formBirthYear === '' ? 'Chưa biết' : currentYear - formBirthYear}
+                  </div>
                 </div>
 
                 <div>
@@ -1473,6 +1520,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     onChange={e => setFormResidenceType(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   >
+                    <option value="Chưa xác minh">Chưa xác minh</option>
                     <option value="Thường trú">Thường trú (Có hộ khẩu)</option>
                     <option value="Tạm trú">Tạm trú (KT3, thuê trọ)</option>
                     <option value="Lưu trú">Lưu trú (Khách sạn, ngắn hạn)</option>
@@ -1547,6 +1595,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSavingResident}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md transition"
                 >
                   Xác Nhận Đăng Ký
@@ -1582,7 +1631,13 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveEditResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form aria-busy={isSavingResident} onSubmit={handleSaveEditResident} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {residentSaveError && (
+                <p role="alert" className="text-sm text-red-700">
+                  {residentSaveError}
+                </p>
+              )}
+              {isSavingResident && <p role="status">Đang lưu nhân khẩu…</p>}
               {/* Chọn Hộ Dân Cư Trú với tìm kiếm tối ưu */}
               <div>
                 <HouseholdSearchSelect
@@ -1617,6 +1672,8 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     onChange={e => setFormGender(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
                   >
+                    <option value="Chưa cập nhật">Chưa cập nhật</option>
+                    <option value="Khác">Khác</option>
                     <option value="Nam">Nam</option>
                     <option value="Nữ">Nữ</option>
                   </select>
@@ -1632,7 +1689,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     min={1920}
                     max={currentYear}
                     value={formBirthYear}
-                    onChange={e => setFormBirthYear(Number(e.target.value))}
+                    onChange={e => setFormBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
@@ -1667,6 +1724,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                     onChange={e => setFormResidenceType(e.target.value as any)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500"
                   >
+                    <option value="Chưa xác minh">Chưa xác minh</option>
                     <option value="Thường trú">Thường trú</option>
                     <option value="Tạm trú">Tạm trú</option>
                     <option value="Lưu trú">Lưu trú</option>
@@ -1735,6 +1793,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSavingResident}
                   className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-md transition"
                 >
                   Lưu Thay Đổi
@@ -1774,6 +1833,7 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
               <button
                 type="button"
                 onClick={handleConfirmDelete}
+                disabled={isSavingResident}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition shadow-md"
               >
                 Xác Nhận Xóa
@@ -1786,10 +1846,10 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
       {/* ================= MODAL: PHÂN TÍCH CƠ CẤU DÂN SỐ ================= */}
       {isDemographicModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl">
             <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white">
                   <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>
@@ -1807,97 +1867,219 @@ export const ResidentsTab: React.FC<ResidentsTabProps> = ({
             </div>
 
             <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto text-xs">
-              {/* Ratio Bars */}
-              <div className="space-y-4">
-                {/* Gender Ratio */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
+              {/* 2 Circular Charts Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Gender Ratio Circular Donut Chart */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="font-bold text-slate-800 dark:text-white">Tỷ Lệ Giới Tính</span>
-                    <span className="text-slate-500 font-mono">
-                      Nam: {maleCount} ({totalCount > 0 ? Math.round((maleCount / totalCount) * 100) : 0}%) • Nữ: {femaleCount} (
-                      {totalCount > 0 ? Math.round((femaleCount / totalCount) * 100) : 0}%)
-                    </span>
+                    <span className="text-[11px] text-slate-500 font-mono">Nam / Nữ</span>
                   </div>
-                  <div className="w-full h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex">
-                    <div
-                      style={{ width: `${totalCount > 0 ? (maleCount / totalCount) * 100 : 50}%` }}
-                      className="bg-blue-600 h-full"
-                      title={`Nam: ${maleCount}`}
-                    />
-                    <div
-                      style={{ width: `${totalCount > 0 ? (femaleCount / totalCount) * 100 : 50}%` }}
-                      className="bg-rose-500 h-full"
-                      title={`Nữ: ${femaleCount}`}
-                    />
+
+                  <div className="flex items-center gap-3">
+                    {/* Circular Donut Chart */}
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="45"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="16"
+                          className="text-slate-200 dark:text-slate-700"
+                        />
+                        {maleCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="16"
+                            strokeDasharray={`${maleDash} ${circ}`}
+                            strokeDashoffset={0}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                        {femaleCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#f43f5e"
+                            strokeWidth="16"
+                            strokeDasharray={`${femaleDash} ${circ}`}
+                            strokeDashoffset={-maleDash}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{malePct}%</span>
+                        <span className="text-[9px] text-blue-500 dark:text-blue-400 font-semibold leading-tight mt-0.5">Nam</span>
+                      </div>
+                    </div>
+
+                    {/* Legend List */}
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Nam</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{maleCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({malePct}%)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Nữ</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{femaleCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({femalePct}%)</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Residence Breakdown */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-slate-800 dark:text-white">Phân Bổ Loại Hình Cư Trú</span>
-                    <span className="text-slate-500 font-mono">Tổng số: {totalCount} người</span>
+                {/* Residence Breakdown Circular Donut Chart */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-bold text-slate-800 dark:text-white">Phân Bổ Nơi Cư Trú</span>
+                    <span className="text-[11px] text-slate-500 font-mono">Tổng: {totalCount}</span>
                   </div>
-                  <div className="w-full h-3.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex">
-                    <div
-                      style={{ width: `${totalCount > 0 ? (thuongTruCount / totalCount) * 100 : 0}%` }}
-                      className="bg-emerald-500 h-full"
-                      title={`Thường trú: ${thuongTruCount}`}
-                    />
-                    <div
-                      style={{ width: `${totalCount > 0 ? (tamTruCount / totalCount) * 100 : 0}%` }}
-                      className="bg-blue-500 h-full"
-                      title={`Tạm trú: ${tamTruCount}`}
-                    />
-                    <div
-                      style={{ width: `${totalCount > 0 ? (luuTruCount / totalCount) * 100 : 0}%` }}
-                      className="bg-amber-500 h-full"
-                      title={`Lưu trú: ${luuTruCount}`}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 mt-2">
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      Thường trú: {thuongTruCount} ({totalCount > 0 ? Math.round((thuongTruCount / totalCount) * 100) : 0}%)
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                      Tạm trú: {tamTruCount} ({totalCount > 0 ? Math.round((tamTruCount / totalCount) * 100) : 0}%)
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                      Lưu trú: {luuTruCount} ({totalCount > 0 ? Math.round((luuTruCount / totalCount) * 100) : 0}%)
-                    </span>
+
+                  <div className="flex items-center gap-3">
+                    {/* Circular Donut Chart */}
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="45"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="16"
+                          className="text-slate-200 dark:text-slate-700"
+                        />
+                        {thuongTruCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#10b981"
+                            strokeWidth="16"
+                            strokeDasharray={`${ttDash} ${circ}`}
+                            strokeDashoffset={0}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                        {tamTruCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="16"
+                            strokeDasharray={`${tamTruDash} ${circ}`}
+                            strokeDashoffset={-ttDash}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                        {luuTruCount > 0 && (
+                          <circle
+                            cx="60"
+                            cy="60"
+                            r="45"
+                            fill="none"
+                            stroke="#f59e0b"
+                            strokeWidth="16"
+                            strokeDasharray={`${luuTruDash} ${circ}`}
+                            strokeDashoffset={-(ttDash + tamTruDash)}
+                            className="transition-all duration-700 ease-out"
+                          />
+                        )}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-none">{totalCount}</span>
+                        <span className="text-[9px] text-slate-400 leading-tight mt-0.5">người</span>
+                      </div>
+                    </div>
+
+                    {/* Legend List */}
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Thường trú</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{thuongTruCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({thuongTruPct}%)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Tạm trú</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{tamTruCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({tamTruPct}%)</span>
+                        </div>
+                      </div>
+
+                      <div className="p-1.5 px-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-750 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">Lưu trú</span>
+                        </div>
+                        <div className="text-right shrink-0 font-mono pl-2">
+                          <span className="font-bold text-slate-800 dark:text-white">{luuTruCount}</span>
+                          <span className="text-[10px] text-slate-400 ml-1">({luuTruPct}%)</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Age Pyramid */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-slate-800 dark:text-white">Cơ Cấu Độ Tuổi</span>
-                    <span className="text-slate-500 font-mono">Trẻ em / Lao động / Người cao tuổi</span>
+              {/* Age Pyramid */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-slate-800 dark:text-white">Cơ Cấu Độ Tuổi</span>
+                  <span className="text-slate-500 font-mono">Trẻ em / Lao động / Người cao tuổi</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-center mt-3">
+                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
+                    <div className="text-[11px] text-slate-500">Dưới 18 tuổi</div>
+                    <div className="text-lg font-bold text-slate-800 dark:text-white mt-1">{under18Count}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {totalCount > 0 ? Math.round((under18Count / totalCount) * 100) : 0}%
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-3 text-center mt-3">
-                    <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
-                      <div className="text-[11px] text-slate-500">Dưới 18 tuổi</div>
-                      <div className="text-lg font-bold text-slate-800 dark:text-white mt-1">{under18Count}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {totalCount > 0 ? Math.round((under18Count / totalCount) * 100) : 0}%
-                      </div>
+                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
+                    <div className="text-[11px] text-slate-500">Lao động (18-60)</div>
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">{laborCount}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {totalCount > 0 ? Math.round((laborCount / totalCount) * 100) : 0}%
                     </div>
-                    <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
-                      <div className="text-[11px] text-slate-500">Lao động (18-60)</div>
-                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400 mt-1">{laborCount}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {totalCount > 0 ? Math.round((laborCount / totalCount) * 100) : 0}%
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
-                      <div className="text-[11px] text-slate-500">Trên 60 tuổi</div>
-                      <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">{elderlyCount}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {totalCount > 0 ? Math.round((elderlyCount / totalCount) * 100) : 0}%
-                      </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-750">
+                    <div className="text-[11px] text-slate-500">Trên 60 tuổi</div>
+                    <div className="text-lg font-bold text-amber-600 dark:text-amber-400 mt-1">{elderlyCount}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">
+                      {totalCount > 0 ? Math.round((elderlyCount / totalCount) * 100) : 0}%
                     </div>
                   </div>
                 </div>

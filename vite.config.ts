@@ -3,21 +3,67 @@ import { URL, fileURLToPath } from 'node:url';
 
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, normalizePath } from 'vite';
+import { defineConfig, normalizePath, type ProxyOptions, type Plugin } from 'vite';
+import { proxyOrigin } from './src/main/webapp/app/config/proxy-origin.ts';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { postcssBrowserCompat } from './scripts/postcss-browser-compat.ts';
+import { compatibleOcrLanguageAsset } from './scripts/ocr-language-compat.ts';
 
 const { getAbsoluteFSPath } = await import('swagger-ui-dist');
 const swaggerUiPath = getAbsoluteFSPath();
 const webappDir = fileURLToPath(new URL('./src/main/webapp/', import.meta.url));
 
 const development = process.env.NODE_ENV !== 'production';
+// Explicit synthetic VPS build only; operational assets remain untouched for normal builds.
+const syntheticStage = process.env.POLICE_STAGING_SYNTHETIC === 'true';
 
 const config = defineConfig({
   plugins: [
+    ...(syntheticStage
+      ? [
+          {
+            name: 'synthetic-staging-marker',
+            generateBundle() {
+              const excluded = ['apTc2Schematic.json', 'apTc2DxfLinework.json', 'baDiemBoundaryGis.json', 'baDiemBuildingsGis.backup.json'];
+              const unsafe = [...this.getModuleIds()]
+                .map(id => id.replace(/\\/g, '/').split('?')[0])
+                .filter(id => id.includes('/src/main/webapp/app/gis/data/') && excluded.some(name => id.endsWith('/' + name)));
+              if (unsafe.length) this.error('Synthetic staging attempted to bundle excluded operational/legacy GIS datasets.');
+              this.emitFile({
+                type: 'asset' as const,
+                fileName: 'staging-manifest.json',
+                source: JSON.stringify({ syntheticOnly: true, excludedDatasets: ['apTc2Schematic', 'apTc2DxfLinework'] }),
+              });
+            },
+          } satisfies Plugin,
+        ]
+      : []),
+    { ...postcssBrowserCompat(), enforce: 'pre' },
     tailwindcss(),
     react(),
+    // Keep dev ?raw imports in Vite's transform pipeline; copy this file only for production.
+    ...viteStaticCopy({
+      targets: [
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/assets/xa_ba_diem.geojson', import.meta.url))),
+          dest: '.',
+        },
+      ],
+    }).filter(plugin => plugin.apply === 'build'),
     viteStaticCopy({
       targets: [
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/data/badiem-houses.geojson', import.meta.url))),
+          dest: '.',
+        },
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/assets/badiem_satellite', import.meta.url))),
+          dest: '.',
+        },
+        {
+          src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/assets/badiem_map', import.meta.url))),
+          dest: '.',
+        },
         {
           src: normalizePath(fileURLToPath(new URL('./node_modules/tesseract.js/dist/worker.min.js', import.meta.url))),
           dest: 'ocr',
@@ -36,6 +82,7 @@ const config = defineConfig({
           ),
           dest: 'ocr/lang',
           rename: { stripBase: true },
+          transform: { encoding: 'buffer', handler: compatibleOcrLanguageAsset },
         },
         {
           src: [
@@ -54,7 +101,7 @@ const config = defineConfig({
     }),
   ],
   root: fileURLToPath(new URL('./src/main/webapp/', import.meta.url)),
-  publicDir: fileURLToPath(new URL('./target/classes/static/public', import.meta.url)),
+  publicDir: false,
   cacheDir: fileURLToPath(new URL('./target/.vite-cache', import.meta.url)),
   build: {
     emptyOutDir: true,
@@ -81,6 +128,23 @@ const config = defineConfig({
   },
   resolve: {
     tsconfigPaths: true,
+    alias: syntheticStage
+      ? [
+          {
+            find: /^.*\/apTc2Schematic\.json$/,
+            replacement: fileURLToPath(new URL('./infra/vps/staging/assets/apTc2Schematic.json', import.meta.url)),
+          },
+          {
+            find: /^.*\/apTc2DxfLinework\.json$/,
+            replacement: fileURLToPath(new URL('./infra/vps/staging/assets/apTc2DxfLinework.json', import.meta.url)),
+          },
+        ]
+      : [],
+  },
+  optimizeDeps: {
+    rolldownOptions: {
+      plugins: [postcssBrowserCompat()],
+    },
   },
   define: {
     DEVELOPMENT: JSON.stringify(development),
@@ -94,14 +158,26 @@ const config = defineConfig({
     'process.env.LOG_LEVEL': JSON.stringify(development ? 'info' : 'error'),
   },
   server: {
-    host: true,
+    host: process.env.VITE_DEV_HOST || 'localhost',
     port: 9000,
+    allowedHosts: (process.env.VITE_ALLOWED_HOSTS || '')
+      .split(',')
+      .map(host => host.trim())
+      .filter(Boolean),
     proxy: Object.fromEntries(
-      ['/api', '/services', '/management', '/v3/api-docs', '/oauth2', '/login'].map(res => [
-        res,
+      ['/realms', '/resources', '/api', '/services', '/management', '/v3/api-docs', '/oauth2', '/login'].map(route => [
+        route,
         {
-          target: 'http://localhost:8080',
-        },
+          target: ['/realms', '/resources'].includes(route) ? 'http://localhost:9080' : 'http://localhost:8080',
+          configure(proxy) {
+            proxy.on('proxyReq', (outgoing, request) => {
+              const origin = proxyOrigin(request);
+              outgoing.setHeader('X-Forwarded-Proto', origin.protocol);
+              outgoing.setHeader('X-Forwarded-Host', origin.host);
+              outgoing.setHeader('X-Forwarded-Port', origin.port);
+            });
+          },
+        } satisfies ProxyOptions,
       ]),
     ),
   },

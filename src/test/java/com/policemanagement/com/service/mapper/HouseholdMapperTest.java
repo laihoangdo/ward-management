@@ -21,4 +21,16 @@ class HouseholdMapperTest {
         var actual = householdMapper.toEntity(householdMapper.toDto(expected));
         assertHouseholdAllPropertiesEquals(expected, actual);
     }
+
+    @Test
+    void incomingRelationshipCannotOverrideTheAuthoritativeHamletId() {
+        var dto = new com.policemanagement.com.service.dto.HouseholdDTO();
+        dto.setHamletId(7L);
+        var unrelated = new com.policemanagement.com.service.dto.HamletDTO();
+        unrelated.setId(99L);
+        dto.setAdministrativeHamlet(unrelated);
+        var entity = householdMapper.toEntity(dto);
+        org.junit.jupiter.api.Assertions.assertEquals(7L, entity.getHamletId());
+        org.junit.jupiter.api.Assertions.assertNull(entity.getAdministrativeHamlet());
+    }
 }

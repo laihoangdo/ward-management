@@ -78,6 +78,9 @@ class PatrolLogResourceIT {
     @Autowired
     private MockMvc restPatrolLogMockMvc;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private PatrolLog patrolLog;
 
     private PatrolLog insertedPatrolLog;
@@ -118,6 +121,7 @@ class PatrolLogResourceIT {
 
     @BeforeEach
     void initTest() {
+        RbacTestSupport.communeWide(rbac);
         patrolLog = createEntity();
     }
 
@@ -302,11 +306,13 @@ class PatrolLogResourceIT {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(om.writeValueAsBytes(patrolLogDTO))
             )
-            .andExpect(status().isOk());
+            .andExpect(status().isForbidden());
 
         // Validate the PatrolLog in the database
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertPersistedPatrolLogToMatchAllProperties(updatedPatrolLog);
+        // Patrol logs are append-only (RbacBusinessAspect): the stored entry is unchanged.
+        // The test mutated the shared instance; compare with the stored defaults instead.
+        assertPatrolLogAllUpdatablePropertiesEquals(createEntity(), getPersistedPatrolLog(patrolLog));
     }
 
     @Test
@@ -398,15 +404,13 @@ class PatrolLogResourceIT {
                     .contentType("application/merge-patch+json")
                     .content(om.writeValueAsBytes(partialUpdatedPatrolLog))
             )
-            .andExpect(status().isOk());
+            .andExpect(status().isForbidden());
 
         // Validate the PatrolLog in the database
 
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertPatrolLogUpdatableFieldsEquals(
-            createUpdateProxyForBean(partialUpdatedPatrolLog, patrolLog),
-            getPersistedPatrolLog(patrolLog)
-        );
+        // Patrol logs are append-only: the stored entry is unchanged.
+        assertPatrolLogAllPropertiesEquals(patrolLog, getPersistedPatrolLog(patrolLog));
     }
 
     @Test
@@ -437,12 +441,13 @@ class PatrolLogResourceIT {
                     .contentType("application/merge-patch+json")
                     .content(om.writeValueAsBytes(partialUpdatedPatrolLog))
             )
-            .andExpect(status().isOk());
+            .andExpect(status().isForbidden());
 
         // Validate the PatrolLog in the database
 
         assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertPatrolLogUpdatableFieldsEquals(partialUpdatedPatrolLog, getPersistedPatrolLog(partialUpdatedPatrolLog));
+        // Patrol logs are append-only: the stored entry is unchanged.
+        assertPatrolLogAllPropertiesEquals(patrolLog, getPersistedPatrolLog(patrolLog));
     }
 
     @Test
@@ -522,10 +527,11 @@ class PatrolLogResourceIT {
         // Delete the patrolLog
         restPatrolLogMockMvc
             .perform(delete(ENTITY_API_URL_ID, patrolLog.getId()).with(csrf()).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNoContent());
+            .andExpect(status().isForbidden());
 
         // Validate the database contains one less item
-        assertDecrementedRepositoryCount(databaseSizeBeforeDelete);
+        // Patrol logs are never deleted.
+        assertSameRepositoryCount(databaseSizeBeforeDelete);
     }
 
     protected long getRepositoryCount() {

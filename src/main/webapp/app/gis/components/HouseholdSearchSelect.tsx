@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Home, Check, ChevronDown, X, MapPin, User, Building } from 'lucide-react';
+import { Search, Home, Check, ChevronDown, X, MapPin, User } from 'lucide-react';
 import { HouseholdFacility } from '../types';
 
 export interface HouseholdSearchSelectProps {

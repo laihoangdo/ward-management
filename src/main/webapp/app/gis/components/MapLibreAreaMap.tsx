@@ -1,12 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Maximize2, Minimize2, Layers } from 'lucide-react';
+import { matchesHouseholdSearch } from '../utils/householdSearch';
 import axios from 'axios';
 import html2canvas from 'html2canvas-pro';
-import maplibregl, { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+// Registers the MapLibre worker URL before any map instance is created.
+import '../utils/maplibreWorkerUrl';
+import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './MapLibreAreaMap.css';
 import { HouseholdFacility } from '../types';
+import { prepareVectorBasemap, VECTOR_BASEMAP_STYLE_URL } from '../utils/vectorBasemap';
+import { placeHouseholdsAtBuildings, type HouseholdBuildingPosition } from '../utils/householdBuildingPositions';
 import apTc2Schematic from '../data/apTc2Schematic.json';
 import apTc2DxfLinework from '../data/apTc2DxfLinework.json';
+import { baDiemCommuneBoundary as baDiemBoundaryGis } from '../data/baDiemCommuneBoundary';
 import {
   BUILDING_TYPES,
   BuildingTypeConfig,
@@ -19,6 +27,7 @@ import {
   UNKNOWN_BUILDING_COLOR,
 } from './mapModel';
 import { ThreeBuilding, ThreeBuildingLayer } from './ThreeBuildingLayer';
+import MapLibreHouseholdPanel from './MapLibreHouseholdPanel';
 
 type Coordinate = [number, number];
 type MapFeature = GeoJSON.Feature<
@@ -46,8 +55,35 @@ type MapFeature = GeoJSON.Feature<
 type MapFeatures = GeoJSON.FeatureCollection<GeoJSON.Geometry, MapFeature['properties']>;
 
 const EMPTY_FEATURES: MapFeatures = { type: 'FeatureCollection', features: [] };
+const REFERENCE_ZONES: MapFeatures = {
+  type: 'FeatureCollection',
+  features: baDiemBoundaryGis.features.flatMap((feature, index) => {
+    const geometry = feature.geometry;
+    if ((geometry.type !== 'Polygon' && geometry.type !== 'MultiPolygon') || !allCoordinatesValid(geometry.coordinates)) return [];
+    return [
+      {
+        type: 'Feature' as const,
+        geometry: geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
+        properties: {
+          kind: 'area' as const,
+          id: String(feature.properties.id ?? `reference-${index}`),
+          name: feature.properties.name,
+          estimated: true,
+        },
+      },
+    ];
+  }),
+};
 const HOVER_COLOR = '#fff2a8';
 const hoverColor = (base: unknown): any => ['case', ['boolean', ['feature-state', 'hover'], false], HOVER_COLOR, base];
+const normalizeSearch = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
 function toThreeBuildings(features: MapFeatures, visualization: string, customColor: string, statusFilter: string): ThreeBuilding[] {
   return features.features.flatMap(feature => {
     if (feature.properties.kind !== 'building') return [];
@@ -110,12 +146,6 @@ const SCHEMATIC_LINEWORK: MapFeatures = {
 const BASE_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
-    },
     satellite: {
       type: 'raster',
       tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
@@ -125,7 +155,6 @@ const BASE_STYLE: maplibregl.StyleSpecification = {
   },
   layers: [
     { id: 'ground', type: 'background', paint: { 'background-color': '#f3f4ef' } },
-    { id: 'osm', type: 'raster', source: 'osm', layout: { visibility: 'none' } },
     { id: 'satellite', type: 'raster', source: 'satellite', layout: { visibility: 'none' } },
   ],
 };
@@ -231,7 +260,24 @@ interface Props {
   onUpdateCoordinates?: (updates: { id: string; coordinates: [number, number] }[]) => Promise<void> | void;
 }
 
-export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdateCoordinates }: Props) {
+export default function MapLibreAreaMap({ households: sourceHouseholds, onSelectHousehold: openHousehold, onUpdateCoordinates }: Props) {
+  const [buildingPositions, setBuildingPositions] = useState<HouseholdBuildingPosition[]>([]);
+  const households = useMemo(() => placeHouseholdsAtBuildings(sourceHouseholds, buildingPositions), [sourceHouseholds, buildingPositions]);
+  const sourceHouseholdsRef = useRef(sourceHouseholds);
+  sourceHouseholdsRef.current = sourceHouseholds;
+  // The profile can be saved, so it must receive the stored record, not the display-only building position.
+  const onSelectHousehold = (household: HouseholdFacility) =>
+    openHousehold(sourceHouseholdsRef.current.find(item => item.id === household.id) ?? household);
+  useEffect(() => {
+    const request = new AbortController();
+    axios
+      .get<HouseholdBuildingPosition[]>('/api/gis/field-buildings/household-positions', { signal: request.signal })
+      .then(response => setBuildingPositions(response.data))
+      .catch(() => {
+        /* Without building positions the map still shows households that have real coordinates. */
+      });
+    return () => request.abort();
+  }, []);
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null);
@@ -240,7 +286,8 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
   const labelMarkersRef = useRef<maplibregl.Marker[]>([]);
   const geoLabelMarkersRef = useRef<maplibregl.Marker[]>([]);
   const editMarkersRef = useRef<maplibregl.Marker[]>([]);
-  const [baseLayer, setBaseLayer] = useState<'osm' | 'satellite'>('osm');
+  const [baseLayer, setBaseLayer] = useState<'streets' | 'satellite'>('streets');
+  const [basemapLayerIds, setBasemapLayerIds] = useState<string[]>([]);
   const [editingCoordinates, setEditingCoordinates] = useState(false);
   const [pendingCoordinates, setPendingCoordinates] = useState<Record<string, [number, number]>>({});
   const [savingCoordinates, setSavingCoordinates] = useState(false);
@@ -253,13 +300,17 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
   const [showLayerPanel, setShowLayerPanel] = useState(true);
   const [showMapHelp, setShowMapHelp] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const appliedSearch = searchQuery.trim();
+  const [selectedHouseId, setSelectedHouseId] = useState<string | null>(null);
+  const selectedHouse = households.find(h => h.id === selectedHouseId) ?? null;
   const [tilt, setTilt] = useState(65);
   const [fullscreen, setFullscreen] = useState(false);
-  // The DXF drawing has house footprints; the geographic map may have no GPS points yet.
-  const [mapMode, setMapMode] = useState<'schematic' | 'geographic'>('schematic');
+  // Open the geographic map by default; the DXF drawing remains a separate local-coordinate view.
+  const [mapMode, setMapMode] = useState<'schematic' | 'geographic'>('geographic');
   const [showDxfLinework, setShowDxfLinework] = useState(true);
   const [area, setArea] = useState<MapFeatures>(EMPTY_FEATURES);
-  const [zones, setZones] = useState<MapFeatures>(EMPTY_FEATURES);
+  const [zones, setZones] = useState<MapFeatures>(REFERENCE_ZONES);
+  const [zonesFromApi, setZonesFromApi] = useState(false);
   const [zoom, setZoom] = useState(16);
   const [visualization, setVisualization] = useState<'standard' | 'height' | 'population' | 'households' | 'risk' | 'custom'>('standard');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -272,7 +323,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     alley: true,
     houseNumbers: true,
     householdInfo: false,
-    boundaries: true,
+    boundaries: false,
     places: true,
     security: true,
     schools: true,
@@ -280,7 +331,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     religious: true,
     facilities: true,
     streetNames: true,
-    areaNames: true,
+    areaNames: false,
     houseIds: false,
     owners: false,
     buildingTypes: false,
@@ -290,14 +341,23 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
   );
   const [ready, setReady] = useState(false);
   const householdsRef = useRef(households);
-  const selectRef = useRef(onSelectHousehold);
+  const selectRef = useRef((household: HouseholdFacility) => setSelectedHouseId(household.id));
   householdsRef.current = households;
-  selectRef.current = onSelectHousehold;
+
+  const searchMatches = useMemo(() => {
+    const query = normalizeSearch(appliedSearch);
+    if (!query) return [];
+    return households.filter(household => matchesHouseholdSearch(household, query));
+  }, [households, appliedSearch]);
+  const visibleHouseholds = appliedSearch ? searchMatches : households;
+  const householdsById = useMemo(() => new Map(households.map(h => [h.id, h])), [households]);
+  const searchMatchIds = useMemo(() => new Set(searchMatches.map(h => h.id)), [searchMatches]);
+  const areaHouseholdIds = useMemo(() => new Set(area.features.map(feature => feature.properties.householdId)), [area]);
 
   const householdPoints = useMemo<GeoJSON.FeatureCollection<GeoJSON.Point, { id: string; status: string; residentsCount: number }>>(
     () => ({
       type: 'FeatureCollection',
-      features: households.flatMap(h => {
+      features: visibleHouseholds.flatMap(h => {
         if (h.coordinatesEstimated) return [];
         const [lat, lng] = h.coordinates || [];
         return typeof lat === 'number' && typeof lng === 'number' && lat !== 0 && lng !== 0 && validCoordinate([lng, lat])
@@ -311,7 +371,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           : [];
       }),
     }),
-    [households],
+    [visibleHouseholds],
   );
 
   const geoBuildings = useMemo<MapFeatures>(
@@ -319,12 +379,16 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       type: 'FeatureCollection',
       features: [
         ...area.features
-          .filter(feature => feature.properties.kind === 'building')
+          .filter(
+            feature =>
+              feature.properties.kind === 'building' &&
+              (!appliedSearch || (feature.properties.householdId && searchMatchIds.has(feature.properties.householdId))),
+          )
           .map((feature, index) => {
             const type =
               buildingTypes.find(item => item.code === feature.properties.buildingType) ||
               buildingTypeFromFloors(Number(feature.properties.floors), buildingTypes);
-            const household = households.find(item => item.id === feature.properties.householdId);
+            const household = householdsById.get(feature.properties.householdId ?? '');
             return {
               ...feature,
               properties: {
@@ -339,8 +403,8 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
               },
             };
           }),
-        ...households.flatMap(h => {
-          if (h.coordinatesEstimated || area.features.some(feature => feature.properties.householdId === h.id)) return [];
+        ...visibleHouseholds.flatMap(h => {
+          if (h.coordinatesEstimated || areaHouseholdIds.has(h.id)) return [];
           const [lat, lng] = h.coordinates || [];
           if (!validCoordinate([lng, lat]) || lat === 0 || lng === 0) return [];
           return [
@@ -364,7 +428,12 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
         }),
       ],
     }),
-    [area, households, buildingTypes],
+    [area, householdsById, visibleHouseholds, buildingTypes, appliedSearch, searchMatchIds, areaHouseholdIds],
+  );
+
+  const geoBuildingTypesByHousehold = useMemo(
+    () => new Map(geoBuildings.features.map(feature => [feature.properties.householdId, feature.properties.buildingType])),
+    [geoBuildings],
   );
 
   useEffect(() => {
@@ -456,7 +525,10 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
             /* Invalid saved boundary is ignored. */
           }
         }
-        setZones({ type: 'FeatureCollection', features });
+        if (features.length) {
+          setZones({ type: 'FeatureCollection', features });
+          setZonesFromApi(true);
+        }
       })
       .catch(() => {
         /* The household map still works if area zones are unavailable. */
@@ -473,10 +545,11 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       setMessage('Trình duyệt này không hỗ trợ WebGL. Hãy dùng bản đồ hiện tại.');
       return;
     }
+    const firstHouseholdPoint = householdPoints.features[0]?.geometry.coordinates;
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: BASE_STYLE,
-      center: [0, 0],
+      center: firstHouseholdPoint ? [firstHouseholdPoint[0], firstHouseholdPoint[1]] : [106.612, 10.854],
       zoom: 16,
       pitch: 65,
       maxPitch: 80,
@@ -484,9 +557,25 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       attributionControl: {},
     });
     mapRef.current = map;
+    const basemapRequest = new AbortController();
     map.addControl(new maplibregl.NavigationControl({ showCompass: true, showZoom: false }), 'top-right');
     map.on('zoomend', () => setZoom(map.getZoom()));
     map.on('load', () => {
+      // Loaded after the operational layers exist, so an unreachable tile host costs only the street backdrop.
+      void (async () => {
+        try {
+          const response = await fetch(VECTOR_BASEMAP_STYLE_URL, { signal: basemapRequest.signal });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const basemap = prepareVectorBasemap((await response.json()) as maplibregl.StyleSpecification);
+          map.setGlyphs(basemap.glyphs);
+          if (typeof basemap.sprite === 'string') map.setSprite(basemap.sprite);
+          Object.entries(basemap.sources).forEach(([id, source]) => map.addSource(id, source));
+          basemap.layers.forEach(layer => map.addLayer(layer, 'satellite'));
+          setBasemapLayerIds(basemap.layers.map(layer => layer.id));
+        } catch {
+          if (!basemapRequest.signal.aborted) setMessage('Không tải được nền đường phố OpenFreeMap. Lớp dữ liệu địa bàn vẫn dùng được.');
+        }
+      })();
       map.addSource('area', { type: 'geojson', data: EMPTY_FEATURES });
       map.addSource('geo-buildings', { type: 'geojson', data: EMPTY_FEATURES, promoteId: 'hoverId' });
       map.addSource('road-surfaces', { type: 'geojson', data: EMPTY_FEATURES });
@@ -562,14 +651,19 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
         type: 'fill',
         source: 'zones',
         layout: { visibility: 'none' },
-        paint: { 'fill-color': '#58a7b3', 'fill-opacity': 0.12 },
+        paint: { 'fill-color': '#58a7b3', 'fill-opacity': 0.08 },
       });
       map.addLayer({
         id: 'area-outline',
         type: 'line',
         source: 'zones',
         layout: { visibility: 'none' },
-        paint: { 'line-color': '#168393', 'line-width': 2, 'line-dasharray': [3, 2] },
+        paint: {
+          'line-color': '#0e7490',
+          'line-opacity': 0.95,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1.5, 16, 3, 19, 5],
+          'line-dasharray': [3, 2],
+        },
       });
       map.addLayer({
         id: 'building-outline',
@@ -737,16 +831,17 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
         const feature = event.features?.[0];
         const id = feature?.properties?.householdId || feature?.properties?.id;
         const household = householdsRef.current.find(h => h.id === String(id));
-        if (household) selectRef.current(household);
+        if (household) {
+          selectRef.current(household);
+          return;
+        }
         if (feature?.properties) {
           const p = feature.properties;
           const details = document.createElement('div');
           const title = document.createElement('strong');
-          title.textContent = household ? `${household.houseNumber} ${household.street}` : p.address || 'Nhà chưa có địa chỉ';
+          title.textContent = p.address || 'Nhà chưa có địa chỉ';
           const info = document.createElement('p');
-          info.textContent = household
-            ? `Chủ hộ: ${household.ownerName} · ${household.residentsCount} nhân khẩu · Trạng thái: ${household.status}`
-            : `${p.buildingType || 'Chưa phân loại'} · ${p.floors || '—'} tầng · cao ${p.height || '—'} m · ${p.estimated ? 'Footprint minh họa' : 'Footprint GeoJSON'}`;
+          info.textContent = `${p.buildingType || 'Chưa phân loại'} · ${p.floors || '—'} tầng · cao ${p.height || '—'} m · ${p.estimated ? 'Footprint minh họa' : 'Footprint GeoJSON'}`;
           details.append(title, info);
           new maplibregl.Popup().setLngLat(event.lngLat).setDOMContent(details).addTo(map);
         }
@@ -772,7 +867,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
         if (zone)
           new maplibregl.Popup()
             .setLngLat(event.lngLat)
-            .setText(`${zone.name || 'Khu vực'} · ID: ${zone.id || '—'}`)
+            .setText(`${zone.name || 'Khu vực'} · ID: ${zone.id || '—'}${zone.estimated ? ' · Ranh giới tham khảo' : ''}`)
             .addTo(map);
       });
       const labels = [
@@ -788,7 +883,6 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           .setLngLat([label.x / SCHEMATIC_SCALE, label.y / SCHEMATIC_SCALE])
           .addTo(map);
       });
-      if (SCHEMATIC_BOUNDS) map.fitBounds(SCHEMATIC_BOUNDS, { padding: 45, pitch: 65, bearing: -20, duration: 0 });
       setReady(true);
     });
     return () => {
@@ -796,6 +890,14 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       labelMarkersRef.current = [];
       geoLabelMarkersRef.current.forEach(marker => marker.remove());
       geoLabelMarkersRef.current = [];
+      basemapRequest.abort();
+      // MapLibre 5 removes the style without calling custom layer onRemove.
+      // Detach Three.js first, before map.remove deliberately loses the shared GL context.
+      const threeLayer = threeLayerRef.current;
+      if (threeLayer) {
+        if (map.getLayer(threeLayer.id)) map.removeLayer(threeLayer.id);
+        else threeLayer.onRemove();
+      }
       map.remove();
       mapRef.current = null;
       threeLayerRef.current = null;
@@ -812,6 +914,27 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     document.addEventListener('fullscreenchange', syncFullscreen);
     return () => document.removeEventListener('fullscreenchange', syncFullscreen);
   }, []);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(() => mapRef.current?.resize());
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.resize();
+      if (!selectedHouse || mapMode !== 'geographic' || selectedHouse.coordinatesEstimated) return;
+      const [lat, lng] = selectedHouse.coordinates;
+      if (validCoordinate([lng, lat]) && lat !== 0 && lng !== 0) {
+        map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 18), pitch: is3D ? tilt : 0, duration: 650 });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedHouseId, mapMode]);
 
   const toggleFullscreen = async () => {
     try {
@@ -862,16 +985,24 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
   useEffect(() => {
     if (!ready || !mapRef.current) return;
     (mapRef.current.getSource('geo-buildings') as GeoJSONSource).setData(geoBuildings);
+  }, [ready, geoBuildings]);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
     (mapRef.current.getSource('road-surfaces') as GeoJSONSource).setData(roadSurfaces);
+  }, [ready, roadSurfaces]);
+
+  useEffect(() => {
+    if (!ready || !mapRef.current) return;
     (mapRef.current.getSource('zones') as GeoJSONSource).setData({
       type: 'FeatureCollection',
       features: [...zones.features, ...area.features.filter(feature => feature.properties.kind === 'area')],
     });
-  }, [ready, geoBuildings, roadSurfaces, zones, area]);
+  }, [ready, zones, area]);
 
   useEffect(() => {
     const layer = threeLayerRef.current;
-    if (!ready || !layer) return;
+    if (!ready || !layer || !is3D || !layers.buildings || !useThreeBuildings) return;
     layer.setBuildings(
       toThreeBuildings(
         mapMode === 'schematic' ? SCHEMATIC_FEATURES : geoBuildings,
@@ -880,7 +1011,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
         mapMode === 'schematic' ? 'all' : statusFilter,
       ),
     );
-  }, [ready, mapMode, geoBuildings, visualization, customColor, statusFilter]);
+  }, [ready, mapMode, geoBuildings, visualization, customColor, statusFilter, is3D, layers.buildings, useThreeBuildings]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -890,7 +1021,9 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       geoLabelMarkersRef.current = [];
       if (mapMode !== 'geographic') return;
       const occupied = new Set<string>();
-      for (const household of map.getZoom() >= 16.5 ? households : []) {
+      const areaOccupied = new Set<string>();
+      const showHouseLabels = layers.houseNumbers || (map.getZoom() >= 18 && (layers.houseIds || layers.owners || layers.buildingTypes));
+      for (const household of map.getZoom() >= 16.5 && showHouseLabels ? visibleHouseholds : []) {
         if (geoLabelMarkersRef.current.length >= 120) break;
         if (statusFilter !== 'all' && household.status !== statusFilter) continue;
         if (household.coordinatesEstimated) continue;
@@ -906,11 +1039,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           layers.houseIds && map.getZoom() >= 18 ? household.code : '',
           layers.owners && map.getZoom() >= 18 ? household.ownerName : '',
           layers.buildingTypes && map.getZoom() >= 18
-            ? buildingTypes.find(
-                type =>
-                  type.code ===
-                  geoBuildings.features.find(feature => feature.properties.householdId === household.id)?.properties.buildingType,
-              )?.label || 'Chưa khảo sát tầng'
+            ? buildingTypes.find(type => type.code === geoBuildingTypesByHousehold.get(household.id))?.label || 'Chưa khảo sát tầng'
             : '',
         ].filter(Boolean);
         if (!parts.length) continue;
@@ -921,13 +1050,13 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           new maplibregl.Marker({ element, anchor: 'bottom', pitchAlignment: 'viewport' }).setLngLat([lng, lat]).addTo(map),
         );
       }
-      const addMapLabel = (name: string, coordinate: Coordinate, className: string) => {
-        if (geoLabelMarkersRef.current.length >= 145) return;
+      const addMapLabel = (name: string, coordinate: Coordinate, className: string, priority = false) => {
+        if (geoLabelMarkersRef.current.length >= (priority ? 160 : 145)) return;
         const pixel = map.project(coordinate);
         if (pixel.x < 0 || pixel.y < 0 || pixel.x > map.getCanvas().clientWidth || pixel.y > map.getCanvas().clientHeight) return;
         const cell = `${Math.floor(pixel.x / 95)}:${Math.floor(pixel.y / 58)}`;
-        if (occupied.has(cell)) return;
-        occupied.add(cell);
+        if (priority ? areaOccupied.has(cell) : occupied.has(cell)) return;
+        (priority ? areaOccupied : occupied).add(cell);
         const element = document.createElement('span');
         element.className = `tc2-map-label ${className}`;
         element.textContent = name;
@@ -952,7 +1081,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
         for (const feature of [...zones.features, ...area.features]) {
           if (feature.properties.kind !== 'area' || !feature.properties.name) continue;
           const bounds = getBounds({ type: 'FeatureCollection', features: [feature] });
-          if (bounds) addMapLabel(feature.properties.name, bounds.getCenter().toArray() as Coordinate, 'tc2-map-label--place');
+          if (bounds) addMapLabel(feature.properties.name, bounds.getCenter().toArray() as Coordinate, 'tc2-map-label--place', true);
         }
       }
     };
@@ -963,7 +1092,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       geoLabelMarkersRef.current.forEach(marker => marker.remove());
       geoLabelMarkersRef.current = [];
     };
-  }, [ready, mapMode, households, layers, area, zones, statusFilter, buildingTypes]);
+  }, [ready, mapMode, visibleHouseholds, layers, area, zones, statusFilter, buildingTypes, geoBuildingTypesByHousehold]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -973,7 +1102,6 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     labelMarkersRef.current.forEach(marker => {
       marker.getElement().style.display = schematic ? '' : 'none';
     });
-    map.setLayoutProperty('osm', 'visibility', !schematic && baseLayer === 'osm' ? 'visible' : 'none');
     map.setLayoutProperty('satellite', 'visibility', !schematic && baseLayer === 'satellite' ? 'visible' : 'none');
     map.setLayoutProperty(
       'roads',
@@ -1023,6 +1151,14 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     ]);
     map.setLayoutProperty('schematic-dxf-linework', 'visibility', schematic && showDxfLinework ? 'visible' : 'none');
   }, [ready, is3D, mapMode, baseLayer, showDxfLinework, tilt, layers, useThreeBuildings]);
+
+  // Separate from the view effect above: the street layers arrive late and must not restart its camera animation.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const visibility = mapMode === 'geographic' && baseLayer === 'streets' ? 'visible' : 'none';
+    basemapLayerIds.forEach(id => map.setLayoutProperty(id, 'visibility', visibility));
+  }, [ready, mapMode, baseLayer, basemapLayerIds]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1082,6 +1218,19 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     setEditingCoordinates(false);
   };
 
+  const framedOnPositionsRef = useRef(false);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !buildingPositions.length || framedOnPositionsRef.current || mapMode !== 'geographic') return;
+    // Positions and households load independently; wait until both have arrived before using up the one automatic fit.
+    if (!householdPoints.features.length) return;
+    framedOnPositionsRef.current = true;
+    if (appliedSearch) return;
+    const bounds = new maplibregl.LngLatBounds();
+    householdPoints.features.forEach(feature => bounds.extend(feature.geometry.coordinates as [number, number]));
+    map.fitBounds(bounds, { padding: 60, maxZoom: 18, duration: 700 });
+  }, [ready, buildingPositions, householdPoints, mapMode, appliedSearch]);
+
   const saveCoordinates = async () => {
     const updates = Object.entries(pendingCoordinates).map(([id, coordinates]) => ({ id, coordinates }));
     if (!updates.length) {
@@ -1131,20 +1280,30 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
   };
 
   const searchHousehold = () => {
-    const query = searchQuery.trim().toLocaleLowerCase('vi-VN');
-    if (!query) return;
-    const household = households.find(
-      h =>
-        [h.houseNumber, h.street, h.code, h.ownerName].some(value => value?.toLocaleLowerCase('vi-VN').includes(query)) &&
-        !h.coordinatesEstimated,
-    );
-    if (!household) {
-      setMessage('Không tìm thấy hộ dân có tọa độ phù hợp.');
+    const query = searchQuery.trim();
+    if (!query) {
+      setMessage('Đã hiển thị lại tất cả hộ dân trên bản đồ.');
       return;
     }
-    const [lat, lng] = household.coordinates;
-    mapRef.current?.flyTo({ center: [lng, lat], zoom: 19, pitch: is3D ? tilt : 0, duration: 650 });
-    setMessage(`Đã chuyển tới ${household.houseNumber} ${household.street}. Click vào khối nhà để mở hồ sơ.`);
+    const matches = searchMatches;
+    const located = matches.filter(h => {
+      const [lat, lng] = h.coordinates ?? [];
+      return !h.coordinatesEstimated && validCoordinate([lng, lat]) && lat !== 0 && lng !== 0;
+    });
+    if (!located.length) {
+      setMessage(matches.length ? `Có ${matches.length} hộ khớp nhưng chưa có tọa độ thực địa.` : 'Không tìm thấy hộ dân phù hợp.');
+      return;
+    }
+    const map = mapRef.current;
+    if (located.length === 1) {
+      const [lat, lng] = located[0].coordinates;
+      map?.flyTo({ center: [lng, lat], zoom: 19, pitch: is3D ? tilt : 0, duration: 650 });
+    } else if (map) {
+      const bounds = new maplibregl.LngLatBounds();
+      located.forEach(h => bounds.extend([h.coordinates[1], h.coordinates[0]]));
+      map.fitBounds(bounds, { padding: 70, maxZoom: 18, duration: 650 });
+    }
+    setMessage(`Tìm thấy ${matches.length} hộ, ${located.length} hộ có tọa độ. Chọn kết quả hoặc click vào khối nhà để mở hồ sơ.`);
   };
 
   const locateUser = () => {
@@ -1164,16 +1323,77 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
     if (!map || !captureRef.current || capturing) return;
     setCapturing(true);
     setCaptureFeedback('');
-    map.triggerRepaint();
+    const previousView = {
+      center: map.getCenter(),
+      zoom: map.getZoom(),
+      bearing: map.getBearing(),
+      pitch: map.getPitch(),
+      padding: map.getPadding(),
+    };
     try {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      map.stop();
+      map.resize();
+      const bounds = mapMode === 'schematic' ? SCHEMATIC_BOUNDS : getBounds(area);
+      const captureBounds = bounds
+        ? new maplibregl.LngLatBounds(bounds.getSouthWest(), bounds.getNorthEast())
+        : new maplibregl.LngLatBounds();
+      if (mapMode !== 'schematic') {
+        householdPoints.features.forEach(feature => {
+          const coordinates = feature.geometry.coordinates;
+          if (validCoordinate(coordinates)) captureBounds.extend(coordinates as Coordinate);
+        });
+      }
+      // Preserve the user's viewing direction and tilt while fitting the export extent.
+      map.jumpTo({ padding: { top: 0, bottom: 0, left: 0, right: 0 } });
+      await new Promise<void>((resolve, reject) => {
+        const timeout = window.setTimeout(() => {
+          map.off('idle', onIdle);
+          reject(new Error('Map tiles did not finish loading for export'));
+        }, 15000);
+        const onIdle = () => {
+          window.clearTimeout(timeout);
+          resolve();
+        };
+        map.once('idle', onIdle);
+        if (!captureBounds.isEmpty()) {
+          map.fitBounds(captureBounds, {
+            padding: 80,
+            maxZoom: 18,
+            pitch: previousView.pitch,
+            bearing: previousView.bearing,
+            duration: 0,
+          });
+        }
+        map.triggerRepaint();
+      });
+      const captureWidth = captureRef.current.clientWidth;
+      const captureHeight = captureRef.current.clientHeight;
+      const mapWidth = map.getContainer().clientWidth;
+      const mapHeight = map.getContainer().clientHeight;
       const captured = await html2canvas(captureRef.current, {
         useCORS: true,
         allowTaint: false,
         logging: false,
         scale: 2,
+        width: captureWidth,
+        height: captureHeight,
         backgroundColor: '#f1f5f9',
-        onclone(documentClone) {
+        onclone(documentClone, clonedCapture) {
+          // The cloned document is not fullscreen: preserve the live layout explicitly.
+          Object.assign(clonedCapture.style, {
+            width: `${captureWidth}px`,
+            height: `${captureHeight}px`,
+            minHeight: '0',
+            maxHeight: 'none',
+            maxWidth: 'none',
+            flex: 'none',
+          });
+          const clonedMap = clonedCapture.querySelector<HTMLElement>('.maplibregl-map');
+          if (clonedMap) {
+            clonedMap.style.setProperty('width', `${mapWidth}px`, 'important');
+            clonedMap.style.setProperty('height', `${mapHeight}px`, 'important');
+            clonedMap.style.setProperty('min-height', '0', 'important');
+          }
           documentClone.querySelectorAll('.tc2-map-tools, .tc2-map-tilt, .tc2-map-help').forEach(element => {
             (element as HTMLElement).style.display = 'none';
           });
@@ -1214,6 +1434,7 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
       console.error('Không thể chụp ảnh bản đồ MapLibre:', error);
       setMessage('Không chụp được bản đồ. Hãy kiểm tra lớp ảnh vệ tinh hoặc quyền truy cập ảnh bản đồ.');
     } finally {
+      map.jumpTo(previousView);
       setCapturing(false);
     }
   };
@@ -1273,110 +1494,110 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
 
   return (
     <section ref={sectionRef} className="tc2-map-section mx-auto max-w-7xl space-y-3 rounded-xl bg-white p-3 shadow-sm">
-      <div className="tc2-map-header flex flex-wrap items-center gap-3">
-        <h2 className="mr-auto text-lg font-bold text-slate-900">Bản đồ địa bàn MapLibre</h2>
-        <button
-          type="button"
-          aria-pressed={mapMode === 'schematic'}
-          onClick={() => {
-            cancelCoordinateEdit();
-            setMapMode('schematic');
-          }}
-          className={`rounded px-3 py-2 text-sm ${mapMode === 'schematic' ? 'bg-amber-700 text-white' : 'bg-slate-100'}`}
-        >
-          Sơ đồ TC2 · {apTc2DxfLinework.addressBlocks.length} địa chỉ
-        </button>
-        {mapMode === 'geographic' && (
-          <>
+      <div className="tc2-map-header space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="gis-map-panel-title mr-auto text-slate-900">Bản đồ địa bàn MapLibre</h2>
+          <button
+            type="button"
+            onClick={() => void toggleFullscreen()}
+            className="tc2-map-tool rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50"
+          >
+            {fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+          </button>
+          <label className="tc2-map-tool cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 hover:bg-slate-50 focus-within:ring-2 focus-within:ring-blue-600">
+            Nạp GeoJSON địa bàn
+            <input
+              type="file"
+              accept=".geojson,.json,application/geo+json,application/json"
+              className="sr-only"
+              onChange={event => {
+                void importGeoJson(event.target.files?.[0]);
+                event.target.value = '';
+              }}
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div role="group" aria-label="Nguồn bản đồ" className="tc2-map-segment">
             <button
               type="button"
-              aria-pressed={editingCoordinates}
-              onClick={() => (editingCoordinates ? cancelCoordinateEdit() : setEditingCoordinates(true))}
-              className={`rounded px-3 py-2 text-sm ${editingCoordinates ? 'bg-amber-500 text-white' : 'bg-slate-100'}`}
+              aria-pressed={mapMode === 'schematic'}
+              onClick={() => {
+                cancelCoordinateEdit();
+                setMapMode('schematic');
+              }}
             >
-              {editingCoordinates ? `Đang đổi tọa độ (${Object.keys(pendingCoordinates).length})` : 'Đổi tọa độ nhà'}
+              Sơ đồ TC2 · {apTc2DxfLinework.addressBlocks.length} địa chỉ
             </button>
-            {editingCoordinates && (
-              <>
-                <button
-                  type="button"
-                  disabled={savingCoordinates}
-                  onClick={() => void saveCoordinates()}
-                  className="rounded bg-blue-700 px-3 py-2 text-sm text-white"
-                >
-                  Hoàn thành
-                </button>
-                <button
-                  type="button"
-                  disabled={savingCoordinates}
-                  onClick={cancelCoordinateEdit}
-                  className="rounded bg-slate-200 px-3 py-2 text-sm"
-                >
-                  Hủy
-                </button>
-              </>
-            )}
-          </>
-        )}
-        <button
-          type="button"
-          aria-pressed={mapMode === 'geographic'}
-          onClick={() => setMapMode('geographic')}
-          className={`rounded px-3 py-2 text-sm ${mapMode === 'geographic' ? 'bg-amber-700 text-white' : 'bg-slate-100'}`}
-        >
-          Bản đồ tọa độ
-        </button>
-        {mapMode === 'schematic' && (
-          <button
-            type="button"
-            aria-pressed={showDxfLinework}
-            onClick={() => setShowDxfLinework(value => !value)}
-            className={`rounded px-3 py-2 text-sm ${showDxfLinework ? 'bg-slate-700 text-white' : 'bg-slate-100'}`}
-          >
-            Nét DXF {showDxfLinework ? 'đang hiện' : 'đang ẩn'}
-          </button>
-        )}
-        <button
-          type="button"
-          aria-pressed={!is3D}
-          onClick={() => setIs3D(false)}
-          className={`rounded px-3 py-2 text-sm ${!is3D ? 'bg-blue-700 text-white' : 'bg-slate-100'}`}
-        >
-          2D
-        </button>
-        <button
-          type="button"
-          aria-pressed={is3D}
-          onClick={() => setIs3D(true)}
-          className={`rounded px-3 py-2 text-sm ${is3D ? 'bg-blue-700 text-white' : 'bg-slate-100'}`}
-        >
-          3D
-        </button>
-        <button type="button" onClick={() => void toggleFullscreen()} className="rounded bg-slate-800 px-3 py-2 text-sm text-white">
-          {fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
-        </button>
-        {is3D && (
-          <button
-            type="button"
-            aria-pressed={useThreeBuildings}
-            onClick={() => setUseThreeBuildings(value => !value)}
-            className={`rounded px-3 py-2 text-sm ${useThreeBuildings ? 'bg-indigo-700 text-white' : 'bg-slate-100'}`}
-          >
-            Khối nhà {useThreeBuildings ? 'Three.js' : 'cơ bản'}
-          </button>
-        )}
-        <label className="cursor-pointer rounded bg-slate-800 px-3 py-2 text-sm text-white">
-          Nạp GeoJSON địa bàn
-          <input
-            type="file"
-            accept=".geojson,.json,application/geo+json,application/json"
-            className="sr-only"
-            onChange={event => {
-              void importGeoJson(event.target.files?.[0]);
-              event.target.value = '';
-            }}
-          />
-        </label>
+            <button type="button" aria-pressed={mapMode === 'geographic'} onClick={() => setMapMode('geographic')}>
+              Bản đồ tọa độ
+            </button>
+          </div>
+          <div role="group" aria-label="Chế độ xem" className="tc2-map-segment">
+            <button type="button" aria-pressed={!is3D} onClick={() => setIs3D(false)}>
+              2D
+            </button>
+            <button type="button" aria-pressed={is3D} onClick={() => setIs3D(true)}>
+              3D
+            </button>
+          </div>
+          {mapMode === 'schematic' && (
+            <button
+              type="button"
+              aria-pressed={showDxfLinework}
+              onClick={() => setShowDxfLinework(value => !value)}
+              className="tc2-map-toggle rounded-md border px-3 py-2 text-sm"
+            >
+              Nét DXF {showDxfLinework ? 'đang hiện' : 'đang ẩn'}
+            </button>
+          )}
+          {is3D && (
+            <button
+              type="button"
+              aria-pressed={useThreeBuildings}
+              onClick={() => setUseThreeBuildings(value => !value)}
+              className="tc2-map-toggle rounded-md border px-3 py-2 text-sm"
+            >
+              Khối nhà {useThreeBuildings ? 'Three.js' : 'cơ bản'}
+            </button>
+          )}
+          {mapMode === 'geographic' && (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                aria-pressed={editingCoordinates}
+                onClick={() => (editingCoordinates ? cancelCoordinateEdit() : setEditingCoordinates(true))}
+                className={`rounded-md border px-3 py-2 text-sm ${
+                  editingCoordinates
+                    ? 'border-amber-600 bg-amber-50 text-amber-900'
+                    : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                {editingCoordinates ? `Đang đổi tọa độ (${Object.keys(pendingCoordinates).length})` : 'Đổi tọa độ nhà'}
+              </button>
+              {editingCoordinates && (
+                <>
+                  <button
+                    type="button"
+                    disabled={savingCoordinates}
+                    onClick={() => void saveCoordinates()}
+                    className="rounded-md bg-blue-600 px-3 py-2 text-sm text-white"
+                  >
+                    Hoàn thành
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingCoordinates}
+                    onClick={cancelCoordinateEdit}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800"
+                  >
+                    Hủy
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <p role="status" className="tc2-map-status text-sm text-slate-600">
         {mapMode === 'schematic'
@@ -1415,11 +1636,57 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           <input
             value={searchQuery}
             onChange={event => setSearchQuery(event.target.value)}
-            placeholder="Tìm số nhà, đường, mã hộ hoặc chủ hộ"
+            placeholder="Tìm số nhà, đường, mã hộ, chủ hộ, cơ sở..."
             aria-label="Tìm hộ dân trên bản đồ"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              className="tc2-map-search-clear"
+              onClick={() => {
+                setSearchQuery('');
+                setMessage('Đã hiển thị lại tất cả hộ dân trên bản đồ.');
+              }}
+              aria-label="Xóa tìm kiếm"
+            >
+              ×
+            </button>
+          )}
           <button type="submit">Tìm trên bản đồ</button>
         </form>
+      )}
+      {mapMode === 'geographic' && appliedSearch && (
+        <div className="tc2-map-search-results" role="status" aria-live="polite">
+          <strong>
+            {searchMatches.length ? `${searchMatches.length} hộ khớp “${appliedSearch}”` : `Không tìm thấy hộ khớp “${appliedSearch}”`}
+          </strong>
+          {searchMatches.length > 0 && (
+            <div className="tc2-map-search-results-list">
+              {searchMatches.slice(0, 12).map(h => (
+                <button
+                  type="button"
+                  key={h.id}
+                  onClick={() => {
+                    const [lat, lng] = h.coordinates ?? [];
+                    if (!h.coordinatesEstimated && validCoordinate([lng, lat]) && lat !== 0 && lng !== 0) {
+                      mapRef.current?.flyTo({ center: [lng, lat], zoom: 19, pitch: is3D ? tilt : 0, duration: 650 });
+                    }
+                    setSelectedHouseId(h.id);
+                  }}
+                >
+                  <span>
+                    Số {h.houseNumber} {h.street}
+                  </span>
+                  <small>
+                    {h.ownerName}
+                    {h.coordinatesEstimated ? ' · Chưa có tọa độ' : h.coordinatesFromBuilding ? ' · Vị trí tạm theo ô nhà' : ''}
+                  </small>
+                </button>
+              ))}
+              {searchMatches.length > 12 && <span className="tc2-map-search-more">Còn {searchMatches.length - 12} hộ trên bản đồ</span>}
+            </div>
+          )}
+        </div>
       )}
       {mapMode === 'geographic' && showLayerPanel && (
         <div className="tc2-map-panel">
@@ -1471,9 +1738,13 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           </div>
           <small>
             Zoom {zoom.toFixed(1)} · {geoBuildings.features.length} khối nhà; {households.filter(h => !h.coordinatesEstimated).length} hộ có
-            tọa độ. Khối từ điểm hộ dân có footprint và chiều cao minh họa, không phải ranh/số tầng đã khảo sát.{' '}
-            {roadSurfaces.features.length} đoạn đường có hình học nhập; {zones.features.length} khu vực có ranh giới.
+            vị trí, trong đó {households.filter(h => h.coordinatesFromBuilding).length} hộ là vị trí tạm theo ô nhà đã gắn. Khối từ điểm hộ
+            dân có footprint và chiều cao minh họa, không phải ranh/số tầng đã khảo sát. {roadSurfaces.features.length} đoạn đường có hình
+            học nhập; {zones.features.length} khu vực có ranh giới.
           </small>
+          {!zonesFromApi && (
+            <small>Ranh khu vực hiện dùng dữ liệu tham khảo trong project; chưa xác nhận ranh hành chính chính thức.</small>
+          )}
           <div className="tc2-map-legend">
             <strong>Màu thân nhà · loại công trình:</strong>
             {buildingTypes.map(type => (
@@ -1504,114 +1775,134 @@ export default function MapLibreAreaMap({ households, onSelectHousehold, onUpdat
           )}
         </div>
       )}
-      <div className="tc2-map-shell" ref={captureRef}>
-        <div ref={containerRef} className="h-[65vh] min-h-[430px] w-full rounded-lg bg-slate-100" aria-label="Bản đồ địa bàn 2D và 3D" />
-        <div className="tc2-map-tools" aria-label="Điều khiển bản đồ">
-          {mapMode === 'geographic' && (
-            <label className="tc2-map-basemap">
-              Lớp nền
-              <select
-                value={baseLayer}
-                onChange={event => setBaseLayer(event.target.value as 'osm' | 'satellite')}
-                aria-label="Lớp bản đồ nền"
-              >
-                <option value="osm">Đường phố</option>
-                <option value="satellite">Ảnh vệ tinh</option>
-              </select>
+      <div className={`tc2-map-content${selectedHouse && mapMode === 'geographic' ? ' tc2-map-content--selected' : ''}`}>
+        <div className="tc2-map-shell" ref={captureRef}>
+          <div ref={containerRef} className="gis-operational-map w-full rounded-lg bg-slate-100" aria-label="Bản đồ địa bàn 2D và 3D" />
+          <div className="tc2-map-tools" aria-label="Điều khiển bản đồ">
+            {mapMode === 'geographic' && (
+              <label className="tc2-map-basemap">
+                Lớp nền
+                <select
+                  value={baseLayer}
+                  onChange={event => setBaseLayer(event.target.value as 'streets' | 'satellite')}
+                  aria-label="Lớp bản đồ nền"
+                >
+                  <option value="streets">Đường phố</option>
+                  <option value="satellite">Ảnh vệ tinh</option>
+                </select>
+              </label>
+            )}
+            <button
+              type="button"
+              title={fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+              aria-label={fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+              onClick={() => void toggleFullscreen()}
+            >
+              {fullscreen ? <Minimize2 size={18} aria-hidden="true" /> : <Maximize2 size={18} aria-hidden="true" />}
+            </button>
+            <button
+              type="button"
+              title="Bật/tắt panel lớp"
+              aria-label="Bật/tắt panel lớp"
+              onClick={() => setShowLayerPanel(value => !value)}
+            >
+              <Layers size={18} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              title={mapMode === 'schematic' ? 'Định vị chỉ dùng trên bản đồ tọa độ' : 'Định vị của tôi'}
+              aria-label="Định vị của tôi"
+              disabled={mapMode === 'schematic'}
+              onClick={locateUser}
+            >
+              ◎
+            </button>
+            <button
+              type="button"
+              title="Chụp ảnh bản đồ"
+              aria-label="Chụp ảnh bản đồ"
+              disabled={capturing}
+              onClick={() => void captureMap()}
+            >
+              ▣
+            </button>
+            <button type="button" title="Hướng dẫn bản đồ" aria-label="Hướng dẫn bản đồ" onClick={() => setShowMapHelp(value => !value)}>
+              ?
+            </button>
+            <button type="button" title="Phóng to" aria-label="Phóng to" onClick={() => mapRef.current?.zoomIn()}>
+              +
+            </button>
+            <button type="button" title="Thu nhỏ" aria-label="Thu nhỏ" onClick={() => mapRef.current?.zoomOut()}>
+              −
+            </button>
+            <button
+              type="button"
+              title="Xoay trái"
+              aria-label="Xoay trái"
+              onClick={() => mapRef.current?.rotateTo((mapRef.current?.getBearing() ?? 0) - 30, { duration: 300 })}
+            >
+              ↶
+            </button>
+            <button
+              type="button"
+              title="Xoay phải"
+              aria-label="Xoay phải"
+              onClick={() => mapRef.current?.rotateTo((mapRef.current?.getBearing() ?? 0) + 30, { duration: 300 })}
+            >
+              ↷
+            </button>
+            <button type="button" title="Hướng Bắc" aria-label="Hướng Bắc" onClick={() => mapRef.current?.rotateTo(0, { duration: 300 })}>
+              N
+            </button>
+            <button type="button" title="Vừa màn hình" aria-label="Vừa màn hình" onClick={fitCurrentMap}>
+              ⌗
+            </button>
+            <button
+              type="button"
+              title="Đặt lại camera"
+              aria-label="Đặt lại camera"
+              onClick={() => {
+                mapRef.current?.easeTo({ bearing: 0, pitch: is3D ? 65 : 0, duration: 400 });
+                setTilt(65);
+                fitCurrentMap();
+              }}
+            >
+              ⟲
+            </button>
+          </div>
+          {is3D && (
+            <label className="tc2-map-tilt">
+              Góc nghiêng {tilt}°
+              <input
+                type="range"
+                min="0"
+                max="80"
+                value={tilt}
+                onChange={event => setTilt(Number(event.target.value))}
+                aria-label="Góc nghiêng bản đồ 3D"
+              />
             </label>
           )}
-          <button
-            type="button"
-            title={fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
-            aria-label={fullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
-            onClick={() => void toggleFullscreen()}
-          >
-            ⛶
-          </button>
-          <button type="button" title="Bật/tắt panel lớp" aria-label="Bật/tắt panel lớp" onClick={() => setShowLayerPanel(value => !value)}>
-            ☷
-          </button>
-          <button
-            type="button"
-            title={mapMode === 'schematic' ? 'Định vị chỉ dùng trên bản đồ tọa độ' : 'Định vị của tôi'}
-            aria-label="Định vị của tôi"
-            disabled={mapMode === 'schematic'}
-            onClick={locateUser}
-          >
-            ◎
-          </button>
-          <button type="button" title="Chụp ảnh bản đồ" aria-label="Chụp ảnh bản đồ" disabled={capturing} onClick={() => void captureMap()}>
-            ▣
-          </button>
-          <button type="button" title="Hướng dẫn bản đồ" aria-label="Hướng dẫn bản đồ" onClick={() => setShowMapHelp(value => !value)}>
-            ?
-          </button>
-          <button type="button" title="Phóng to" aria-label="Phóng to" onClick={() => mapRef.current?.zoomIn()}>
-            +
-          </button>
-          <button type="button" title="Thu nhỏ" aria-label="Thu nhỏ" onClick={() => mapRef.current?.zoomOut()}>
-            −
-          </button>
-          <button
-            type="button"
-            title="Xoay trái"
-            aria-label="Xoay trái"
-            onClick={() => mapRef.current?.rotateTo((mapRef.current?.getBearing() ?? 0) - 30, { duration: 300 })}
-          >
-            ↶
-          </button>
-          <button
-            type="button"
-            title="Xoay phải"
-            aria-label="Xoay phải"
-            onClick={() => mapRef.current?.rotateTo((mapRef.current?.getBearing() ?? 0) + 30, { duration: 300 })}
-          >
-            ↷
-          </button>
-          <button type="button" title="Hướng Bắc" aria-label="Hướng Bắc" onClick={() => mapRef.current?.rotateTo(0, { duration: 300 })}>
-            N
-          </button>
-          <button type="button" title="Vừa màn hình" aria-label="Vừa màn hình" onClick={fitCurrentMap}>
-            ⌗
-          </button>
-          <button
-            type="button"
-            title="Đặt lại camera"
-            aria-label="Đặt lại camera"
-            onClick={() => {
-              mapRef.current?.easeTo({ bearing: 0, pitch: is3D ? 65 : 0, duration: 400 });
-              setTilt(65);
-              fitCurrentMap();
-            }}
-          >
-            ⟲
-          </button>
+          {showMapHelp && (
+            <div className="tc2-map-help" role="dialog" aria-label="Hướng dẫn bản đồ">
+              <button type="button" aria-label="Đóng hướng dẫn" onClick={() => setShowMapHelp(false)}>
+                ×
+              </button>
+              <strong>Điều khiển bản đồ</strong>
+              <p>
+                Kéo để di chuyển; cuộn/chụm để zoom. Dùng nút xoay và thanh góc nghiêng để xem 3D. Click khối nhà để mở hồ sơ; click đường
+                hoặc ranh khu vực để xem thuộc tính.
+              </p>
+              <p>Khối mờ hoặc footprint từ tọa độ hộ dân chỉ là minh họa khi chưa có ranh đã khảo sát.</p>
+            </div>
+          )}
         </div>
-        {is3D && (
-          <label className="tc2-map-tilt">
-            Góc nghiêng {tilt}°
-            <input
-              type="range"
-              min="0"
-              max="80"
-              value={tilt}
-              onChange={event => setTilt(Number(event.target.value))}
-              aria-label="Góc nghiêng bản đồ 3D"
-            />
-          </label>
-        )}
-        {showMapHelp && (
-          <div className="tc2-map-help" role="dialog" aria-label="Hướng dẫn bản đồ">
-            <button type="button" aria-label="Đóng hướng dẫn" onClick={() => setShowMapHelp(false)}>
-              ×
-            </button>
-            <strong>Điều khiển bản đồ</strong>
-            <p>
-              Kéo để di chuyển; cuộn/chụm để zoom. Dùng nút xoay và thanh góc nghiêng để xem 3D. Click khối nhà để mở hồ sơ; click đường
-              hoặc ranh khu vực để xem thuộc tính.
-            </p>
-            <p>Khối mờ hoặc footprint từ tọa độ hộ dân chỉ là minh họa khi chưa có ranh đã khảo sát.</p>
-          </div>
+        {selectedHouse && mapMode === 'geographic' && (
+          <MapLibreHouseholdPanel
+            household={selectedHouse}
+            onClose={() => setSelectedHouseId(null)}
+            onOpenProfile={() => onSelectHousehold(selectedHouse)}
+          />
         )}
       </div>
       {screenshotUrl && (

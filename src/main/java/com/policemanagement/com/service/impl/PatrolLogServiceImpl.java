@@ -20,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class PatrolLogServiceImpl implements PatrolLogService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private static final Logger LOG = LoggerFactory.getLogger(PatrolLogServiceImpl.class);
 
     private final PatrolLogRepository patrolLogRepository;
@@ -66,7 +69,7 @@ public class PatrolLogServiceImpl implements PatrolLogService {
     @Transactional(readOnly = true)
     public Page<PatrolLogDTO> findAll(Pageable pageable) {
         LOG.debug("Request to get all PatrolLogs");
-        return patrolLogRepository.findAll(pageable).map(patrolLogMapper::toDto);
+        return patrolLogRepository.findAll(rbac.recordScope("patrol"), pageable).map(patrolLogMapper::toDto);
     }
 
     @Override
