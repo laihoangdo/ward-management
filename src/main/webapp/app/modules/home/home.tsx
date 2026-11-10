@@ -5,7 +5,7 @@ import { Alert, Col, Row } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router';
 
 import { useAppSelector } from 'app/config/store';
-import { REDIRECT_URL, getLoginUrl } from 'app/shared/util/url-utils';
+import { REDIRECT_URL, getLoginUrl, safeRedirectPath } from 'app/shared/util/url-utils';
 
 export const Home = () => {
   const account = useAppSelector(state => state.authentication.account);
@@ -13,10 +13,11 @@ export const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const redirectURL = localStorage.getItem(REDIRECT_URL);
-    if (redirectURL) {
+    const stored = localStorage.getItem(REDIRECT_URL);
+    if (stored !== null) {
       localStorage.removeItem(REDIRECT_URL);
-      location.href = `${location.origin}${redirectURL}`;
+      // A value saved by an older build (e.g. "/sunnytech.cloud/sign-in") must not strand the user on a refused URL.
+      location.href = `${location.origin}${safeRedirectPath(stored) ?? '/dashboard'}`;
     }
   });
 

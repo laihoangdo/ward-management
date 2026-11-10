@@ -403,7 +403,10 @@ test('production migration backs up, drills a restore and only then runs Liquiba
   // Credentials only on tmpfs for the run, removed on every exit; the tools container has no ports.
   assert.match(script, /mktemp -d \/run\/police-migrate\./);
   assert.match(script, /trap cleanup EXIT/);
-  assert.match(script, /rm -f -- "\$secrets_dir\/migration\.properties"/);
+  assert.match(script, /rm -rf -- "\$secrets_dir"/);
+  assert.ok(script.indexOf('trap cleanup EXIT') < script.indexOf('secrets_dir=$(mktemp'));
+  // Truncating a stream with head exits 141 under pipefail; that aborted the first production run.
+  assert.doesNotMatch(script, /\|\s*head\b/);
   assert.match(script, /--network "\$network" --read-only/);
   assert.match(script, /--cap-drop ALL/);
   assert.doesNotMatch(script, /\s-p\s|--publish|dropAll|drop-all|rollback|clear-checksums|changelog-sync|DROP SCHEMA|DROP TABLE/i);

@@ -90,7 +90,7 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 
 ## Current serving state (reviewed 2026-11-10)
 
-- Public site serves production: image `police-app-production:20261108-1` (rollback candidates `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
+- Public site serves production: image `police-app-production:20261111-1` since 2026-11-10 (rollback candidates `20261108-1`, `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
 - Read-only review evidence: public root 200, issuer `https://sunnytech.cloud/realms/jhipster`, anonymous RBAC 401, `staging-manifest.json`, `/admin/` and `/management/health` 404, MapLibre worker asset 200. `/realms/master/*` reaches only the application's SPA fallback, not Keycloak. Production, staging, audit-export and certbot units last ran with `Result=success`; root disk 52% used.
 - The staging application and realm `police-staging` remain publicly discoverable on the same host. Decide whether staging should stay public now that production is live.
 - Duplicate response headers: Cloudflare adds `Strict-Transport-Security: max-age=31536000; includeSubDomains` while the origin sends `max-age=86400`, and both the application CSP and an Nginx `frame-ancestors 'none'` CSP are present beside `X-Frame-Options: SAMEORIGIN`. Not a functional fault; unify deliberately (the Cloudflare value commits every subdomain to HTTPS for a year).
@@ -102,6 +102,15 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 - `prepare-production-identity.py` now sets the attribute so a future realm preparation keeps logout working.
 - Application-side hardening (URL-encoded redirect with a fallback when the browser sends no usable Origin; frontend still ends the Keycloak session when the app session has already expired) is in the repository and reaches production with the next release.
 - Not changed: realm `police-staging` client `web_app` uses `https://sunnytech.cloud/` (trailing slash) for the same attribute.
+
+## Release 20261111-1 — first release through the migration gate (2026-11-10 UTC)
+
+- Source: commit `960a3e8` on `develop/3d-map`, clean tree. Before build: frontend 448/448 tests, typecheck and Prettier pass (ESLint reports 3 errors in recent `App.tsx`/`FieldHouseMap.tsx` commits — unused variable and two bitwise operators — not runtime faults, still to fix); backend 243 unit (29 skipped, pre-existing) and 372/372 integration tests; infrastructure tests 38/38.
+- Build: Vite production build, `mvn -Pprod,vps package` with tests already run on the same commit; `audit-production-artifact.ps1` PASS; JAR SHA256 `791fe7ef78e3e717d482fa3a6d367ce4fd3d8da485dc77a3fe13f81b0c2814c9`, git `960a3e8`. Release files under root-only `/opt/police-management/releases/20261111-1/` (kept outside the production backup tree); image `police-app-production:20261111-1` (`sha256:9e660e94f6ecab33f9a0a5aba5184c00c455219845f5ab5fab11a125594b3761`).
+- First run stopped before any change: `migrate-production-db.sh` generated its drill database name with a `… | head` pipeline that exits 141 under `pipefail`. Fixed (no truncating pipelines, cleanup trap set before temporary directories; regression test added) and rerun.
+- Second run (`systemd-run` unit, survives SSH loss) PASS: checksum, Trivy HIGH/CRITICAL clean (report `scans/20261111-1.json`), fresh offsite backup uploaded 2026-11-10T17:29:34Z, restore drill counts matched, Liquibase applied `20261108000000-1` and `20261108010000-1` (46 → 48 changesets, status up to date), image swapped, `verify-production-live.py` PASS. Logs: `/root/police-deployment-checkpoints/production-*-20261110T172928Z.log` and `release-20261111-1b.log`.
+- Independent checks: households 1,291 / residents 5,074 unchanged; buildings 392 → 733; household links 1 → 1,261 (299 drawing + 961 estimated + 1 pre-existing); `police_runtime` can read the provenance table; no drill database or temporary credential directory left; app healthy with no error logs; public root 200, RBAC 401, manifest/admin/management 404, realm discovery 200, logout redirect 302. Root disk 63% used.
+- Rollback: `update-production-app.py police-app-production:20261108-1 --rollback` (the schema change is additive; the old code ignores the new table and links).
 
 ## Release procedure for later production updates (from 2026-11-10)
 

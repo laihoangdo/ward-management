@@ -26,26 +26,29 @@ install -d -m 0700 "$checkpoint"
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 log() { printf '%s\n' "$checkpoint/production-$1-$stamp.log"; }
 
-secrets_dir=$(mktemp -d /run/police-migrate.XXXXXXXX)
-drill_dir=$(mktemp -d "$backup_dir/.production-drill.XXXXXXXX")
-drill_db="tc2_premigrate_$(tr -dc 'a-z0-9' < /dev/urandom | head -c 12)"
+# Never truncate a stream with head here: under pipefail the producer's SIGPIPE (exit 141) aborts the script.
+drill_db="tc2_premigrate_$(od -An -N6 -tx1 /dev/urandom | tr -d ' \n')"
+secrets_dir=''
+drill_dir=''
 admin_psql() {
     docker exec -i "$database" bash -ec \
         'export PGPASSWORD="$(cat /run/secrets/database_owner)"; exec psql -X -q -At -h 127.0.0.1 -U Monolithic -v ON_ERROR_STOP=1 -d "$1"' -- "$1"
 }
 cleanup() {
-    rm -f -- "$secrets_dir/migration.properties" "$drill_dir/database.dump"
-    rmdir "$secrets_dir" "$drill_dir" 2>/dev/null || true
+    [[ -n "$secrets_dir" ]] && rm -rf -- "$secrets_dir"
+    [[ -n "$drill_dir" ]] && rm -rf -- "$drill_dir"
     printf 'DROP DATABASE IF EXISTS "%s";\n' "$drill_db" | admin_psql postgres >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
+secrets_dir=$(mktemp -d /run/police-migrate.XXXXXXXX)
+drill_dir=$(mktemp -d "$backup_dir/.production-drill.XXXXXXXX")
 
 # 1. Fresh encrypted backup, delivered offsite, before any schema change.
 if ! /opt/police-management/production/backup-production-offsite.sh >"$(log pre-migration-backup)" 2>&1; then
     printf '%s\n' 'Offsite backup failed; migration blocked. Inspect root-only backup log.' >&2
     exit 1
 fi
-archive=$(ls -1t "$backup_dir"/production-*.tar.gz.gpg | head -n 1)
+archive=$(ls -1t "$backup_dir"/production-*.tar.gz.gpg | sed -n 1p)
 (cd "$(dirname "$archive")" && sha256sum -c --quiet "$(basename "$archive").sha256")
 
 # 2. Authenticated restore drill: the new archive must decrypt and restore with the live row counts.
