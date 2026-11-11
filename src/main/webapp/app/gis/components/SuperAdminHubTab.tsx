@@ -49,7 +49,9 @@ import {
   resolveSecurityAlert,
 } from '../services/authService';
 import { SecurityAlertsChart } from './SecurityAlertsChart';
-import { fetchAccessPolicy, saveAccessPolicy } from '../services/rbacApiService';
+import { fetchAccessPolicy, saveAccessPolicy, fetchPermissionGroups } from '../services/rbacApiService';
+import { PermissionGroupsPanel } from './PermissionGroupsPanel';
+import type { PermissionGroup } from '../types';
 
 interface SuperAdminHubTabProps {
   currentUser: AppUser;
@@ -106,7 +108,15 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   const effectiveUsersList = usersList || [];
 
   const { params: routeParams, updateQuery } = useRouteQuery();
-  const sections = ['menus', 'hcm-units', 'users', 'whitelist', 'security'];
+  const sections = ['menus', 'hcm-units', 'users', 'groups', 'whitelist', 'security'];
+  const [permissionGroups, setPermissionGroups] = useState<PermissionGroup[]>([]);
+  React.useEffect(() => {
+    void fetchPermissionGroups()
+      .then(setPermissionGroups)
+      .catch(() => {
+        /* Accounts can still be saved; the server then uses the role's built-in group. */
+      });
+  }, []);
   const section = routeParams.get('section') ?? 'menus';
   const activeSubTab = sections.includes(section) ? section : 'menus';
   const setActiveSubTab = (value: string) => updateQuery({ section: value });
@@ -368,6 +378,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
       assignedStreets: newUserForm.assignedStreets || [],
       // Left out for a new account so the server applies the role's daily-work preset; an edit keeps existing grants.
       subAdminPermissions: newUserForm.subAdminPermissions,
+      permissionGroupId: newUserForm.permissionGroupId,
       status: newUserForm.status || 'active',
       createdAt: new Date().toLocaleDateString('vi-VN'),
       isOnline: false,
@@ -598,6 +609,19 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
           >
             <Users className="w-3.5 h-3.5" />
             Quản Lý Tài Khoản CAND ({effectiveUsersList.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('groups')}
+            className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
+              activeSubTab === 'groups'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
+            }`}
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            Nhóm Quyền ({permissionGroups.length})
           </button>
 
           <button
@@ -1018,6 +1042,9 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* SUB-TAB: PERMISSION GROUPS (CEILINGS) */}
+      {activeSubTab === 'groups' && <PermissionGroupsPanel onShowToast={onShowToast} />}
 
       {/* SUB-TAB 4: ALLOWED EMAILS WHITELIST */}
       {activeSubTab === 'whitelist' && (
@@ -1500,7 +1527,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   <label className="block text-slate-300 mb-1">Vai trò phân quyền RBAC</label>
                   <select
                     value={newUserForm.role}
-                    onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value as UserRole })}
+                    onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value as UserRole, permissionGroupId: undefined })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
                   >
                     <option value="superadmin">Super Admin (Tối cao)</option>
@@ -1509,6 +1536,28 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     <option value="officer">Công an viên (Quản lý Tuyến/Hẻm)</option>
                   </select>
                 </div>
+                {newUserForm.role && newUserForm.role !== 'superadmin' && (
+                  <div>
+                    <label className="block text-slate-300 mb-1" htmlFor="new-user-permission-group">
+                      Nhóm quyền
+                    </label>
+                    <select
+                      id="new-user-permission-group"
+                      value={newUserForm.permissionGroupId ?? ''}
+                      onChange={e => setNewUserForm({ ...newUserForm, permissionGroupId: e.target.value || undefined })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white"
+                    >
+                      <option value="">Nhóm gốc của vai trò</option>
+                      {permissionGroups
+                        .filter(group => group.role === newUserForm.role)
+                        .map(group => (
+                          <option key={group.id} value={group.id}>
+                            {group.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div>

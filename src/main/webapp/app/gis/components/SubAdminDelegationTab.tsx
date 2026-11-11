@@ -18,9 +18,12 @@ import {
   Building2,
   Edit3,
   Eye,
+  Lock,
 } from 'lucide-react';
 import { AppUser, SubAdminFeaturePermissions } from '../types';
-import { saveDelegation, fetchRbacAreas, fetchDelegationRoads, fetchPermissionPresets } from '../services/authService';
+import { saveDelegation, fetchRbacAreas, fetchDelegationRoads, fetchPermissionGroups } from '../services/authService';
+import { MAP_VIEW_PERMISSIONS } from '../data/permissionCatalog';
+import type { PermissionGroup } from '../types';
 import { AdministrativeDirectory } from './AdministrativeDirectory';
 
 interface SubAdminDelegationTabProps {
@@ -104,14 +107,14 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       active = false;
     };
   }, []);
-  const [presets, setPresets] = useState<Partial<Record<string, SubAdminFeaturePermissions>>>({});
+  const [groups, setGroups] = useState<PermissionGroup[]>([]);
   useEffect(() => {
-    void fetchPermissionPresets()
-      .then(setPresets)
+    void fetchPermissionGroups()
+      .then(setGroups)
       .catch(() => {
-        /* The editor still works flag by flag without the presets. */
+        /* The editor still works flag by flag without the group list. */
       });
-  }, []);
+  }, [usersList]);
   useEffect(() => {
     void fetchRbacAreas()
       .then(setAreas)
@@ -196,7 +199,24 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
     setAssignedStreetsInput(officer.assignedStreets?.join(', ') || '');
   };
 
+  /**
+   * Why a permission cannot be switched on for the selected officer, mirroring the server: it is outside the group
+   * ceiling set by the super admin, or the delegate does not hold it (map viewing and existing grants excepted).
+   */
+  const lockReason = (key: keyof SubAdminFeaturePermissions): string | null => {
+    const ceiling = selectedOfficer?.permissionCeiling;
+    if (ceiling && !ceiling.includes(key)) return 'Ngoài phạm vi nhóm do Super Admin đặt';
+    const canGrant =
+      isSuperAdmin ||
+      MAP_VIEW_PERMISSIONS.includes(key) ||
+      currentUser.subAdminPermissions?.[key] === true ||
+      selectedOfficer?.subAdminPermissions?.[key] === true;
+    return canGrant ? null : 'Bạn chưa có quyền này nên không thể cấp';
+  };
+  const selectedGroup = groups.find(group => group.id === selectedOfficer?.permissionGroupId);
+
   const handleTogglePermission = (key: keyof SubAdminFeaturePermissions) => {
+    if (!permissions[key] && lockReason(key)) return;
     setPermissions(prev => ({
       ...prev,
       [key]: !prev[key],
@@ -587,31 +607,41 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                   </h3>
                   <span className="text-[11px] text-slate-400">Bật để cấp quyền, Tắt để khóa tính năng</span>
                 </div>
-                {selectedOfficer && presets[selectedOfficer.role] && (
+                {selectedOfficer?.permissionGroupName && (
+                  <p className="text-[11px] text-slate-400">
+                    Nhóm quyền: <span className="font-semibold text-slate-200">{selectedOfficer.permissionGroupName}</span> (Super Admin đặt
+                    phạm vi được phép; quyền cụ thể do bạn chọn)
+                  </p>
+                )}
+                {selectedOfficer && selectedGroup && (
                   <button
                     type="button"
                     onClick={() => {
-                      const preset = presets[selectedOfficer.role];
-                      if (!preset) return;
-                      setPermissions({ ...preset });
-                      onShowToast('Đã điền quyền mặc định theo vai trò. Bấm "Xác nhận & cập nhật quyền hạn" để lưu.');
+                      const next = { ...permissions };
+                      for (const item of permissionItems)
+                        next[item.key] = selectedGroup.defaults.includes(item.key) && !lockReason(item.key);
+                      setPermissions(next);
+                      onShowToast('Đã điền quyền mặc định của nhóm. Bấm "Xác nhận & cập nhật quyền hạn" để lưu.');
                     }}
                     className="py-2 px-3 rounded-lg border border-emerald-600/70 text-emerald-300 hover:bg-slate-800 text-xs font-semibold transition-colors cursor-pointer"
                   >
-                    Áp dụng quyền mặc định theo vai trò
+                    Áp dụng mặc định của nhóm
                   </button>
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {permissionItems.map(item => {
                     const isGranted = !!permissions[item.key];
+                    const locked = !isGranted ? lockReason(item.key) : null;
                     const IconComp = item.icon;
                     return (
                       <div
                         key={item.key}
                         role="checkbox"
                         aria-checked={isGranted}
+                        aria-disabled={locked ? true : undefined}
                         aria-label={item.title}
+                        title={locked ?? undefined}
                         tabIndex={0}
                         onKeyDown={event => {
                           if (event.key === ' ' || event.key === 'Enter') {
@@ -620,9 +650,9 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                           }
                         }}
                         onClick={() => handleTogglePermission(item.key)}
-                        className={`p-3.5 rounded-xl border transition-colors cursor-pointer flex items-start justify-between gap-3 ${
-                          isGranted ? 'bg-slate-800 border-emerald-600/70' : 'bg-slate-950 border-slate-800'
-                        }`}
+                        className={`p-3.5 rounded-xl border transition-colors flex items-start justify-between gap-3 ${
+                          locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                        } ${isGranted ? 'bg-slate-800 border-emerald-600/70' : 'bg-slate-950 border-slate-800'}`}
                       >
                         <div className="flex items-start gap-3">
                           <div className="p-2 mt-0.5 text-slate-300">
@@ -631,6 +661,12 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                           <div>
                             <div className="text-xs font-bold text-white">{item.title}</div>
                             <div className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{item.desc}</div>
+                            {locked && (
+                              <div className="text-[11px] text-amber-300 mt-1 flex items-center gap-1">
+                                <Lock className="w-3 h-3" aria-hidden="true" />
+                                {locked}
+                              </div>
+                            )}
                           </div>
                         </div>
 

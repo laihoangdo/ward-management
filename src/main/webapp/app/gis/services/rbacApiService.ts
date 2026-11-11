@@ -11,6 +11,7 @@ import type {
   SecurityAlertSeverity,
   SubAdminFeaturePermissions,
   BlacklistedIpEntry,
+  PermissionGroup,
 } from '../types';
 
 // Compatibility names retained; the server is the sole source of RBAC data.
@@ -35,6 +36,36 @@ export const fetchRbacAreas = async () =>
     .data;
 export const fetchPermissionPresets = async () =>
   (await axios.get<Record<'officer' | 'sub-admin' | 'admin', SubAdminFeaturePermissions>>('/api/rbac/permission-presets')).data;
+export const fetchPermissionGroups = async () => (await axios.get<PermissionGroup[]>('/api/rbac/permission-groups')).data;
+
+export type PermissionGroupSaveResult =
+  { status: 'saved'; group: PermissionGroup & { revoked?: number } } | { status: 'confirm'; affected: number; permissions: string[] };
+
+/** Narrowing a ceiling answers 409 with the affected-member count until the caller confirms the revocation. */
+export async function savePermissionGroup(group: PermissionGroup, confirmRevoke = false): Promise<PermissionGroupSaveResult> {
+  const params = { confirmRevoke };
+  try {
+    const { data } = group.id
+      ? await axios.put<PermissionGroup>(`/api/rbac/permission-groups/${encodeURIComponent(group.id)}`, group, { params })
+      : await axios.post<PermissionGroup>('/api/rbac/permission-groups', group, { params });
+    changed(['users']);
+    return { status: 'saved', group: data };
+  } catch (error) {
+    const data = axios.isAxiosError(error)
+      ? (error.response?.data as { requiresConfirmation?: boolean; affected?: number; permissions?: string[] })
+      : undefined;
+    if (axios.isAxiosError(error) && error.response?.status === 409 && data?.requiresConfirmation) {
+      return { status: 'confirm', affected: data.affected ?? 0, permissions: data.permissions ?? [] };
+    }
+    throw error;
+  }
+}
+
+export async function deletePermissionGroup(id: string) {
+  await axios.delete(`/api/rbac/permission-groups/${encodeURIComponent(id)}`);
+  changed(['users']);
+}
+
 export const fetchDelegationRoads = async () => (await axios.get<{ hamletId: number; name: string }[]>('/api/rbac/delegation-roads')).data;
 export async function exportRbacCsv(kind: 'households' | 'residents') {
   const { data } = await axios.get(`/api/rbac/export/${kind}`, { responseType: 'blob' });
