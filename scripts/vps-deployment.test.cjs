@@ -505,6 +505,9 @@ test('administrator OTP is required through a copied flow with a temporary admin
   assert.ok(script.includes('add_role_condition "$generic" true'));
   assert.ok(script.includes('add_role_condition "$admin_flow" false'));
   assert.ok(script.includes('provider=auth-otp-form'));
+  // The role condition needs a known user: the admin OTP sub-flow must come after the password form.
+  assert.ok(script.includes('lower-priority'));
+  assert.ok(script.includes('admin OTP runs before the user is known'));
   assert.ok(script.indexOf('step=verify-flow') < script.indexOf('browserFlow=$flow'));
   assert.ok(script.includes('trap cleanup EXIT'));
   assert.ok(script.includes('kcadm delete "users/$id" -r master'));

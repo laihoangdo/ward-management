@@ -45,6 +45,8 @@ login() {
     return 1
 }
 json() { python3 -c "import json,sys; d=json.load(sys.stdin); $1"; }
+# Copied sub-flow aliases contain spaces; the admin REST path must carry them URL-encoded.
+fpath() { printf 'authentication/flows/%s' "$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1")"; }
 
 cleanup() {
     result=$?
@@ -91,45 +93,57 @@ step=copy-flow
 if ! kcadm get authentication/flows -r "$realm" | json "raise SystemExit(0 if any(f['alias']=='$flow' for f in d) else 1)"; then
     kcadm create authentication/flows/browser/copy -r "$realm" -s "newName=$flow" >/dev/null
 fi
-executions=$(kcadm get "authentication/flows/$flow/executions" -r "$realm")
+executions=$(kcadm get "$(fpath "$flow")/executions" -r "$realm")
 forms=$(printf '%s' "$executions" | json "print(next(e['displayName'] for e in d if e.get('authenticationFlow') and e['displayName'].endswith('forms')))")
 generic=$(printf '%s' "$executions" | json "print(next(e['displayName'] for e in d if e.get('authenticationFlow') and 'Conditional OTP' in e['displayName']))")
 add_role_condition() { # $1 sub-flow alias, $2 negate
     local id
-    kcadm create "authentication/flows/$1/executions/execution" -r "$realm" -s provider=conditional-user-role >/dev/null
-    id=$(kcadm get "authentication/flows/$1/executions" -r "$realm" | json "print([e['id'] for e in d if e.get('providerId')=='conditional-user-role' and e.get('level')==0][-1])")
-    kcadm update "authentication/flows/$1/executions" -r "$realm" -b "{\"id\":\"$id\",\"requirement\":\"REQUIRED\"}" >/dev/null
+    kcadm create "$(fpath "$1")/executions/execution" -r "$realm" -s provider=conditional-user-role >/dev/null
+    id=$(kcadm get "$(fpath "$1")/executions" -r "$realm" | json "print([e['id'] for e in d if e.get('providerId')=='conditional-user-role' and e.get('level')==0][-1])")
+    kcadm update "$(fpath "$1")/executions" -r "$realm" -b "{\"id\":\"$id\",\"requirement\":\"REQUIRED\"}" >/dev/null
     kcadm create "authentication/executions/$id/config" -r "$realm" \
         -b "{\"alias\":\"police-admin-role-$2-$(openssl rand -hex 3)\",\"config\":{\"condUserRole\":\"ROLE_ADMIN\",\"negate\":\"$2\"}}" >/dev/null
 }
 
 step=exclude-admins-from-optional-otp
-if ! kcadm get "authentication/flows/$generic/executions" -r "$realm" | json "raise SystemExit(0 if any(e.get('providerId')=='conditional-user-role' for e in d) else 1)"; then
+if ! kcadm get "$(fpath "$generic")/executions" -r "$realm" | json "raise SystemExit(0 if any(e.get('providerId')=='conditional-user-role' for e in d) else 1)"; then
     add_role_condition "$generic" true
 fi
 
 step=admin-otp-subflow
 admin_flow="$flow Admin OTP"
-if ! printf '%s' "$(kcadm get "authentication/flows/$flow/executions" -r "$realm")" | json "raise SystemExit(0 if any(e.get('displayName')=='$admin_flow' for e in d) else 1)"; then
-    kcadm create "authentication/flows/$forms/executions/flow" -r "$realm" \
+if ! printf '%s' "$(kcadm get "$(fpath "$flow")/executions" -r "$realm")" | json "raise SystemExit(0 if any(e.get('displayName')=='$admin_flow' for e in d) else 1)"; then
+    kcadm create "$(fpath "$forms")/executions/flow" -r "$realm" \
         -b "{\"alias\":\"$admin_flow\",\"type\":\"basic-flow\",\"provider\":\"registration-page-form\",\"description\":\"OTP required for ROLE_ADMIN\"}" >/dev/null
-    id=$(kcadm get "authentication/flows/$flow/executions" -r "$realm" | json "print(next(e['id'] for e in d if e.get('displayName')=='$admin_flow'))")
-    kcadm update "authentication/flows/$forms/executions" -r "$realm" -b "{\"id\":\"$id\",\"requirement\":\"CONDITIONAL\"}" >/dev/null
+    id=$(kcadm get "$(fpath "$flow")/executions" -r "$realm" | json "print(next(e['id'] for e in d if e.get('displayName')=='$admin_flow'))")
+    kcadm update "$(fpath "$forms")/executions" -r "$realm" -b "{\"id\":\"$id\",\"requirement\":\"CONDITIONAL\"}" >/dev/null
     add_role_condition "$admin_flow" false
-    kcadm create "authentication/flows/$admin_flow/executions/execution" -r "$realm" -s provider=auth-otp-form >/dev/null
-    id=$(kcadm get "authentication/flows/$admin_flow/executions" -r "$realm" | json "print(next(e['id'] for e in d if e.get('providerId')=='auth-otp-form'))")
-    kcadm update "authentication/flows/$admin_flow/executions" -r "$realm" -b "{\"id\":\"$id\",\"requirement\":\"REQUIRED\"}" >/dev/null
+    kcadm create "$(fpath "$admin_flow")/executions/execution" -r "$realm" -s provider=auth-otp-form >/dev/null
+    id=$(kcadm get "$(fpath "$admin_flow")/executions" -r "$realm" | json "print(next(e['id'] for e in d if e.get('providerId')=='auth-otp-form'))")
+    kcadm update "$(fpath "$admin_flow")/executions" -r "$realm" -b "{\"id\":\"$id\",\"requirement\":\"REQUIRED\"}" >/dev/null
 fi
+
+# New executions start at the top of their flow. The role condition can only match once the password form has
+# identified the user, so move the admin sub-flow below every other step of the forms flow.
+step=order-admin-subflow
+for _ in 1 2 3 4 5; do
+    last=$(kcadm get "$(fpath "$forms")/executions" -r "$realm" | json "print([e['displayName'] for e in d if e.get('level')==0][-1])")
+    [[ "$last" == "$admin_flow" ]] && break
+    id=$(kcadm get "$(fpath "$forms")/executions" -r "$realm" | json "print(next(e['id'] for e in d if e.get('displayName')=='$admin_flow'))")
+    kcadm create "authentication/executions/$id/lower-priority" -r "$realm" >/dev/null
+done
 
 # 3. Verify the structure before switching the realm to it.
 step=verify-flow
-kcadm get "authentication/flows/$flow/executions" -r "$realm" | json "
+kcadm get "$(fpath "$flow")/executions" -r "$realm" | json "
 rows=[(e.get('level'),e.get('displayName'),e.get('providerId'),e.get('requirement')) for e in d]
 admin=[r for r in rows if r[1]=='$admin_flow']
 assert admin and admin[0][3]=='CONDITIONAL', 'admin sub-flow missing or not conditional'
 assert sum(1 for r in rows if r[2]=='conditional-user-role' and r[3]=='REQUIRED')==2, 'role conditions missing'
 assert sum(1 for r in rows if r[2]=='auth-otp-form' and r[3]=='REQUIRED')==2, 'OTP forms missing'
 assert any(r[2]=='auth-username-password-form' and r[3]=='REQUIRED' for r in rows), 'password form missing'
+names=[r[1] for r in rows]
+assert names.index('$admin_flow') > next(i for i,r in enumerate(rows) if r[2]=='auth-username-password-form'), 'admin OTP runs before the user is known'
 for r in rows: print('  '*int(r[0] or 0)+str(r[1])+' ['+str(r[3])+']')
 "
 step=bind-flow
