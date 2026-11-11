@@ -65,13 +65,13 @@ def run():
         user['credentials'] = []
     for user in other:
         actions = set(user.get('requiredActions') or [])
-        user['requiredActions'] = sorted(actions | {'UPDATE_PASSWORD', 'CONFIGURE_OTP'})
+        user['requiredActions'] = sorted(actions | {'UPDATE_PASSWORD', 'CONFIGURE_TOTP'})
         user['enabled'] = True
     operator_id = str(uuid.uuid4())
     temporary = secrets.token_urlsafe(24)
     realm['users'].append({
         'id': operator_id, 'username': OPERATOR, 'email': OPERATOR_EMAIL, 'emailVerified': True,
-        'enabled': True, 'requiredActions': ['UPDATE_PASSWORD', 'CONFIGURE_OTP'],
+        'enabled': True, 'requiredActions': ['UPDATE_PASSWORD', 'CONFIGURE_TOTP'],
         'credentials': [{'type': 'password', 'value': temporary, 'temporary': False}],
         'realmRoles': ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SUPERADMIN'],
     })

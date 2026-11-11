@@ -366,23 +366,8 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
       assignedWard: newUserForm.assignedWard || '',
       assignedHamlets: newUserForm.assignedHamlets || [],
       assignedStreets: newUserForm.assignedStreets || [],
-      subAdminPermissions:
-        newUserForm.subAdminPermissions ||
-        (newUserForm.role === 'officer'
-          ? {
-              canViewAdvancedMap: false,
-              canViewField3DMap: false,
-              canEditCoordinates: false,
-              canAddHouseholds: false,
-              canScanOcr: false,
-              canRenewDocs: false,
-              canExportReports: false,
-              canSendReminders: false,
-              canUpdateInspection: false,
-              canManageStreets: false,
-              canRevealIdentity: false,
-            }
-          : undefined),
+      // Left out for a new account so the server applies the role's daily-work preset; an edit keeps existing grants.
+      subAdminPermissions: newUserForm.subAdminPermissions,
       status: newUserForm.status || 'active',
       createdAt: new Date().toLocaleDateString('vi-VN'),
       isOnline: false,

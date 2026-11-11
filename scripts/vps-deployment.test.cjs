@@ -356,7 +356,9 @@ test('production identity preparation preserves UUIDs and hardens the realm with
   assert.match(script, /SAMPLE = \{'admin', 'user'\}/);
   assert.match(script, /user\['enabled'\] = False/);
   assert.match(script, /user\['credentials'\] = \[\]/);
-  assert.match(script, /'UPDATE_PASSWORD', 'CONFIGURE_OTP'/);
+  // CONFIGURE_OTP is not a Keycloak required action alias; it was silently ignored in production.
+  assert.match(script, /'UPDATE_PASSWORD', 'CONFIGURE_TOTP'/);
+  assert.doesNotMatch(script, /'CONFIGURE_OTP'/);
   assert.match(script, /'realmRoles': \['ROLE_USER', 'ROLE_ADMIN', 'ROLE_SUPERADMIN'\]/);
   assert.match(script, /redirectUris'\] = \['https:\/\/sunnytech\.cloud\/login\/oauth2\/code\/oidc'\]/);
   assert.match(script, /\['post\.logout\.redirect\.uris'\] = 'https:\/\/sunnytech\.cloud'/);
@@ -491,4 +493,23 @@ test('application CSP allows maplibre data and blob fetches', () => {
   const config = fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'resources', 'config', 'application.yml'), 'utf8');
   assert.match(config, /connect-src 'self' https: ws: wss: data: blob:;/);
   assert.doesNotMatch(config, /connect-src 'self' https: ws: wss:;/);
+});
+
+test('administrator OTP is required through a copied flow with a temporary admin that is always removed', () => {
+  const script = read('configure-production-admin-mfa.sh');
+  assert.match(script, /set -euo pipefail/);
+  assert.match(script, /flock -n 9/);
+  assert.ok(script.includes('authentication/flows/browser/copy'));
+  assert.ok(script.includes('condUserRole'));
+  assert.ok(script.includes('ROLE_ADMIN'));
+  assert.ok(script.includes('add_role_condition "$generic" true'));
+  assert.ok(script.includes('add_role_condition "$admin_flow" false'));
+  assert.ok(script.includes('provider=auth-otp-form'));
+  assert.ok(script.indexOf('step=verify-flow') < script.indexOf('browserFlow=$flow'));
+  assert.ok(script.includes('trap cleanup EXIT'));
+  assert.ok(script.includes('kcadm delete "users/$id" -r master'));
+  assert.ok(script.includes('Temporary admin still authenticates'));
+  // The realm's own browser flow is never edited, so switching back is the rollback.
+  assert.ok(!script.includes('authentication/flows/browser/executions'));
+  assert.doesNotMatch(script, /\|\s*head\b|bash -x|set -x/);
 });

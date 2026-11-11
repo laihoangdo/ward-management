@@ -33,6 +33,8 @@ export async function saveAccessPolicy(emailWhitelistEnabled: boolean) {
 export const fetchRbacAreas = async () =>
   (await axios.get<{ id: number; hamletId: number; communeId: number; name: string; hamletName: string }[]>('/api/rbac/delegation-areas'))
     .data;
+export const fetchPermissionPresets = async () =>
+  (await axios.get<Record<'officer' | 'sub-admin' | 'admin', SubAdminFeaturePermissions>>('/api/rbac/permission-presets')).data;
 export const fetchDelegationRoads = async () => (await axios.get<{ hamletId: number; name: string }[]>('/api/rbac/delegation-roads')).data;
 export async function exportRbacCsv(kind: 'households' | 'residents') {
   const { data } = await axios.get(`/api/rbac/export/${kind}`, { responseType: 'blob' });

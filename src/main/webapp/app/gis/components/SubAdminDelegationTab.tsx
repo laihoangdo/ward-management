@@ -20,7 +20,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { AppUser, SubAdminFeaturePermissions } from '../types';
-import { saveDelegation, fetchRbacAreas, fetchDelegationRoads } from '../services/authService';
+import { saveDelegation, fetchRbacAreas, fetchDelegationRoads, fetchPermissionPresets } from '../services/authService';
 import { AdministrativeDirectory } from './AdministrativeDirectory';
 
 interface SubAdminDelegationTabProps {
@@ -103,6 +103,14 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
     return () => {
       active = false;
     };
+  }, []);
+  const [presets, setPresets] = useState<Partial<Record<string, SubAdminFeaturePermissions>>>({});
+  useEffect(() => {
+    void fetchPermissionPresets()
+      .then(setPresets)
+      .catch(() => {
+        /* The editor still works flag by flag without the presets. */
+      });
   }, []);
   useEffect(() => {
     void fetchRbacAreas()
@@ -579,6 +587,20 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                   </h3>
                   <span className="text-[11px] text-slate-400">Bật để cấp quyền, Tắt để khóa tính năng</span>
                 </div>
+                {selectedOfficer && presets[selectedOfficer.role] && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const preset = presets[selectedOfficer.role];
+                      if (!preset) return;
+                      setPermissions({ ...preset });
+                      onShowToast('Đã điền quyền mặc định theo vai trò. Bấm "Xác nhận & cập nhật quyền hạn" để lưu.');
+                    }}
+                    className="py-2 px-3 rounded-lg border border-emerald-600/70 text-emerald-300 hover:bg-slate-800 text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Áp dụng quyền mặc định theo vai trò
+                  </button>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {permissionItems.map(item => {

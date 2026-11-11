@@ -2,12 +2,17 @@ import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AppUser } from '../types';
-import { fetchDelegationRoads, fetchRbacAreas, saveDelegation } from '../services/authService';
+import { fetchDelegationRoads, fetchPermissionPresets, fetchRbacAreas, saveDelegation } from '../services/authService';
 import { SubAdminDelegationTab } from './SubAdminDelegationTab';
 
 vi.mock('./AdministrativeDirectory', () => ({ AdministrativeDirectory: () => null }));
 
-vi.mock('../services/authService', () => ({ fetchDelegationRoads: vi.fn(), fetchRbacAreas: vi.fn(), saveDelegation: vi.fn() }));
+vi.mock('../services/authService', () => ({
+  fetchDelegationRoads: vi.fn(),
+  fetchRbacAreas: vi.fn(),
+  saveDelegation: vi.fn(),
+  fetchPermissionPresets: vi.fn().mockResolvedValue({}),
+}));
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -37,6 +42,35 @@ it('offers DB roads only in assigned areas and preserves an existing legacy assi
   vi.mocked(saveDelegation).mockResolvedValue(officer);
   fireEvent.click(screen.getByRole('button', { name: /Lưu Cấu Hình Phân Quyền/ }));
   await waitFor(() => expect(saveDelegation).toHaveBeenCalledWith(expect.objectContaining({ hamletIds: [7] })));
+});
+
+it('fills the role preset into the editor without saving until confirmed', async () => {
+  const officer = { id: 'officer', role: 'officer', fullName: 'Cán bộ kiểm thử', assignedHamlets: [], assignedStreets: [] } as AppUser;
+  vi.mocked(fetchRbacAreas).mockResolvedValue([]);
+  vi.mocked(fetchDelegationRoads).mockResolvedValue([]);
+  vi.mocked(fetchPermissionPresets).mockResolvedValue({
+    officer: {
+      canViewAdvancedMap: true,
+      canViewField3DMap: true,
+      canEditCoordinates: true,
+      canAddHouseholds: false,
+      canScanOcr: true,
+      canRenewDocs: true,
+      canExportReports: false,
+      canSendReminders: false,
+      canUpdateInspection: true,
+      canManageStreets: false,
+      canRevealIdentity: false,
+    },
+  } as Awaited<ReturnType<typeof fetchPermissionPresets>>);
+  render(
+    <SubAdminDelegationTab currentUser={{ ...officer, id: 'actor', role: 'superadmin' }} usersList={[officer]} onShowToast={vi.fn()} />,
+  );
+  const scan = await screen.findByRole('checkbox', { name: /Quét Camera/ });
+  expect(scan.getAttribute('aria-checked')).toBe('false');
+  fireEvent.click(await screen.findByRole('button', { name: 'Áp dụng quyền mặc định theo vai trò' }));
+  expect(scan.getAttribute('aria-checked')).toBe('true');
+  expect(saveDelegation).not.toHaveBeenCalled();
 });
 
 it('exposes permission state and lets the keyboard toggle the same permission without saving', async () => {

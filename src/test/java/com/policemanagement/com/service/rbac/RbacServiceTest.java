@@ -49,6 +49,39 @@ class RbacServiceTest {
     }
 
     @Test
+    void newAccountsStartFromTheirRolePresetAndEditsKeepExistingPermissions() {
+        var officer = RbacService.withPermissions(Map.of("role", "officer"), "officer", true, Map.of());
+        @SuppressWarnings("unchecked")
+        var granted = (Map<String, Boolean>) officer.get("subAdminPermissions");
+        assertTrue(granted.get("canUpdateInspection"));
+        assertTrue(granted.get("canScanOcr"));
+        assertFalse(granted.get("canAddHouseholds"));
+        assertFalse(granted.get("canRevealIdentity"));
+
+        assertTrue(RbacService.preset("sub-admin").get("canAddHouseholds"));
+        assertFalse(RbacService.preset("sub-admin").get("canRevealIdentity"));
+        assertTrue(RbacService.preset("admin").values().stream().allMatch(Boolean::booleanValue));
+        assertTrue(RbacService.preset("none").values().stream().noneMatch(Boolean::booleanValue));
+
+        Map<String, Object> existing = Map.of("subAdminPermissions", Map.of("canRenewDocs", true));
+        assertEquals(
+            existing.get("subAdminPermissions"),
+            RbacService.withPermissions(Map.of(), "officer", false, existing).get("subAdminPermissions")
+        );
+        Map<String, Object> explicit = Map.of("subAdminPermissions", Map.of("canScanOcr", false));
+        assertSame(explicit, RbacService.withPermissions(explicit, "officer", true, Map.of()));
+    }
+
+    @Test
+    void permissionPresetsAreOnlyForSupervisors() {
+        assertEquals(Set.of("officer", "sub-admin", "admin"), rbac.permissionPresets().keySet());
+        doReturn(Map.of("id", actor, "role", "officer"))
+            .when(rbac)
+            .current();
+        assertThrows(AccessDeniedException.class, () -> rbac.permissionPresets());
+    }
+
+    @Test
     void missingPermissionDenies() {
         assertThrows(AccessDeniedException.class, () -> rbac.permission("canExportReports"));
     }

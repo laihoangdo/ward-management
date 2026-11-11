@@ -33,6 +33,31 @@ public class RbacService {
         "canRevealIdentity"
     );
     private static final Set<String> MAP_VIEW_PERMISSIONS = Set.of("canViewAdvancedMap", "canViewField3DMap");
+    private static final List<String> OFFICER_PRESET = List.of(
+        "canViewField3DMap",
+        "canViewAdvancedMap",
+        "canUpdateInspection",
+        "canScanOcr",
+        "canEditCoordinates",
+        "canRenewDocs"
+    );
+    private static final List<String> HAMLET_MANAGER_PRESET = java.util.stream.Stream.concat(
+        OFFICER_PRESET.stream(),
+        java.util.stream.Stream.of("canAddHouseholds", "canSendReminders", "canManageStreets", "canExportReports")
+    ).toList();
+
+    /**
+     * Daily-work permissions a new account starts with, by role. Without them a new officer could sign in but do
+     * nothing. Full identity numbers stay opt-in below the commune chief; supervisors can still change every flag.
+     */
+    public static final Map<String, List<String>> PERMISSION_PRESETS = Map.of(
+        "officer",
+        OFFICER_PRESET,
+        "sub-admin",
+        HAMLET_MANAGER_PRESET,
+        "admin",
+        PERMISSIONS
+    );
     private final JdbcTemplate db;
     private final ObjectMapper json;
     private final KeycloakAdminClient kc;
@@ -91,6 +116,31 @@ public class RbacService {
 
     public boolean supervisor() {
         return List.of("superadmin", "admin", "sub-admin").contains(current().get("role"));
+    }
+
+    public static Map<String, Boolean> preset(String role) {
+        var granted = PERMISSION_PRESETS.getOrDefault(role, List.of());
+        Map<String, Boolean> result = new LinkedHashMap<>();
+        for (String key : PERMISSIONS) result.put(key, "superadmin".equals(role) || granted.contains(key));
+        return result;
+    }
+
+    public Map<String, Map<String, Boolean>> permissionPresets() {
+        if (!supervisor()) throw new AccessDeniedException("Không được xem bộ quyền mặc định");
+        Map<String, Map<String, Boolean>> result = new LinkedHashMap<>();
+        for (String role : List.of("officer", "sub-admin", "admin")) result.put(role, preset(role));
+        return result;
+    }
+
+    /**
+     * Account saves that carry no permission map must not silently revoke everything: a new account starts from its
+     * role preset, an edited account keeps the permissions it already had.
+     */
+    static Map<String, Object> withPermissions(Map<String, Object> incoming, String role, boolean creating, Map<String, Object> before) {
+        if (incoming.get("subAdminPermissions") instanceof Map) return incoming;
+        Map<String, Object> copy = new LinkedHashMap<>(incoming);
+        copy.put("subAdminPermissions", creating ? preset(role) : before.getOrDefault("subAdminPermissions", Map.of()));
+        return copy;
     }
 
     public void permission(String name) {
@@ -432,6 +482,7 @@ public class RbacService {
             audit("identity-created-disabled", id, Map.of("username", username));
         } else manage(profile(kc.user(id)));
         var before = profile(kc.user(id));
+        incoming = withPermissions(incoming, role, creating, before);
         if (
             !creating &&
             incoming.get("version") instanceof Number version &&

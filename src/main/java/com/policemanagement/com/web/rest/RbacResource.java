@@ -104,6 +104,11 @@ public class RbacResource {
         return rbac.updateOwnAccount(data);
     }
 
+    @GetMapping("/permission-presets")
+    public Map<String, Map<String, Boolean>> permissionPresets() {
+        return rbac.permissionPresets();
+    }
+
     @GetMapping("/policy")
     public Object policy() {
         rbac.superadmin();
