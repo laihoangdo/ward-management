@@ -156,8 +156,6 @@ coverage/
 ######################
 # Secrets & Local Config
 ######################
-*firebase-applet-config.json
-!*firebase-applet-config.example.json
 .rbac/
 
 # Local VietMap credentials used by GIS processing scripts

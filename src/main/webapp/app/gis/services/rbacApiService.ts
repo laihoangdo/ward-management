@@ -45,8 +45,6 @@ export async function exportRbacCsv(kind: 'households' | 'residents') {
   link.click();
   URL.revokeObjectURL(url);
 }
-export const seedAuthAndRbacData = async () => {};
-export const seedAuthCollectionsIfEmpty = seedAuthAndRbacData;
 function subscribe<T>(path: string, onData: (data: T[]) => void) {
   const topic = path.split('/').at(-1)!;
   return subscribeRbacResource(

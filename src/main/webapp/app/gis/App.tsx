@@ -65,7 +65,6 @@ import {
   subscribeDynamicMenus,
   subscribeHcmAdminUnits,
   subscribeSecurityAlerts,
-  seedAuthAndRbacData,
   subscribeCurrentRbac,
   retryCurrentRbac,
   resetRbacEventSession,
@@ -418,9 +417,6 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     };
     void refreshHealth();
     const healthTimer = window.setInterval(refreshHealth, 30000);
-
-    // 4. Seed initial RBAC, Allowed Emails, and Dynamic Menus if empty
-    seedAuthAndRbacData().catch(console.warn);
 
     // 5. Attach real-time listeners for RBAC, Menus, Units, and Security Alerts
     const unsubUsers = ['superadmin', 'admin', 'sub-admin'].includes(currentUser.role)
