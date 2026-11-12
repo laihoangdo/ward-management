@@ -1656,7 +1656,7 @@ function RosterWorkspace({
                       <option value="MANUAL">Nhập trực tiếp</option>
                     </select>
                   </label>
-                  <label className="roster-filter-select">
+                  <label className="roster-filter-select roster-filter-campaign">
                     Chiến dịch
                     <select
                       value={campaign}

@@ -69,7 +69,7 @@ export default function HouseholdSplitDialog({
         <fieldset>
           <legend>Thành viên chuyển sang hộ mới</legend>
           {household.members.map(m => (
-            <label key={m.membership_id} className="roster-row">
+            <label key={m.membership_id} className="roster-check">
               <input type="checkbox" checked={selected.includes(m.membership_id)} onChange={() => toggle(m.membership_id)} /> {m.full_name}
             </label>
           ))}

@@ -140,7 +140,7 @@ export default function RosterPatrol() {
             ))}
           </select>
         </label>
-        <label>
+        <label className="roster-check">
           <input type="checkbox" checked={reliableOnly} onChange={e => setReliableOnly(e.target.checked)} /> Chỉ hộ có vị trí đáng tin
         </label>
         <button type="button" className="roster-primary" onClick={locate} disabled={busy}>
