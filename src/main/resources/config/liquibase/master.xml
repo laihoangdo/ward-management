@@ -48,4 +48,5 @@
     <include file="config/liquibase/changelog/20261108010000_tc2_drawing_household_links_estimated.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261111000000_household_visit.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261112000000_household_link_confirmation.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261112000000_household_facility.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

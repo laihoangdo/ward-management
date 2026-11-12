@@ -17,6 +17,11 @@ public class RosterResource {
         this.service = service;
     }
 
+    @GetMapping("/hamlets")
+    public List<Map<String, Object>> hamlets() {
+        return service.hamlets();
+    }
+
     @GetMapping("/overview")
     public Map<String, Object> overview() {
         return service.overview();
@@ -106,6 +111,11 @@ public class RosterResource {
         return service.updateHousehold(id, data);
     }
 
+    @PostMapping("/households/{id}/split")
+    public Map<String, Object> splitHousehold(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
+        return service.splitHousehold(id, data);
+    }
+
     @PostMapping("/households/{id}/members")
     public Map<String, Object> addMember(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         return service.addMember(id, data);
@@ -121,9 +131,10 @@ public class RosterResource {
         @RequestParam(defaultValue = "") String search,
         @RequestParam(defaultValue = "") String kind,
         @RequestParam(defaultValue = "") String origin,
-        @RequestParam(defaultValue = "0") int page
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "") String campaign
     ) {
-        return service.residents(search, kind, origin, page);
+        return service.residents(search, kind, origin, page, campaign);
     }
 
     @PostMapping("/residents")

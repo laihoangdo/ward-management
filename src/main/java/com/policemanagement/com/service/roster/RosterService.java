@@ -12,6 +12,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -59,8 +62,72 @@ public class RosterService {
         return value.isBlank() ? null : value;
     }
 
+    /** Hamlet whose TC2 Excel roster was imported first; used when a request names no hamlet. */
+    public static final String DEFAULT_HAMLET_CODE = "27592-TRUNGCHANH-2";
+
+    private static final String HAMLET_ATTRIBUTE = "roster.hamlet";
+
+    /**
+     * Hamlet the current request works on: the {@code hamletId} request parameter when given, otherwise the default
+     * hamlet (or the user's only assigned hamlet when they are not assigned the default one). Access to the result is
+     * checked by {@link #authorize(String)}. Outside a web request the default hamlet is used.
+     */
     public long hamlet() {
-        return db.queryForObject("select id from public.hamlet where code='27592-TRUNGCHANH-2'", Long.class);
+        var request = RequestContextHolder.getRequestAttributes();
+        if (
+            request != null && request.getAttribute(HAMLET_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof Long cached
+        ) return cached;
+        String requested = request instanceof ServletRequestAttributes web ? web.getRequest().getParameter("hamletId") : null;
+        long id = resolveHamlet(requested, request != null);
+        if (request != null) request.setAttribute(HAMLET_ATTRIBUTE, id, RequestAttributes.SCOPE_REQUEST);
+        return id;
+    }
+
+    long resolveHamlet(String requested, boolean perUser) {
+        if (requested != null && !requested.isBlank()) {
+            long id;
+            try {
+                id = Long.parseLong(requested.strip());
+            } catch (NumberFormatException ex) {
+                throw bad("Mã ấp không hợp lệ");
+            }
+            if (db.queryForObject("select count(*) from public.hamlet where id=?", Long.class, id) == 0) throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Không tìm thấy ấp"
+            );
+            return id;
+        }
+        long fallback = db.queryForObject("select id from public.hamlet where code=?", Long.class, DEFAULT_HAMLET_CODE);
+        if (perUser && !rbac.global()) {
+            var assigned = rbac.areas();
+            if (!assigned.contains(fallback) && assigned.size() == 1) return assigned.getFirst();
+        }
+        return fallback;
+    }
+
+    /** Hamlets the current user may open in the roster. */
+    public List<Map<String, Object>> hamlets() {
+        rbac.current();
+        List<Map<String, Object>> rows;
+        if (rbac.global()) rows = db.queryForList("select id, code, name, full_name from public.hamlet order by name, id");
+        else {
+            var ids = rbac.areas();
+            if (ids.isEmpty()) return List.of();
+            rows = db.queryForList(
+                "select id, code, name, full_name from public.hamlet where id in (" +
+                    String.join(",", Collections.nCopies(ids.size(), "?")) +
+                    ") order by name, id",
+                ids.toArray()
+            );
+        }
+        long fallback = resolveHamlet(null, true);
+        var result = new ArrayList<Map<String, Object>>();
+        for (var row : rows) {
+            var copy = new LinkedHashMap<String, Object>(row);
+            copy.put("is_default", ((Number) row.get("id")).longValue() == fallback);
+            result.add(copy);
+        }
+        return result;
     }
 
     public void authorize(String permission) {
@@ -99,6 +166,9 @@ public class RosterService {
 
     public Map<String, Object> stage(List<Upload> files, String label, String sourceDate) {
         authorize("canAddHouseholds");
+        if (
+            db.queryForObject("select count(*) from public.hamlet where id=? and code=?", Long.class, hamlet(), DEFAULT_HAMLET_CODE) == 0
+        ) throw bad("Chưa có cấu hình nhập Excel TC2 cho ấp này");
         return stageAuthorized(files, label, sourceDate, rbac.subject());
     }
 
@@ -578,7 +648,8 @@ public class RosterService {
     public Map<String, Object> overview() {
         authorize(null);
         return db.queryForMap(
-            "select (select count(*) from tc2_roster.household where hamlet_id=?) households,(select count(*) from tc2_roster.resident where hamlet_id=?) residents,(select count(*) from tc2_roster.residence_record where hamlet_id=?) records,(select count(*) from tc2_roster.import_row r join tc2_roster.import_batch b on b.id=r.batch_id join tc2_roster.import_collection c on c.id=b.collection_id where c.hamlet_id=? and r.status='REVIEW') review_rows",
+            "select (select name from public.hamlet where id=?) hamlet_name,(select count(*) from tc2_roster.household where hamlet_id=?) households,(select count(*) from tc2_roster.resident where hamlet_id=?) residents,(select count(*) from tc2_roster.residence_record where hamlet_id=?) records,(select count(*) from tc2_roster.import_row r join tc2_roster.import_batch b on b.id=r.batch_id join tc2_roster.import_collection c on c.id=b.collection_id where c.hamlet_id=? and r.status='REVIEW') review_rows",
+            hamlet(),
             hamlet(),
             hamlet(),
             hamlet(),
@@ -599,11 +670,15 @@ public class RosterService {
             !Set.of("", "HSCT", "PROVISIONAL").contains(category)
         ) throw bad("Bộ lọc hộ không hợp lệ");
         String pattern = "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        // "120/45" is an address path: match whole segments from the start (120/45, 120/45/8/2A) instead of any substring.
+        var addressRegex = RosterCampaign.addressPathRegex(search);
         String where =
-            " from tc2_roster.household h where hamlet_id=? and (raw_address ilike ? or coalesce(representative_name,'') ilike ? or code ilike ? or coalesce(source_case_number,'') ilike ?)" +
+            " from tc2_roster.household h where hamlet_id=? and (" +
+            (addressRegex.isPresent() ? "raw_address ~* ?" : "raw_address ilike ?") +
+            " or coalesce(representative_name,'') ilike ? or code ilike ? or coalesce(source_case_number,'') ilike ?)" +
             " and (?='' or origin=?) and (?='' or (?='HSCT' and source_case_number is not null) or (?='PROVISIONAL' and source_case_number is null))";
         var args = new ArrayList<Object>(
-            Arrays.asList(hamlet(), pattern, pattern, pattern, pattern, origin, origin, category, category, category)
+            Arrays.asList(hamlet(), addressRegex.orElse(pattern), pattern, pattern, pattern, origin, origin, category, category, category)
         );
         long total = db.queryForObject("select count(*)" + where, Long.class, args.toArray());
         args.add((long) page * 30);
@@ -617,17 +692,25 @@ public class RosterService {
     }
 
     public Map<String, Object> residents(String search, String kind, String origin, int page) {
+        return residents(search, kind, origin, page, "");
+    }
+
+    public Map<String, Object> residents(String search, String kind, String origin, int page, String campaign) {
         authorize(null);
         if (
             page < 0 ||
             search.length() > 200 ||
+            !RosterCampaign.valid(campaign) ||
             !Set.of("", "PERMANENT", "TEMPORARY", "NOHT", "ARTICLE19").contains(kind) ||
             !Set.of("", "EXCEL", "MANUAL").contains(origin)
         ) throw bad("Bộ lọc không hợp lệ");
         String where =
             " from tc2_roster.resident r where r.hamlet_id=? and (?='' or r.origin=?) " +
             "and (?='' or position(lower(?) in lower(r.full_name))>0 or exists(select 1 from tc2_roster.resident_identity i where i.resident_id=r.id and i.active and i.number_lookup=?)) " +
-            "and (?='' or exists(select 1 from tc2_roster.residence_record rr where rr.resident_id=r.id and rr.record_kind=?))";
+            "and (?='' or exists(select 1 from tc2_roster.residence_record rr where rr.resident_id=r.id and rr.record_kind=?))" +
+            RosterCampaign.predicate(campaign)
+                .map(predicate -> " and (" + predicate + ")")
+                .orElse("");
         Object[] args = { hamlet(), origin, origin, search, search, crypto.lookup(search), kind, kind };
         long total = db.queryForObject("select count(*)" + where, Long.class, args);
         var params = new ArrayList<>(Arrays.asList(args));
@@ -639,7 +722,17 @@ public class RosterService {
                 " order by r.full_name,r.id limit 30 offset ?",
             params.toArray()
         );
-        return Map.of("items", items, "total", total, "page", page);
+        var result = new LinkedHashMap<String, Object>(Map.of("items", items, "total", total, "page", page));
+        // Say how many people could not be judged instead of silently dropping them from an age-based campaign.
+        if (RosterCampaign.needsExactBirthDate(campaign)) result.put(
+            "unevaluable",
+            db.queryForObject(
+                "select count(*) from tc2_roster.resident r where r.hamlet_id=? and (" + RosterCampaign.UNEVALUABLE + ")",
+                Long.class,
+                hamlet()
+            )
+        );
+        return result;
     }
 
     public Map<String, Object> createResident(Map<String, Object> d) {
@@ -823,10 +916,71 @@ public class RosterService {
         UUID previous = receipt(d, "CREATE_HOUSEHOLD");
         if (previous != null) return household(previous);
         context(rbac.subject(), "HOUSEHOLD_CREATED", s(d, "reason"), s(d, "effectiveDate"), null);
+        UUID id = insertHousehold(d);
+        remember(d, "CREATE_HOUSEHOLD", id);
+        return household(id);
+    }
+
+    /** Same codes as {@code FacilityType}, which the legacy GIS screens already map. */
+    static final List<String> FACILITY_TYPES = List.of("RESIDENTIAL", "BUSINESS", "BOARDING_HOUSE", "RELIGIOUS", "SPECIAL");
+    /** Facility kinds that carry a business name, trade and licence. */
+    static final Set<String> ESTABLISHMENTS = Set.of("BUSINESS", "BOARDING_HOUSE", "RELIGIOUS");
+    static final List<String> LICENSE_TYPES = List.of("BUSINESS_REGISTRATION", "SECURITY_CONDITION", "FIRE_SAFETY", "OTHER");
+
+    /**
+     * Facility type, name, trade and licence as {type, businessName, businessCategory, licenseType, licenseNumber, licenseExpiry}.
+     * A plain household or a monitored household carries no establishment details; a field an older client does not send keeps
+     * its stored value.
+     */
+    Object[] facility(Map<String, Object> d, Map<String, Object> old) {
+        String type = d.containsKey("facilityType")
+            ? Objects.toString(d.get("facilityType"), "").trim()
+            : old == null
+              ? ""
+              : Objects.toString(old.get("type"), "");
+        if (type.isEmpty()) type = "RESIDENTIAL";
+        if (!FACILITY_TYPES.contains(type)) throw bad("Loại hình cơ sở không hợp lệ");
+        if (!ESTABLISHMENTS.contains(type)) return new Object[] { type, null, null, null, null, null };
+        String name = facilityText(d, old, "businessName", "business_name", 255);
+        if (name == null) throw bad("Nhập tên cơ sở cho loại hình này");
+        String licenseType = facilityText(d, old, "licenseType", "license_type", 100);
+        if (licenseType != null && !LICENSE_TYPES.contains(licenseType)) throw bad("Loại giấy phép không hợp lệ");
+        String expiry = facilityText(d, old, "licenseExpiry", "license_expiry", 10);
+        if (expiry != null) {
+            try {
+                LocalDate.parse(expiry);
+            } catch (RuntimeException ex) {
+                throw bad("Ngày hết hạn giấy phép không hợp lệ");
+            }
+        }
+        return new Object[] {
+            type,
+            name,
+            facilityText(d, old, "businessCategory", "business_category", 255),
+            licenseType,
+            facilityText(d, old, "licenseNumber", "license_number", 100),
+            expiry,
+        };
+    }
+
+    private static String facilityText(Map<String, Object> d, Map<String, Object> old, String key, String column, int max) {
+        String value = d.containsKey(key)
+            ? Objects.toString(d.get(key), "").trim()
+            : old == null
+              ? null
+              : Objects.toString(old.get(column), null);
+        if (value == null || value.isBlank()) return null;
+        if (value.length() > max) throw bad("Thông tin cơ sở quá dài (tối đa " + max + " ký tự)");
+        return value;
+    }
+
+    /** Manual household with a provisional (random-within-hamlet) position; the caller has set the audit context. */
+    private UUID insertHousehold(Map<String, Object> d) {
         UUID id = UUID.randomUUID();
         double[] p = point(s(d, "rawAddress") + "|" + id);
+        Object[] f = facility(d, null);
         db.update(
-            "insert into tc2_roster.household(id,hamlet_id,code,source_case_number,case_scope,representative_name,phone,raw_address,origin,latitude,longitude,coordinate_method,coordinate_seed,boundary_hash) values (?,?,?,?,?,?,?,?,'MANUAL',?,?,'RANDOM_WITHIN_TC2',?,?)",
+            "insert into tc2_roster.household(id,hamlet_id,code,source_case_number,case_scope,representative_name,phone,raw_address,origin,latitude,longitude,coordinate_method,coordinate_seed,boundary_hash,type,business_name,business_category,license_type,license_number,license_expiry) values (?,?,?,?,?,?,?,?,'MANUAL',?,?,'RANDOM_WITHIN_TC2',?,?,?,?,?,?,?,?)",
             id,
             hamlet(),
             "TC2-M-" + id.toString().substring(0, 12),
@@ -838,10 +992,69 @@ public class RosterService {
             p[1],
             p[0],
             digest(s(d, "rawAddress") + "|" + id),
-            boundaryHash()
+            boundaryHash(),
+            f[0],
+            f[1],
+            f[2],
+            f[3],
+            f[4],
+            f[5]
         );
-        remember(d, "CREATE_HOUSEHOLD", id);
-        return household(id);
+        return id;
+    }
+
+    /**
+     * Splits members off a household into a new one in a single transaction. Each moved member's current membership ends on
+     * the effective date and a new one starts in the new household, so residence history is kept. Retries with the same
+     * requestId return the household created the first time.
+     */
+    public Map<String, Object> splitHousehold(UUID source, Map<String, Object> d) {
+        authorize("canAddHouseholds");
+        required(d, "reason");
+        required(d, "rawAddress");
+        required(d, "effectiveDate");
+        lock();
+        UUID previous = receipt(d, "SPLIT_HOUSEHOLD:" + source);
+        if (previous != null) return household(previous);
+        get("household", source);
+        if (!(d.get("members") instanceof List<?> requested) || requested.isEmpty()) throw bad("Chọn ít nhất một thành viên để tách");
+        if (requested.size() > 100) throw bad("Tách tối đa 100 thành viên mỗi lần");
+        LocalDate date = LocalDate.parse(s(d, "effectiveDate"));
+        if (date.isAfter(LocalDate.now())) throw bad("Chưa hỗ trợ tách hộ trong tương lai");
+        UUID head = nullable(d, "headMembershipId") == null ? null : UUID.fromString(s(d, "headMembershipId"));
+        var moved = new LinkedHashMap<UUID, Map<String, Object>>();
+        for (Object item : requested) {
+            if (!(item instanceof Map<?, ?> raw)) throw bad("Thành viên không hợp lệ");
+            @SuppressWarnings("unchecked")
+            var member = (Map<String, Object>) raw;
+            UUID membershipId = UUID.fromString(s(member, "membershipId"));
+            if (moved.put(membershipId, member) != null) throw bad("Thành viên bị chọn lặp");
+        }
+        if (head != null && !moved.containsKey(head)) throw bad("Chủ hộ mới phải nằm trong số thành viên được tách");
+        context(rbac.subject(), "HOUSEHOLD_SPLIT", s(d, "reason"), date.toString(), null);
+        UUID target = insertHousehold(d);
+        for (var entry : moved.entrySet()) {
+            var old = get("household_membership", entry.getKey());
+            if (!source.equals(old.get("household_id")) || old.get("valid_to") != null) throw bad("Thành viên không còn thuộc hộ nguồn");
+            if (old.get("valid_from") != null && date.isBefore(LocalDate.parse(old.get("valid_from").toString()))) throw bad(
+                "Ngày tách trước ngày tham gia hộ"
+            );
+            changed(
+                db.update(
+                    "update tc2_roster.household_membership set valid_to=?::date,version=version+1 where id=? and version=?",
+                    date.toString(),
+                    entry.getKey(),
+                    version(entry.getValue())
+                )
+            );
+            String relation =
+                nullable(entry.getValue(), "relationship") == null
+                    ? (String) old.get("relationship_code")
+                    : s(entry.getValue(), "relationship");
+            membership(target, (UUID) old.get("resident_id"), null, relation, entry.getKey().equals(head), date.toString());
+        }
+        remember(d, "SPLIT_HOUSEHOLD:" + source, target);
+        return household(target);
     }
 
     private void validatePerson(Map<String, Object> d) {
@@ -960,15 +1173,22 @@ public class RosterService {
         String verification = d.containsKey("verificationStatus") ? s(d, "verificationStatus") : old.get("verification_status").toString();
         if (!Set.of("UNVERIFIED", "VERIFIED", "HEAD_CONFLICT").contains(verification)) throw bad("Trạng thái xác minh hộ không hợp lệ");
         required(d, "reason");
+        Object[] f = facility(d, old);
         context(rbac.subject(), "CORRECTION", s(d, "reason"), s(d, "effectiveDate"), null);
         changed(
             db.update(
-                "update tc2_roster.household set representative_name=?,phone=?,raw_address=?,source_case_number=?,verification_status=?,version=version+1,updated_at=now() where id=? and version=?",
+                "update tc2_roster.household set representative_name=?,phone=?,raw_address=?,source_case_number=?,verification_status=?,type=?,business_name=?,business_category=?,license_type=?,license_number=?,license_expiry=?,version=version+1,updated_at=now() where id=? and version=?",
                 nullable(d, "representative"),
                 nullable(d, "phone"),
                 s(d, "rawAddress"),
                 d.containsKey("caseNumber") ? nullable(d, "caseNumber") : old.get("source_case_number"),
                 verification,
+                f[0],
+                f[1],
+                f[2],
+                f[3],
+                f[4],
+                f[5],
                 id,
                 version(d)
             )

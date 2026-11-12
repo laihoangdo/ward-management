@@ -48,6 +48,30 @@ class RosterPostgresTest {
     }
 
     @Test
+    void everyCampaignFilterRunsAgainstRealSchemaAndAddressPathSearchWorks() throws Exception {
+        stageAndApply();
+        for (String campaign : List.of(
+            "MILITARY",
+            "ID_UNDER_6",
+            "ID_6_TO_14",
+            "ID_AGE_14",
+            "ID_AGE_25",
+            "ID_AGE_40",
+            "ID_AGE_60",
+            "ELDERLY_80",
+            "TEMP_EXPIRING"
+        )) {
+            var result = tx.execute(s -> service.residents("", "", "", 0, campaign));
+            assertNotNull(result.get("total"), campaign);
+        }
+        var ageBand = tx.execute(s -> service.residents("", "", "", 0, "MILITARY"));
+        assertTrue(ageBand.containsKey("unevaluable"));
+        assertFalse(tx.execute(s -> service.residents("", "", "", 0, "")).containsKey("unevaluable"));
+        assertThrows(Exception.class, () -> tx.execute(s -> service.residents("", "", "", 0, "NOT_A_CAMPAIGN")));
+        assertNotNull(tx.execute(s -> service.households("120/45", 0, "", "")).get("total"));
+    }
+
+    @Test
     void missingKeyCannotSilentlyReplaceExistingSourceEncryption() throws Exception {
         stageAndApply();
         assertThrows(IllegalStateException.class, () -> new RosterCrypto(temp.resolve("missing-key").toString(), db));
@@ -104,6 +128,54 @@ class RosterPostgresTest {
             tx
                 .execute(s -> service.reportCsv(java.time.LocalDate.now().toString(), java.time.LocalDate.now().toString()))
                 .contains("BASELINE_IMPORT")
+        );
+    }
+
+    @Test
+    void facilityDetailsAreValidatedStoredAuditedAndClearedForAPlainHousehold() throws Exception {
+        stageAndApply();
+        var h = new HashMap<String, Object>();
+        h.put("requestId", UUID.randomUUID().toString());
+        h.put("rawAddress", "12 Trưng Vương 3");
+        h.put("reason", "Khảo sát");
+        h.put("facilityType", "BUSINESS");
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> tx.execute(s -> service.createHousehold(h)));
+        h.put("businessName", "Quán cà phê A");
+        h.put("businessCategory", "Ăn uống");
+        h.put("licenseType", "SECURITY_CONDITION");
+        h.put("licenseNumber", "15/GCN");
+        h.put("licenseExpiry", "2027-06-30");
+        var created = tx.execute(s -> service.createHousehold(h));
+        assertEquals("BUSINESS", created.get("type"));
+        assertEquals("Quán cà phê A", created.get("business_name"));
+        assertEquals("15/GCN", created.get("license_number"));
+        assertEquals("2027-06-30", created.get("license_expiry"));
+
+        UUID id = (UUID) created.get("id");
+        var edit = new HashMap<String, Object>();
+        edit.put("rawAddress", "12 Trưng Vương 3");
+        edit.put("reason", "Đóng cửa kinh doanh");
+        edit.put("version", created.get("version"));
+        edit.put("facilityType", "RESIDENTIAL");
+        var updated = tx.execute(s -> service.updateHousehold(id, edit));
+        assertEquals("RESIDENTIAL", updated.get("type"));
+        assertNull(updated.get("business_name"));
+        assertNull(updated.get("license_number"));
+        assertTrue(
+            db
+                .queryForObject(
+                    "select before_data::text from tc2_roster.change_event where entity_id=? and operation='UPDATE' order by id desc limit 1",
+                    String.class,
+                    id
+                )
+                .contains("Quán cà phê A")
+        );
+
+        var invalid = new HashMap<String, Object>(edit);
+        invalid.put("version", updated.get("version"));
+        invalid.put("facilityType", "FACTORY");
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->
+            tx.execute(s -> service.updateHousehold(id, invalid))
         );
     }
 
@@ -199,6 +271,12 @@ class RosterPostgresTest {
         String unify =
             Files.readString(unifySql()) + Files.readString(Path.of("src/main/resources/config/liquibase/sql/tc2_legacy_projections.sql"));
         new TransactionTemplate(new DataSourceTransactionManager(ds)).executeWithoutResult(s -> db.execute(unify));
+        // The JHipster changelog creates these legacy columns in the real schema; the facility migration exposes them.
+        db.execute(
+            "alter table public.household add column if not exists business_name varchar(255), add column if not exists business_category varchar(255), add column if not exists license_type varchar(255), add column if not exists license_expiry varchar(255)"
+        );
+        String facility = Files.readString(Path.of("src/main/resources/config/liquibase/changelog/20261112000000_household_facility.xml"));
+        db.execute(facility.substring(facility.indexOf("<sql>") + 5, facility.indexOf("</sql>")));
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         crypto = new RosterCrypto(temp.resolve("key").toString());
         rbac = mock(RbacService.class);
@@ -222,6 +300,54 @@ class RosterPostgresTest {
         assertEquals("v", db.queryForObject("select relkind::text from pg_class where oid='tc2_roster.resident'::regclass", String.class));
         assertEquals(0L, db.queryForObject("select count(*) from public.resident where full_name='Mock'", Long.class));
         assertThrows(Exception.class, () -> tx.execute(s -> db.update("update public.resident set full_name='bypass'")));
+    }
+
+    @Test
+    void splittingAHouseholdMovesMembersKeepsHistoryAndIsIdempotent() throws Exception {
+        stageAndApply();
+        UUID source = db.queryForObject("select household_id from tc2_roster.household_membership", UUID.class);
+        UUID membership = db.queryForObject("select id from tc2_roster.household_membership", UUID.class);
+        var split = new HashMap<String, Object>(
+            Map.of(
+                "requestId",
+                UUID.randomUUID().toString(),
+                "rawAddress",
+                "Hộ tách mới",
+                "reason",
+                "Con lập gia đình",
+                "effectiveDate",
+                java.time.LocalDate.now().toString(),
+                "headMembershipId",
+                membership.toString(),
+                "members",
+                List.of(Map.of("membershipId", membership.toString(), "version", 0))
+            )
+        );
+        var created = tx.execute(s -> service.splitHousehold(source, split));
+        var retry = tx.execute(s -> service.splitHousehold(source, new HashMap<>(split)));
+        assertEquals(created.get("id"), retry.get("id"));
+        assertEquals(2L, db.queryForObject("select count(*) from tc2_roster.household", Long.class));
+        assertEquals(2L, db.queryForObject("select count(*) from tc2_roster.household_membership", Long.class));
+        assertEquals(
+            1L,
+            db.queryForObject(
+                "select count(*) from tc2_roster.household_membership where household_id=? and valid_to is null and is_head",
+                Long.class,
+                created.get("id")
+            )
+        );
+        assertEquals(
+            0L,
+            db.queryForObject(
+                "select count(*) from tc2_roster.household_membership where household_id=? and valid_to is null",
+                Long.class,
+                source
+            )
+        );
+        var empty = new HashMap<String, Object>(split);
+        empty.put("requestId", UUID.randomUUID().toString());
+        empty.put("members", List.of());
+        assertThrows(Exception.class, () -> tx.execute(s -> service.splitHousehold(source, empty)));
     }
 
     @Test

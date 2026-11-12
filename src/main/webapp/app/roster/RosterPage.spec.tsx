@@ -22,7 +22,8 @@ describe('Real roster workflows', () => {
   beforeEach(() => {
     vi.mocked(axios.get).mockImplementation(async url => {
       await Promise.resolve();
-      if (String(url).endsWith('/overview')) return { data: { households: 1, residents: 1, records: 1, review_rows: 62 } };
+      if (String(url).endsWith('/overview'))
+        return { data: { hamlet_name: 'Trung Chánh 2', households: 1, residents: 1, records: 1, review_rows: 62 } };
       if (String(url).includes('/households/h1'))
         return {
           data: { id: 'h1', code: 'TC2-TEST', raw_address: 'Địa chỉ thử nghiệm', members: [], sources: [], version: 0, origin: 'MANUAL' },
@@ -222,6 +223,35 @@ describe('Real roster workflows', () => {
     expect(vi.mocked(axios.post).mock.calls[0][1]).toMatchObject({ rawAddress: 'Địa chỉ thử nghiệm', requestId: expect.any(String) });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
+  it('asks establishment details only for an establishment, requires its name and sends the facility fields', async () => {
+    vi.mocked(axios.post).mockResolvedValue({ data: { id: 'h1' } });
+    open();
+    await screen.findByText(/62 dòng chờ đối soát/);
+    fireEvent.click(screen.getByRole('button', { name: '+ Thêm hộ' }));
+    expect(screen.queryByLabelText('Tên cơ sở (biển hiệu) *')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Loại hình cơ sở'), { target: { value: 'BUSINESS' } });
+    fireEvent.change(screen.getByLabelText('Địa chỉ nguyên bản *'), { target: { value: '12 Trưng Vương 3' } });
+    fireEvent.change(screen.getByLabelText('Lý do / nguồn kiểm chứng *'), { target: { value: 'Khảo sát thực địa' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Xem lại →' }));
+    expect((await screen.findByText(/thông tin bắt buộc chưa nhập/)).closest('[role="alert"]')?.textContent).toContain('Tên cơ sở');
+    fireEvent.change(screen.getByLabelText('Tên cơ sở (biển hiệu) *'), { target: { value: 'Quán cà phê A' } });
+    fireEvent.change(screen.getByLabelText('Ngành nghề kinh doanh / hoạt động'), { target: { value: 'Ăn uống' } });
+    expect(screen.queryByLabelText('Số giấy phép')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Loại giấy phép'), { target: { value: 'SECURITY_CONDITION' } });
+    fireEvent.change(screen.getByLabelText('Số giấy phép'), { target: { value: '15/GCN' } });
+    fireEvent.change(screen.getByLabelText('Ngày hết hạn giấy phép'), { target: { value: '2027-06-30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Xem lại →' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Lưu hồ sơ' }));
+    await waitFor(() => expect(axios.post).toHaveBeenCalledOnce());
+    expect(vi.mocked(axios.post).mock.calls[0][1]).toMatchObject({
+      facilityType: 'BUSINESS',
+      businessName: 'Quán cà phê A',
+      businessCategory: 'Ăn uống',
+      licenseType: 'SECURITY_CONDITION',
+      licenseNumber: '15/GCN',
+      licenseExpiry: '2027-06-30',
+    });
+  });
   it('summarises empty required fields in Vietnamese and marks each one until it is filled', async () => {
     open();
     await screen.findByText(/62 dòng chờ đối soát/);
@@ -278,7 +308,7 @@ describe('Real roster workflows', () => {
       resolveLateResidents = resolve;
     });
     vi.mocked(axios.get).mockImplementation(async (url, config) => {
-      if (String(url).endsWith('/overview')) return { data: {} };
+      if (String(url).endsWith('/overview')) return { data: { hamlet_name: 'Trung Chánh 2' } };
       if (String(url).endsWith('/households')) return householdResponse as any;
       if (String(url).endsWith('/residents')) {
         if (config?.params?.search) return lateResidentResponse as any;
@@ -333,5 +363,31 @@ describe('Real roster workflows', () => {
     open();
     await screen.findByRole('button', { name: 'Chưa có mã hộ' });
     expect(screen.getByText('Địa chỉ thử nghiệm')).toBeDefined();
+  });
+  it('sends the chosen campaign to the server and reports people that cannot be age-checked', async () => {
+    vi.mocked(axios.get).mockImplementation(async (url, config) => {
+      if (String(url).endsWith('/overview')) return { data: { hamlet_name: 'Trung Chánh 2' } };
+      if (String(url).endsWith('/residents')) {
+        return config?.params?.campaign === 'MILITARY'
+          ? { data: { items: [], total: 0, page: 0, unevaluable: 7 } }
+          : { data: { items: [{ id: 'r1', full_name: 'Cá nhân thử nghiệm', origin: 'EXCEL' }], total: 1 } };
+      }
+      return { data: [] };
+    });
+    render(
+      <MemoryRouter>
+        <RosterPage initialTab="residents" />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('button', { name: 'Cá nhân thử nghiệm' });
+    expect(screen.queryByRole('note')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Chiến dịch'), { target: { value: 'MILITARY' } });
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith(
+        '/api/roster/residents',
+        expect.objectContaining({ params: expect.objectContaining({ campaign: 'MILITARY' }) }),
+      ),
+    );
+    expect((await screen.findByRole('note')).textContent).toContain('7 cá nhân chưa có ngày sinh đầy đủ');
   });
 });

@@ -864,3 +864,11 @@
   gap: 4px;
   min-width: 0;
 }
+
+.roster-hamlet-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  font-weight: 600;
+}

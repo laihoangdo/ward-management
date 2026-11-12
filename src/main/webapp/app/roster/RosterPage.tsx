@@ -10,10 +10,37 @@ import './roster.css';
 import { displayDate } from './dateDisplay';
 import { House, Users } from 'lucide-react';
 import { localRasterRequest } from '../gis/utils/localRasterRequest';
+import RosterPatrol from './RosterPatrol';
+import HouseholdSplitDialog from './HouseholdSplitDialog';
 
 type Row = Record<string, any>;
-type Field = { key: string; label: string; type?: string; options?: string[][]; required?: boolean };
+type Field = {
+  key: string;
+  label: string;
+  type?: string;
+  options?: string[][];
+  required?: boolean;
+  /** Shown (and validated) only while this returns true for the current form values. */
+  showWhen?: (data: Row) => boolean;
+};
 const api = '/api/roster';
+const HAMLET_STORAGE_KEY = 'roster_hamlet_v1';
+// Hamlet chosen in the selector; empty means the server picks the user's default hamlet.
+let activeHamlet = '';
+try {
+  const saved = window.sessionStorage.getItem(HAMLET_STORAGE_KEY);
+  if (saved && /^d+$/.test(saved)) activeHamlet = saved;
+} catch {
+  /* session storage may be unavailable; the server default applies */
+}
+const hamletParam = () => (activeHamlet ? `&hamletId=${encodeURIComponent(activeHamlet)}` : '');
+// Every roster request carries the selected hamlet; the backend re-checks the user's territory scope.
+axios.interceptors?.request.use(config => {
+  if (activeHamlet && typeof config.url === 'string' && config.url.startsWith(api)) {
+    config.params = { ...config.params, hamletId: activeHamlet };
+  }
+  return config;
+});
 const text = (v: unknown): string =>
   v == null ? '' : typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? `${v}` : JSON.stringify(v);
 const kinds = [
@@ -21,6 +48,17 @@ const kinds = [
   ['TEMPORARY', 'Tạm trú'],
   ['NOHT', 'Khai báo nơi ở hiện tại'],
   ['ARTICLE19', 'Nguồn Đ19'],
+];
+const campaigns = [
+  ['MILITARY', 'Nghĩa vụ quân sự (nam 18–27, thường trú)'],
+  ['ID_UNDER_6', 'Căn cước: dưới 6 tuổi'],
+  ['ID_6_TO_14', 'Căn cước: từ 6 đến dưới 14 tuổi'],
+  ['ID_AGE_14', 'Căn cước: đủ 14 tuổi trong năm'],
+  ['ID_AGE_25', 'Căn cước: đủ 25 tuổi trong năm'],
+  ['ID_AGE_40', 'Căn cước: đủ 40 tuổi trong năm'],
+  ['ID_AGE_60', 'Căn cước: đủ 60 tuổi trong năm'],
+  ['ELDERLY_80', 'Người cao tuổi từ 80 tuổi'],
+  ['TEMP_EXPIRING', 'Tạm trú hết hạn trong 15 ngày'],
 ];
 const personFields: Field[] = [
   { key: 'fullName', label: 'Họ và tên', required: true },
@@ -48,11 +86,40 @@ const personFields: Field[] = [
   { key: 'fatherName', label: 'Họ tên cha' },
   { key: 'motherName', label: 'Họ tên mẹ' },
 ];
+// Same codes as the server's FacilityType; establishments carry a name, trade and licence.
+const facilityTypes: string[][] = [
+  ['RESIDENTIAL', 'Hộ gia đình'],
+  ['BUSINESS', 'Cơ sở kinh doanh'],
+  ['BOARDING_HOUSE', 'Nhà trọ / cơ sở lưu trú'],
+  ['RELIGIOUS', 'Cơ sở tôn giáo, tín ngưỡng'],
+  ['SPECIAL', 'Hộ cần giám sát đặc biệt'],
+];
+const licenseTypes: string[][] = [
+  ['', 'Chưa có / chưa rõ'],
+  ['BUSINESS_REGISTRATION', 'Giấy chứng nhận đăng ký kinh doanh'],
+  ['SECURITY_CONDITION', 'Giấy chứng nhận đủ điều kiện về ANTT'],
+  ['FIRE_SAFETY', 'Giấy chứng nhận / thẩm duyệt PCCC'],
+  ['OTHER', 'Giấy phép khác'],
+];
+const isEstablishment = (d: Row) => ['BUSINESS', 'BOARDING_HOUSE', 'RELIGIOUS'].includes(text(d.facilityType));
 const householdFields: Field[] = [
   { key: 'rawAddress', label: 'Địa chỉ nguyên bản', required: true },
   { key: 'representative', label: 'Tên chủ hộ / người đại diện theo nguồn' },
   { key: 'phone', label: 'Số điện thoại' },
+  { key: 'facilityType', label: 'Loại hình cơ sở', options: facilityTypes },
+  { key: 'businessName', label: 'Tên cơ sở (biển hiệu)', required: true, showWhen: isEstablishment },
+  { key: 'businessCategory', label: 'Ngành nghề kinh doanh / hoạt động', showWhen: isEstablishment },
+  { key: 'licenseType', label: 'Loại giấy phép', options: licenseTypes, showWhen: isEstablishment },
+  { key: 'licenseNumber', label: 'Số giấy phép', showWhen: d => isEstablishment(d) && Boolean(text(d.licenseType)) },
+  {
+    key: 'licenseExpiry',
+    label: 'Ngày hết hạn giấy phép',
+    type: 'date',
+    showWhen: d => isEstablishment(d) && Boolean(text(d.licenseType)),
+  },
 ];
+const facilityLabel = (code: unknown) => facilityTypes.find(([value]) => value === code)?.[1] ?? 'Hộ gia đình';
+const licenseLabel = (code: unknown) => licenseTypes.find(([value]) => value === code)?.[1] ?? text(code);
 const recordFields: Field[] = [
   { key: 'kind', label: 'Loại hồ sơ', options: [['', 'Chọn loại hồ sơ'], ...kinds], required: true },
   { key: 'registrationDate', label: 'Ngày đăng ký', type: 'date' },
@@ -144,7 +211,9 @@ function Editor({
   // Required fields left empty on "continue"; shown as a summary plus a message under each field.
   const [missing, setMissing] = useState<string[]>([]);
   const summaryRef = useRef<HTMLDivElement>(null);
-  const isMissing = (f: Field) => f.required && f.type !== 'checkbox' && !text(data[f.key]).trim();
+  const visible = (f: Field) => !f.showWhen || f.showWhen(data);
+  const shown = fields.filter(visible);
+  const isMissing = (f: Field) => visible(f) && f.required && f.type !== 'checkbox' && !text(data[f.key]).trim();
   const change = (key: string, value: unknown) => {
     setData({ ...data, [key]: value });
     if (missing.includes(key)) setMissing(missing.filter(k => k !== key));
@@ -165,7 +234,7 @@ function Editor({
     <div className="roster-overlay">
       <section role="dialog" aria-modal="true" aria-label={title} className="roster-dialog">
         <h2>{title}</h2>
-        <p>Địa bàn quản lý: Trung Chánh 2. Bỏ trống thông tin chưa biết; vị trí hộ được tạo tạm trong ranh TC2.</p>
+        <p>Địa bàn quản lý: ấp đang chọn. Bỏ trống thông tin chưa biết; vị trí hộ được tạo tạm trong ranh TC2.</p>
         {error && (
           <div role="alert" className="roster-error">
             {error}
@@ -198,7 +267,7 @@ function Editor({
           )}
           {!review ? (
             <div className="roster-fields">
-              {fields.map(f => (
+              {shown.map(f => (
                 <div key={f.key} className="roster-field">
                   <label>
                     {f.label}
@@ -253,7 +322,7 @@ function Editor({
                   </tr>
                 </thead>
                 <tbody>
-                  {fields.map(f => (
+                  {shown.map(f => (
                     <tr key={f.key}>
                       <td>{f.label}</td>
                       <td>{(f.type === 'date' ? displayDate(initial[f.key]) : text(initial[f.key])) || 'Chưa có'}</td>
@@ -385,7 +454,7 @@ function RosterMap({ onSelect }: { onSelect: (id: string) => void }) {
   );
 }
 
-export default function RosterPage({
+function RosterWorkspace({
   initialTab = 'households',
   embedded = false,
   searchQuery,
@@ -401,7 +470,7 @@ export default function RosterPage({
   householdTarget?: { legacyId: string; edit: boolean } | null;
 }) {
   const { params: urlParams, updateQuery } = useRouteQuery();
-  const rosterTabs = ['households', 'residents', 'import', 'history', 'map'];
+  const rosterTabs = ['households', 'residents', 'import', 'history', 'map', 'patrol'];
   const tabParam = embedded ? (urlParams.get('rosterTab') ?? urlParams.get('tab')) : urlParams.get('tab');
   const routeTab = rosterTabs.includes(tabParam ?? '') ? tabParam! : initialTab;
   const tab = routeTab;
@@ -414,6 +483,8 @@ export default function RosterPage({
   const [kind, setKind] = useState('');
   const [category, setCategory] = useState('');
   const [origin, setOrigin] = useState('');
+  const [campaign, setCampaign] = useState('');
+  const [unevaluable, setUnevaluable] = useState<number | null>(null);
   const [detailEvents, setDetailEvents] = useState<Row[]>([]);
   const [detailHistoryPage, setDetailHistoryPage] = useState(0);
   const [historyTarget, setHistoryTarget] = useState<{ type: string; id: string } | null>(null);
@@ -421,6 +492,7 @@ export default function RosterPage({
   const [houseSearch, setHouseSearch] = useState('');
   const [linkPerson, setLinkPerson] = useState<Row | null>(null);
   const [transferMembership, setTransferMembership] = useState<Row | null>(null);
+  const [splitting, setSplitting] = useState(false);
   const [overview, setOverview] = useState<Row>({});
   const [list, setList] = useState<{ tab: string; items: Row[]; total: number }>({ tab: '', items: [], total: 0 });
   const items = list.tab === tab ? list.items : [];
@@ -649,10 +721,14 @@ export default function RosterPage({
     const controller = new AbortController();
     if (tab === 'households' || tab === 'residents')
       axios
-        .get(`${api}/${tab}`, { params: { page, search, kind, origin, category }, signal: controller.signal })
+        .get(`${api}/${tab}`, {
+          params: { page, search, kind, origin, category, ...(tab === 'residents' && campaign ? { campaign } : {}) },
+          signal: controller.signal,
+        })
         .then(({ data }) => {
           if (controller.signal.aborted) return;
           setList({ tab, items: data.items, total: data.total });
+          setUnevaluable(typeof data.unevaluable === 'number' ? data.unevaluable : null);
         })
         .catch(e => {
           if (!controller.signal.aborted && !axios.isCancel(e)) setError(errorMessage(e));
@@ -665,7 +741,7 @@ export default function RosterPage({
           if (!axios.isCancel(e)) setError(errorMessage(e));
         });
     return () => controller.abort();
-  }, [tab, page, search, message, kind, origin, category, refreshKey]);
+  }, [tab, page, search, message, kind, origin, category, campaign, refreshKey]);
   useEffect(() => {
     if (!collection) return;
     const controller = new AbortController();
@@ -732,6 +808,12 @@ export default function RosterPage({
         caseNumber: household.source_case_number,
         representative: household.representative_name,
         phone: household.phone,
+        facilityType: household.type ?? 'RESIDENTIAL',
+        businessName: household.business_name,
+        businessCategory: household.business_category,
+        licenseType: household.license_type ?? '',
+        licenseNumber: household.license_number,
+        licenseExpiry: household.license_expiry,
         version: household.version,
       },
       async save(r) {
@@ -821,6 +903,7 @@ export default function RosterPage({
             Sửa hộ
           </button>
           <button onClick={() => run(() => showHistory('household', household.id, 0))}>Lịch sử hộ</button>
+          <button onClick={() => setSplitting(true)}>Tách hộ</button>
         </div>
       </div>
 
@@ -829,6 +912,23 @@ export default function RosterPage({
           <span className="roster-meta-label">Chủ hộ / đại diện nguồn</span>
           <strong>{household.representative_name || 'Chưa rõ'}</strong>
           {household.phone && <span className="roster-subline">ĐT: {household.phone}</span>}
+        </div>
+        <div className="roster-meta-item">
+          <span className="roster-meta-label">Loại hình cơ sở</span>
+          <strong>{facilityLabel(household.type)}</strong>
+          {household.business_name && (
+            <span className="roster-subline">
+              {household.business_name}
+              {household.business_category ? ` · ${household.business_category}` : ''}
+            </span>
+          )}
+          {household.license_type && (
+            <span className="roster-subline">
+              {licenseLabel(household.license_type)}
+              {household.license_number ? ` số ${household.license_number}` : ''}
+              {household.license_expiry ? ` · hết hạn ${displayDate(household.license_expiry)}` : ''}
+            </span>
+          )}
         </div>
         <div className="roster-meta-item">
           <span className="roster-meta-label">Trạng thái & nguồn</span>
@@ -1289,6 +1389,16 @@ export default function RosterPage({
   );
   const detailActions = (
     <>
+      {splitting && household && (
+        <HouseholdSplitDialog
+          household={household as any}
+          onClose={() => setSplitting(false)}
+          onSplit={id => {
+            setSplitting(false);
+            void done('Đã tách hộ; vị trí hộ mới là vị trí tạm').then(() => loadHouse(id));
+          }}
+        />
+      )}
       {transferMembership && (
         <section className="roster-detail" aria-label="Chọn hộ chuyển đến">
           <h2>Chuyển hộ từ {transferMembership.code}</h2>
@@ -1435,9 +1545,19 @@ export default function RosterPage({
         <div className="roster-heading-main">
           {!embedded && <Link to="/dashboard">← Về dashboard</Link>}
           <Title className="roster-title">
-            {tab === 'households' ? 'Danh sách hộ dân' : tab === 'residents' ? 'Quản lý nhân khẩu' : 'Hồ sơ dân cư'} · Trung Chánh 2
+            {tab === 'households'
+              ? 'Danh sách hộ dân'
+              : tab === 'residents'
+                ? 'Quản lý nhân khẩu'
+                : tab === 'patrol'
+                  ? 'Tuần tra thực địa'
+                  : 'Hồ sơ dân cư'}
+            {overview.hamlet_name ? ` · ${text(overview.hamlet_name)}` : ''}
           </Title>
-          <p>Dữ liệu gốc từ ấp Trung Chánh 2 · Có nguồn và lịch sử thay đổi</p>
+          <p>
+            {overview.hamlet_name ? `Dữ liệu gốc từ ấp ${text(overview.hamlet_name)}` : 'Dữ liệu gốc theo ấp'} · Có nguồn và lịch sử thay
+            đổi
+          </p>
         </div>
       </div>
       <nav className="roster-tabs" aria-label="Chức năng hồ sơ dân cư">
@@ -1446,6 +1566,7 @@ export default function RosterPage({
           ['residents', 'Quản lý nhân khẩu'],
           ['import', 'Nhập Excel / đối soát'],
           ['map', 'Vị trí tạm'],
+          ['patrol', 'Tuần tra'],
           ['history', 'Lịch sử & báo cáo'],
         ].map(([v, l]) => (
           <button
@@ -1478,6 +1599,7 @@ export default function RosterPage({
         {overview.households ?? '…'} hộ/nhóm địa chỉ · {overview.residents ?? '…'} cá nhân · {overview.records ?? '…'} hồ sơ cư trú ·{' '}
         {overview.review_rows ?? '…'} dòng chờ đối soát. Số này chưa phải dân số thực tế đã xác minh.
       </p>
+      {tab === 'patrol' && <RosterPatrol />}
       {(tab === 'households' || tab === 'residents') && (
         <div className={`roster-workspace ${detailOpen ? 'has-selection' : ''}`}>
           <section
@@ -1534,8 +1656,25 @@ export default function RosterPage({
                       <option value="MANUAL">Nhập trực tiếp</option>
                     </select>
                   </label>
+                  <label className="roster-filter-select">
+                    Chiến dịch
+                    <select
+                      value={campaign}
+                      onChange={e => {
+                        setCampaign(e.target.value);
+                        setPage(0);
+                      }}
+                    >
+                      <option value="">Không lọc</option>
+                      {campaigns.map(([v, l]) => (
+                        <option key={v} value={v}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <div className="roster-filter-cta">
-                    {(search || kind || origin) && (
+                    {(search || kind || origin || campaign) && (
                       <button
                         type="button"
                         className="roster-btn-sm"
@@ -1543,6 +1682,7 @@ export default function RosterPage({
                           setSearch('');
                           setKind('');
                           setOrigin('');
+                          setCampaign('');
                           setPage(0);
                         }}
                       >
@@ -1619,6 +1759,11 @@ export default function RosterPage({
                   </table>
                 </div>
                 {items.length === 0 && <p>Không có kết quả trong phạm vi được giao.</p>}
+                {campaign && unevaluable != null && unevaluable > 0 && (
+                  <p className="roster-summary" role="note">
+                    {unevaluable} cá nhân chưa có ngày sinh đầy đủ nên chưa thể xét theo độ tuổi; số này không nằm trong kết quả lọc.
+                  </p>
+                )}
                 <div className="roster-actions roster-pagination-bar">
                   <button disabled={page === 0} onClick={() => setPage(page - 1)}>
                     Trang trước
@@ -2014,8 +2159,12 @@ export default function RosterPage({
             >
               Xem báo cáo
             </button>
-            <a href={`${api}/report.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}>Xuất CSV mở bằng Excel</a>
-            <a href={`${api}/report-detail.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}>Xuất chi tiết trước / sau</a>
+            <a href={`${api}/report.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}${hamletParam()}`}>
+              Xuất CSV mở bằng Excel
+            </a>
+            <a href={`${api}/report-detail.csv?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}${hamletParam()}`}>
+              Xuất chi tiết trước / sau
+            </a>
           </div>
           <p>
             Báo cáo theo thời điểm ghi nhận; sửa dữ liệu/nhập nguồn được tách khỏi chuyển đến/chuyển đi. Ngày hiệu lực chưa biết không được
@@ -2124,5 +2273,60 @@ export default function RosterPage({
         />
       )}
     </Root>
+  );
+}
+
+type HamletOption = { id: number; name: string; is_default?: boolean };
+
+export default function RosterPage(props: React.ComponentProps<typeof RosterWorkspace>) {
+  const [hamlets, setHamlets] = useState<HamletOption[]>([]);
+  const [hamlet, setHamlet] = useState(activeHamlet);
+  const [epoch, setEpoch] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve(axios.get(`${api}/hamlets`))
+      .then(response => {
+        const list = response?.data;
+        if (cancelled || !Array.isArray(list)) return;
+        setHamlets(list as HamletOption[]);
+        if (activeHamlet && !list.some(h => String(h.id) === activeHamlet)) {
+          // A remembered hamlet the user can no longer open: fall back to the server default and reload.
+          activeHamlet = '';
+          setHamlet('');
+          setEpoch(n => n + 1);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const selected = hamlets.some(h => String(h.id) === hamlet) ? hamlet : '';
+  const effective = selected || String(hamlets.find(h => h.is_default)?.id ?? '');
+  const choose = (value: string) => {
+    activeHamlet = value;
+    try {
+      window.sessionStorage.setItem(HAMLET_STORAGE_KEY, value);
+    } catch {
+      /* the selection still applies for this page view */
+    }
+    setHamlet(value);
+  };
+  return (
+    <>
+      {hamlets.length > 1 && (
+        <label className="roster-hamlet-picker">
+          Ấp{' '}
+          <select value={effective} onChange={event => choose(event.target.value)} aria-label="Chọn ấp">
+            {hamlets.map(h => (
+              <option key={h.id} value={String(h.id)}>
+                {h.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <RosterWorkspace key={`${selected || 'default'}:${epoch}`} {...props} />
+    </>
   );
 }
