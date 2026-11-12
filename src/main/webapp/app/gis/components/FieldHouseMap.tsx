@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -26,6 +26,8 @@ import './FieldHouseMap.css';
 import { frameMapCapture, MapCaptureOfficer } from '../utils/mapCapture';
 import { MapCapturePreview } from './MapCapturePreview';
 import FieldHousePropertiesEditor from './FieldHousePropertiesEditor';
+import { matchesHouseholdSearch } from '../utils/householdSearch';
+import { drawLabelImage, LABEL_IMAGE_PREFIX, LABEL_PIXEL_RATIO, labelText } from '../utils/mapLabelImage';
 
 interface Props {
   captureOfficer?: MapCaptureOfficer;
@@ -48,6 +50,36 @@ const STATUS: Record<HouseholdStatus, string> = {
   unverified: 'Chưa xác minh',
 };
 const COLORS = { normal: '#10b981', warning: '#f59e0b', alert: '#ef4444', business: '#38bdf8', unverified: '#94a3b8' };
+const STATUS_PRIORITY: HouseholdStatus[] = ['alert', 'warning', 'business', 'normal'];
+const highestStatus = (residents: HouseholdFacility[]): HouseholdStatus =>
+  STATUS_PRIORITY.find(status => residents.some(r => r.status === status)) ?? 'unverified';
+const QUICK_RESULT_LIMIT = 20;
+/** First matches only: the shared accent-insensitive lookup (owner, address, code, phone, residents, ID numbers). */
+function searchHouseholds(list: HouseholdFacility[], query: string, limit: number): HouseholdFacility[] {
+  const result: HouseholdFacility[] = [];
+  for (const item of list) {
+    if (!matchesHouseholdSearch(item, query)) continue;
+    result.push(item);
+    if (result.length >= limit) break;
+  }
+  return result;
+}
+/** Beyond this many changed buildings a full reload is cheaper than a diff. */
+const MAX_DIFF_FEATURES = 500;
+const MAX_LABEL_IMAGES = 2000;
+const boundsOfPoints = (points: number[][]) => {
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  for (const [x, y] of points) {
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  return { minX, minY, maxX, maxY };
+};
 const COMPACT_MAP_QUERY = '(max-width: 1024px), (max-height: 640px) and (pointer: coarse)';
 type FieldEffects = ReturnType<typeof import('../three/field-effects.js').attachFieldEffects>;
 function territoryPolygons(value: unknown): (GeoJSON.Polygon | GeoJSON.MultiPolygon)[] {
@@ -269,11 +301,14 @@ export default function FieldHouseMap({
     }
     return map;
   }, [indexed]);
-  const quickMatches = useMemo(() => {
-    const q = quickSearch.trim().toLocaleLowerCase();
-    if (!q) return [];
-    return householdsOnMap.filter(h => `${h.code} ${h.ownerName} ${h.houseNumber} ${h.street}`.toLocaleLowerCase().includes(q)).slice(0, 6);
-  }, [householdsOnMap, quickSearch]);
+  // Deferred so typing stays responsive while thousands of households are matched.
+  const deferredQuickSearch = useDeferredValue(quickSearch);
+  const quickMatches = useMemo(
+    () => (deferredQuickSearch.trim() ? searchHouseholds(householdsOnMap, deferredQuickSearch, QUICK_RESULT_LIMIT) : []),
+    [householdsOnMap, deferredQuickSearch],
+  );
+  const [quickActive, setQuickActive] = useState(0);
+  useEffect(() => setQuickActive(0), [quickMatches]);
   const selected = houseById.get(selectedId);
   const linked = indexed.get(selectedId) ?? [];
   const savedLinked = linked.filter(h => selected?.properties.householdIds?.includes(h.id));
@@ -281,20 +316,39 @@ export default function FieldHouseMap({
   const canManageSelected =
     access.global || (selected?.properties.canManage !== false && checkedAccess.id === selectedId && checkedAccess.allowed);
   const mayWriteTerritory = access.global || access.territories.length > 0;
+  const deferredSearch = useDeferredValue(search);
   const candidates = useMemo(
     () =>
-      households
-        .filter(
-          h =>
-            !linked.some(l => l.id === h.id) &&
-            !explicitlyLinked.has(h.id) &&
-            `${h.code} ${h.ownerName} ${h.houseNumber} ${h.street}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()),
-        )
-        .slice(0, 50),
-    [households, linked, search, explicitlyLinked],
+      searchHouseholds(
+        households.filter(h => !linked.some(l => l.id === h.id) && !explicitlyLinked.has(h.id)),
+        deferredSearch,
+        50,
+      ),
+    [households, linked, deferredSearch, explicitlyLinked],
   );
-  const liveRef = useRef({ mode, canLink, houseById, households, onSelect, busy });
-  liveRef.current = { mode, canLink, houseById, households, onSelect, busy };
+  const liveRef = useRef({ mode, canLink, houseById, households, onSelect, busy, indexed, selectedId });
+  liveRef.current = { mode, canLink, houseById, households, onSelect, busy, indexed, selectedId };
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const hoveredIdRef = useRef('');
+  const highlightId = (buildingId: string) => {
+    const target = liveRef.current.houseById.get(buildingId);
+    return target ? String(target.id ?? target.properties.buildingId) : '';
+  };
+  /** Selection and hover reach the Three.js layer as two texels, not as a 79k-entry state list. */
+  const pushHighlights = () => {
+    const selectedKey = highlightId(liveRef.current.selectedId);
+    const hoveredKey = highlightId(hoveredIdRef.current);
+    effectsRef.current?.setHighlights?.([
+      ...(hoveredKey && hoveredKey !== selectedKey ? [{ id: hoveredKey, level: 0.5 }] : []),
+      ...(selectedKey ? [{ id: selectedKey, level: 1 }] : []),
+    ]);
+  };
+  const pushHighlightsRef = useRef(pushHighlights);
+  pushHighlightsRef.current = pushHighlights;
+  const featureCacheRef = useRef(new Map<string, { house: FieldHouse; key: string }>());
+  const housesLoadedMapRef = useRef<maplibregl.Map | null>(null);
+  const pointsLoadedMapRef = useRef<maplibregl.Map | null>(null);
+  const labelImageCountRef = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -464,7 +518,8 @@ export default function FieldHouseMap({
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true, showZoom: false }));
     map.on('load', () => {
       if (mapRef.current !== map) return;
-      map.addSource('houses', { type: 'geojson', data: EMPTY, maxzoom: 20 });
+      // promoteId lets a saved building be patched in place instead of reloading all features.
+      map.addSource('houses', { type: 'geojson', data: EMPTY, maxzoom: 20, promoteId: 'buildingId' });
       map.addLayer({
         id: 'houses-3d-outside',
         type: 'fill-extrusion',
@@ -486,7 +541,7 @@ export default function FieldHouseMap({
           'fill-extrusion-opacity': 0.88,
         },
       });
-      map.addSource('house-points', { type: 'geojson', data: EMPTY });
+      map.addSource('house-points', { type: 'geojson', data: EMPTY, promoteId: 'buildingId' });
       map.addLayer({
         id: 'house-points',
         type: 'circle',
@@ -498,11 +553,54 @@ export default function FieldHouseMap({
           'circle-stroke-color': '#fff',
         },
       });
-      map.addSource('households', { type: 'geojson', data: EMPTY });
+      const statusCount = (value: HouseholdStatus): maplibregl.ExpressionSpecification => [
+        '+',
+        ['case', ['==', ['get', 'status'], value], 1, 0],
+      ];
+      // Far out, unlinked household points merge into one circle per neighbourhood; each cluster keeps a count per status.
+      map.addSource('households', {
+        type: 'geojson',
+        data: EMPTY,
+        cluster: true,
+        clusterMaxZoom: 15,
+        clusterRadius: 44,
+        clusterProperties: {
+          alert: statusCount('alert'),
+          warning: statusCount('warning'),
+          business: statusCount('business'),
+          normal: statusCount('normal'),
+          unverified: statusCount('unverified'),
+        },
+      });
+      map.addLayer({
+        id: 'household-clusters',
+        type: 'circle',
+        source: 'households',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-radius': ['step', ['get', 'point_count'], 9, 20, 13, 100, 17, 500, 22],
+          'circle-color': [
+            'case',
+            ['>', ['get', 'alert'], 0],
+            COLORS.alert,
+            ['>', ['get', 'warning'], 0],
+            COLORS.warning,
+            ['>', ['get', 'business'], 0],
+            COLORS.business,
+            ['>', ['get', 'normal'], 0],
+            COLORS.normal,
+            COLORS.unverified,
+          ],
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
+      });
       map.addLayer({
         id: 'households',
         type: 'circle',
         source: 'households',
+        filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-radius': 5,
           'circle-color': [
@@ -563,6 +661,21 @@ export default function FieldHouseMap({
         source: 'assigned-territories',
         paint: { 'line-color': '#10b981', 'line-width': 2 },
       });
+      // House numbers: images drawn on demand, so no glyph server is needed offline.
+      map.addSource('house-labels', { type: 'geojson', data: EMPTY });
+      map.addLayer({
+        id: 'house-labels',
+        type: 'symbol',
+        source: 'house-labels',
+        minzoom: 17,
+        layout: {
+          'icon-image': ['concat', LABEL_IMAGE_PREFIX, ['get', 'label']],
+          'icon-anchor': 'bottom',
+          'icon-offset': [0, -4],
+          'icon-padding': 4,
+          'symbol-sort-key': ['get', 'rank'],
+        },
+      });
       map.addSource('draft', { type: 'geojson', data: EMPTY });
       map.addLayer({
         id: 'draft-fill',
@@ -601,8 +714,14 @@ export default function FieldHouseMap({
         return;
       }
       if (!map.getLayer('houses-3d')) return;
-      const hits = map.queryRenderedFeatures(event.point, { layers: ['temporary-households', 'households', 'house-points', 'houses-3d'] });
+      const hits = map.queryRenderedFeatures(event.point, {
+        layers: ['temporary-households', 'households', 'household-clusters', 'house-points', 'houses-3d'],
+      });
       const h = hits.find(f => f.layer.id === 'temporary-households') ?? hits.find(f => f.layer.id === 'households');
+      if (!h && hits.some(f => f.layer.id === 'household-clusters')) {
+        map.easeTo({ center: event.lngLat, zoom: Math.min(map.getZoom() + 2, 18), duration: 500 });
+        return;
+      }
       if (h) {
         const record = live.households.find(item => item.id === h.properties.id);
         if (record) live.onSelect(record);
@@ -618,10 +737,67 @@ export default function FieldHouseMap({
         setError('');
       }
     });
+    // MapLibre 6 resolves missing images through this callback; the styleimagemissing event fires too late to supply them.
+    map.setMissingStyleImageResolver?.((id: string) => {
+      if (typeof id !== 'string' || !id.startsWith(LABEL_IMAGE_PREFIX) || labelImageCountRef.current >= MAX_LABEL_IMAGES) return;
+      const image = drawLabelImage(id.slice(LABEL_IMAGE_PREFIX.length));
+      if (!image || map.hasImage(id)) return;
+      map.addImage(id, image, { pixelRatio: LABEL_PIXEL_RATIO });
+      labelImageCountRef.current += 1;
+    });
+    // Hover: one query per animation frame, written straight to the DOM and the GPU (no React render).
+    let hoverFrame = 0;
+    let hoverEvent: maplibregl.MapMouseEvent | null = null;
+    const hideHover = () => {
+      if (tooltipRef.current) tooltipRef.current.hidden = true;
+      if (hoveredIdRef.current) {
+        hoveredIdRef.current = '';
+        pushHighlightsRef.current();
+      }
+    };
+    const runHover = () => {
+      hoverFrame = 0;
+      const event = hoverEvent;
+      const live = liveRef.current;
+      if (!event || mapRef.current !== map || live.mode !== 'select' || map.isMoving() || !map.getLayer('houses-3d')) {
+        hideHover();
+        return;
+      }
+      const hit = map.queryRenderedFeatures(event.point, { layers: ['house-points', 'houses-3d'] })[0];
+      const id = String(hit?.properties?.buildingId ?? '');
+      const target = id ? live.houseById.get(id) : undefined;
+      map.getCanvas().style.cursor = target ? 'pointer' : '';
+      const tip = tooltipRef.current;
+      if (!target || !tip) {
+        hideHover();
+        return;
+      }
+      const residents = live.indexed.get(id) ?? [];
+      const first = residents[0];
+      tip.textContent = [
+        target.properties.name || (first ? `${first.houseNumber} ${first.street}`.trim() : 'Công trình'),
+        residents.length ? `${residents.length} hộ · ${first.ownerName}${residents.length > 1 ? '…' : ''}` : 'Chưa có hộ dân',
+      ].join(' — ');
+      tip.style.transform = `translate(${Math.round(event.point.x + 14)}px, ${Math.round(event.point.y + 14)}px)`;
+      tip.hidden = false;
+      if (hoveredIdRef.current !== id) {
+        hoveredIdRef.current = id;
+        pushHighlightsRef.current();
+      }
+    };
+    map.on('mousemove', (event: maplibregl.MapMouseEvent) => {
+      hoverEvent = event;
+      if (!hoverFrame) hoverFrame = requestAnimationFrame(runHover);
+    });
+    map.on('mouseout', () => {
+      hoverEvent = null;
+      hideHover();
+    });
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(containerRef.current!);
     return () => {
       observer.disconnect();
+      if (hoverFrame) cancelAnimationFrame(hoverFrame);
       effectsRef.current?.dispose();
       effectsRef.current = null;
       initializedMapRef.current = null;
@@ -667,17 +843,8 @@ export default function FieldHouseMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || initializedMapRef.current !== map) return;
-    const features = houses.map(h => {
+    const decorate = (h: FieldHouse) => {
       const residents = indexed.get(h.properties.buildingId) ?? [];
-      const highest = residents.some(r => r.status === 'alert')
-        ? 'alert'
-        : residents.some(r => r.status === 'warning')
-          ? 'warning'
-          : residents.some(r => r.status === 'business')
-            ? 'business'
-            : residents.some(r => r.status === 'normal')
-              ? 'normal'
-              : 'unverified';
       return {
         ...h,
         properties: {
@@ -689,16 +856,79 @@ export default function FieldHouseMap({
           warning: residents.some(r => r.status === 'warning'),
           alert: residents.some(r => r.status === 'alert'),
           business: residents.some(r => r.status === 'business'),
-          displayColor: residents.length ? COLORS[highest] : (h.properties.color ?? '#b6c9d6'),
+          displayColor: residents.length ? COLORS[highestStatus(residents)] : (h.properties.color ?? '#b6c9d6'),
         },
       };
-    });
-    (map.getSource('houses') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features });
-    (map.getSource('house-points') as maplibregl.GeoJSONSource | undefined)?.setData({
-      type: 'FeatureCollection',
-      features: features.map(h => ({ ...h, geometry: { type: 'Point', coordinates: centerOf(h) } })),
-    });
-  }, [houses, indexed, ready, inThreeScopeIds]);
+    };
+    const asPoint = (h: ReturnType<typeof decorate>) => ({ ...h, geometry: { type: 'Point' as const, coordinates: centerOf(h) } });
+    // Find which buildings actually changed since the last run (a save touches one or two of 79k).
+    const previous = featureCacheRef.current;
+    const next = new Map<string, { house: FieldHouse; key: string }>();
+    const changed: FieldHouse[] = [];
+    for (const h of houses) {
+      const id = h.properties.buildingId;
+      const residents = indexed.get(id);
+      const key = `${inThreeScopeIds.has(id) ? 1 : 0}|${residents ? residents.map(r => r.status).join(',') : ''}`;
+      const cached = previous.get(id);
+      if (!cached || cached.house !== h || cached.key !== key) changed.push(h);
+      next.set(id, { house: h, key });
+    }
+    featureCacheRef.current = next;
+    const houseSource = map.getSource('houses') as maplibregl.GeoJSONSource | undefined;
+    const pointSource = map.getSource('house-points') as maplibregl.GeoJSONSource | undefined;
+    // The 79k-point copy is only needed by the Point view; it is built the first time that view is chosen.
+    const wantPoints = representation === 'point';
+    const pointsLoaded = pointsLoadedMapRef.current === map;
+    const canDiff =
+      housesLoadedMapRef.current === map &&
+      next.size === houses.length &&
+      previous.size <= next.size &&
+      changed.length <= MAX_DIFF_FEATURES &&
+      typeof houseSource?.updateData === 'function' &&
+      (!pointsLoaded || typeof pointSource?.updateData === 'function');
+    const loadAllPoints = () => {
+      pointSource?.setData({ type: 'FeatureCollection', features: houses.map(h => asPoint(decorate(h))) });
+      pointsLoadedMapRef.current = houses.length ? map : null;
+    };
+    if (canDiff) {
+      if (changed.length) {
+        // Adding a feature whose id already exists replaces it.
+        const features = changed.map(decorate);
+        houseSource.updateData({ add: features });
+        if (pointsLoaded) pointSource?.updateData({ add: features.map(asPoint) });
+      }
+      if (wantPoints && !pointsLoaded) loadAllPoints();
+      return;
+    }
+    houseSource?.setData({ type: 'FeatureCollection', features: houses.map(decorate) });
+    housesLoadedMapRef.current = houses.length ? map : null;
+    if (wantPoints || pointsLoaded) loadAllPoints();
+  }, [houses, indexed, ready, inThreeScopeIds, representation]);
+
+  // House-number labels for buildings with households, honouring the status filter.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || initializedMapRef.current !== map) return;
+    const features: GeoJSON.Feature[] = [];
+    if (layers.buildings && layers.occupied)
+      for (const [id, residents] of indexed) {
+        const target = houseById.get(id);
+        if (!target || !residents.length || (status !== 'all' && !residents.some(r => r.status === status))) continue;
+        const first = residents[0];
+        // Without a building name or house number, one owner's name would mislabel a shared building: show the count.
+        const place = target.properties.name || first.houseNumber;
+        const count = `${residents.length} hộ`;
+        const label = labelText(residents.length > 1 ? (place ? `${place} · ${count}` : count) : place || first.ownerName);
+        if (!label) continue;
+        features.push({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: centerOf(target) },
+          // Lower rank wins a collision: alerts first, then the busiest buildings.
+          properties: { label, rank: STATUS_PRIORITY.indexOf(highestStatus(residents)) * 1000 - residents.length },
+        });
+      }
+    (map.getSource('house-labels') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features });
+  }, [ready, indexed, houseById, status, layers.buildings, layers.occupied]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -725,6 +955,7 @@ export default function FieldHouseMap({
           });
           effectsRef.current = effects;
           effects.setDisplayState(displayStatesRef.current);
+          pushHighlightsRef.current();
           return effects.ready.then(() => {
             if (!cancelled) setThreeActive(true);
           });
@@ -751,35 +982,28 @@ export default function FieldHouseMap({
         const occupied = residents.length > 0;
         const visible =
           (occupied ? layers.occupied : layers.empty) && (status === 'all' || residents.some(resident => resident.status === status));
-        const highest = residents.some(r => r.status === 'alert')
-          ? 'alert'
-          : residents.some(r => r.status === 'warning')
-            ? 'warning'
-            : residents.some(r => r.status === 'business')
-              ? 'business'
-              : residents.some(r => r.status === 'normal')
-                ? 'normal'
-                : 'unverified';
         return {
           id: String(house.id ?? house.properties.buildingId ?? index),
           visible,
-          color:
-            house.properties.buildingId === selectedId
-              ? '#fbbf24'
-              : occupied
-                ? COLORS[highest]
-                : house.properties.appearanceSource === 'manual'
-                  ? undefined
-                  : house.properties.color,
+          // A status colour tints the roof only; selection is a separate highlight (see pushHighlights).
+          tint: occupied,
+          color: occupied
+            ? COLORS[highestStatus(residents)]
+            : house.properties.appearanceSource === 'manual'
+              ? undefined
+              : house.properties.color,
         };
       }),
-    [houses, indexed, layers.occupied, layers.empty, status, selectedId],
+    [houses, indexed, layers.occupied, layers.empty, status],
   );
   const displayStatesRef = useRef(displayStates);
   displayStatesRef.current = displayStates;
   useEffect(() => {
     effectsRef.current?.setDisplayState(displayStates);
   }, [displayStates]);
+  useEffect(() => {
+    pushHighlightsRef.current();
+  }, [selectedId, houseById]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -838,9 +1062,14 @@ export default function FieldHouseMap({
     show('houses-3d', layers.buildings && representation === '3d');
     show('house-points', layers.buildings && representation === 'point');
     show('households', layers.households);
+    show('household-clusters', layers.households);
+    map.setFilter(
+      'household-clusters',
+      status === 'all' ? ['has', 'point_count'] : ['all', ['has', 'point_count'], ['>', ['get', status], 0]],
+    );
     show('temporary-households', layers.temporaryHouseholds);
     map.setFilter('temporary-households', status === 'all' ? null : ['==', ['get', 'status'], status]);
-    map.setFilter('households', status === 'all' ? null : ['==', ['get', 'status'], status]);
+    map.setFilter('households', status === 'all' ? ['!', ['has', 'point_count']] : ['==', ['get', 'status'], status]);
   }, [ready, layers, representation, status, vectorStreetIds]);
 
   useEffect(() => {
@@ -973,12 +1202,11 @@ export default function FieldHouseMap({
       frameCommune(map);
       return;
     }
-    const lngs = points.map(point => point[0]);
-    const lats = points.map(point => point[1]);
+    const box = boundsOfPoints(points);
     map.fitBounds(
       [
-        [Math.min(...lngs), Math.min(...lats)],
-        [Math.max(...lngs), Math.max(...lats)],
+        [box.minX, box.minY],
+        [box.maxX, box.maxY],
       ],
       { padding: 48, pitch: 55, bearing: 0, duration: 900 },
     );
@@ -1047,10 +1275,12 @@ export default function FieldHouseMap({
   const frameBoundsList = (boundsList: { minX: number; minY: number; maxX: number; maxY: number }[]) => {
     const map = mapRef.current;
     if (!map || !boundsList.length) return;
-    const minX = Math.min(...boundsList.map(b => b.minX));
-    const minY = Math.min(...boundsList.map(b => b.minY));
-    const maxX = Math.max(...boundsList.map(b => b.maxX));
-    const maxY = Math.max(...boundsList.map(b => b.maxY));
+    const { minX, minY, maxX, maxY } = boundsOfPoints(
+      boundsList.flatMap(b => [
+        [b.minX, b.minY],
+        [b.maxX, b.maxY],
+      ]),
+    );
     map.fitBounds(
       [
         [minX, minY],
@@ -1105,85 +1335,148 @@ export default function FieldHouseMap({
             aria-label="Tìm nhanh hộ dân trên bản đồ 3D"
             placeholder="Tìm nhanh chủ hộ, mã hộ, địa chỉ…"
             value={quickSearch}
+            role="combobox"
+            aria-expanded={quickMatches.length > 0}
+            aria-controls="field-quick-results"
+            aria-activedescendant={quickMatches.length ? `field-quick-${quickMatches[quickActive]?.id}` : undefined}
+            autoComplete="off"
             onChange={e => setQuickSearch(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Escape') setQuickSearch('');
+              if (!quickMatches.length) return;
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const step = e.key === 'ArrowDown' ? 1 : -1;
+                const nextIndex = (quickActive + step + quickMatches.length) % quickMatches.length;
+                setQuickActive(nextIndex);
+                document.getElementById(`field-quick-${quickMatches[nextIndex].id}`)?.scrollIntoView?.({ block: 'nearest' });
+              }
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                jumpToHousehold(quickMatches[quickActive] ?? quickMatches[0]);
+              }
+            }}
           />
           {quickMatches.length > 0 && (
-            <div className="field-quick-results" role="listbox" aria-label="Gợi ý hộ dân trên bản đồ">
-              {quickMatches.map(h => {
+            <div id="field-quick-results" className="field-quick-results" role="listbox" aria-label="Gợi ý hộ dân trên bản đồ">
+              {quickMatches.map((h, index) => {
                 const bId = buildingByHouseholdId.get(h.id);
                 return (
-                  <button key={h.id} type="button" className="field-quick-item" onClick={() => jumpToHousehold(h)}>
-                    <strong>{h.ownerName}</strong>
+                  <button
+                    key={h.id}
+                    id={`field-quick-${h.id}`}
+                    type="button"
+                    role="option"
+                    aria-selected={index === quickActive}
+                    tabIndex={-1}
+                    className={index === quickActive ? 'field-quick-item field-quick-item-active' : 'field-quick-item'}
+                    onMouseEnter={() => setQuickActive(index)}
+                    onClick={() => jumpToHousehold(h)}
+                  >
+                    <strong>
+                      <i className="field-status-dot" style={{ background: COLORS[h.status] }} aria-hidden="true" />
+                      {h.ownerName}
+                    </strong>
                     <span>
                       {h.code} · {h.houseNumber} {h.street} · {bId ? 'Đã gắn khối nhà 3D' : 'Điểm tọa độ'}
                     </span>
                   </button>
                 );
               })}
+              {quickMatches.length === QUICK_RESULT_LIMIT && (
+                <small className="field-quick-more">Hiện {QUICK_RESULT_LIMIT} kết quả đầu — gõ thêm để thu hẹp.</small>
+              )}
+            </div>
+          )}
+          {deferredQuickSearch.trim() && quickMatches.length === 0 && (
+            <div className="field-quick-results" role="status">
+              <small className="field-quick-more">Không tìm thấy hộ dân phù hợp trong phạm vi bản đồ.</small>
             </div>
           )}
         </div>
         <div className="field-map-actions" role="toolbar" aria-label="Điều khiển bản đồ 3D">
-          <button type="button" disabled={!ready || loading || busy || mode !== 'select'} onClick={overview}>
-            Toàn cảnh từ trên cao
-          </button>
-          <button type="button" disabled={!ready} onClick={() => mapRef.current?.easeTo({ pitch: 0, bearing: 0 })}>
-            Nhìn từ trên
-          </button>
-          <button type="button" disabled={!ready} onClick={() => mapRef.current?.easeTo({ pitch: 55 })}>
-            Góc nghiêng 3D
-          </button>
-          <button type="button" disabled={!ready} onClick={() => mapRef.current?.easeTo({ bearing: 0, pitch: 55, duration: 600 })}>
-            Đặt lại góc nhìn
-          </button>
-          <span className="field-toolbar-divider" aria-hidden="true" />
-          <button type="button" disabled={!ready} aria-label="Phóng to" onClick={() => mapRef.current?.zoomIn()}>
-            Zoom +
-          </button>
-          <button type="button" disabled={!ready} aria-label="Thu nhỏ" onClick={() => mapRef.current?.zoomOut()}>
-            Zoom −
-          </button>
-          <span className="field-toolbar-divider" aria-hidden="true" />
-          {canLink && mayWriteTerritory && (
+          <div className="field-tool-group" role="group" aria-label="Góc nhìn">
             <button
               type="button"
-              className="field-btn-accent"
+              title="Toàn cảnh từ trên cao"
+              aria-label="Toàn cảnh từ trên cao"
               disabled={!ready || loading || busy || mode !== 'select'}
+              onClick={overview}
+            >
+              Toàn cảnh
+            </button>
+            <button
+              type="button"
+              aria-label="Nhìn từ trên"
+              disabled={!ready}
+              onClick={() => mapRef.current?.easeTo({ pitch: 0, bearing: 0 })}
+            >
+              Từ trên
+            </button>
+            <button type="button" aria-label="Góc nghiêng 3D" disabled={!ready} onClick={() => mapRef.current?.easeTo({ pitch: 55 })}>
+              Nghiêng 3D
+            </button>
+            <button
+              type="button"
+              aria-label="Đặt lại góc nhìn"
+              disabled={!ready}
+              onClick={() => mapRef.current?.easeTo({ bearing: 0, pitch: 55, duration: 600 })}
+            >
+              Đặt lại
+            </button>
+          </div>
+          <div className="field-tool-group" role="group" aria-label="Thu phóng">
+            <button type="button" disabled={!ready} aria-label="Phóng to" onClick={() => mapRef.current?.zoomIn()}>
+              +
+            </button>
+            <button type="button" disabled={!ready} aria-label="Thu nhỏ" onClick={() => mapRef.current?.zoomOut()}>
+              −
+            </button>
+          </div>
+          <div className="field-tool-group" role="group" aria-label="Công cụ">
+            {canLink && mayWriteTerritory && (
+              <button
+                type="button"
+                className="field-btn-accent"
+                disabled={!ready || loading || busy || mode !== 'select'}
+                onClick={() => {
+                  if ((containerRef.current?.clientWidth ?? 1000) <= 1024 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) {
+                    setLayersOpen(false);
+                  }
+                  setMode('draw');
+                  setSelectedId('');
+                  setDraft([]);
+                  setError('');
+                  setNotice('');
+                  mapRef.current?.easeTo({ pitch: 0 });
+                }}
+              >
+                + Vẽ khối nhà
+              </button>
+            )}
+            <button type="button" disabled={!ready || busy || loading} onClick={screenshot}>
+              Chụp ảnh PNG
+            </button>
+          </div>
+          <div className="field-tool-group" role="group" aria-label="Hiển thị">
+            <button
+              type="button"
+              aria-pressed={threeEnabled}
+              disabled={!ready || loading}
               onClick={() => {
-                if ((containerRef.current?.clientWidth ?? 1000) <= 1024 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) {
-                  setLayersOpen(false);
+                const next = !threeEnabled;
+                setThreeEnabled(next);
+                if (next && activeTerritoryWithBounds.length > 0) {
+                  frameBoundsList(activeTerritoryWithBounds);
                 }
-                setMode('draw');
-                setSelectedId('');
-                setDraft([]);
-                setError('');
-                setNotice('');
-                mapRef.current?.easeTo({ pitch: 0 });
               }}
             >
-              + Vẽ khối nhà
+              {threeEnabled ? 'Tắt hiệu ứng Three.js' : 'Hiệu ứng Three.js'}
             </button>
-          )}
-          <button type="button" disabled={!ready || busy || loading} onClick={screenshot}>
-            Chụp ảnh PNG
-          </button>
-          <button
-            type="button"
-            aria-pressed={threeEnabled}
-            disabled={!ready || loading}
-            onClick={() => {
-              const next = !threeEnabled;
-              setThreeEnabled(next);
-              if (next && activeTerritoryWithBounds.length > 0) {
-                frameBoundsList(activeTerritoryWithBounds);
-              }
-            }}
-          >
-            {threeEnabled ? 'Tắt hiệu ứng Three.js' : 'Hiệu ứng Three.js'}
-          </button>
-          <button type="button" onClick={onToggleFullscreen}>
-            {isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
-          </button>
+            <button type="button" onClick={onToggleFullscreen}>
+              {isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}
+            </button>
+          </div>
         </div>
       </header>
       {threeEnabled && (
@@ -1207,15 +1500,9 @@ export default function FieldHouseMap({
                   } else {
                     const target = realHamlets.find(f => String(f.properties?.hamletId) === val);
                     if (target) {
-                      const shapes = territoryPolygons(target.geometry).map(geometry => {
-                        const pts = geometry.coordinates.flat(geometry.type === 'Polygon' ? 1 : 2) as number[][];
-                        return {
-                          minX: Math.min(...pts.map(p => p[0])),
-                          minY: Math.min(...pts.map(p => p[1])),
-                          maxX: Math.max(...pts.map(p => p[0])),
-                          maxY: Math.max(...pts.map(p => p[1])),
-                        };
-                      });
+                      const shapes = territoryPolygons(target.geometry).map(geometry =>
+                        boundsOfPoints(geometry.coordinates.flat(geometry.type === 'Polygon' ? 1 : 2) as number[][]),
+                      );
                       frameBoundsList(shapes);
                     }
                   }
@@ -1270,6 +1557,7 @@ export default function FieldHouseMap({
       )}
       <div className="field-map-body">
         <div ref={containerRef} className="field-map-canvas" />
+        <div ref={tooltipRef} className="field-hover-tip" role="tooltip" hidden />
         <div className="field-mouse-help">
           Kéo chuột trái: di chuyển · Kéo chuột phải ngang: xoay · Kéo chuột phải dọc: nghiêng · Lăn chuột: zoom tại con trỏ
           <br />
@@ -1382,7 +1670,7 @@ export default function FieldHouseMap({
                   onChange={e => {
                     const v = Number(e.target.value);
                     setFloors(v);
-                    setHeight(v * 3.5);
+                    if (Number.isFinite(v) && v >= 1) setHeight(Math.min(MAX_BUILDING_HEIGHT, v * 3.5));
                   }}
                 />
               </label>
@@ -1491,6 +1779,9 @@ export default function FieldHouseMap({
             {canManageSelected && (
               <>
                 <p>{savedLinked.length ? `${savedLinked.length} hộ dân đã liên kết` : 'Chưa có liên kết hộ dân đã lưu'}</p>
+                {savedLinked.length > 0 && (
+                  <small>Tổng {savedLinked.reduce((sum, h) => sum + (h.residentsCount || 0), 0)} nhân khẩu trong công trình này.</small>
+                )}
                 {savedLinked.map(h => {
                   // A verified point inside this footprint is re-linked automatically, so removing it would not last:
                   // that link is fixed by correcting the household's coordinates, not here.
@@ -1502,7 +1793,15 @@ export default function FieldHouseMap({
                   return (
                     <div key={h.id} className="field-linked-row">
                       <button type="button" className="field-household" onClick={() => onSelect(h)}>
-                        {h.ownerName} · {h.code} · {STATUS[h.status]}
+                        <span className="field-household-main">
+                          <i className="field-status-dot" style={{ background: COLORS[h.status] }} aria-hidden="true" />
+                          {h.ownerName} · {h.code} · {STATUS[h.status]}
+                        </span>
+                        <span className="field-household-sub">
+                          {[`${h.houseNumber} ${h.street}`.trim(), `${h.residentsCount || 0} nhân khẩu`, h.ownerPhone]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
                       </button>
                       {canLink && matchedByPoint && <small>Khớp theo tọa độ đã xác minh</small>}
                       {canLink && !matchedByPoint && (

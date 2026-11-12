@@ -20,6 +20,7 @@ const vertexShader = `
   out vec3 vWorld;
   flat out vec4 vAppearance;
   flat out float vVisible;
+  flat out float vHighlight;
   flat out vec3 vColor;
   flat out vec3 vNormal;
   vec3 palette(int index) { return texelFetch(uPalette, ivec2(index, 0), 0).rgb; }
@@ -56,10 +57,18 @@ const vertexShader = `
     vWorld = (modelMatrix * p).xyz;
     if (uRealistic && uMode == 0) vColor = unpackColor(vNormal.y > 0.3 ? vAppearance.y : vAppearance.x);
     vVisible = 1.0;
+    vHighlight = 0.0;
     if (uUseDisplay) {
+      // x: packed colour (-1 keeps the appearance), y: visible, z: status tint, w: highlight level.
       vec4 display = texelFetch(uDisplay, ivec2(feature % uMetadataWidth, feature / uMetadataWidth), 0);
       vVisible = display.y;
-      if (display.x >= 0.0) vColor = unpackColor(display.x);
+      vHighlight = display.w;
+      if (display.x >= 0.0) {
+        vec3 tint = unpackColor(display.x);
+        // A household status colours the roof; walls keep their material so the block still reads as a house.
+        bool keepWall = display.z > 0.5 && uRealistic && uMode == 0 && vNormal.y <= 0.3;
+        vColor = keepWall ? mix(vColor, tint, 0.3) : tint;
+      }
     }
     gl_Position = projectionMatrix * viewMatrix * modelMatrix * p;
   }
@@ -72,6 +81,8 @@ const fragmentShader = `
   in vec3 vWorld;
   flat in vec4 vAppearance;
   flat in float vVisible;
+  flat in float vHighlight;
+  uniform vec3 uCamera;
   uniform bool uRealistic;
   uniform int uMode;
   out vec4 outColor;
@@ -90,6 +101,8 @@ const fragmentShader = `
     float lighting = 0.34 + 0.54 * sun + 0.14 * fill + 0.08 * sky;
     vec3 color = vColor * lighting;
     if (uRealistic) {
+      // Warm direct sun over a slightly cool sky fill, same overall exposure as the scalar term.
+      color = vColor * ((0.34 + 0.08 * sky) * vec3(0.95, 0.99, 1.06) + 0.54 * sun * vec3(1.07, 1.0, 0.9) + 0.14 * fill);
       // Stylized base AO darkening + warm sunlit roof highlight
       color *= mix(0.62, 1.04, smoothstep(0.0, 2.6, vWorld.y));
       if (n.y > 0.35) {
@@ -112,12 +125,58 @@ const fragmentShader = `
         float detail = 1.0 - smoothstep(0.14, 0.58, max(aa.x, aa.y));
         float windowMask = mask.x * mask.y * detail * smoothstep(0.55, 1.15, vWorld.y);
         vec3 glassColor = mix(vec3(0.07, 0.12, 0.15), vec3(0.16, 0.24, 0.29), clamp(vWorld.y / 14.0, 0.0, 1.0)) * lighting;
+        // Per-pane variation: drawn blinds and sky reflection differ from window to window.
+        vec2 paneId = floor(cell + vec2(vAppearance.w, 0.0));
+        float paneSeed = fract(sin(dot(paneId, vec2(12.9898, 78.233)) + vAppearance.w * 43.0) * 43758.5453);
+        glassColor *= mix(0.7, 1.55, paneSeed);
         color = mix(color, glassColor, windowMask * 0.84);
       }
-      float haze = 1.0 - exp(-length(cameraPosition - vWorld) * 0.000022);
+      float haze = 1.0 - exp(-length(uCamera - vWorld) * 0.000022);
       color = mix(color, vec3(0.25, 0.30, 0.32), min(haze, 0.22));
     }
+    // Selection (1.0) and hover (0.5) stay readable in every colour mode and at any distance.
+    if (vHighlight > 0.0) {
+      vec3 glow = vec3(0.965, 0.521, 0.018) * (0.62 + 0.5 * lighting);
+      color = mix(color, glow, vHighlight > 0.75 ? 0.8 : 0.4);
+    }
     outColor = vec4(linearToSrgb(color), 1.0);
+  }
+`;
+
+// Planar sun shadow: each roof is sheared onto the ground along the sun direction used by the facade lighting.
+// One multiply pass, no shadow map, no extra geometry; walls are collapsed so a building darkens the ground once.
+const shadowVertexShader = `
+  uniform sampler2D uDisplay;
+  uniform bool uUseDisplay;
+  uniform int uMetadataWidth;
+  in float aFeature;
+  void main() {
+    vec4 p = vec4(position, 1.0);
+    float up = normal.y;
+    #ifdef USE_INSTANCING
+      p = instanceMatrix * p;
+    #endif
+    bool visible = true;
+    if (uUseDisplay) {
+      int feature = int(aFeature + 0.5);
+      visible = texelFetch(uDisplay, ivec2(feature % uMetadataWidth, feature / uMetadataWidth), 0).y > 0.5;
+    }
+    if (up <= 0.3 || !visible) {
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+      return;
+    }
+    vec4 world = modelMatrix * p;
+    // Same sun as the fragment shader: normalize(0.55, 0.92, 0.38). Length is capped so tall blocks keep an attached shadow.
+    world.xz -= vec2(0.598, 0.413) * min(world.y, 12.0);
+    world.y = 0.06;
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`;
+const shadowFragmentShader = `
+  precision highp float;
+  out vec4 outColor;
+  void main() {
+    outColor = vec4(0.66, 0.69, 0.76, 1.0);
   }
 `;
 
@@ -146,6 +205,7 @@ export class BuildingLayer {
       uRealistic: { value: realistic },
       uDisplay: { value: null },
       uUseDisplay: { value: false },
+      uCamera: { value: new THREE.Vector3() },
     };
     const parameters = {
       vertexShader,
@@ -159,7 +219,28 @@ export class BuildingLayer {
     };
     this.material = new THREE.ShaderMaterial(parameters);
     this.instancedMaterial = new THREE.ShaderMaterial({ ...parameters, defines: { DIRECT_METADATA: 1 } });
+    // Opaque queue (drawn before the buildings via renderOrder) with multiply blending: dst * shade.
+    this.shadowMaterial = new THREE.ShaderMaterial({
+      vertexShader: shadowVertexShader,
+      fragmentShader: shadowFragmentShader,
+      uniforms: this.uniforms,
+      glslVersion: THREE.GLSL3,
+      depthTest: true,
+      depthWrite: false,
+      transparent: false,
+      toneMapped: false,
+      side: THREE.DoubleSide,
+      blending: THREE.CustomBlending,
+      blendEquation: THREE.AddEquation,
+      blendSrc: THREE.DstColorFactor,
+      blendDst: THREE.ZeroFactor,
+    });
+    this.shadowRoot = new THREE.Group();
+    this.shadowRoot.visible = realistic;
+    scene.add(this.shadowRoot);
     this.setPalette(paletteColors);
+    this.highlights = [];
+    this.highlighted = [];
     this.disposed = false;
   }
 
@@ -222,9 +303,28 @@ export class BuildingLayer {
       if (index === undefined) continue;
       this.displayData[index * 4] = /^#[\da-f]{6}$/i.test(state.color ?? '') ? Number.parseInt(state.color.slice(1), 16) : -1;
       this.displayData[index * 4 + 1] = state.visible ? 1 : 0;
+      this.displayData[index * 4 + 2] = state.tint ? 1 : 0;
     }
+    this.highlighted = [];
     this.display.needsUpdate = true;
     this.uniforms.uUseDisplay.value = true;
+    this.setHighlights(this.highlights);
+  }
+
+  /** O(changed) selection/hover: touches only the texels involved, never the 79k-entry state list. */
+  setHighlights(highlights) {
+    if (this.disposed) return;
+    this.highlights = highlights;
+    if (!this.display || this.pendingIds) return;
+    for (const index of this.highlighted) this.displayData[index * 4 + 3] = 0;
+    this.highlighted = [];
+    for (const { id, level } of highlights) {
+      const index = this.indices.get(String(id));
+      if (index === undefined) continue;
+      this.displayData[index * 4 + 3] = level;
+      this.highlighted.push(index);
+    }
+    this.display.needsUpdate = true;
   }
 
   add({ origin, packet }) {
@@ -239,6 +339,7 @@ export class BuildingLayer {
       geometry.computeBoundingSphere();
       const mesh = new THREE.Mesh(geometry, this.material);
       this.place(mesh, origin);
+      this.placeShadow(new THREE.Mesh(geometry, this.shadowMaterial), origin);
     }
     if (packet.boxes.length) {
       const count = packet.boxes.length / 7;
@@ -272,6 +373,12 @@ export class BuildingLayer {
       mesh.computeBoundingBox();
       mesh.computeBoundingSphere();
       this.place(mesh, origin);
+      const shadow = new THREE.InstancedMesh(geometry, this.shadowMaterial, count);
+      shadow.instanceMatrix = mesh.instanceMatrix;
+      shadow.boundingBox = mesh.boundingBox;
+      shadow.boundingSphere = mesh.boundingSphere.clone();
+      shadow.boundingSphere.radius += 8; // the cast shadow reaches a few metres past the sector
+      this.placeShadow(shadow, origin);
     }
   }
 
@@ -280,6 +387,15 @@ export class BuildingLayer {
     mesh.updateMatrix();
     mesh.matrixAutoUpdate = false;
     this.root.add(mesh);
+  }
+
+  /** Shadows share the building geometry; they only get their own transform and draw order. */
+  placeShadow(mesh, origin) {
+    mesh.position.set(origin[0], 0, origin[1]);
+    mesh.updateMatrix();
+    mesh.matrixAutoUpdate = false;
+    mesh.renderOrder = -1;
+    this.shadowRoot.add(mesh);
   }
 
   setMode(mode) {
@@ -327,6 +443,10 @@ export class BuildingLayer {
     }
     this.root.clear();
     this.scene.remove(this.root);
+    for (const mesh of this.shadowRoot.children) if (mesh.isInstancedMesh) mesh.dispose(); // geometry is owned by the building mesh
+    this.shadowRoot.clear();
+    this.scene.remove(this.shadowRoot);
+    this.shadowMaterial.dispose();
     this.material.dispose();
     this.instancedMaterial.dispose();
     this.metadata?.dispose();

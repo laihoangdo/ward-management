@@ -180,6 +180,15 @@ describe('GPU attribute ownership and disposal', () => {
     layer.setDisplayState([{ id: 'building', color: '#fbbf24', visible: true }]);
     expect(layer.displayData[0]).toBe(0xfbbf24);
     expect(layer.displayData[1]).toBe(1);
+    layer.setDisplayState([{ id: 'building', color: '#10b981', visible: true, tint: true }]);
+    expect(layer.displayData[2]).toBe(1);
+    layer.setHighlights([{ id: 'building', level: 1 }]);
+    expect(layer.displayData[3]).toBe(1);
+    // A full state refresh keeps the current highlight; clearing it touches only that texel.
+    layer.setDisplayState([{ id: 'building', color: '#10b981', visible: true, tint: true }]);
+    expect(layer.displayData[3]).toBe(1);
+    layer.setHighlights([]);
+    expect(layer.displayData.slice(0, 4)).toEqual(new Float32Array([0x10b981, 1, 1, 0]));
     layer.setDisplayState([{ id: 'building', visible: false }]);
     expect(layer.displayData[1]).toBe(0);
     const displayDispose = vi.spyOn(layer.display!, 'dispose');

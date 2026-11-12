@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   setPaintProperty: vi.fn(),
   effectsAttach: vi.fn(),
   effectsDisplay: vi.fn(),
+  effectsHighlights: vi.fn(),
   effectsDispose: vi.fn(),
   mapRemove: vi.fn(),
 }));
@@ -119,6 +120,7 @@ beforeEach(() => {
   mocks.effectsAttach.mockImplementation(() => ({
     ready: Promise.resolve({}),
     setDisplayState: mocks.effectsDisplay,
+    setHighlights: mocks.effectsHighlights,
     dispose: mocks.effectsDispose,
   }));
   vi.stubGlobal(
@@ -360,12 +362,12 @@ describe('field map controls', () => {
     const input = mocks.effectsAttach.mock.calls[0][1].collection.features[0];
     expect(input.properties.height).toBe(12.8);
     expect(input.properties.wallColor).toBe('#e2d9c8');
+    const displayCalls = mocks.effectsDisplay.mock.calls.length;
     selectHouse();
-    await waitFor(() =>
-      expect(mocks.effectsDisplay).toHaveBeenLastCalledWith([
-        expect.objectContaining({ id: 'badiem-test', color: '#fbbf24', visible: true }),
-      ]),
-    );
+    // Selection is a two-texel highlight; the per-building state list is not rebuilt for it.
+    await waitFor(() => expect(mocks.effectsHighlights).toHaveBeenLastCalledWith([{ id: 'badiem-test', level: 1 }]));
+    expect(mocks.effectsDisplay).toHaveBeenCalledTimes(displayCalls);
+    expect(mocks.effectsDisplay).toHaveBeenLastCalledWith([expect.objectContaining({ id: 'badiem-test', visible: true, tint: false })]);
     fireEvent.click(screen.getByRole('button', { name: 'Tắt hiệu ứng Three.js' }));
     await waitFor(() => expect(mocks.effectsDispose).toHaveBeenCalledOnce());
     expect(mocks.setPaintProperty).toHaveBeenLastCalledWith('houses-3d', 'fill-extrusion-opacity', 0.88);
@@ -680,7 +682,11 @@ describe('field map controls', () => {
     await mount();
     fireEvent.click(screen.getByLabelText('Ảnh vệ tinh'));
     expect(mocks.setLayoutProperty).toHaveBeenCalledWith('satellite', 'visibility', 'none');
+    // The point copy of every building is built only when the Point view is first chosen.
+    const pointLoads = () => mocks.setData.mock.calls.filter(([data]) => data.features[0]?.geometry.type === 'Point').length;
+    expect(pointLoads()).toBe(0);
     fireEvent.change(screen.getByLabelText('Hiển thị công trình'), { target: { value: 'point' } });
+    expect(pointLoads()).toBe(1);
     expect(mocks.setLayoutProperty).toHaveBeenCalledWith('house-points', 'visibility', 'visible');
     expect(mocks.setLayoutProperty).toHaveBeenCalledWith('houses-3d', 'visibility', 'none');
     fireEvent.change(screen.getByLabelText('Trạng thái hộ dân'), { target: { value: 'alert' } });

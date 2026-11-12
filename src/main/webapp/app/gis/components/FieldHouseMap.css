@@ -93,6 +93,46 @@
   font-size: 11px;
   color: var(--field-muted);
 }
+.field-house-map .field-quick-item-active {
+  background: var(--field-soft);
+}
+.field-house-map .field-quick-more {
+  padding: 4px 8px 6px;
+}
+.field-status-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 70%);
+  flex: none;
+}
+/* Follows the pointer over a building; moved with transform only so the WebGL canvas never reflows. */
+.field-hover-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  max-width: 280px;
+  padding: 5px 9px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--field-surface);
+  color: var(--field-text);
+  font-size: 12.5px;
+  line-height: 1.35;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgb(15 35 30 / 18%); /* taste-skill-ignore: tooltip nổi trên bản đồ */
+}
+.field-hover-tip[hidden] {
+  display: none;
+}
+@media (pointer: coarse) {
+  .field-hover-tip {
+    display: none;
+  }
+}
 .field-map-actions {
   display: flex;
   flex-wrap: nowrap;
@@ -109,6 +149,34 @@
 .field-map-actions button {
   flex: 0 0 auto;
   white-space: nowrap;
+}
+/* Related controls sit in one joined strip, so the toolbar reads as four groups instead of eleven buttons. */
+.field-tool-group {
+  display: flex;
+  flex: 0 0 auto;
+  margin-left: 5px;
+}
+.field-tool-group:first-child {
+  margin-left: 0;
+}
+.field-house-map .field-tool-group button:not([class*='maplibregl-ctrl']) {
+  border-radius: 0;
+  margin-left: -1px;
+}
+.field-house-map .field-tool-group button:not([class*='maplibregl-ctrl']):first-child {
+  border-radius: 6px 0 0 6px;
+  margin-left: 0;
+}
+.field-house-map .field-tool-group button:not([class*='maplibregl-ctrl']):last-child {
+  border-radius: 0 6px 6px 0;
+}
+.field-house-map .field-tool-group button:not([class*='maplibregl-ctrl']):only-child {
+  border-radius: 6px;
+}
+.field-house-map .field-tool-group button:focus-visible,
+.field-house-map .field-tool-group button:hover {
+  position: relative;
+  z-index: 1;
 }
 .field-toolbar-divider {
   width: 1px;
@@ -437,6 +505,20 @@
   color: var(--gis-accent-text, #1c4e3a);
   margin: 4px 0;
   text-align: left;
+}
+.field-household-main,
+.field-household-sub {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.field-household-main {
+  font-weight: 600;
+}
+.field-household-sub {
+  margin-top: 2px;
+  color: var(--field-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 /* A saved link: the household on the left, its unlink control (two-step) on the right. */
 .field-linked-row {

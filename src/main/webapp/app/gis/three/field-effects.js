@@ -13,10 +13,13 @@ export function attachFieldEffects(map, { collection, anchor, onError = () => {}
     settled = false,
     result,
     states = [],
+    highlights = [],
+    highlightsDirty = false,
     dirty = true;
   const jobs = [],
     scene = new THREE.Scene(),
-    camera = new THREE.Camera();
+    camera = new THREE.Camera(),
+    eye = new THREE.Vector4();
   const matrix = localToMercatorMatrix(anchor);
   let resolveReady, rejectReady;
   const ready = new Promise((resolve, reject) => {
@@ -106,9 +109,16 @@ export function attachFieldEffects(map, { collection, anchor, onError = () => {}
           if (dirty) {
             buildings.setDisplayState(states);
             dirty = false;
+            highlightsDirty = false;
+          } else if (highlightsDirty) {
+            buildings.setHighlights(highlights);
+            highlightsDirty = false;
           }
           camera.projectionMatrix.fromArray(input.defaultProjectionData.mainMatrix).multiply(matrix);
           camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+          // The eye is where clip x = y = w = 0; the shared camera has no world matrix to read it from.
+          eye.set(0, 0, 1, 0).applyMatrix4(camera.projectionMatrixInverse);
+          if (Math.abs(eye.w) > 1e-12) buildings.uniforms.uCamera.value.set(eye.x / eye.w, eye.y / eye.w, eye.z / eye.w);
           renderer.resetState();
           try {
             renderer.render(scene, camera);
@@ -133,6 +143,13 @@ export function attachFieldEffects(map, { collection, anchor, onError = () => {}
     setDisplayState(next) {
       states = next;
       dirty = true;
+      if (!disposed) map.triggerRepaint();
+    },
+    /** Selection and hover: [{ id, level }] with level 1 (selected) or 0.5 (hover). */
+    setHighlights(next) {
+      highlights = next;
+      buildings?.setHighlights(next);
+      highlightsDirty = true;
       if (!disposed) map.triggerRepaint();
     },
     dispose() {

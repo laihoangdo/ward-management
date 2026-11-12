@@ -56,3 +56,12 @@ npx tsc --noEmit
 Tests cover coordinates/elevation alignment, polygon winding/courtyards, deterministic appearance, GPU display state and disposal, existing field-map controls, native fallback, selection synchronization and synthetic-free household-link payloads. The isolated browser fixture under ignored `target/` exercises the actual field-map component with real GeoJSON/offline tiles and fixture-only API responses: one shared canvas, native picking at opacity zero, selected-building panel, drawing controls, effect removal and native restoration.
 
 **60 FPS is not established.** Profile the complete scene on target hardware. Worker packets reduce interaction-thread work but cannot preempt individual uploads, shader compilation or garbage collection. No terrain, online DEM, globe, external GLTF or remote 3D Tiles is added.
+
+## Selection, hover and status colours
+
+- The display texture holds one RGBA texel per building: packed colour (`-1` keeps the appearance), visible, status tint, highlight level.
+- `setDisplayState(states)` rewrites every texel and is only for filter, status and data changes. `setHighlights([{ id, level }])` touches just the texels involved (level `1` selected, `0.5` hover), so selecting or hovering a building never rebuilds the 79k-entry list.
+- With `tint: true` the status colour fills the roof and only tints the walls, so an occupied building still reads as a house.
+- `uCamera` is derived each frame from the inverse projection (the shared camera has no world matrix); haze uses it instead of `cameraPosition`.
+- Shader check without the backend: `target/shader-smoke/entry.js` (git-ignored, synthetic data) bundles with `npx rolldown entry.js --file bundle.js --format iife` and runs in headless Chrome; it reports shader errors and draws five fake buildings.
+- Ground shadows are a planar pass, not a shadow map: `shadowMaterial` reuses the building geometry, collapses walls, shears roofs onto the ground along the facade sun direction (length capped at 12 m of height) and multiplies the ground colour. It draws before the buildings (`renderOrder -1`) and follows the same visibility texel. Set `shadowRoot.visible = false` to switch it off.
