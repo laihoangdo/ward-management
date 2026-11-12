@@ -50,21 +50,24 @@ class RosterCampaignTest {
     }
 
     @Test
-    void addressPathMatchesWholeSegmentsFromTheStart() {
+    void addressPathIsAPrefixThatStartsAtANumberBoundary() {
         var regex = Pattern.compile(RosterCampaign.addressPathRegex("120/45").orElseThrow(), Pattern.CASE_INSENSITIVE);
         assertTrue(regex.matcher("120/45").find());
         assertTrue(regex.matcher("120/45/8/2A").find());
         assertTrue(regex.matcher("Số 120/45/8 Phan Văn Hớn").find());
         assertTrue(regex.matcher("120/45, ấp 62").find());
+        assertTrue(regex.matcher("120/450").find());
         assertFalse(regex.matcher("1120/45").find());
-        assertFalse(regex.matcher("120/450").find());
-        assertFalse(regex.matcher("20/120/45x").find());
         assertFalse(regex.matcher("12/120").find());
     }
 
     @Test
     void trailingSlashIsIgnoredAndTextSearchIsNotTreatedAsAPath() {
-        assertEquals(RosterCampaign.addressPathRegex("120/45"), RosterCampaign.addressPathRegex("120/45/"));
+        var partial = Pattern.compile(RosterCampaign.addressPathRegex("36/4").orElseThrow(), Pattern.CASE_INSENSITIVE);
+        assertTrue(partial.matcher("36/4F Ấp 69, Xã Bà Điểm").find());
+        assertTrue(partial.matcher("36/4Y Ấp 69").find());
+        assertFalse(partial.matcher("136/4F").find());
+        assertFalse(partial.matcher("36/5").find());
         assertTrue(RosterCampaign.addressPathRegex("Nguyễn Văn A").isEmpty());
         assertTrue(RosterCampaign.addressPathRegex("120/").isPresent());
         assertTrue(RosterCampaign.addressPathRegex("12a%").isEmpty());

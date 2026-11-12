@@ -66,13 +66,13 @@ final class RosterCampaign {
     private static final Pattern ADDRESS_PATH = Pattern.compile("[0-9]+[A-Za-z]?(/[0-9]+[A-Za-z]?)*/?");
 
     /**
-     * Regex matching an address whose house or alley path starts with the given segments, so {@code 120/45} finds
-     * {@code 120/45}, {@code 120/45/8/2A} but neither {@code 1120/45} nor {@code 120/450}. Empty when the text is not an address path.
+     * Regex matching an address whose house or alley path starts with the typed text, so {@code 120/45} finds {@code 120/45},
+     * {@code 120/45/8/2A} and {@code 120/450} (a real prefix, so {@code 36/4} finds {@code 36/4F}) but not {@code 1120/45}: the path must
+     * begin at a number boundary. Empty when the text is not an address path.
      */
     static Optional<String> addressPathRegex(String search) {
         String text = search.strip();
         if (!ADDRESS_PATH.matcher(text).matches()) return Optional.empty();
-        if (text.endsWith("/")) text = text.substring(0, text.length() - 1);
-        return Optional.of("(^|[^0-9A-Za-z/])" + text + "(/|[^0-9A-Za-z]|$)");
+        return Optional.of("(^|[^0-9A-Za-z/])" + text);
     }
 }
