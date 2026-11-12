@@ -2,7 +2,7 @@ import React from 'react';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { AppUser } from '../types';
-import { fetchDelegationRoads, fetchPermissionPresets, fetchRbacAreas, saveDelegation } from '../services/authService';
+import { fetchDelegationRoads, fetchPermissionGroups, fetchRbacAreas, saveDelegation } from '../services/authService';
 import { SubAdminDelegationTab } from './SubAdminDelegationTab';
 
 vi.mock('./AdministrativeDirectory', () => ({ AdministrativeDirectory: () => null }));
@@ -11,7 +11,7 @@ vi.mock('../services/authService', () => ({
   fetchDelegationRoads: vi.fn(),
   fetchRbacAreas: vi.fn(),
   saveDelegation: vi.fn(),
-  fetchPermissionPresets: vi.fn().mockResolvedValue({}),
+  fetchPermissionGroups: vi.fn().mockResolvedValue([]),
 }));
 afterEach(() => {
   cleanup();
@@ -44,33 +44,66 @@ it('offers DB roads only in assigned areas and preserves an existing legacy assi
   await waitFor(() => expect(saveDelegation).toHaveBeenCalledWith(expect.objectContaining({ hamletIds: [7] })));
 });
 
-it('fills the role preset into the editor without saving until confirmed', async () => {
-  const officer = { id: 'officer', role: 'officer', fullName: 'Cán bộ kiểm thử', assignedHamlets: [], assignedStreets: [] } as AppUser;
+it('fills the group defaults without saving, and locks permissions outside the group ceiling with a reason', async () => {
+  const officer = {
+    id: 'officer',
+    role: 'officer',
+    fullName: 'Cán bộ kiểm thử',
+    assignedHamlets: [],
+    assignedStreets: [],
+    permissionGroupId: 'g1',
+    permissionGroupName: 'CAV tuần tra',
+    permissionCeiling: ['canScanOcr', 'canUpdateInspection'],
+  } as AppUser;
   vi.mocked(fetchRbacAreas).mockResolvedValue([]);
   vi.mocked(fetchDelegationRoads).mockResolvedValue([]);
-  vi.mocked(fetchPermissionPresets).mockResolvedValue({
-    officer: {
-      canViewAdvancedMap: true,
-      canViewField3DMap: true,
-      canEditCoordinates: true,
-      canAddHouseholds: false,
-      canScanOcr: true,
-      canRenewDocs: true,
-      canExportReports: false,
-      canSendReminders: false,
-      canUpdateInspection: true,
-      canManageStreets: false,
-      canRevealIdentity: false,
+  vi.mocked(fetchPermissionGroups).mockResolvedValue([
+    {
+      id: 'g1',
+      name: 'CAV tuần tra',
+      description: '',
+      role: 'officer',
+      ceiling: ['canScanOcr', 'canUpdateInspection'],
+      defaults: ['canScanOcr'],
     },
-  } as Awaited<ReturnType<typeof fetchPermissionPresets>>);
+  ]);
   render(
     <SubAdminDelegationTab currentUser={{ ...officer, id: 'actor', role: 'superadmin' }} usersList={[officer]} onShowToast={vi.fn()} />,
   );
   const scan = await screen.findByRole('checkbox', { name: /Quét Camera/ });
+  const reveal = screen.getByRole('checkbox', { name: /Xem số CCCD đầy đủ/ });
+  expect(reveal.getAttribute('aria-disabled')).toBe('true');
+  expect(reveal.textContent).toContain('Ngoài phạm vi nhóm do Super Admin đặt');
+  fireEvent.click(reveal);
+  expect(reveal.getAttribute('aria-checked')).toBe('false');
+  expect(screen.getByText('CAV tuần tra')).toBeTruthy();
+
   expect(scan.getAttribute('aria-checked')).toBe('false');
-  fireEvent.click(await screen.findByRole('button', { name: 'Áp dụng quyền mặc định theo vai trò' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Áp dụng mặc định của nhóm' }));
   expect(scan.getAttribute('aria-checked')).toBe('true');
   expect(saveDelegation).not.toHaveBeenCalled();
+});
+
+it('tells a hamlet manager they cannot grant a permission they do not hold', async () => {
+  const officer = { id: 'officer', role: 'officer', fullName: 'Cán bộ', assignedHamlets: [], assignedStreets: [] } as AppUser;
+  vi.mocked(fetchRbacAreas).mockResolvedValue([]);
+  vi.mocked(fetchDelegationRoads).mockResolvedValue([]);
+  render(
+    <SubAdminDelegationTab
+      currentUser={{
+        ...officer,
+        id: 'manager',
+        role: 'sub-admin',
+        subAdminPermissions: { canScanOcr: true } as AppUser['subAdminPermissions'],
+      }}
+      usersList={[officer]}
+      onShowToast={vi.fn()}
+    />,
+  );
+  const reports = await screen.findByRole('checkbox', { name: /Xuất Báo cáo/ });
+  expect(reports.textContent).toContain('Bạn chưa có quyền này nên không thể cấp');
+  expect(screen.getByRole('checkbox', { name: /Quét Camera/ }).getAttribute('aria-disabled')).toBeNull();
+  expect(screen.getByRole('checkbox', { name: /bản đồ không gian 3D/ }).getAttribute('aria-disabled')).toBeNull();
 });
 
 it('exposes permission state and lets the keyboard toggle the same permission without saving', async () => {

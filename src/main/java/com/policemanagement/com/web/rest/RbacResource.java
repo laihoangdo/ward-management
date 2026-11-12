@@ -109,6 +109,44 @@ public class RbacResource {
         return rbac.permissionPresets();
     }
 
+    @GetMapping("/permission-groups")
+    public List<Map<String, Object>> permissionGroups() {
+        return rbac.permissionGroups();
+    }
+
+    @PostMapping("/permission-groups")
+    public org.springframework.http.ResponseEntity<Map<String, Object>> createPermissionGroup(
+        @RequestBody Map<String, Object> group,
+        @RequestParam(defaultValue = "false") boolean confirmRevoke
+    ) {
+        Map<String, Object> copy = new java.util.LinkedHashMap<>(group);
+        copy.remove("id");
+        return groupResponse(rbac.savePermissionGroup(copy, confirmRevoke));
+    }
+
+    @PutMapping("/permission-groups/{id}")
+    public org.springframework.http.ResponseEntity<Map<String, Object>> updatePermissionGroup(
+        @PathVariable String id,
+        @RequestBody Map<String, Object> group,
+        @RequestParam(defaultValue = "false") boolean confirmRevoke
+    ) {
+        Map<String, Object> copy = new java.util.LinkedHashMap<>(group);
+        copy.put("id", id);
+        return groupResponse(rbac.savePermissionGroup(copy, confirmRevoke));
+    }
+
+    @DeleteMapping("/permission-groups/{id}")
+    public void deletePermissionGroup(@PathVariable String id) {
+        rbac.deletePermissionGroup(id);
+    }
+
+    /** 409 with the affected-member count until the super admin confirms a revocation. */
+    private static org.springframework.http.ResponseEntity<Map<String, Object>> groupResponse(Map<String, Object> result) {
+        return Boolean.TRUE.equals(result.get("requiresConfirmation"))
+            ? org.springframework.http.ResponseEntity.status(org.springframework.http.HttpStatus.CONFLICT).body(result)
+            : org.springframework.http.ResponseEntity.ok(result);
+    }
+
     @GetMapping("/policy")
     public Object policy() {
         rbac.superadmin();

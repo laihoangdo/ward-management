@@ -15,6 +15,18 @@ export type NavigationTab =
 
 export type UserRole = 'superadmin' | 'admin' | 'sub-admin' | 'officer';
 
+/** Super-admin permission group: a ceiling of allowed permissions plus defaults for new members. */
+export interface PermissionGroup {
+  id?: string;
+  name: string;
+  description: string;
+  role: Exclude<UserRole, 'superadmin'>;
+  ceiling: (keyof SubAdminFeaturePermissions)[];
+  defaults: (keyof SubAdminFeaturePermissions)[];
+  builtIn?: boolean;
+  members?: number;
+}
+
 export interface SubAdminFeaturePermissions {
   canViewAdvancedMap: boolean;
   canViewField3DMap: boolean;
@@ -47,6 +59,9 @@ export interface AppUser {
   assignedHamlets: string[]; // Các ấp phụ trách (e.g. ['Ấp Bắc Lân', 'Ấp Đông Lân'])
   assignedStreets: string[]; // Các tuyến đường, hẻm phụ trách (e.g. ['Đường Phan Văn Hớn', 'Đường Nguyễn Ảnh Thủ', 'Đường Bà Điểm 4'])
   subAdminPermissions?: SubAdminFeaturePermissions; // Áp dụng cho cấp dưới (officer) do sub-admin phân quyền
+  permissionGroupId?: string; // Nhóm quyền (trần quyền) do Super Admin đặt
+  permissionGroupName?: string;
+  permissionCeiling?: (keyof SubAdminFeaturePermissions)[]; // Quyền được phép cấp cho tài khoản này
   status: 'active' | 'suspended' | 'locked';
   createdAt: string;
   lastLogin?: string;

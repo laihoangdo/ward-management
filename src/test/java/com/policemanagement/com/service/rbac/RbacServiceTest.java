@@ -48,28 +48,180 @@ class RbacServiceTest {
         when(db.queryForList("select version from rbac_profile where subject=?", Long.class, target)).thenReturn(List.of());
     }
 
+    private static final String GROUP_SQL = "select data from rbac_setting where kind=? order by id";
+
+    private void groups(String... json) {
+        when(db.queryForList(GROUP_SQL, String.class, PermissionGroups.KIND)).thenReturn(List.of(json));
+    }
+
+    private void targetInHamlet(String storedProfile) {
+        when(db.queryForList("select hamlet_id from rbac_assignment where subject=? order by hamlet_id", Long.class, target)).thenReturn(
+            List.of(10L)
+        );
+        when(db.queryForObject("select count(*) from hamlet where id=? and valid_to is null", Long.class, 10L)).thenReturn(1L);
+        when(db.queryForObject("select full_name from hamlet where id=?", String.class, 10L)).thenReturn("Hamlet");
+        when(db.queryForList("select data from rbac_profile where subject=?", String.class, target)).thenReturn(List.of(storedProfile));
+    }
+
     @Test
-    void newAccountsStartFromTheirRolePresetAndEditsKeepExistingPermissions() {
-        var officer = RbacService.withPermissions(Map.of("role", "officer"), "officer", true, Map.of());
+    void newAccountsStartFromTheirGroupDefaultsAndEditsKeepExistingPermissions() {
+        var defaults = PermissionGroups.flags(PermissionGroups.defaults(PermissionGroups.builtIn("officer")));
         @SuppressWarnings("unchecked")
-        var granted = (Map<String, Boolean>) officer.get("subAdminPermissions");
+        var granted = (Map<String, Boolean>) RbacService.withPermissions(Map.of("role", "officer"), defaults, true, Map.of()).get(
+            "subAdminPermissions"
+        );
         assertTrue(granted.get("canUpdateInspection"));
         assertTrue(granted.get("canScanOcr"));
         assertFalse(granted.get("canAddHouseholds"));
         assertFalse(granted.get("canRevealIdentity"));
-
-        assertTrue(RbacService.preset("sub-admin").get("canAddHouseholds"));
-        assertFalse(RbacService.preset("sub-admin").get("canRevealIdentity"));
-        assertTrue(RbacService.preset("admin").values().stream().allMatch(Boolean::booleanValue));
-        assertTrue(RbacService.preset("none").values().stream().noneMatch(Boolean::booleanValue));
+        assertFalse(PermissionGroups.defaults(PermissionGroups.builtIn("sub-admin")).contains("canRevealIdentity"));
+        assertEquals(RbacService.PERMISSIONS, PermissionGroups.defaults(PermissionGroups.builtIn("admin")));
+        // Built-in ceilings allow everything, so seeding them revokes nothing that is already granted.
+        for (String role : PermissionGroups.ROLES)
+            assertEquals(RbacService.PERMISSIONS, PermissionGroups.ceiling(PermissionGroups.builtIn(role)));
 
         Map<String, Object> existing = Map.of("subAdminPermissions", Map.of("canRenewDocs", true));
         assertEquals(
             existing.get("subAdminPermissions"),
-            RbacService.withPermissions(Map.of(), "officer", false, existing).get("subAdminPermissions")
+            RbacService.withPermissions(Map.of(), defaults, false, existing).get("subAdminPermissions")
         );
         Map<String, Object> explicit = Map.of("subAdminPermissions", Map.of("canScanOcr", false));
-        assertSame(explicit, RbacService.withPermissions(explicit, "officer", true, Map.of()));
+        assertSame(explicit, RbacService.withPermissions(explicit, defaults, true, Map.of()));
+    }
+
+    @Test
+    void effectivePermissionsAreTheSupervisorsChoiceLimitedByTheGroupCeiling() {
+        groups("{\"id\":\"g1\",\"name\":\"CAV tuần tra\",\"role\":\"officer\",\"ceiling\":[\"canUpdateInspection\"],\"defaults\":[]}");
+        when(db.queryForList("select data from rbac_profile where subject=?", String.class, target)).thenReturn(
+            List.of("{\"permissionGroupId\":\"g1\",\"subAdminPermissions\":{\"canUpdateInspection\":true,\"canScanOcr\":true}}")
+        );
+        var profile = rbac.profile(Map.of("id", target, "username", "officer", "enabled", true));
+        @SuppressWarnings("unchecked")
+        var effective = (Map<String, Boolean>) profile.get("subAdminPermissions");
+        assertTrue(effective.get("canUpdateInspection"));
+        assertFalse(effective.get("canScanOcr"));
+        assertEquals("g1", profile.get("permissionGroupId"));
+        assertEquals("CAV tuần tra", profile.get("permissionGroupName"));
+    }
+
+    @Test
+    void aGroupOfAnotherRoleFallsBackToTheBuiltInGroup() {
+        groups("{\"id\":\"g2\",\"name\":\"Quản lý\",\"role\":\"sub-admin\",\"ceiling\":[],\"defaults\":[]}");
+        when(db.queryForList("select data from rbac_profile where subject=?", String.class, target)).thenReturn(
+            List.of("{\"permissionGroupId\":\"g2\",\"subAdminPermissions\":{\"canScanOcr\":true}}")
+        );
+        var profile = rbac.profile(Map.of("id", target, "username", "officer", "enabled", true));
+        assertEquals("builtin-officer", profile.get("permissionGroupId"));
+        assertEquals(Boolean.TRUE, ((Map<?, ?>) profile.get("subAdminPermissions")).get("canScanOcr"));
+    }
+
+    @Test
+    void aDelegateCannotGrantAPermissionOutsideTheGroupCeiling() {
+        groups("{\"id\":\"g1\",\"name\":\"CAV tuần tra\",\"role\":\"officer\",\"ceiling\":[\"canUpdateInspection\"],\"defaults\":[]}");
+        targetInHamlet("{\"permissionGroupId\":\"g1\",\"subAdminPermissions\":{}}");
+        var denied = assertThrows(AccessDeniedException.class, () ->
+            rbac.saveProfile(target, Map.of("hamletIds", List.of(10L), "subAdminPermissions", Map.of("canViewField3DMap", true)))
+        );
+        assertTrue(denied.getMessage().contains("ngoài phạm vi nhóm"));
+    }
+
+    @Test
+    void savingAGroupThatNarrowsTheCeilingAsksBeforeRevokingAndThenRevokesOnlyHolders() {
+        doReturn(true).when(rbac).global();
+        groups(
+            "{\"id\":\"g1\",\"name\":\"CAV\",\"role\":\"officer\",\"ceiling\":[\"canUpdateInspection\",\"canScanOcr\"],\"defaults\":[],\"builtIn\":false}"
+        );
+        when(kc.users()).thenReturn(List.of(Map.of("id", target, "username", "officer", "enabled", true)));
+        when(db.queryForList("select data from rbac_profile where subject=?", String.class, target)).thenReturn(
+            List.of("{\"permissionGroupId\":\"g1\",\"subAdminPermissions\":{\"canScanOcr\":true}}")
+        );
+        Map<String, Object> narrowed = Map.of(
+            "id",
+            "g1",
+            "name",
+            "CAV",
+            "role",
+            "officer",
+            "ceiling",
+            List.of("canUpdateInspection"),
+            "defaults",
+            List.of()
+        );
+
+        var preview = rbac.savePermissionGroup(narrowed, false);
+        assertEquals(true, preview.get("requiresConfirmation"));
+        assertEquals(1, preview.get("affected"));
+        verify(db, never()).update(eq("update rbac_profile set data=?,version=version+1 where subject=?"), any(), any());
+
+        var saved = rbac.savePermissionGroup(narrowed, true);
+        assertEquals(1, saved.get("revoked"));
+        verify(db).update(
+            eq("update rbac_profile set data=?,version=version+1 where subject=?"),
+            argThat(data -> data.toString().contains("\"canScanOcr\":false")),
+            eq(target)
+        );
+    }
+
+    @Test
+    void wideningACeilingGrantsNobodyAnything() {
+        doReturn(true).when(rbac).global();
+        groups(
+            "{\"id\":\"g1\",\"name\":\"CAV\",\"role\":\"officer\",\"ceiling\":[\"canUpdateInspection\"],\"defaults\":[],\"builtIn\":false}"
+        );
+        when(kc.users()).thenReturn(List.of(Map.of("id", target, "username", "officer", "enabled", true)));
+        when(db.queryForList("select data from rbac_profile where subject=?", String.class, target)).thenReturn(
+            List.of("{\"permissionGroupId\":\"g1\",\"subAdminPermissions\":{}}")
+        );
+        var saved = rbac.savePermissionGroup(
+            Map.of(
+                "id",
+                "g1",
+                "name",
+                "CAV",
+                "role",
+                "officer",
+                "ceiling",
+                List.of("canUpdateInspection", "canScanOcr"),
+                "defaults",
+                List.of()
+            ),
+            false
+        );
+        assertEquals(0, saved.get("revoked"));
+        verify(db, never()).update(eq("update rbac_profile set data=?,version=version+1 where subject=?"), any(), any());
+    }
+
+    @Test
+    void builtInGroupsAndGroupsWithMembersCannotBeDeleted() {
+        doReturn(true).when(rbac).global();
+        groups(
+            "{\"id\":\"builtin-officer\",\"name\":\"Công an viên\",\"role\":\"officer\",\"ceiling\":[],\"defaults\":[],\"builtIn\":true}",
+            "{\"id\":\"g1\",\"name\":\"CAV\",\"role\":\"officer\",\"ceiling\":[],\"defaults\":[],\"builtIn\":false}"
+        );
+        when(kc.users()).thenReturn(List.of(Map.of("id", target, "username", "officer", "enabled", true)));
+        when(db.queryForList("select data from rbac_profile where subject=?", String.class, target)).thenReturn(
+            List.of("{\"permissionGroupId\":\"g1\"}")
+        );
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> rbac.deletePermissionGroup("builtin-officer"));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> rbac.deletePermissionGroup("g1"));
+        verify(db, never()).update(eq("delete from rbac_setting where kind=? and id=?"), any(), any());
+    }
+
+    @Test
+    void groupValidationRejectsDefaultsOutsideTheCeilingAndUnknownPermissions() {
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->
+            PermissionGroups.normalize(
+                Map.of("name", "X", "role", "officer", "ceiling", List.of(), "defaults", List.of("canScanOcr")),
+                null
+            )
+        );
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->
+            PermissionGroups.normalize(Map.of("name", "X", "role", "officer", "ceiling", List.of("canFly")), null)
+        );
+        var builtIn = PermissionGroups.builtIn("officer");
+        var renamed = PermissionGroups.normalize(Map.of("name", "CAV", "role", "admin", "ceiling", List.of()), builtIn);
+        assertEquals("officer", renamed.get("role"));
+        assertEquals(true, renamed.get("builtIn"));
     }
 
     @Test

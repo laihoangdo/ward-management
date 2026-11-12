@@ -125,22 +125,172 @@ public class RbacService {
         return result;
     }
 
+    /** Defaults of each role's built-in group, for the delegation screen's "apply defaults" button. */
     public Map<String, Map<String, Boolean>> permissionPresets() {
         if (!supervisor()) throw new AccessDeniedException("Không được xem bộ quyền mặc định");
         Map<String, Map<String, Boolean>> result = new LinkedHashMap<>();
-        for (String role : List.of("officer", "sub-admin", "admin")) result.put(role, preset(role));
+        for (String role : PermissionGroups.ROLES)
+            result.put(role, PermissionGroups.flags(PermissionGroups.defaults(groupFor(null, role))));
         return result;
     }
 
     /**
      * Account saves that carry no permission map must not silently revoke everything: a new account starts from its
-     * role preset, an edited account keeps the permissions it already had.
+     * group's defaults, an edited account keeps the permissions it already had.
      */
-    static Map<String, Object> withPermissions(Map<String, Object> incoming, String role, boolean creating, Map<String, Object> before) {
+    static Map<String, Object> withPermissions(
+        Map<String, Object> incoming,
+        Map<String, Boolean> defaults,
+        boolean creating,
+        Map<String, Object> before
+    ) {
         if (incoming.get("subAdminPermissions") instanceof Map) return incoming;
         Map<String, Object> copy = new LinkedHashMap<>(incoming);
-        copy.put("subAdminPermissions", creating ? preset(role) : before.getOrDefault("subAdminPermissions", Map.of()));
+        copy.put("subAdminPermissions", creating ? defaults : before.getOrDefault("subAdminPermissions", Map.of()));
         return copy;
+    }
+
+    private volatile boolean groupsSeeded;
+
+    /** Every permission group; the three built-in ones are created on first use and never overwritten afterwards. */
+    List<Map<String, Object>> groupSettings() {
+        if (!groupsSeeded) {
+            for (String role : PermissionGroups.ROLES)
+                db.update(
+                    "insert into rbac_setting(kind,id,data) values (?,?,?) on conflict(kind,id) do nothing",
+                    PermissionGroups.KIND,
+                    PermissionGroups.builtInId(role),
+                    encode(PermissionGroups.builtIn(role))
+                );
+            groupsSeeded = true;
+        }
+        return settings(PermissionGroups.KIND);
+    }
+
+    /** A member's group: the stored one when it belongs to the member's role, otherwise the role's built-in group. */
+    Map<String, Object> groupFor(Object groupId, String role) {
+        if (!PermissionGroups.ROLES.contains(role)) return null;
+        var groups = groupSettings();
+        return groups
+            .stream()
+            .filter(g -> groupId != null && Objects.equals(g.get("id"), String.valueOf(groupId)) && role.equals(g.get("role")))
+            .findFirst()
+            .or(() ->
+                groups
+                    .stream()
+                    .filter(g -> PermissionGroups.builtInId(role).equals(g.get("id")))
+                    .findFirst()
+            )
+            .orElseGet(() -> PermissionGroups.builtIn(role));
+    }
+
+    private List<Map<String, Object>> memberProfiles() {
+        return kc
+            .users()
+            .stream()
+            .filter(u -> !Objects.toString(u.get("username"), "").startsWith("service-account-"))
+            .map(this::profile)
+            .toList();
+    }
+
+    public List<Map<String, Object>> permissionGroups() {
+        if (!supervisor()) throw new AccessDeniedException("Không được xem nhóm quyền");
+        Map<Object, Long> counts = new LinkedHashMap<>();
+        for (var member : memberProfiles())
+            if (member.get("permissionGroupId") != null) counts.merge(member.get("permissionGroupId"), 1L, Long::sum);
+        return groupSettings()
+            .stream()
+            .map(g -> {
+                Map<String, Object> copy = new LinkedHashMap<>(g);
+                copy.put("members", counts.getOrDefault(g.get("id"), 0L));
+                return copy;
+            })
+            .toList();
+    }
+
+    /**
+     * Creates or edits a group. Widening the ceiling grants nothing; narrowing it revokes the removed permissions from
+     * members who hold them, but only after the super admin has seen how many members that affects.
+     */
+    @org.springframework.transaction.annotation.Transactional
+    public Map<String, Object> savePermissionGroup(Map<String, Object> incoming, boolean confirmRevoke) {
+        superadmin();
+        Object requestedId = incoming.get("id");
+        Map<String, Object> existing =
+            requestedId == null
+                ? null
+                : groupSettings()
+                      .stream()
+                      .filter(g -> Objects.equals(g.get("id"), String.valueOf(requestedId)))
+                      .findFirst()
+                      .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy nhóm quyền"));
+        var group = PermissionGroups.normalize(incoming, existing);
+        var members =
+            existing == null
+                ? List.<Map<String, Object>>of()
+                : memberProfiles()
+                      .stream()
+                      .filter(m -> Objects.equals(m.get("permissionGroupId"), existing.get("id")))
+                      .toList();
+        if (
+            existing != null && !Objects.equals(existing.get("role"), group.get("role")) && !members.isEmpty()
+        ) throw new ResponseStatusException(HttpStatus.CONFLICT, "Không đổi vai trò của nhóm khi nhóm còn cán bộ");
+        var removed = PermissionGroups.removed(existing, group);
+        List<String> affected = members
+            .stream()
+            .map(m -> String.valueOf(m.get("id")))
+            .filter(subject -> {
+                var chosen = (Map<?, ?>) stored(subject).getOrDefault("subAdminPermissions", Map.of());
+                return removed.stream().anyMatch(key -> Boolean.TRUE.equals(chosen.get(key)));
+            })
+            .toList();
+        if (!affected.isEmpty() && !confirmRevoke) {
+            Map<String, Object> confirmation = new LinkedHashMap<>();
+            confirmation.put("requiresConfirmation", true);
+            confirmation.put("affected", affected.size());
+            confirmation.put("permissions", removed);
+            return confirmation;
+        }
+        db.update(
+            "insert into rbac_setting(kind,id,data) values (?,?,?) on conflict(kind,id) do update set data=excluded.data",
+            PermissionGroups.KIND,
+            group.get("id"),
+            encode(group)
+        );
+        audit("setting-" + PermissionGroups.KIND, String.valueOf(group.get("id")), group);
+        for (String subject : affected) {
+            var data = stored(subject);
+            Map<String, Object> chosen = new LinkedHashMap<>();
+            ((Map<?, ?>) data.getOrDefault("subAdminPermissions", Map.of())).forEach((key, value) ->
+                chosen.put(String.valueOf(key), value)
+            );
+            for (String key : removed) chosen.put(key, false);
+            data.put("subAdminPermissions", chosen);
+            db.update("update rbac_profile set data=?,version=version+1 where subject=?", encode(data), subject);
+            audit("permission-group-revoked", subject, Map.of("group", group.get("id"), "permissions", removed));
+        }
+        Map<String, Object> result = new LinkedHashMap<>(group);
+        result.put("members", members.size());
+        result.put("revoked", affected.size());
+        return result;
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void deletePermissionGroup(String id) {
+        superadmin();
+        var group = groupSettings()
+            .stream()
+            .filter(g -> Objects.equals(g.get("id"), id))
+            .findFirst()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy nhóm quyền"));
+        if (Boolean.TRUE.equals(group.get("builtIn"))) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không xóa nhóm gốc");
+        if (
+            memberProfiles()
+                .stream()
+                .anyMatch(m -> Objects.equals(m.get("permissionGroupId"), id))
+        ) throw new ResponseStatusException(HttpStatus.CONFLICT, "Chuyển hết cán bộ sang nhóm khác trước khi xóa nhóm");
+        db.update("delete from rbac_setting where kind=? and id=?", PermissionGroups.KIND, id);
+        audit("delete-" + PermissionGroups.KIND, id, Map.of());
     }
 
     public void permission(String name) {
@@ -276,11 +426,23 @@ public class RbacService {
         data.put("hamletIds", assignments(id));
         data.putIfAbsent("assignedHamlets", List.of());
         data.putIfAbsent("assignedStreets", List.of());
-        Map<String, Object> permissions = new LinkedHashMap<>();
+        // Effective permissions: the supervisor's choice limited by the member group's ceiling (super admin: all).
+        String role = (String) data.get("role");
         var configured = (Map<?, ?>) data.getOrDefault("subAdminPermissions", Map.of());
-        for (String key : PERMISSIONS)
-            permissions.put(key, "superadmin".equals(data.get("role")) || Boolean.TRUE.equals(configured.get(key)));
-        data.put("subAdminPermissions", permissions);
+        var group = groupFor(data.get("permissionGroupId"), role);
+        List<String> ceiling = "superadmin".equals(role) || group == null ? PERMISSIONS : PermissionGroups.ceiling(group);
+        data.put(
+            "subAdminPermissions",
+            "superadmin".equals(role) ? PermissionGroups.flags(PERMISSIONS) : PermissionGroups.clip(configured, ceiling)
+        );
+        data.put("permissionCeiling", ceiling);
+        if (group != null) {
+            data.put("permissionGroupId", group.get("id"));
+            data.put("permissionGroupName", group.get("name"));
+        } else {
+            data.remove("permissionGroupId");
+            data.remove("permissionGroupName");
+        }
         data.put(
             "version",
             db.queryForList("select version from rbac_profile where subject=?", Long.class, id).stream().findFirst().orElse(0L)
@@ -395,8 +557,22 @@ public class RbacService {
         Map<String, Object> permissions = new LinkedHashMap<>();
         Map<?, ?> requested = (Map<?, ?>) incoming.getOrDefault("subAdminPermissions", Map.of());
         Map<?, ?> previouslyGranted = (Map<?, ?>) existing.getOrDefault("subAdminPermissions", Map.of());
+        // Only the super admin moves an account between groups; everyone else keeps the account's current group.
+        Object requestedGroup = global() ? incoming.get("permissionGroupId") : null;
+        var group = groupFor(requestedGroup != null ? requestedGroup : existing.get("permissionGroupId"), (String) existing.get("role"));
+        if (
+            requestedGroup != null && group != null && !Objects.equals(String.valueOf(requestedGroup), group.get("id"))
+        ) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nhóm quyền không tồn tại hoặc không cùng vai trò với tài khoản");
+        List<String> ceiling = group == null ? PERMISSIONS : PermissionGroups.ceiling(group);
         for (String key : PERMISSIONS) {
             boolean value = Boolean.TRUE.equals(requested.get(key));
+            if (value && !ceiling.contains(key)) {
+                // The super admin's own edits (e.g. a role change) are trimmed to the new ceiling; delegates are told why.
+                if (global()) value = false;
+                else throw new AccessDeniedException(
+                    "Quyền " + key + " nằm ngoài phạm vi nhóm \"" + group.get("name") + "\" do Super Admin đặt"
+                );
+            }
             // A supervisor may retain an existing grant without possessing that feature themselves.
             // Viewing the two maps can be delegated to a subordinate by any supervisor in scope.
             if (value && !Boolean.TRUE.equals(previouslyGranted.get(key)) && !global() && !MAP_VIEW_PERMISSIONS.contains(key)) permission(
@@ -410,6 +586,7 @@ public class RbacService {
             data.put(key, incoming.getOrDefault(key, key.equals("assignedStreets") ? List.of() : ""));
         data.put("status", "active");
         data.put("subAdminPermissions", permissions);
+        if (group != null) data.put("permissionGroupId", group.get("id"));
         data.put(
             "assignedHamlets",
             areas
@@ -451,6 +628,12 @@ public class RbacService {
         resolveHamlets(incoming);
         String role = String.valueOf(incoming.get("role"));
         if (!KeycloakAdminClient.ROLES.containsKey(role)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vai trò không hợp lệ");
+        var group = groupFor(incoming.get("permissionGroupId"), role);
+        if (
+            incoming.get("permissionGroupId") != null &&
+            group != null &&
+            !Objects.equals(String.valueOf(incoming.get("permissionGroupId")), group.get("id"))
+        ) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nhóm quyền không tồn tại hoặc không cùng vai trò");
         if (creating) {
             String username = String.valueOf(incoming.getOrDefault("username", "")).trim();
             if (!username.matches("[a-zA-Z0-9._@-]{3,100}")) throw new ResponseStatusException(
@@ -482,7 +665,10 @@ public class RbacService {
             audit("identity-created-disabled", id, Map.of("username", username));
         } else manage(profile(kc.user(id)));
         var before = profile(kc.user(id));
-        incoming = withPermissions(incoming, role, creating, before);
+        incoming = new LinkedHashMap<>(
+            withPermissions(incoming, group == null ? Map.of() : PermissionGroups.flags(PermissionGroups.defaults(group)), creating, before)
+        );
+        if (group != null) incoming.put("permissionGroupId", group.get("id"));
         if (
             !creating &&
             incoming.get("version") instanceof Number version &&
