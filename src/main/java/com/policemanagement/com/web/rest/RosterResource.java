@@ -217,11 +217,6 @@ public class RosterResource {
             .body(service.reportCsv(from, to));
     }
 
-    @GetMapping("/map")
-    public Map<String, Object> map() {
-        return service.map();
-    }
-
     @GetMapping(value = "/report-detail.csv", produces = "text/csv;charset=UTF-8")
     public ResponseEntity<String> detailedCsv(@RequestParam String from, @RequestParam String to) {
         return ResponseEntity.ok()

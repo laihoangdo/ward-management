@@ -2,14 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router';
 import { useRouteQuery, RECORD_QUERY_KEYS } from '../gis/utils/useRouteQuery';
-import * as maplibregl from 'maplibre-gl';
-// Registers the MapLibre worker URL before any map instance is created.
-import '../gis/utils/maplibreWorkerUrl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 import './roster.css';
 import { displayDate } from './dateDisplay';
 import { House, Users } from 'lucide-react';
-import { localRasterRequest } from '../gis/utils/localRasterRequest';
+import RosterMapPane from './RosterMapPane';
 import RosterPatrol from './RosterPatrol';
 import HouseholdSplitDialog from './HouseholdSplitDialog';
 
@@ -378,80 +374,19 @@ function errorMessage(e: unknown) {
   return 'Không thể hoàn tất thao tác.';
 }
 
-function RosterMap({ onSelect }: { onSelect: (id: string) => void }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState('');
+/** True from 1024px up, where the list and the right pane sit side by side. */
+function useWideScreen() {
+  const query = '(min-width: 1024px)';
+  const [wide, setWide] = useState(() => (typeof window.matchMedia === 'function' ? window.matchMedia(query).matches : true));
   useEffect(() => {
-    let map: maplibregl.Map | undefined;
-    let disposed = false;
-    axios
-      .get(`${api}/map`)
-      .then(({ data }) => {
-        if (disposed || !containerRef.current) return;
-        map = new maplibregl.Map({
-          container: containerRef.current,
-          center: [106.59, 10.84],
-          zoom: 14,
-          transformRequest: localRasterRequest,
-          style: {
-            version: 8,
-            sources: {
-              base: {
-                type: 'raster',
-                tiles: [`${location.origin}/content/assets/badiem_satellite/{z}/{x}/{y}.jpg`],
-                tileSize: 256,
-                minzoom: 5,
-                maxzoom: 18,
-                bounds: [106.5, 10.79, 106.63, 10.91],
-                attribution: 'Ảnh vệ tinh hiện có của dự án',
-              },
-            },
-            layers: [
-              { id: 'ground', type: 'background', paint: { 'background-color': '#e2e8f0' } },
-              { id: 'base', type: 'raster', source: 'base' },
-            ],
-          },
-        });
-        map.addControl(new maplibregl.NavigationControl());
-        map.on('load', () => {
-          if (!map) return;
-          map.addSource('boundary', {
-            type: 'geojson',
-            data: data.boundary.type === 'Feature' ? data.boundary : { type: 'Feature', properties: {}, geometry: data.boundary },
-          });
-          map.addLayer({ id: 'boundary', type: 'line', source: 'boundary', paint: { 'line-color': '#facc15', 'line-width': 2 } });
-          map.addSource('households', { type: 'geojson', data: { type: 'FeatureCollection', features: data.features } });
-          map.addLayer({
-            id: 'households',
-            type: 'circle',
-            source: 'households',
-            paint: { 'circle-radius': 5, 'circle-color': '#fb923c', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1 },
-          });
-          const bounds = new maplibregl.LngLatBounds();
-          data.features.forEach((f: Row) => bounds.extend(f.geometry.coordinates));
-          if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 35, maxZoom: 16 });
-          map.on('click', 'households', e => {
-            const id = e.features?.[0]?.properties?.id;
-            if (id) onSelect(id);
-          });
-        });
-      })
-      .catch(e => setError(errorMessage(e)));
-    return () => {
-      disposed = true;
-      map?.remove();
-    };
-  }, [onSelect]);
-  return (
-    <section>
-      <p className="roster-notice">
-        Điểm màu cam là tọa độ random trong ranh TC2, chưa xác minh và chưa liên kết khối nhà. Địa chỉ chỉ tạo seed ổn định, không suy ra
-        GPS thực tế.
-      </p>
-      {error && <p role="alert">{error}</p>}
-      <div ref={containerRef} className="roster-map" />
-    </section>
-  );
+    if (typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(query);
+    const update = () => setWide(media.matches);
+    media.addEventListener('change', update);
+    update();
+    return () => media.removeEventListener('change', update);
+  }, []);
+  return wide;
 }
 
 function RosterWorkspace({
@@ -470,7 +405,7 @@ function RosterWorkspace({
   householdTarget?: { legacyId: string; edit: boolean } | null;
 }) {
   const { params: urlParams, updateQuery } = useRouteQuery();
-  const rosterTabs = ['households', 'residents', 'import', 'history', 'map', 'patrol'];
+  const rosterTabs = ['households', 'residents', 'import', 'history', 'patrol'];
   const tabParam = embedded ? (urlParams.get('rosterTab') ?? urlParams.get('tab')) : urlParams.get('tab');
   const routeTab = rosterTabs.includes(tabParam ?? '') ? tabParam! : initialTab;
   const tab = routeTab;
@@ -493,6 +428,11 @@ function RosterWorkspace({
   const [linkPerson, setLinkPerson] = useState<Row | null>(null);
   const [transferMembership, setTransferMembership] = useState<Row | null>(null);
   const [splitting, setSplitting] = useState(false);
+  // Split view: the household list beside a map of recorded positions.
+  const [mapOn, setMapOn] = useState(false);
+  const [paneView, setPaneView] = useState<'map' | 'detail'>('map');
+  const [narrowMapView, setNarrowMapView] = useState(false);
+  const wide = useWideScreen();
   const [overview, setOverview] = useState<Row>({});
   const [list, setList] = useState<{ tab: string; items: Row[]; total: number }>({ tab: '', items: [], total: 0 });
   const items = list.tab === tab ? list.items : [];
@@ -1565,7 +1505,6 @@ function RosterWorkspace({
           ['households', 'Danh sách hộ dân'],
           ['residents', 'Quản lý nhân khẩu'],
           ['import', 'Nhập Excel / đối soát'],
-          ['map', 'Vị trí tạm'],
           ['patrol', 'Tuần tra'],
           ['history', 'Lịch sử & báo cáo'],
         ].map(([v, l]) => (
@@ -1600,8 +1539,27 @@ function RosterWorkspace({
         {overview.review_rows ?? '…'} dòng chờ đối soát. Số này chưa phải dân số thực tế đã xác minh.
       </p>
       {tab === 'patrol' && <RosterPatrol />}
+      {tab === 'households' && (
+        <div className="roster-view-toggle">
+          <button type="button" aria-pressed={mapOn} onClick={() => setMapOn(on => !on)}>
+            {mapOn ? 'Ẩn bản đồ' : 'Hiện bản đồ vị trí'}
+          </button>
+          {mapOn && (
+            <div className="roster-pane-switch" role="group" aria-label="Chế độ xem">
+              <button type="button" aria-pressed={!narrowMapView} onClick={() => setNarrowMapView(false)}>
+                Danh sách
+              </button>
+              <button type="button" aria-pressed={narrowMapView} onClick={() => setNarrowMapView(true)}>
+                Bản đồ
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       {(tab === 'households' || tab === 'residents') && (
-        <div className={`roster-workspace ${detailOpen ? 'has-selection' : ''}`}>
+        <div
+          className={`roster-workspace ${detailOpen && (!mapOn || tab !== 'households' || paneView === 'detail' || !wide) ? 'has-selection' : ''} ${mapOn && tab === 'households' ? 'has-map' : ''} ${mapOn && narrowMapView ? 'map-view' : ''}`}
+        >
           <section
             className="roster-list-pane"
             aria-label={tab === 'households' ? 'Danh sách hộ dân' : 'Danh sách nhân khẩu'}
@@ -1929,7 +1887,17 @@ function RosterWorkspace({
               </>
             )}
           </section>
-          {detailOpen && (
+          {mapOn && tab === 'households' && (paneView === 'map' || !detailOpen) && wide && (
+            <RosterMapPane
+              selectedId={household?.id ?? null}
+              onSelect={id => run(() => loadHouse(id))}
+              onOpenDetail={detailOpen ? () => setPaneView('detail') : undefined}
+            />
+          )}
+          {mapOn && tab === 'households' && !wide && narrowMapView && (
+            <RosterMapPane selectedId={household?.id ?? null} onSelect={id => run(() => loadHouse(id))} />
+          )}
+          {detailOpen && !(mapOn && tab === 'households' && paneView === 'map' && wide) && (
             <aside
               ref={detailRef}
               className="roster-detail-pane"
@@ -1944,6 +1912,7 @@ function RosterWorkspace({
                 </div>
                 <div className="roster-actions">
                   {person && household && <button onClick={() => run(() => loadHouse(household.id))}>← Về hộ đang xem</button>}
+                  {mapOn && tab === 'households' && wide && <button onClick={() => setPaneView('map')}>Xem trên bản đồ</button>}
                   <button onClick={closeDetail}>Đóng chi tiết</button>
                 </div>
               </div>
@@ -2129,13 +2098,7 @@ function RosterWorkspace({
           )}
         </section>
       )}
-      {tab === 'map' && (
-        <RosterMap
-          onSelect={id => {
-            run(() => loadHouse(id));
-          }}
-        />
-      )}
+
       {tab === 'history' && (
         <section>
           <h2>Lịch sử và biến động theo ngày ghi nhận</h2>

@@ -390,4 +390,17 @@ describe('Real roster workflows', () => {
     );
     expect((await screen.findByRole('note')).textContent).toContain('7 cá nhân chưa có ngày sinh đầy đủ');
   });
+  it('replaces the old random-point tab with a split map beside the household list', async () => {
+    open();
+    await screen.findByText(/62 dòng chờ đối soát/);
+    expect(screen.queryByRole('button', { name: 'Vị trí tạm' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Bản đồ vị trí hộ' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Hiện bản đồ vị trí' }));
+    expect(await screen.findByRole('region', { name: 'Bản đồ vị trí hộ' })).toBeDefined();
+    expect(vi.mocked(axios.get)).toHaveBeenCalledWith('/api/roster/map');
+    expect(screen.getByRole('region', { name: 'Danh sách hộ dân' })).toBeDefined();
+    expect(screen.getByRole('group', { name: 'Chế độ xem' })).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Ẩn bản đồ' }));
+    expect(screen.queryByRole('region', { name: 'Bản đồ vị trí hộ' })).toBeNull();
+  });
 });

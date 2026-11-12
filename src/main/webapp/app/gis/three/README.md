@@ -1,6 +1,8 @@
 # Three.js effects on the existing MapLibre field map
 
-The dashboard has one existing `FieldHouseMap` renderer. The two separate standalone/experimental viewer tabs have been removed. Its opt-in **Hiệu ứng Three.js** button attaches an effect layer to the same map, camera and WebGL canvas; it does not replace map navigation or business functionality.
+The dashboard has one existing `FieldHouseMap` renderer. The two separate standalone/experimental viewer tabs have been removed. Its **Hiệu ứng Three.js** effects are on by default when the map opens and attach an effect layer to the same map, camera and WebGL canvas; the button turns them off and on again, and a load or render failure restores the native blocks. They do not replace map navigation or business functionality.
+
+The roster map (`app/roster/RosterMapPane.tsx`) reuses `attachFieldEffects` and the shared design in `app/gis/utils/threeAppearance.ts` (natural 1–5 floor heights, tiled or flat roofs, wall colours), so households appear as the same windowed, roofed blocks; the footprint outline colour shows how reliable each household position is.
 
 ## Retained modules
 

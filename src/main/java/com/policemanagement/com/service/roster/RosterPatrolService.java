@@ -27,6 +27,15 @@ public class RosterPatrolService {
     static final int DEFAULT_RADIUS = 50;
     static final int LIMIT = 20;
 
+    /**
+     * How reliable a household's building link is. Expects the aliases {@code h} (household), {@code b} (building) and {@code i}
+     * (gis_field_building_household_import, left-joined on household and building).
+     */
+    static final String LINK_QUALITY_SQL =
+        "case when exists(select 1 from household_link_confirmation c where c.household_id=h.id and c.building_id=b.id) then 'CONFIRMED'" +
+        " when i.source like '%-estimated' then 'ESTIMATED' when i.match_tier='exact' then 'EXACT'" +
+        " when i.match_tier is not null then 'DRAWING_APPROX' else 'MANUAL' end";
+
     private final JdbcTemplate db;
     private final RosterService roster;
     private final RbacService rbac;
@@ -78,8 +87,9 @@ public class RosterPatrolService {
         var rows = db.queryForList(
             "with me as (select ST_SetSRID(ST_MakePoint(?,?),4326)::geography g), cand as (" +
                 " select h.id hid, h.roster_id id, h.code, h.raw_address, 'BUILDING' position_source, ST_Distance(b.footprint_geom::geography, me.g) distance_m," +
-                " case when exists(select 1 from household_link_confirmation c where c.household_id=h.id and c.building_id=b.id) then 'CONFIRMED'" +
-                " when i.source like '%-estimated' then 'ESTIMATED' when i.match_tier='exact' then 'EXACT' when i.match_tier is not null then 'DRAWING_APPROX' else 'MANUAL' end link_quality" +
+                " " +
+                LINK_QUALITY_SQL +
+                " link_quality" +
                 " from me, public.gis_field_building_household bh join public.gis_field_building b on b.id=bh.building_id" +
                 " join public.household h on h.id=bh.household_id" +
                 " left join public.gis_field_building_household_import i on i.household_id=h.id and i.building_id=b.id" +

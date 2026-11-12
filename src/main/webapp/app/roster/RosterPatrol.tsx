@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { displayDate } from './dateDisplay';
+import { qualityLabel } from './linkQuality';
 
 type Visit = { outcome: string; observed_at: string } | null;
 type Nearby = {
@@ -18,15 +19,6 @@ type Fix = { latitude: number; longitude: number; accuracy: number };
 const sourceLabel: Record<string, string> = {
   BUILDING: 'Theo công trình đã liên kết',
   VERIFIED_COORDINATE: 'Toạ độ đã xác minh tại hiện trường',
-};
-
-const qualityLabel: Record<string, string> = {
-  VERIFIED: 'Toạ độ đã xác minh',
-  CONFIRMED: 'Vị trí đã được cán bộ xác nhận tại cửa nhà',
-  EXACT: 'Vị trí chính xác theo bản vẽ',
-  DRAWING_APPROX: 'Vị trí theo bản vẽ, khớp ở mức ấp',
-  MANUAL: 'Vị trí do cán bộ liên kết',
-  ESTIMATED: 'Vị trí ước lượng, cần xác nhận tại cửa nhà',
 };
 
 const geoMessage = (error: GeolocationPositionError) =>

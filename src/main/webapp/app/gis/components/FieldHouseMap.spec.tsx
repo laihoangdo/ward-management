@@ -315,7 +315,8 @@ describe('field map controls', () => {
         : originalGet(url, config),
     );
     await mount([household], true);
-    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    // Effects are on by default: no click is needed to enable them.
+    expect(await screen.findByRole('button', { name: 'Tắt hiệu ứng Three.js' })).toBeDefined();
     await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledOnce());
     selectHouse();
     fireEvent.change(screen.getByRole('combobox', { name: 'Chọn hộ dân để liên kết' }), { target: { value: '1' } });
@@ -326,6 +327,13 @@ describe('field map controls', () => {
     expect(payload.properties).not.toHaveProperty('wallColor');
     expect(payload.properties).not.toHaveProperty('roofShape');
     expect(payload.properties.householdIds).toEqual(['1']);
+  });
+  it('opens with the Three.js effects already on and lets the user switch them off', async () => {
+    await mount([], false);
+    expect(screen.getByRole('button', { name: 'Tắt hiệu ứng Three.js' }).getAttribute('aria-pressed')).toBe('true');
+    await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Tắt hiệu ứng Three.js' }));
+    expect(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }).getAttribute('aria-pressed')).toBe('false');
   });
   it('applies effects on the existing map, preserves selection and restores native rendering when disabled', async () => {
     const originalGet = vi.mocked(axios.get).getMockImplementation()!;
@@ -345,7 +353,8 @@ describe('field map controls', () => {
         : originalGet(url, config),
     );
     await mount([], false);
-    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    // Effects are on by default: no click is needed to enable them.
+    expect(await screen.findByRole('button', { name: 'Tắt hiệu ứng Three.js' })).toBeDefined();
     await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(mocks.setPaintProperty).toHaveBeenCalledWith('houses-3d', 'fill-extrusion-opacity', 0));
     const input = mocks.effectsAttach.mock.calls[0][1].collection.features[0];
@@ -400,7 +409,8 @@ describe('field map controls', () => {
       mocks.handlers.get('load')?.();
     });
     await screen.findByText('2 công trình');
-    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    // Effects are on by default: no click is needed to enable them.
+    expect(await screen.findByRole('button', { name: 'Tắt hiệu ứng Three.js' })).toBeDefined();
     await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledTimes(1));
     const passedFeatures = mocks.effectsAttach.mock.calls[0][1].collection.features as FieldHouse[];
     expect(passedFeatures).toHaveLength(1);
@@ -413,7 +423,8 @@ describe('field map controls', () => {
 
   it('disposes shared-context effects before destroying the host map', async () => {
     await mount([], false);
-    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    // Effects are on by default: no click is needed to enable them.
+    expect(await screen.findByRole('button', { name: 'Tắt hiệu ứng Three.js' })).toBeDefined();
     await waitFor(() => expect(mocks.effectsAttach).toHaveBeenCalledOnce());
     cleanup();
     expect(mocks.effectsDispose).toHaveBeenCalled();
@@ -428,7 +439,8 @@ describe('field map controls', () => {
       dispose: mocks.effectsDispose,
     }));
     await mount([], false);
-    fireEvent.click(screen.getByRole('button', { name: 'Hiệu ứng Three.js' }));
+    // Effects are on by default: no click is needed to enable them.
+    expect(await screen.findByRole('button', { name: 'Tắt hiệu ứng Three.js' })).toBeDefined();
     await screen.findByText('Không khởi tạo được hiệu ứng; bản đồ gốc vẫn hoạt động.');
     expect(mocks.effectsAttach).toHaveBeenCalledOnce();
     expect(mocks.setPaintProperty).not.toHaveBeenCalledWith('houses-3d', 'fill-extrusion-opacity', 0);

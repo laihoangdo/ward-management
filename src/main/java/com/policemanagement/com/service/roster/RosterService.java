@@ -1543,24 +1543,8 @@ public class RosterService {
         return "\"" + text.replace("\"", "\"\"") + "\"";
     }
 
-    public Map<String, Object> map() {
-        authorize("canViewAdvancedMap");
-        var features = new ArrayList<Map<String, Object>>();
-        for (var h : db.queryForList(
-            "select id,code,raw_address,longitude,latitude,coordinate_method from tc2_roster.household where hamlet_id=? and latitude is not null",
-            hamlet()
-        )) {
-            features.add(
-                Map.of(
-                    "type",
-                    "Feature",
-                    "geometry",
-                    Map.of("type", "Point", "coordinates", List.of(h.get("longitude"), h.get("latitude"))),
-                    "properties",
-                    h
-                )
-            );
-        }
-        return Map.of("type", "FeatureCollection", "features", features, "boundary", json.readTree(boundary()));
+    /** Boundary GeoJSON of the hamlet the request works on. */
+    public String boundaryGeoJson() {
+        return boundary();
     }
 }
