@@ -22,7 +22,7 @@ class RosterCampaignTest {
         }) {
             assertTrue(RosterCampaign.valid(code), code);
             assertTrue(RosterCampaign.predicate(code).isPresent(), code);
-            assertFalse(RosterCampaign.predicate(code).get().contains("?"), "no bind placeholders or user input: " + code);
+            assertFalse(RosterCampaign.predicate(code).orElseThrow().contains("?"), "no bind placeholders or user input: " + code);
         }
         assertTrue(RosterCampaign.valid(""));
         assertTrue(RosterCampaign.predicate("").isEmpty());
