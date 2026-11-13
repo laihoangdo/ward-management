@@ -54,12 +54,12 @@ const vertexShader = `
       p = instanceMatrix * p;
     #endif
     vNormal = normalize(mat3(modelMatrix) * n);
-    vWorld = (modelMatrix * p).xyz;
+    vec4 world = modelMatrix * p;
     if (uRealistic && uMode == 0) vColor = unpackColor(vNormal.y > 0.3 ? vAppearance.y : vAppearance.x);
     vVisible = 1.0;
     vHighlight = 0.0;
     if (uUseDisplay) {
-      // x: packed colour (-1 keeps the appearance), y: visible, z: status tint, w: highlight level.
+      // x: packed colour (-1 keeps the appearance), y: 1 visible / 0.5 dimmed / 0 hidden, z: status tint, w: highlight level.
       vec4 display = texelFetch(uDisplay, ivec2(feature % uMetadataWidth, feature / uMetadataWidth), 0);
       vVisible = display.y;
       vHighlight = display.w;
@@ -69,8 +69,14 @@ const vertexShader = `
         bool keepWall = display.z > 0.5 && uRealistic && uMode == 0 && vNormal.y <= 0.3;
         vColor = keepWall ? mix(vColor, tint, 0.3) : tint;
       }
+      if (display.y > 0.25 && display.y < 0.75) {
+        // Filtered out: a low grey block keeps the street layout readable without competing with the matches.
+        world.y *= 0.25;
+        vColor = vec3(0.3, 0.33, 0.35);
+      }
     }
-    gl_Position = projectionMatrix * viewMatrix * modelMatrix * p;
+    vWorld = world.xyz;
+    gl_Position = projectionMatrix * viewMatrix * world;
   }
 `;
 
@@ -91,7 +97,8 @@ const fragmentShader = `
       color * 12.92, lessThanEqual(color, vec3(0.0031308)));
   }
   void main() {
-    if (vVisible < 0.5) discard;
+    if (vVisible < 0.25) discard;
+    bool dimmed = vVisible < 0.75;
     vec3 n = normalize(vNormal);
     vec3 sunDir = normalize(vec3(0.55, 0.92, 0.38));
     vec3 fillDir = normalize(vec3(-0.45, 0.65, -0.35));
@@ -110,7 +117,7 @@ const fragmentShader = `
         float roofWave = 0.96 + 0.04 * sin(dot(vWorld.xz, vec2(3.2, 3.2)));
         color *= roofWave;
       }
-      if (uMode == 0 && abs(n.y) < 0.2) {
+      if (uMode == 0 && abs(n.y) < 0.2 && !dimmed) {
         float floorH = max(vAppearance.z, 2.6);
         vec2 facade = vec2(dot(vWorld.xz, normalize(vec2(-n.z, n.x))), vWorld.y);
         // Floor slab horizontal band (chỉ phân tầng)
@@ -156,16 +163,17 @@ const shadowVertexShader = `
     #ifdef USE_INSTANCING
       p = instanceMatrix * p;
     #endif
-    bool visible = true;
+    float shown = 1.0;
     if (uUseDisplay) {
       int feature = int(aFeature + 0.5);
-      visible = texelFetch(uDisplay, ivec2(feature % uMetadataWidth, feature / uMetadataWidth), 0).y > 0.5;
+      shown = texelFetch(uDisplay, ivec2(feature % uMetadataWidth, feature / uMetadataWidth), 0).y;
     }
-    if (up <= 0.3 || !visible) {
+    if (up <= 0.3 || shown < 0.25) {
       gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
       return;
     }
     vec4 world = modelMatrix * p;
+    if (shown < 0.75) world.y *= 0.25; // dimmed buildings are drawn flattened, so their shadow shortens with them
     // Same sun as the fragment shader: normalize(0.55, 0.92, 0.38). Length is capped so tall blocks keep an attached shadow.
     world.xz -= vec2(0.598, 0.413) * min(world.y, 12.0);
     world.y = 0.06;
@@ -302,7 +310,7 @@ export class BuildingLayer {
       const index = this.indices.get(String(state.id));
       if (index === undefined) continue;
       this.displayData[index * 4] = /^#[\da-f]{6}$/i.test(state.color ?? '') ? Number.parseInt(state.color.slice(1), 16) : -1;
-      this.displayData[index * 4 + 1] = state.visible ? 1 : 0;
+      this.displayData[index * 4 + 1] = state.visible ? (state.dim ? 0.5 : 1) : 0;
       this.displayData[index * 4 + 2] = state.tint ? 1 : 0;
     }
     this.highlighted = [];

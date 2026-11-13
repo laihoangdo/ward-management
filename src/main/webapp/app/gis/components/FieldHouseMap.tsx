@@ -27,6 +27,16 @@ import { frameMapCapture, MapCaptureOfficer } from '../utils/mapCapture';
 import { MapCapturePreview } from './MapCapturePreview';
 import FieldHousePropertiesEditor from './FieldHousePropertiesEditor';
 import { matchesHouseholdSearch } from '../utils/householdSearch';
+import {
+  BUILDING_THEMES,
+  BuildingTheme,
+  OCCUPANCY_SCALE,
+  RECENCY_SCALE,
+  RESIDENT_SCALE,
+  recencyBucket,
+  residentBucket,
+  themeColor,
+} from '../utils/buildingTheme';
 import { drawLabelImage, LABEL_IMAGE_PREFIX, LABEL_PIXEL_RATIO, labelText } from '../utils/mapLabelImage';
 
 interface Props {
@@ -54,6 +64,28 @@ const STATUS_PRIORITY: HouseholdStatus[] = ['alert', 'warning', 'business', 'nor
 const highestStatus = (residents: HouseholdFacility[]): HouseholdStatus =>
   STATUS_PRIORITY.find(status => residents.some(r => r.status === status)) ?? 'unverified';
 const QUICK_RESULT_LIMIT = 20;
+/** Buildings that do not match the status filter stay on the map as low grey blocks, so the street still reads. */
+const DIM_COLOR = '#c3cad0';
+const OWN_COLOR: maplibregl.ExpressionSpecification = ['coalesce', ['get', 'displayColor'], '#b6c9d6'];
+const scaleExpression = (property: string, colors: string[]): maplibregl.ExpressionSpecification =>
+  [
+    'match',
+    ['get', property],
+    ...colors.flatMap((color, index) => [index, color]),
+    OWN_COLOR,
+  ] as unknown as maplibregl.ExpressionSpecification;
+const THEME_EXPRESSION: Record<BuildingTheme, maplibregl.ExpressionSpecification> = {
+  status: OWN_COLOR,
+  occupancy: ['case', ['get', 'occupied'], OCCUPANCY_SCALE[0].color, OCCUPANCY_SCALE[1].color],
+  residents: scaleExpression(
+    'residentBucket',
+    RESIDENT_SCALE.map(item => item.color),
+  ),
+  recency: scaleExpression(
+    'checkedBucket',
+    RECENCY_SCALE.map(item => item.color),
+  ),
+};
 /** First matches only: the shared accent-insensitive lookup (owner, address, code, phone, residents, ID numbers). */
 function searchHouseholds(list: HouseholdFacility[], query: string, limit: number): HouseholdFacility[] {
   const result: HouseholdFacility[] = [];
@@ -254,6 +286,8 @@ export default function FieldHouseMap({
   useEffect(() => setUnlinkId(''), [selectedId]);
   const [status, setStatus] = useState<'all' | HouseholdStatus>('all');
   const [representation, setRepresentation] = useState<'3d' | 'point'>('3d');
+  const [theme, setTheme] = useState<BuildingTheme>('status');
+  const [themeNow] = useState(() => Date.now());
   const [layers, setLayers] = useState({
     satellite: true,
     map: false,
@@ -345,6 +379,13 @@ export default function FieldHouseMap({
   };
   const pushHighlightsRef = useRef(pushHighlights);
   pushHighlightsRef.current = pushHighlights;
+  // The search result under the pointer or the arrow keys lights up its building, so the list and the map read as one.
+  const quickActiveBuildingId = (quickMatches[quickActive] && buildingByHouseholdId.get(quickMatches[quickActive].id)) || '';
+  useEffect(() => {
+    if (hoveredIdRef.current === quickActiveBuildingId) return;
+    hoveredIdRef.current = quickActiveBuildingId;
+    pushHighlightsRef.current();
+  }, [quickActiveBuildingId]);
   const featureCacheRef = useRef(new Map<string, { house: FieldHouse; key: string }>());
   const housesLoadedMapRef = useRef<maplibregl.Map | null>(null);
   const pointsLoadedMapRef = useRef<maplibregl.Map | null>(null);
@@ -856,6 +897,8 @@ export default function FieldHouseMap({
           warning: residents.some(r => r.status === 'warning'),
           alert: residents.some(r => r.status === 'alert'),
           business: residents.some(r => r.status === 'business'),
+          residentBucket: residentBucket(residents),
+          checkedBucket: recencyBucket(residents, themeNow),
           displayColor: residents.length ? COLORS[highestStatus(residents)] : (h.properties.color ?? '#b6c9d6'),
         },
       };
@@ -868,7 +911,8 @@ export default function FieldHouseMap({
     for (const h of houses) {
       const id = h.properties.buildingId;
       const residents = indexed.get(id);
-      const key = `${inThreeScopeIds.has(id) ? 1 : 0}|${residents ? residents.map(r => r.status).join(',') : ''}`;
+      const buckets = `${residentBucket(residents ?? [])}|${recencyBucket(residents ?? [], themeNow)}`;
+      const key = `${inThreeScopeIds.has(id) ? 1 : 0}|${residents ? residents.map(r => r.status).join(',') : ''}|${buckets}`;
       const cached = previous.get(id);
       if (!cached || cached.house !== h || cached.key !== key) changed.push(h);
       next.set(id, { house: h, key });
@@ -903,7 +947,7 @@ export default function FieldHouseMap({
     houseSource?.setData({ type: 'FeatureCollection', features: houses.map(decorate) });
     housesLoadedMapRef.current = houses.length ? map : null;
     if (wantPoints || pointsLoaded) loadAllPoints();
-  }, [houses, indexed, ready, inThreeScopeIds, representation]);
+  }, [houses, indexed, ready, inThreeScopeIds, representation, themeNow]);
 
   // House-number labels for buildings with households, honouring the status filter.
   useEffect(() => {
@@ -980,22 +1024,36 @@ export default function FieldHouseMap({
       houses.map((house, index) => {
         const residents = indexed.get(house.properties.buildingId) ?? [];
         const occupied = residents.length > 0;
-        const visible =
-          (occupied ? layers.occupied : layers.empty) && (status === 'all' || residents.some(resident => resident.status === status));
+        const own = house.properties.appearanceSource === 'manual' ? undefined : house.properties.color;
         return {
           id: String(house.id ?? house.properties.buildingId ?? index),
-          visible,
-          // A status colour tints the roof only; selection is a separate highlight (see pushHighlights).
+          visible: occupied ? layers.occupied : layers.empty,
+          // Filtered-out buildings are dimmed and flattened instead of removed, so the neighbourhood stays readable.
+          dim: status !== 'all' && !residents.some(resident => resident.status === status),
+          // A data colour tints the roof only; selection is a separate highlight (see pushHighlights).
           tint: occupied,
-          color: occupied
-            ? COLORS[highestStatus(residents)]
-            : house.properties.appearanceSource === 'manual'
-              ? undefined
-              : house.properties.color,
+          color: theme === 'status' ? (occupied ? COLORS[highestStatus(residents)] : own) : (themeColor(theme, residents, themeNow) ?? own),
         };
       }),
-    [houses, indexed, layers.occupied, layers.empty, status],
+    [houses, indexed, layers.occupied, layers.empty, status, theme, themeNow],
   );
+  const themeScale =
+    theme === 'status'
+      ? (['normal', 'business', 'warning', 'alert', 'unverified'] as HouseholdStatus[]).map(key => ({
+          color: COLORS[key],
+          label: STATUS[key],
+        }))
+      : theme === 'residents'
+        ? RESIDENT_SCALE
+        : theme === 'recency'
+          ? RECENCY_SCALE
+          : OCCUPANCY_SCALE;
+  const themeLegend = [
+    ...themeScale,
+    { color: '#f97316', label: 'Vị trí tạm' }, // taste-skill-ignore: màu điểm tạm có sẵn của lớp bản đồ
+    ...(theme === 'occupancy' ? [] : [{ color: '#b6c9d6', label: 'Chưa có hộ' }]),
+    ...(status === 'all' ? [] : [{ color: DIM_COLOR, label: 'Không khớp bộ lọc' }]),
+  ];
   const displayStatesRef = useRef(displayStates);
   displayStatesRef.current = displayStates;
   useEffect(() => {
@@ -1020,29 +1078,27 @@ export default function FieldHouseMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || initializedMapRef.current !== map) return;
-    const colorExpression: maplibregl.ExpressionSpecification = [
+    const colorExpression = [
       'case',
       ['==', ['get', 'buildingId'], selectedId],
       '#fbbf24',
-      ['get', 'displayColor'],
-    ];
+      ...(status === 'all' ? [] : [['!=', ['get', status], true], DIM_COLOR]),
+      THEME_EXPRESSION[theme],
+    ] as maplibregl.ExpressionSpecification;
     map.setPaintProperty('houses-3d', 'fill-extrusion-color', colorExpression);
+    map.setPaintProperty('houses-3d-outside', 'fill-extrusion-color', colorExpression);
     map.setPaintProperty('house-points', 'circle-color', colorExpression);
-  }, [selectedId, ready]);
+  }, [selectedId, ready, status, theme]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || initializedMapRef.current !== map) return;
-    const filter: maplibregl.FilterSpecification = [
-      'all',
-      ['case', ['get', 'occupied'], layers.occupied, layers.empty],
-      status === 'all' ? true : ['==', ['get', status], true],
-    ];
+    // The status filter only recolours buildings (see the colour expression); the layer switches remove them.
+    const filter: maplibregl.FilterSpecification = ['all', ['case', ['get', 'occupied'], layers.occupied, layers.empty]];
     const outsideFilter: maplibregl.FilterSpecification = [
       'all',
       ['==', ['get', 'inThreeScope'], false],
       ['case', ['get', 'occupied'], layers.occupied, layers.empty],
-      status === 'all' ? true : ['==', ['get', status], true],
     ];
     map.setFilter('houses-3d-outside', outsideFilter);
     map.setFilter('houses-3d', filter);
@@ -1613,33 +1669,25 @@ export default function FieldHouseMap({
               ))}
             </select>
           </label>
-          <div className="field-legend" aria-label="Chú giải màu sắc">
-            <span className="field-legend-item">
-              <i style={{ background: '#10b981' }} aria-hidden="true" />
-              Bình thường
-            </span>
-            <span className="field-legend-item">
-              <i style={{ background: '#38bdf8' }} aria-hidden="true" />
-              Kinh doanh
-            </span>
-            <span className="field-legend-item">
-              <i style={{ background: '#f59e0b' }} aria-hidden="true" />
-              Chú ý
-            </span>
-            <span className="field-legend-item">
-              <i style={{ background: '#ef4444' }} aria-hidden="true" />
-              Cảnh báo
-            </span>
-            <span className="field-legend-item">
-              <i style={{ background: '#f97316' }} aria-hidden="true" />
-              Vị trí tạm
-            </span>
-            <span className="field-legend-item">
-              <i style={{ background: '#b6c9d6' }} aria-hidden="true" />
-              Chưa có hộ
-            </span>
+          <label className="field-layer-select">
+            <span>Tô màu theo</span>
+            <select value={theme} onChange={e => setTheme(e.target.value as BuildingTheme)}>
+              {Object.entries(BUILDING_THEMES).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="field-legend" role="list" aria-label={`Chú giải màu: ${BUILDING_THEMES[theme]}`}>
+            {themeLegend.map(item => (
+              <span key={item.label} className="field-legend-item" role="listitem">
+                <i style={{ background: item.color }} aria-hidden="true" />
+                {item.label}
+              </span>
+            ))}
           </div>
-          <small>Nhà chưa có hộ chỉ hiển thị khi chọn “Tất cả”. Chiều cao nhập từ dữ liệu nguồn là giả lập.</small>
+          <small>Khi lọc trạng thái, nhà không khớp được làm mờ và hạ thấp. Chiều cao nhập từ dữ liệu nguồn là giả lập.</small>
           <small>Ranh giới {hamletBoundaries.features.length} ấp: nét vàng. Phạm vi được giao: nét xanh.</small>
           {hamletBoundaries.features.some(feature => feature.properties?.provisional) && (
             <small>Ranh giới ấp tạm dựng từ PDF, dùng cho phân quyền và sẽ được cập nhật khi có tọa độ chuẩn.</small>

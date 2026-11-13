@@ -691,6 +691,24 @@ describe('field map controls', () => {
     expect(mocks.setLayoutProperty).toHaveBeenCalledWith('houses-3d', 'visibility', 'none');
     fireEvent.change(screen.getByLabelText('Trạng thái hộ dân'), { target: { value: 'alert' } });
     expect(mocks.setFilter).toHaveBeenCalledWith('households', ['==', ['get', 'status'], 'alert']);
+    // Buildings that do not match are greyed out, not filtered away, and the legend says so.
+    expect(mocks.setFilter).toHaveBeenLastCalledWith('households', expect.anything());
+    const buildingFilters = mocks.setFilter.mock.calls.filter(([id]) => id === 'houses-3d');
+    expect(JSON.stringify(buildingFilters.at(-1))).not.toContain('alert');
+    const colour = mocks.setPaintProperty.mock.calls.filter(([id, key]) => id === 'houses-3d' && key === 'fill-extrusion-color').at(-1)![2];
+    expect(colour).toEqual(expect.arrayContaining([['!=', ['get', 'alert'], true], '#c3cad0']));
+    expect(screen.getByText('Không khớp bộ lọc')).toBeDefined();
+  });
+
+  it('recolours buildings by the chosen theme and updates the legend without reloading features', async () => {
+    await mount();
+    const loads = mocks.setData.mock.calls.length;
+    fireEvent.change(screen.getByLabelText('Tô màu theo'), { target: { value: 'residents' } });
+    const colour = mocks.setPaintProperty.mock.calls.filter(([id, key]) => id === 'houses-3d' && key === 'fill-extrusion-color').at(-1)![2];
+    expect(JSON.stringify(colour)).toContain('residentBucket');
+    expect(screen.getByRole('list', { name: 'Chú giải màu: Số nhân khẩu' })).toBeDefined();
+    expect(screen.getByText('1–2 nhân khẩu')).toBeDefined();
+    expect(mocks.setData.mock.calls.length).toBe(loads);
   });
   it('saves explicit household links and reports API failures without a success message', async () => {
     await mount();

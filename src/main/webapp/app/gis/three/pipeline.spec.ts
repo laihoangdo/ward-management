@@ -189,7 +189,10 @@ describe('GPU attribute ownership and disposal', () => {
     expect(layer.displayData[3]).toBe(1);
     layer.setHighlights([]);
     expect(layer.displayData.slice(0, 4)).toEqual(new Float32Array([0x10b981, 1, 1, 0]));
-    layer.setDisplayState([{ id: 'building', visible: false }]);
+    // A filtered-out building stays on the map as a dimmed block (0.5) unless its layer is switched off.
+    layer.setDisplayState([{ id: 'building', visible: true, dim: true }]);
+    expect(layer.displayData[1]).toBe(0.5);
+    layer.setDisplayState([{ id: 'building', visible: false, dim: true }]);
     expect(layer.displayData[1]).toBe(0);
     const displayDispose = vi.spyOn(layer.display!, 'dispose');
     expect(layer.uniforms.uMode.value).toBe(1);
