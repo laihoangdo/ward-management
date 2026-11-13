@@ -73,3 +73,7 @@ Tests cover coordinates/elevation alignment, polygon winding/courtyards, determi
   extra memory. A packet without `edges` is filled with "no outline" in `BuildingLayer.add`.
 - `setDisplayState` accepts `dim: true`: the building stays visible as a low grey block (display texel `y = 0.5`). Use it for
   filters that should keep the street layout readable; `visible: false` still removes the building.
+- `setDisplayState` also accepts `stack: [alert, warning, business, normal, unverified]` (household counts). The walls of
+  that building become a stacked bar of those shares, most severe on top. It is a proportion, never a floor position.
+- The selected building (highlight level 1) is drawn a second time through `ghostMaterial` with `GreaterDepth`, so it stays
+  visible behind taller neighbours. `featureMeshes` limits that pass to the one or two meshes that hold the building.

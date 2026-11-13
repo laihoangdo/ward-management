@@ -1100,6 +1100,11 @@ export default function FieldHouseMap({
           dim: status !== 'all' && !residents.some(resident => resident.status === status),
           // A data colour tints the roof only; selection is a separate highlight (see pushHighlights).
           tint: occupied,
+          // Shared buildings show their households' status mix on the walls (a proportion, not a floor position).
+          stack:
+            theme === 'status' && residents.length > 1
+              ? [...STATUS_PRIORITY, 'unverified' as const].map(key => residents.filter(resident => resident.status === key).length)
+              : undefined,
           color: theme === 'status' ? (occupied ? COLORS[highestStatus(residents)] : own) : (themeColor(theme, residents, themeNow) ?? own),
         };
       }),
@@ -1815,6 +1820,9 @@ export default function FieldHouseMap({
               </span>
             ))}
           </div>
+          {theme === 'status' && (
+            <small>Tường nhà nhiều hộ chia dải màu theo tỷ lệ hộ mỗi trạng thái, không phải vị trí tầng của từng hộ.</small>
+          )}
           <small>Khi lọc trạng thái, nhà không khớp được làm mờ và hạ thấp. Chiều cao nhập từ dữ liệu nguồn là giả lập.</small>
           <small>Ranh giới {hamletBoundaries.features.length} ấp: nét vàng. Phạm vi được giao: nét xanh.</small>
           {hamletBoundaries.features.some(feature => feature.properties?.provisional) && (

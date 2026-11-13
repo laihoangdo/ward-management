@@ -200,6 +200,21 @@ describe('GPU attribute ownership and disposal', () => {
     expect(layer.displayData[3]).toBe(1);
     layer.setHighlights([]);
     expect(layer.displayData.slice(0, 4)).toEqual(new Float32Array([0x10b981, 1, 1, 0]));
+    // Status mix of a shared building: cumulative shares, most severe first; cleared by the next plain state.
+    layer.setDisplayState([{ id: 'building', visible: true, stack: [1, 0, 1, 2, 0] }]);
+    expect(Array.from(layer.stackData!.slice(0, 4))).toEqual([0.25, 0.25, 0.5, 1]);
+    expect(layer.uniforms.uUseStack.value).toBe(true);
+    // The see-through pass follows the selected building only and reuses its mesh geometry.
+    layer.setHighlights([{ id: 'building', level: 0.5 }]);
+    expect(layer.ghostRoot.children).toHaveLength(0);
+    layer.setHighlights([{ id: 'building', level: 1 }]);
+    expect(layer.ghostRoot.children).toHaveLength(1);
+    expect((layer.ghostRoot.children[0] as THREE.Mesh).geometry).toBe(mesh.geometry);
+    layer.setHighlights([]);
+    expect(layer.ghostRoot.children).toHaveLength(0);
+    layer.setDisplayState([{ id: 'building', visible: true }]);
+    expect(layer.stackData![3]).toBe(-1);
+    expect(layer.uniforms.uUseStack.value).toBe(false);
     // A filtered-out building stays on the map as a dimmed block (0.5) unless its layer is switched off.
     layer.setDisplayState([{ id: 'building', visible: true, dim: true }]);
     expect(layer.displayData[1]).toBe(0.5);

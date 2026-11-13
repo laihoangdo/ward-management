@@ -13,6 +13,8 @@ const vertexShader = `
   uniform bool uRealistic;
   uniform sampler2D uDisplay;
   uniform bool uUseDisplay;
+  uniform sampler2D uStack;
+  uniform bool uUseStack;
   in float aFeature;
   #ifdef DIRECT_METADATA
     in vec4 aMetadata;
@@ -24,6 +26,8 @@ const vertexShader = `
   // Outline data: x = signed distance from the middle of the wall, y = distance below the wall top (< 0: no outline).
   out vec2 vEdge;
   flat out float vEdgeHalf;
+  // Cumulative share of households per status, most severe first; a < 0 means the building has no stack.
+  flat out vec4 vStack;
   flat out vec4 vAppearance;
   flat out float vVisible;
   flat out float vHighlight;
@@ -76,6 +80,8 @@ const vertexShader = `
     if (uRealistic && uMode == 0) vColor = unpackColor(vNormal.y > 0.3 ? vAppearance.y : vAppearance.x);
     vVisible = 1.0;
     vHighlight = 0.0;
+    vStack = vec4(-1.0);
+    if (uUseStack && uRealistic && uMode == 0) vStack = texelFetch(uStack, ivec2(feature % uMetadataWidth, feature / uMetadataWidth), 0);
     if (uUseDisplay) {
       // x: packed colour (-1 keeps the appearance), y: 1 visible / 0.5 dimmed / 0 hidden, z: status tint, w: highlight level.
       vec4 display = texelFetch(uDisplay, ivec2(feature % uMetadataWidth, feature / uMetadataWidth), 0);
@@ -109,6 +115,8 @@ const fragmentShader = `
   flat in float vHighlight;
   in vec2 vEdge;
   flat in float vEdgeHalf;
+  flat in vec4 vStack;
+  uniform vec3 uStatusColors[5];
   uniform vec3 uCamera;
   uniform bool uRealistic;
   uniform int uMode;
@@ -127,10 +135,19 @@ const fragmentShader = `
     float fill = max(dot(n, fillDir), 0.0);
     float sky = 0.5 + 0.5 * n.y;
     float lighting = 0.34 + 0.54 * sun + 0.14 * fill + 0.08 * sky;
-    vec3 color = vColor * lighting;
+    vec3 albedo = vColor;
+    if (vStack.a >= 0.0 && vEdge.y >= 0.0 && !dimmed) {
+      // Walls of a multi-household building become a stacked bar: each band's height is that status's share of the
+      // households (most severe on top, where it is seen first). It is a proportion, not the floor a household lives on.
+      float share = vEdge.y / max(vWorld.y + vEdge.y, 0.001);
+      vec3 band = share < vStack.r ? uStatusColors[0] : share < vStack.g ? uStatusColors[1]
+        : share < vStack.b ? uStatusColors[2] : share < vStack.a ? uStatusColors[3] : uStatusColors[4];
+      albedo = mix(vColor, band, 0.78);
+    }
+    vec3 color = albedo * lighting;
     if (uRealistic) {
       // Warm direct sun over a slightly cool sky fill, same overall exposure as the scalar term.
-      color = vColor * ((0.34 + 0.08 * sky) * vec3(0.95, 0.99, 1.06) + 0.54 * sun * vec3(1.07, 1.0, 0.9) + 0.14 * fill);
+      color = albedo * ((0.34 + 0.08 * sky) * vec3(0.95, 0.99, 1.06) + 0.54 * sun * vec3(1.07, 1.0, 0.9) + 0.14 * fill);
       // Stylized base AO darkening + warm sunlit roof highlight
       color *= mix(0.62, 1.04, smoothstep(0.0, 2.6, vWorld.y));
       if (n.y > 0.35) {
@@ -217,6 +234,38 @@ const shadowFragmentShader = `
   }
 `;
 
+// Selected building seen through whatever stands in front of it: drawn only where the depth test fails.
+const ghostVertexShader = `
+  uniform sampler2D uDisplay;
+  uniform int uMetadataWidth;
+  in float aFeature;
+  void main() {
+    vec4 p = vec4(position, 1.0);
+    #ifdef USE_INSTANCING
+      p = instanceMatrix * p;
+    #endif
+    int feature = int(aFeature + 0.5);
+    vec4 display = texelFetch(uDisplay, ivec2(feature % uMetadataWidth, feature / uMetadataWidth), 0);
+    if (display.w < 0.75 || display.y < 0.25) {
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+      return;
+    }
+    vec4 world = modelMatrix * p;
+    if (display.y < 0.75) world.y *= 0.25;
+    gl_Position = projectionMatrix * viewMatrix * world;
+  }
+`;
+const ghostFragmentShader = `
+  precision highp float;
+  out vec4 outColor;
+  void main() {
+    outColor = vec4(0.984, 0.749, 0.141, 0.38);
+  }
+`;
+
+/** Most severe first; must match the band order in the fragment shader and the caller's `stack` arrays. */
+const statusColors = ['#ef4444', '#f59e0b', '#38bdf8', '#10b981', '#94a3b8']; // taste-skill-ignore: màu trạng thái hộ dân có sẵn
+
 const paletteColors = ['#64748b', '#22c55e', '#facc15', '#ef4444', '#a855f7']; // taste-skill-ignore: thang màu dữ liệu công trình, không đổi renderer trong đợt UI
 
 /** Geometry roots are translation-only. Do not apply a non-uniform parent scale. */
@@ -243,6 +292,9 @@ export class BuildingLayer {
       uDisplay: { value: null },
       uUseDisplay: { value: false },
       uCamera: { value: new THREE.Vector3() },
+      uStack: { value: null },
+      uUseStack: { value: false },
+      uStatusColors: { value: statusColors.map(value => new THREE.Color(value)) },
     };
     const parameters = {
       vertexShader,
@@ -272,6 +324,22 @@ export class BuildingLayer {
       blendSrc: THREE.DstColorFactor,
       blendDst: THREE.ZeroFactor,
     });
+    // Transparent queue, so it draws after every building; GreaterDepth keeps it to the occluded part only.
+    this.ghostMaterial = new THREE.ShaderMaterial({
+      vertexShader: ghostVertexShader,
+      fragmentShader: ghostFragmentShader,
+      uniforms: this.uniforms,
+      glslVersion: THREE.GLSL3,
+      depthTest: true,
+      depthFunc: THREE.GreaterDepth,
+      depthWrite: false,
+      transparent: true,
+      toneMapped: false,
+    });
+    this.ghostRoot = new THREE.Group();
+    scene.add(this.ghostRoot);
+    this.featureMeshes = new Map();
+    this.ghostFeature = -1;
     this.shadowRoot = new THREE.Group();
     this.shadowRoot.visible = realistic;
     scene.add(this.shadowRoot);
@@ -335,17 +403,77 @@ export class BuildingLayer {
       this.uniforms.uDisplay.value = this.display;
     }
     this.displayData.fill(0); // Missing/filtered features must never leak into the view.
+    this.stackData?.fill(-1);
+    this.stackUsed = false;
     for (const state of states) {
       const index = this.indices.get(String(state.id));
       if (index === undefined) continue;
       this.displayData[index * 4] = /^#[\da-f]{6}$/i.test(state.color ?? '') ? Number.parseInt(state.color.slice(1), 16) : -1;
       this.displayData[index * 4 + 1] = state.visible ? (state.dim ? 0.5 : 1) : 0;
       this.displayData[index * 4 + 2] = state.tint ? 1 : 0;
+      if (state.stack) this.writeStack(index, state.stack);
     }
+    if (this.stack) this.stack.needsUpdate = true;
+    this.uniforms.uUseStack.value = Boolean(this.stackUsed);
     this.highlighted = [];
     this.display.needsUpdate = true;
     this.uniforms.uUseDisplay.value = true;
     this.setHighlights(this.highlights);
+  }
+
+  /** counts: households per status in the order alert, warning, business, normal, unverified. */
+  writeStack(index, counts) {
+    const total = counts.reduce((sum, value) => sum + value, 0);
+    if (!(total > 0)) return;
+    if (!this.stack) {
+      const { width, height } = this.metadata.image;
+      this.stackData = new Float32Array(width * height * 4).fill(-1);
+      this.stack = new THREE.DataTexture(this.stackData, width, height, THREE.RGBAFormat, THREE.FloatType);
+      this.stack.minFilter = this.stack.magFilter = THREE.NearestFilter;
+      this.stack.generateMipmaps = false;
+      this.uniforms.uStack.value = this.stack;
+    }
+    let sum = 0;
+    for (let i = 0; i < 4; i++) {
+      sum += counts[i] || 0;
+      this.stackData[index * 4 + i] = sum / total;
+    }
+    this.stackUsed = true;
+  }
+
+  /** Re-point the see-through pass at the meshes that hold the selected building (level 1), or clear it. */
+  updateGhost() {
+    let selected = -1;
+    for (const index of this.highlighted) if (this.displayData[index * 4 + 3] > 0.75) selected = index;
+    if (selected === this.ghostFeature) return;
+    this.ghostFeature = selected;
+    for (const ghost of this.ghostRoot.children) if (ghost.isInstancedMesh) ghost.dispose(); // geometry is owned by the building mesh
+    this.ghostRoot.clear();
+    for (const mesh of this.featureMeshes.get(selected) ?? []) {
+      let ghost;
+      if (mesh.isInstancedMesh) {
+        ghost = new THREE.InstancedMesh(mesh.geometry, this.ghostMaterial, mesh.count);
+        ghost.instanceMatrix = mesh.instanceMatrix;
+        ghost.boundingBox = mesh.boundingBox;
+        ghost.boundingSphere = mesh.boundingSphere;
+      } else ghost = new THREE.Mesh(mesh.geometry, this.ghostMaterial);
+      ghost.matrix.copy(mesh.matrix);
+      ghost.matrixAutoUpdate = false;
+      this.ghostRoot.add(ghost);
+    }
+  }
+
+  /** Remember which mesh draws each feature, so the see-through pass touches one or two meshes, not the scene. */
+  indexFeatures(features, mesh) {
+    let previous = -1;
+    for (let i = 0; i < features.length; i++) {
+      const feature = features[i];
+      if (feature === previous) continue;
+      previous = feature;
+      const list = this.featureMeshes.get(feature);
+      if (!list) this.featureMeshes.set(feature, [mesh]);
+      else if (!list.includes(mesh)) list.push(mesh);
+    }
   }
 
   /** O(changed) selection/hover: touches only the texels involved, never the 79k-entry state list. */
@@ -361,6 +489,7 @@ export class BuildingLayer {
       this.displayData[index * 4 + 3] = level;
       this.highlighted.push(index);
     }
+    this.updateGhost();
     this.display.needsUpdate = true;
   }
 
@@ -383,6 +512,7 @@ export class BuildingLayer {
       geometry.computeBoundingSphere();
       const mesh = new THREE.Mesh(geometry, this.material);
       this.place(mesh, origin);
+      this.indexFeatures(packet.features, mesh);
       this.placeShadow(new THREE.Mesh(geometry, this.shadowMaterial), origin);
     }
     if (packet.boxes.length) {
@@ -417,6 +547,7 @@ export class BuildingLayer {
       mesh.computeBoundingBox();
       mesh.computeBoundingSphere();
       this.place(mesh, origin);
+      this.indexFeatures(features.array, mesh);
       const shadow = new THREE.InstancedMesh(geometry, this.shadowMaterial, count);
       shadow.instanceMatrix = mesh.instanceMatrix;
       shadow.boundingBox = mesh.boundingBox;
@@ -490,6 +621,15 @@ export class BuildingLayer {
     for (const mesh of this.shadowRoot.children) if (mesh.isInstancedMesh) mesh.dispose(); // geometry is owned by the building mesh
     this.shadowRoot.clear();
     this.scene.remove(this.shadowRoot);
+    for (const ghost of this.ghostRoot.children) if (ghost.isInstancedMesh) ghost.dispose();
+    this.ghostRoot.clear();
+    this.scene.remove(this.ghostRoot);
+    this.ghostMaterial.dispose();
+    this.featureMeshes.clear();
+    this.stack?.dispose();
+    if (this.stack) this.stack.image = null;
+    this.stackData = null;
+    this.uniforms.uStack.value = null;
     this.shadowMaterial.dispose();
     this.material.dispose();
     this.instancedMaterial.dispose();
