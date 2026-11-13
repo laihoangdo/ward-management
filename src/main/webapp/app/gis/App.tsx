@@ -1199,6 +1199,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
                     refreshKey={householdListVersion}
+                    currentUser={currentUser}
                     embedded
                   />
                 </Suspense>

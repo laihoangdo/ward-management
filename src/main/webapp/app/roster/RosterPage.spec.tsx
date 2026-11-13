@@ -36,6 +36,24 @@ describe('Real roster workflows', () => {
     cleanup();
     vi.clearAllMocks();
   });
+  it('shows the list export button only to users who may export reports, carrying the current filters', async () => {
+    const view = render(
+      <MemoryRouter>
+        <RosterPage initialTab="residents" currentUser={{ role: 'officer', subAdminPermissions: {} as never }} />
+      </MemoryRouter>,
+    );
+    await screen.findByLabelText('Tìm họ tên hoặc ĐDCN / CCCD / CMND');
+    expect(screen.queryByRole('button', { name: /Xuất \/ In danh sách/ })).toBeNull();
+    view.rerender(
+      <MemoryRouter>
+        <RosterPage initialTab="residents" currentUser={{ role: 'sub-admin', subAdminPermissions: { canExportReports: true } as never }} />
+      </MemoryRouter>,
+    );
+    fireEvent.change(screen.getByLabelText('Loại hồ sơ'), { target: { value: 'TEMPORARY' } });
+    fireEvent.click(await screen.findByRole('button', { name: /Xuất \/ In danh sách/ }));
+    expect(await screen.findByRole('dialog', { name: 'Xuất / in danh sách nhân khẩu' })).toBeTruthy();
+    expect((screen.getByLabelText('Tạm trú') as HTMLInputElement).checked).toBe(true);
+  });
   const open = () =>
     render(
       <MemoryRouter>

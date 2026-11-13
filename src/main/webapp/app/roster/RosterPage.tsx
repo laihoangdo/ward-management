@@ -4,10 +4,13 @@ import { Link } from 'react-router';
 import { useRouteQuery, RECORD_QUERY_KEYS } from '../gis/utils/useRouteQuery';
 import './roster.css';
 import { displayDate } from './dateDisplay';
-import { House, Users } from 'lucide-react';
+import { House, Printer, Users } from 'lucide-react';
 import RosterMapPane from './RosterMapPane';
 import RosterPatrol from './RosterPatrol';
 import HouseholdSplitDialog from './HouseholdSplitDialog';
+import ResidentExportDialog from './ResidentExportDialog';
+import { fetchRbacMe } from '../gis/services/rbacApiService';
+import type { AppUser } from '../gis/types';
 
 type Row = Record<string, any>;
 type Field = {
@@ -396,6 +399,8 @@ function RosterWorkspace({
   onSearchChange,
   refreshKey = 0,
   householdTarget,
+  currentUser,
+  hamletName,
 }: {
   initialTab?: string;
   embedded?: boolean;
@@ -403,8 +408,26 @@ function RosterWorkspace({
   onSearchChange?: (value: string) => void;
   refreshKey?: number;
   householdTarget?: { legacyId: string; edit: boolean } | null;
+  /** Signed-in user, when the host already has it; otherwise it is loaded once for the export button. */
+  currentUser?: Pick<AppUser, 'role' | 'subAdminPermissions'> | null;
+  hamletName?: string;
 }) {
   const { params: urlParams, updateQuery } = useRouteQuery();
+  const [exportOpen, setExportOpen] = useState(false);
+  const [loadedUser, setLoadedUser] = useState<Pick<AppUser, 'role' | 'subAdminPermissions'> | null>(null);
+  useEffect(() => {
+    if (currentUser !== undefined) return undefined;
+    let cancelled = false;
+    Promise.resolve(fetchRbacMe())
+      .then(user => !cancelled && setLoadedUser(user ?? null))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser]);
+  const exportUser = currentUser === undefined ? loadedUser : currentUser;
+  // The server re-checks; this only hides a button the user could not use.
+  const canExport = exportUser?.role === 'superadmin' || exportUser?.subAdminPermissions?.canExportReports === true;
   const rosterTabs = ['households', 'residents', 'import', 'history', 'patrol'];
   const tabParam = embedded ? (urlParams.get('rosterTab') ?? urlParams.get('tab')) : urlParams.get('tab');
   const routeTab = rosterTabs.includes(tabParam ?? '') ? tabParam! : initialTab;
@@ -1647,6 +1670,18 @@ function RosterWorkspace({
                         Xóa lọc
                       </button>
                     )}
+                    {canExport && (
+                      <button type="button" className="roster-export-open" onClick={() => setExportOpen(true)}>
+                        <Printer size={16} aria-hidden="true" /> Xuất / In danh sách
+                      </button>
+                    )}
+                    {exportOpen && (
+                      <ResidentExportDialog
+                        hamletLabel={hamletName}
+                        initial={{ search, kinds: kind ? [kind] : [], origin, campaign }}
+                        onClose={() => setExportOpen(false)}
+                      />
+                    )}
                     <button
                       className="roster-primary"
                       onClick={() =>
@@ -2239,7 +2274,7 @@ function RosterWorkspace({
   );
 }
 
-type HamletOption = { id: number; name: string; is_default?: boolean };
+type HamletOption = { id: number; name: string; full_name?: string; is_default?: boolean };
 
 export default function RosterPage(props: React.ComponentProps<typeof RosterWorkspace>) {
   const [hamlets, setHamlets] = useState<HamletOption[]>([]);
@@ -2289,7 +2324,14 @@ export default function RosterPage(props: React.ComponentProps<typeof RosterWork
           </select>
         </label>
       )}
-      <RosterWorkspace key={`${selected || 'default'}:${epoch}`} {...props} />
+      <RosterWorkspace
+        key={`${selected || 'default'}:${epoch}`}
+        hamletName={(() => {
+          const current = hamlets.find(h => String(h.id) === effective);
+          return current ? current.full_name || current.name : undefined;
+        })()}
+        {...props}
+      />
     </>
   );
 }

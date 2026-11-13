@@ -1,5 +1,6 @@
 package com.policemanagement.com.web.rest;
 
+import com.policemanagement.com.service.roster.ResidentFilter;
 import com.policemanagement.com.service.roster.RosterService;
 import java.io.IOException;
 import java.util.*;
@@ -127,14 +128,8 @@ public class RosterResource {
     }
 
     @GetMapping("/residents")
-    public Map<String, Object> residents(
-        @RequestParam(defaultValue = "") String search,
-        @RequestParam(defaultValue = "") String kind,
-        @RequestParam(defaultValue = "") String origin,
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "") String campaign
-    ) {
-        return service.residents(search, kind, origin, page, campaign);
+    public Map<String, Object> residents(@RequestParam Map<String, String> params) {
+        return service.residents(ResidentFilter.parse(params), Integer.parseInt(params.getOrDefault("page", "0")));
     }
 
     @PostMapping("/residents")

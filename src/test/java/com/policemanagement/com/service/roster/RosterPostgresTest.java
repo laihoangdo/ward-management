@@ -243,6 +243,12 @@ class RosterPostgresTest {
         db.execute("drop schema if exists legacy_mock_20261027 cascade");
         db.execute("drop table if exists public.resident,public.household,public.gis_building cascade");
         db.execute("alter table public.hamlet add column if not exists full_name text default 'Trung Chánh 2'");
+        db.execute(
+            "alter table public.hamlet add column if not exists name text default 'Trung Chánh 2', add column if not exists sort_order integer, add column if not exists commune_id bigint"
+        );
+        db.execute("create table if not exists public.admin_commune(id bigint primary key,name text,full_name text)");
+        db.update("insert into public.admin_commune values (1,'Bà Điểm','Xã Bà Điểm') on conflict(id) do nothing");
+        db.update("update public.hamlet set commune_id=1 where id=28");
         db.execute("create sequence if not exists public.sequence_generator start 10000 increment 50");
         db.execute(
             """
@@ -433,6 +439,143 @@ class RosterPostgresTest {
     private Map<String, Object> stage(String rows) throws Exception {
         byte[] bytes = RosterWorkbookTest.workbook(rows);
         return tx.execute(s -> service.stage(List.of(new RosterService.Upload("source63.xlsx", "63", bytes)), "Test source", null));
+    }
+
+    private Map<String, String> filter(String... pairs) {
+        var p = new HashMap<String, String>();
+        for (int i = 0; i < pairs.length; i += 2) p.put(pairs[i], pairs[i + 1]);
+        return p;
+    }
+
+    @Test
+    void residentExportFiltersMasksAuditsAndWritesAPrintableWorkbook() throws Exception {
+        UUID id = (UUID) stage(
+            RosterWorkbookTest.row(2, "Nguyễn Văn An", "15/03/2000", "079200000101") +
+                RosterWorkbookTest.row(3, "Trần Thị Bình", "1990", "079190000202") +
+                RosterWorkbookTest.row(4, "Lê Văn Cường", "01/01/1940", "079140000303")
+        ).get("id");
+        tx.execute(s -> service.apply(id));
+        assertEquals(3L, db.queryForObject("select count(*) from tc2_roster.resident", Long.class));
+        var binh = db.queryForMap("select id,version from tc2_roster.resident where full_name='Trần Thị Bình'");
+        var female = new HashMap<String, Object>();
+        female.put("fullName", "Trần Thị Bình");
+        female.put("birthPrecision", "YEAR");
+        female.put("birthYear", 1990);
+        female.put("gender", "FEMALE");
+        female.put("version", binh.get("version"));
+        female.put("reason", "Đối chiếu giới tính");
+        tx.execute(s -> service.updateResident((UUID) binh.get("id"), female));
+        when(rbac.current()).thenReturn(Map.of("fullName", "Cán bộ thử", "role", "superadmin"));
+        var export = new ResidentExportService(db, service, crypto, rbac);
+        var ro = new TransactionTemplate(tx.getTransactionManager());
+        ro.setReadOnly(true);
+
+        // Nam 18–30 tuổi tính tại một ngày cố định: chỉ An (26 tuổi).
+        var military = ro.execute(s ->
+            export.preview(ResidentFilter.parse(filter("gender", "MALE", "ageMin", "18", "ageMax", "30", "refDate", "2026-11-13")), "")
+        );
+        assertEquals(1L, military.total());
+        assertEquals("Nguyễn Văn An", military.rows().getFirst().get(1));
+        assertEquals(
+            "*********101",
+            military.rows().getFirst().get(military.columns().stream().map(ResidentExportService.Column::key).toList().indexOf("identity"))
+        );
+        assertEquals(0L, military.unevaluable());
+        // Không lọc giới tính: Bình chỉ có năm sinh nên được báo là không xác định được tuổi thay vì bị bỏ qua.
+        var adults = ro.execute(s -> export.preview(ResidentFilter.parse(filter("ageMin", "18", "refDate", "2026-11-13")), ""));
+        assertEquals(2L, adults.total());
+        assertEquals(1L, adults.unevaluable());
+        assertEquals(
+            1L,
+            ro.execute(s -> export.preview(ResidentFilter.parse(filter("birthYearFrom", "1990", "birthYearTo", "1990")), "")).total()
+        );
+        assertEquals(1L, ro.execute(s -> export.preview(ResidentFilter.parse(filter("gender", "FEMALE")), "")).female());
+        assertEquals(3L, ro.execute(s -> export.preview(ResidentFilter.parse(filter("address", "Địa chỉ thử")), "")).total());
+        assertEquals(0L, ro.execute(s -> export.preview(ResidentFilter.parse(filter("facilityTypes", "BOARDING_HOUSE")), "")).total());
+        for (String role : List.of("HEAD", "MEMBER", "NONE"))
+            assertNotNull(
+                ro.execute(s ->
+                    export.preview(
+                        ResidentFilter.parse(filter("householdRole", role, "status", "ACTIVE", "kinds", "PERMANENT,TEMPORARY")),
+                        ""
+                    )
+                )
+            );
+        // Sắp xếp theo tên (chữ cuối): An, Bình, Cường.
+        var byName = ro.execute(s -> export.preview(ResidentFilter.parse(filter("sort", "NAME")), "fullName"));
+        assertEquals(
+            List.of("Nguyễn Văn An", "Trần Thị Bình", "Lê Văn Cường"),
+            byName
+                .rows()
+                .stream()
+                .map(r -> r.get(1))
+                .toList()
+        );
+        verify(rbac, never()).auditIndependent(eq("resident-list-exported"), anyString(), any());
+
+        // Bản in có đủ số chỉ khi xin và có quyền; mỗi lần xuất đều ghi nhật ký, lộ số đầy đủ thì ghi thêm identity-revealed.
+        var printed = ro.execute(s -> export.print(ResidentFilter.parse(filter()), "fullName,identity", true));
+        assertTrue(printed.fullIdentity());
+        assertTrue(
+            printed
+                .rows()
+                .stream()
+                .anyMatch(r -> r.get(2).equals("079200000101"))
+        );
+        verify(rbac).auditIndependent(eq("resident-list-exported"), eq("roster-hamlets:28"), any());
+        verify(rbac).auditIndependent(eq("identity-revealed"), eq("roster-hamlets:28"), any());
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canRevealIdentity");
+        assertThrows(Exception.class, () -> ro.execute(s -> export.print(ResidentFilter.parse(filter()), "fullName,identity", true)));
+
+        var file = ro.execute(s -> export.xlsx(ResidentFilter.parse(filter("kinds", "PERMANENT")), "", false));
+        assertTrue(file.name().startsWith("danh-sach-nhan-khau-trung-chanh-2-"));
+        try (var book = new org.apache.poi.xssf.usermodel.XSSFWorkbook(new java.io.ByteArrayInputStream(file.content()))) {
+            var sheet = book.getSheet("Danh sách");
+            assertEquals("CÔNG AN XÃ BÀ ĐIỂM", sheet.getRow(0).getCell(0).getStringCellValue());
+            assertEquals("DANH SÁCH NHÂN KHẨU", sheet.getRow(3).getCell(0).getStringCellValue());
+            assertEquals("STT", sheet.getRow(8).getCell(0).getStringCellValue());
+            assertEquals("Họ và tên", sheet.getRow(8).getCell(1).getStringCellValue());
+            long people = db.queryForObject(
+                "select count(distinct resident_id) from tc2_roster.residence_record where record_kind='PERMANENT'",
+                Long.class
+            );
+            assertEquals(
+                String.valueOf(people),
+                sheet
+                    .getRow(8 + (int) people)
+                    .getCell(0)
+                    .getStringCellValue()
+            );
+            assertTrue(sheet.getPrintSetup().getLandscape());
+            assertEquals(org.apache.poi.ss.usermodel.PrintSetup.A4_PAPERSIZE, sheet.getPrintSetup().getPaperSize());
+            assertTrue(
+                sheet
+                    .getRow(8 + 1)
+                    .getCell(4)
+                    .getStringCellValue()
+                    .startsWith("*********")
+            );
+            assertNotNull(book.getSheet("Tổng hợp"));
+        }
+
+        // Gửi qua ứng dụng chia sẻ được ghi nhật ký riêng với tải về.
+        ro.execute(s -> export.xlsx(ResidentFilter.parse(filter()), "fullName", false, true));
+        verify(rbac).auditIndependent(
+            eq("resident-list-exported"),
+            eq("roster-hamlets:28"),
+            argThat(d -> "xlsx-share".equals(((Map<?, ?>) d).get("format")))
+        );
+
+        // Toàn xã: chỉ trưởng công an xã (hoặc super admin), và chỉ các ấp được giao.
+        when(rbac.global()).thenReturn(false);
+        when(rbac.current()).thenReturn(Map.of("fullName", "Quản lý ấp", "role", "sub-admin"));
+        assertThrows(Exception.class, () -> ro.execute(s -> export.preview(ResidentFilter.parse(filter("scope", "commune")), "")));
+        when(rbac.current()).thenReturn(Map.of("fullName", "Trưởng công an xã", "role", "admin"));
+        when(rbac.areas()).thenReturn(List.of(28L));
+        var commune = ro.execute(s -> export.preview(ResidentFilter.parse(filter("scope", "commune")), ""));
+        assertEquals(3L, commune.total());
+        assertEquals("Toàn xã Bà Điểm (1 ấp)", commune.scope());
+        verify(rbac, atLeastOnce()).area(28L);
     }
 
     private UUID stageAndApply() throws Exception {

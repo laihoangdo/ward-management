@@ -696,43 +696,52 @@ public class RosterService {
     }
 
     public Map<String, Object> residents(String search, String kind, String origin, int page, String campaign) {
+        return residents(ResidentFilter.legacy(search, kind, origin, campaign), page);
+    }
+
+    /** One page of the hamlet's residents for the roster list; a commune scope is ignored here. */
+    public Map<String, Object> residents(ResidentFilter filter, int page) {
         authorize(null);
-        if (
-            page < 0 ||
-            search.length() > 200 ||
-            !RosterCampaign.valid(campaign) ||
-            !Set.of("", "PERMANENT", "TEMPORARY", "NOHT", "ARTICLE19").contains(kind) ||
-            !Set.of("", "EXCEL", "MANUAL").contains(origin)
-        ) throw bad("Bộ lọc không hợp lệ");
-        String where =
-            " from tc2_roster.resident r where r.hamlet_id=? and (?='' or r.origin=?) " +
-            "and (?='' or position(lower(?) in lower(r.full_name))>0 or exists(select 1 from tc2_roster.resident_identity i where i.resident_id=r.id and i.active and i.number_lookup=?)) " +
-            "and (?='' or exists(select 1 from tc2_roster.residence_record rr where rr.resident_id=r.id and rr.record_kind=?))" +
-            RosterCampaign.predicate(campaign)
-                .map(predicate -> " and (" + predicate + ")")
-                .orElse("");
-        Object[] args = { hamlet(), origin, origin, search, search, crypto.lookup(search), kind, kind };
-        long total = db.queryForObject("select count(*)" + where, Long.class, args);
-        var params = new ArrayList<>(Arrays.asList(args));
+        if (page < 0) throw bad("Bộ lọc không hợp lệ");
+        var hamlets = List.of(hamlet());
+        var where = filter.where(hamlets, crypto.lookup(filter.search()));
+        String from = " from tc2_roster.resident r where " + where.text();
+        long total = db.queryForObject("select count(*)" + from, Long.class, where.args().toArray());
+        var params = new ArrayList<>(where.args());
         params.add((long) page * 30);
         var items = db.queryForList(
             "select r.*,(select count(*) from tc2_roster.residence_record rr where rr.resident_id=r.id) record_count," +
                 "(select count(*) from tc2_roster.household_membership m where m.resident_id=r.id and m.valid_to is null) household_count" +
-                where +
+                from +
                 " order by r.full_name,r.id limit 30 offset ?",
             params.toArray()
         );
         var result = new LinkedHashMap<String, Object>(Map.of("items", items, "total", total, "page", page));
-        // Say how many people could not be judged instead of silently dropping them from an age-based campaign.
-        if (RosterCampaign.needsExactBirthDate(campaign)) result.put(
-            "unevaluable",
-            db.queryForObject(
-                "select count(*) from tc2_roster.resident r where r.hamlet_id=? and (" + RosterCampaign.UNEVALUABLE + ")",
-                Long.class,
-                hamlet()
-            )
-        );
+        Long unevaluable = unevaluable(filter, hamlets);
+        if (unevaluable != null) result.put("unevaluable", unevaluable);
         return result;
+    }
+
+    /**
+     * People an age filter could not judge (no exact birth date), so they are reported instead of silently dropped. A legacy
+     * age campaign counts the whole hamlet as before; an explicit age band counts those matching every other filter.
+     */
+    private Long unevaluable(ResidentFilter filter, List<Long> hamlets) {
+        if (filter.hasAge()) {
+            var where = filter.withoutAge().where(hamlets, crypto.lookup(filter.search()));
+            return db.queryForObject(
+                "select count(*) from tc2_roster.resident r where " + where.text() + " and (" + RosterCampaign.UNEVALUABLE + ")",
+                Long.class,
+                where.args().toArray()
+            );
+        }
+        if (!RosterCampaign.needsExactBirthDate(filter.campaign())) return null;
+        var marks = String.join(",", Collections.nCopies(hamlets.size(), "?"));
+        return db.queryForObject(
+            "select count(*) from tc2_roster.resident r where r.hamlet_id in (" + marks + ") and (" + RosterCampaign.UNEVALUABLE + ")",
+            Long.class,
+            hamlets.toArray()
+        );
     }
 
     public Map<String, Object> createResident(Map<String, Object> d) {
