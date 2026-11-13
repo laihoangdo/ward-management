@@ -429,6 +429,29 @@
   font-size: 13px;
   font-weight: 600;
 }
+/* Area statistics: four figures in a compact grid, numbers aligned for comparison. */
+.field-area-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 6px 0;
+}
+.field-area-stats > div {
+  padding: 6px 8px;
+  border: 1px solid var(--field-border);
+  border-radius: 6px;
+  background: var(--field-soft);
+}
+.field-area-stats dt {
+  color: var(--field-muted);
+  font-size: 12px;
+}
+.field-area-stats dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .field-panel-actions {
   display: flex;
   gap: 8px;

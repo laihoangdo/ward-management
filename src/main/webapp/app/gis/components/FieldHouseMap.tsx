@@ -37,6 +37,7 @@ import {
   residentBucket,
   themeColor,
 } from '../utils/buildingTheme';
+import { areaSummary } from '../utils/areaSummary';
 import { drawLabelImage, LABEL_IMAGE_PREFIX, LABEL_PIXEL_RATIO, labelText } from '../utils/mapLabelImage';
 
 interface Props {
@@ -64,6 +65,9 @@ const STATUS_PRIORITY: HouseholdStatus[] = ['alert', 'warning', 'business', 'nor
 const highestStatus = (residents: HouseholdFacility[]): HouseholdStatus =>
   STATUS_PRIORITY.find(status => residents.some(r => r.status === status)) ?? 'unverified';
 const QUICK_RESULT_LIMIT = 20;
+/** Buildings lit up inside a drawn area, and household rows listed for it; the totals always cover the whole area. */
+const MAX_AREA_HIGHLIGHTS = 400;
+const MAX_AREA_ROWS = 30;
 /** Buildings that do not match the status filter stay on the map as low grey blocks, so the street still reads. */
 const DIM_COLOR = '#c3cad0';
 const OWN_COLOR: maplibregl.ExpressionSpecification = ['coalesce', ['get', 'displayColor'], '#b6c9d6'];
@@ -271,7 +275,7 @@ export default function FieldHouseMap({
   const autoLinkRunningRef = useRef(false);
   const autoLinkAttemptsRef = useRef(new Set<string>());
   const [selectedId, setSelectedId] = useState('');
-  const [mode, setMode] = useState<'select' | 'draw' | 'move'>('select');
+  const [mode, setMode] = useState<'select' | 'draw' | 'move' | 'area'>('select');
   const [draft, setDraft] = useState<number[][]>([]);
   const [height, setHeight] = useState(7);
   const [floors, setFloors] = useState(2);
@@ -369,10 +373,12 @@ export default function FieldHouseMap({
     return target ? String(target.id ?? target.properties.buildingId) : '';
   };
   /** Selection and hover reach the Three.js layer as two texels, not as a 79k-entry state list. */
+  const areaIdsRef = useRef<string[]>([]);
   const pushHighlights = () => {
     const selectedKey = highlightId(liveRef.current.selectedId);
     const hoveredKey = highlightId(hoveredIdRef.current);
     effectsRef.current?.setHighlights?.([
+      ...areaIdsRef.current.map(highlightId).flatMap(id => (id && id !== selectedKey && id !== hoveredKey ? [{ id, level: 0.5 }] : [])),
       ...(hoveredKey && hoveredKey !== selectedKey ? [{ id: hoveredKey, level: 0.5 }] : []),
       ...(selectedKey ? [{ id: selectedKey, level: 1 }] : []),
     ]);
@@ -386,6 +392,26 @@ export default function FieldHouseMap({
     hoveredIdRef.current = quickActiveBuildingId;
     pushHighlightsRef.current();
   }, [quickActiveBuildingId]);
+  // Area statistics: the polygon being drawn in 'area' mode is summarised as soon as it has three vertices.
+  const area = useMemo(() => {
+    if (mode !== 'area' || draft.length < 3) return null;
+    const loose = [...householdsOnMap.filter(h => !buildingByHouseholdId.has(h.id)), ...temporaryHouseholds];
+    return areaSummary(draft, houses, indexed, loose);
+  }, [mode, draft, houses, indexed, householdsOnMap, buildingByHouseholdId, temporaryHouseholds]);
+  useEffect(() => {
+    areaIdsRef.current = area ? area.buildingIds.slice(0, MAX_AREA_HIGHLIGHTS) : [];
+    pushHighlightsRef.current();
+  }, [area]);
+  useEffect(() => {
+    if (mode !== 'area') return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMode('select');
+      setDraft([]);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mode]);
   const featureCacheRef = useRef(new Map<string, { house: FieldHouse; key: string }>());
   const housesLoadedMapRef = useRef<maplibregl.Map | null>(null);
   const pointsLoadedMapRef = useRef<maplibregl.Map | null>(null);
@@ -745,7 +771,7 @@ export default function FieldHouseMap({
     map.on('click', event => {
       const live = liveRef.current;
       if (live.busy) return;
-      if (live.mode === 'draw' && live.canLink) {
+      if ((live.mode === 'draw' && live.canLink) || live.mode === 'area') {
         setDraft(prev => [...prev, [event.lngLat.lng, event.lngLat.lat]]);
         return;
       }
@@ -878,7 +904,7 @@ export default function FieldHouseMap({
     const map = mapRef.current;
     if (!ready || !map || initializedMapRef.current !== map) return;
     map.getCanvas().style.cursor = mode === 'select' ? '' : 'crosshair';
-    map.doubleClickZoom[mode === 'draw' ? 'disable' : 'enable']();
+    map.doubleClickZoom[mode === 'draw' || mode === 'area' ? 'disable' : 'enable']();
   }, [mode, ready]);
 
   useEffect(() => {
@@ -1510,6 +1536,28 @@ export default function FieldHouseMap({
                 + Vẽ khối nhà
               </button>
             )}
+            <button
+              type="button"
+              aria-pressed={mode === 'area'}
+              aria-label="Khoanh vùng để thống kê hộ dân"
+              disabled={!ready || loading || busy || (mode !== 'select' && mode !== 'area')}
+              onClick={() => {
+                setDraft([]);
+                if (mode === 'area') {
+                  setMode('select');
+                  return;
+                }
+                if ((containerRef.current?.clientWidth ?? 1000) <= 1024 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) {
+                  setLayersOpen(false);
+                }
+                setMode('area');
+                setSelectedId('');
+                setError('');
+                setNotice('');
+              }}
+            >
+              Khoanh vùng
+            </button>
             <button type="button" disabled={!ready || busy || loading} onClick={screenshot}>
               Chụp ảnh PNG
             </button>
@@ -1778,7 +1826,80 @@ export default function FieldHouseMap({
             </div>
           </aside>
         )}
-        {selected && mode !== 'draw' && (
+        {mode === 'area' && (
+          <aside className="field-panel" aria-label="Thống kê theo vùng">
+            <h3>Thống kê theo vùng</h3>
+            <p>Bấm lần lượt các đỉnh quanh khu vực cần xem (từ 3 đỉnh). Nhấn Esc để thoát.</p>
+            <div className="field-draw-status">
+              <span>{draft.length} đỉnh</span>
+              <button type="button" disabled={!draft.length} onClick={() => setDraft(prev => prev.slice(0, -1))}>
+                Bỏ đỉnh cuối
+              </button>
+            </div>
+            {area && (
+              <div role="status">
+                <dl className="field-area-stats">
+                  <div>
+                    <dt>Công trình</dt>
+                    <dd>{area.buildingIds.length.toLocaleString('vi-VN')}</dd>
+                  </div>
+                  <div>
+                    <dt>Có hộ dân</dt>
+                    <dd>{area.occupiedBuildings.toLocaleString('vi-VN')}</dd>
+                  </div>
+                  <div>
+                    <dt>Hộ dân</dt>
+                    <dd>{area.households.length.toLocaleString('vi-VN')}</dd>
+                  </div>
+                  <div>
+                    <dt>Nhân khẩu</dt>
+                    <dd>{area.residents.toLocaleString('vi-VN')}</dd>
+                  </div>
+                </dl>
+                <div className="field-legend" role="list" aria-label="Số hộ theo trạng thái trong vùng">
+                  {(Object.keys(STATUS) as HouseholdStatus[]).map(key => (
+                    <span key={key} className="field-legend-item" role="listitem">
+                      <i style={{ background: COLORS[key] }} aria-hidden="true" />
+                      {STATUS[key]}: {area.byStatus[key]}
+                    </span>
+                  ))}
+                </div>
+                {area.looseHouseholds > 0 && <small>Trong đó {area.looseHouseholds} hộ chưa gắn với công trình nào.</small>}
+                {area.households.slice(0, MAX_AREA_ROWS).map(h => (
+                  <button key={h.id} type="button" className="field-household" onClick={() => onSelect(h)}>
+                    <span className="field-household-main">
+                      <i className="field-status-dot" style={{ background: COLORS[h.status] }} aria-hidden="true" />
+                      {h.ownerName} · {h.code}
+                    </span>
+                    <span className="field-household-sub">
+                      {[`${h.houseNumber} ${h.street}`.trim(), `${h.residentsCount || 0} nhân khẩu`].filter(Boolean).join(' · ')}
+                    </span>
+                  </button>
+                ))}
+                {area.households.length > MAX_AREA_ROWS && (
+                  <small>
+                    Hiện {MAX_AREA_ROWS} hộ đầu trong {area.households.length.toLocaleString('vi-VN')} hộ; thu nhỏ vùng để xem hết.
+                  </small>
+                )}
+              </div>
+            )}
+            <div className="field-panel-actions">
+              <button type="button" disabled={!draft.length} onClick={() => setDraft([])}>
+                Xoá vùng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('select');
+                  setDraft([]);
+                }}
+              >
+                Đóng
+              </button>
+            </div>
+          </aside>
+        )}
+        {selected && mode !== 'draw' && mode !== 'area' && (
           <aside className="field-panel" aria-label="Thông tin công trình">
             <div className="field-panel-heading">
               <h3>{canManageSelected ? selected.properties.name || 'Công trình đã chọn' : 'Công trình · Chỉ xem hình khối'}</h3>

@@ -752,6 +752,27 @@ describe('field map controls', () => {
     ]);
     expect(saved.id).toMatch(/^custom-/);
   });
+  it('summarises a drawn area without needing edit permission and leaves it with Escape', async () => {
+    const inside = { ...household, id: '2', code: 'HK-2', coordinates: [10.0003, 106.0006], residentsCount: 4, status: 'alert' };
+    await mount([household, inside as HouseholdFacility], false);
+    fireEvent.click(screen.getByRole('button', { name: 'Khoanh vùng để thống kê hộ dân' }));
+    for (const [lng, lat] of [
+      [105.99, 9.99],
+      [106.01, 9.99],
+      [106.01, 10.01],
+      [105.99, 10.01],
+    ])
+      act(() => {
+        mocks.handlers.get('click')?.({ lngLat: { lng, lat } });
+      });
+    const panel = screen.getByRole('complementary', { name: 'Thống kê theo vùng' });
+    expect(panel.querySelector('.field-area-stats')?.textContent).toBe('Công trình1Có hộ dân1Hộ dân1Nhân khẩu4');
+    expect(panel.textContent).toContain('Cảnh báo: 1');
+    expect(panel.textContent).toContain('HK-2');
+    expect(panel.textContent).not.toContain('HK-1');
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('complementary', { name: 'Thống kê theo vùng' })).toBeNull();
+  });
   it('previews and saves a new footprint location', async () => {
     await mount();
     selectHouse();
