@@ -38,7 +38,7 @@ import {
   themeColor,
 } from '../utils/buildingTheme';
 import { areaSummary } from '../utils/areaSummary';
-import { drawLabelImage, LABEL_IMAGE_PREFIX, LABEL_PIXEL_RATIO, labelText } from '../utils/mapLabelImage';
+import { drawLabelImage, LABEL_IMAGE_PREFIX, LABEL_PIXEL_RATIO, LANDMARK_IMAGE_PREFIX, labelText } from '../utils/mapLabelImage';
 
 interface Props {
   captureOfficer?: MapCaptureOfficer;
@@ -68,6 +68,8 @@ const QUICK_RESULT_LIMIT = 20;
 /** Buildings lit up inside a drawn area, and household rows listed for it; the totals always cover the whole area. */
 const MAX_AREA_HIGHLIGHTS = 400;
 const MAX_AREA_ROWS = 30;
+/** Named buildings without households act as landmarks; the largest footprints win when there are many. */
+const MAX_LANDMARKS = 300;
 /** Buildings that do not match the status filter stay on the map as low grey blocks, so the street still reads. */
 const DIM_COLOR = '#c3cad0';
 const OWN_COLOR: maplibregl.ExpressionSpecification = ['coalesce', ['get', 'displayColor'], '#b6c9d6'];
@@ -743,6 +745,21 @@ export default function FieldHouseMap({
           'symbol-sort-key': ['get', 'rank'],
         },
       });
+      // Landmarks: visible from far out, so the user keeps their bearings while rotating the map.
+      map.addSource('landmark-labels', { type: 'geojson', data: EMPTY });
+      map.addLayer({
+        id: 'landmark-labels',
+        type: 'symbol',
+        source: 'landmark-labels',
+        minzoom: 14.5,
+        layout: {
+          'icon-image': ['concat', LANDMARK_IMAGE_PREFIX, ['get', 'label']],
+          'icon-anchor': 'bottom',
+          'icon-offset': [0, -6],
+          'icon-padding': 6,
+          'symbol-sort-key': ['get', 'rank'],
+        },
+      });
       map.addSource('draft', { type: 'geojson', data: EMPTY });
       map.addLayer({
         id: 'draft-fill',
@@ -806,8 +823,10 @@ export default function FieldHouseMap({
     });
     // MapLibre 6 resolves missing images through this callback; the styleimagemissing event fires too late to supply them.
     map.setMissingStyleImageResolver?.((id: string) => {
-      if (typeof id !== 'string' || !id.startsWith(LABEL_IMAGE_PREFIX) || labelImageCountRef.current >= MAX_LABEL_IMAGES) return;
-      const image = drawLabelImage(id.slice(LABEL_IMAGE_PREFIX.length));
+      if (typeof id !== 'string' || labelImageCountRef.current >= MAX_LABEL_IMAGES) return;
+      const landmark = id.startsWith(LANDMARK_IMAGE_PREFIX);
+      if (!landmark && !id.startsWith(LABEL_IMAGE_PREFIX)) return;
+      const image = drawLabelImage(id.slice((landmark ? LANDMARK_IMAGE_PREFIX : LABEL_IMAGE_PREFIX).length), landmark);
       if (!image || map.hasImage(id)) return;
       map.addImage(id, image, { pixelRatio: LABEL_PIXEL_RATIO });
       labelImageCountRef.current += 1;
@@ -999,6 +1018,29 @@ export default function FieldHouseMap({
       }
     (map.getSource('house-labels') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features });
   }, [ready, indexed, houseById, status, layers.buildings, layers.occupied]);
+
+  // Landmark labels: named buildings that hold no household (offices, schools, markets entered by name).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || initializedMapRef.current !== map) return;
+    const named: { house: FieldHouse; label: string; area: number }[] = [];
+    if (layers.buildings && layers.empty)
+      for (const house of houses) {
+        const label = labelText(house.properties.name ?? '');
+        if (!label || indexed.has(house.properties.buildingId)) continue;
+        const [w, s, e, n] = houseBounds(house);
+        named.push({ house, label, area: (e - w) * (n - s) });
+      }
+    named.sort((a, b) => b.area - a.area);
+    (map.getSource('landmark-labels') as maplibregl.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features: named.slice(0, MAX_LANDMARKS).map(({ house, label }, rank) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: centerOf(house) },
+        properties: { label, rank },
+      })),
+    });
+  }, [ready, houses, indexed, layers.buildings, layers.empty]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1498,6 +1540,44 @@ export default function FieldHouseMap({
             <button type="button" aria-label="Góc nghiêng 3D" disabled={!ready} onClick={() => mapRef.current?.easeTo({ pitch: 55 })}>
               Nghiêng 3D
             </button>
+            <button
+              type="button"
+              aria-label="Nhìn ngang tầm phố"
+              title="Nhìn ngang tầm phố, lấy công trình đang chọn làm tâm"
+              disabled={!ready}
+              onClick={() => {
+                const map = mapRef.current;
+                if (!map) return;
+                map.easeTo({
+                  ...(selected ? { center: centerOf(selected) } : {}),
+                  pitch: 75,
+                  zoom: Math.max(map.getZoom(), 18.5),
+                  duration: 600,
+                });
+              }}
+            >
+              Tầm phố
+            </button>
+            {([-45, 45] as const).map(step => (
+              <button
+                key={step}
+                type="button"
+                aria-label={step < 0 ? 'Xoay trái 45 độ' : 'Xoay phải 45 độ'}
+                title={selected ? 'Xoay quanh công trình đang chọn' : 'Xoay bản đồ'}
+                disabled={!ready}
+                onClick={() => {
+                  const map = mapRef.current;
+                  if (!map) return;
+                  map.easeTo({
+                    ...(selected ? { center: centerOf(selected) } : {}),
+                    bearing: map.getBearing() + step,
+                    duration: 450,
+                  });
+                }}
+              >
+                {step < 0 ? '⟲' : '⟳'}
+              </button>
+            ))}
             <button
               type="button"
               aria-label="Đặt lại góc nhìn"

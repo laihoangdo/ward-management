@@ -21,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   missingSources: new Set<string>(),
   addSource: vi.fn(),
   setPaintProperty: vi.fn(),
+  easeTo: vi.fn(),
   effectsAttach: vi.fn(),
   effectsDisplay: vi.fn(),
   effectsHighlights: vi.fn(),
@@ -38,7 +39,7 @@ vi.mock('maplibre-gl', () => ({
     setSprite = vi.fn();
     remove = mocks.mapRemove;
     resize = vi.fn();
-    easeTo = vi.fn();
+    easeTo = mocks.easeTo;
     doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
     scrollZoom = { setWheelZoomRate: vi.fn(), setZoomRate: vi.fn() };
     setPaintProperty = mocks.setPaintProperty;
@@ -54,6 +55,8 @@ vi.mock('maplibre-gl', () => ({
       return this;
     };
     getCanvas = () => ({ style: {} });
+    getZoom = () => 16;
+    getBearing = () => 30;
     getLayer = () => ({});
     getSource = (id: string) =>
       mocks.missingSources.has(id)
@@ -773,6 +776,33 @@ describe('field map controls', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('complementary', { name: 'Thống kê theo vùng' })).toBeNull();
   });
+  it('orbits and drops to street level around the selected building', async () => {
+    await mount();
+    selectHouse();
+    fireEvent.click(screen.getByRole('button', { name: 'Xoay phải 45 độ' }));
+    expect(mocks.easeTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ bearing: 75, center: [(106 + 106.001) / 2, (10 + 10.001) / 2] }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Nhìn ngang tầm phố' }));
+    expect(mocks.easeTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pitch: 75, zoom: 18.5, center: [(106 + 106.001) / 2, (10 + 10.001) / 2] }),
+    );
+  });
+
+  it('labels named buildings without households as landmarks', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/badiem-houses.geojson')
+        ? Promise.resolve({
+            data: { type: 'FeatureCollection', features: [{ ...house, properties: { ...house.properties, name: 'Trụ sở Công an xã' } }] },
+          })
+        : originalGet(url, config),
+    );
+    await mount([]);
+    const landmarks = mocks.setData.mock.calls.map(([data]) => data.features).filter(features => features[0]?.properties?.rank === 0);
+    expect(landmarks.at(-1)).toEqual([expect.objectContaining({ properties: { label: 'Trụ sở Công an xã', rank: 0 } })]);
+  });
+
   it('previews and saves a new footprint location', async () => {
     await mount();
     selectHouse();
