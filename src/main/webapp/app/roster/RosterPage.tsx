@@ -428,6 +428,9 @@ function RosterWorkspace({
   const exportUser = currentUser === undefined ? loadedUser : currentUser;
   // The server re-checks; this only hides a button the user could not use.
   const canExport = exportUser?.role === 'superadmin' || exportUser?.subAdminPermissions?.canExportReports === true;
+  const canEditMap = exportUser?.role === 'superadmin' || exportUser?.subAdminPermissions?.canEditCoordinates === true;
+  // A link change on the map refreshes the list so its link column stays right.
+  const [listTick, setListTick] = useState(0);
   const rosterTabs = ['households', 'residents', 'import', 'history', 'patrol'];
   const tabParam = embedded ? (urlParams.get('rosterTab') ?? urlParams.get('tab')) : urlParams.get('tab');
   const routeTab = rosterTabs.includes(tabParam ?? '') ? tabParam! : initialTab;
@@ -704,7 +707,7 @@ function RosterWorkspace({
           if (!axios.isCancel(e)) setError(errorMessage(e));
         });
     return () => controller.abort();
-  }, [tab, page, search, message, kind, origin, category, campaign, refreshKey]);
+  }, [tab, page, search, message, kind, origin, category, campaign, refreshKey, listTick]);
   useEffect(() => {
     if (!collection) return;
     const controller = new AbortController();
@@ -1927,10 +1930,17 @@ function RosterWorkspace({
               selectedId={household?.id ?? null}
               onSelect={id => run(() => loadHouse(id))}
               onOpenDetail={detailOpen ? () => setPaneView('detail') : undefined}
+              canEdit={canEditMap}
+              onChanged={() => setListTick(t => t + 1)}
             />
           )}
           {mapOn && tab === 'households' && !wide && narrowMapView && (
-            <RosterMapPane selectedId={household?.id ?? null} onSelect={id => run(() => loadHouse(id))} />
+            <RosterMapPane
+              selectedId={household?.id ?? null}
+              onSelect={id => run(() => loadHouse(id))}
+              canEdit={canEditMap}
+              onChanged={() => setListTick(t => t + 1)}
+            />
           )}
           {detailOpen && !(mapOn && tab === 'households' && paneView === 'map' && wide) && (
             <aside

@@ -1,5 +1,6 @@
 package com.policemanagement.com.service.roster;
 
+import com.policemanagement.com.service.FieldBuildingWriter;
 import com.policemanagement.com.service.PostgisSpatialService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,12 +27,20 @@ public class RosterMapService {
     private final RosterService roster;
     private final PostgisSpatialService spatial;
     private final ObjectMapper json;
+    private final FieldBuildingWriter writer;
 
-    public RosterMapService(JdbcTemplate db, RosterService roster, PostgisSpatialService spatial, ObjectMapper json) {
+    public RosterMapService(
+        JdbcTemplate db,
+        RosterService roster,
+        PostgisSpatialService spatial,
+        ObjectMapper json,
+        FieldBuildingWriter writer
+    ) {
         this.db = db;
         this.roster = roster;
         this.spatial = spatial;
         this.json = json;
+        this.writer = writer;
     }
 
     public Map<String, Object> map() {
@@ -129,6 +138,8 @@ public class RosterMapService {
                 "))::text appearance, " +
                 "json_agg(json_build_object('id', h.roster_id, 'code', h.code, 'raw_address', h.raw_address, 'link_quality', " +
                 RosterPatrolService.LINK_QUALITY_SQL +
+                ", 'pinned', " +
+                PINNED_SQL +
                 ") order by h.code)::text households " +
                 "from public.gis_field_building b join public.gis_field_building_household l on l.building_id=b.id " +
                 "join public.household h on h.id=l.household_id " +
@@ -146,6 +157,7 @@ public class RosterMapService {
                 item.put("code", household.path("code").asText());
                 item.put("raw_address", household.path("raw_address").asText());
                 item.put("link_quality", household.path("link_quality").asText());
+                item.put("pinned", household.path("pinned").asBoolean(false));
                 qualities.add(household.path("link_quality").asText());
                 households.add(item);
             }
@@ -169,6 +181,158 @@ public class RosterMapService {
                 )
             );
         }
+        // Saved buildings inside the hamlet that hold no household yet, so an officer can link one to them.
+        var empty = db.queryForList(
+            "select e.id building_id, ST_AsGeoJSON(e.footprint_geom) geometry, " +
+                "nullif(e.feature_json::jsonb #>> '{properties,height}', '')::double precision height " +
+                "from public.gis_field_building e join public.hamlet hm on hm.id=? " +
+                "where e.footprint_geom is not null and hm.boundary_geom is not null and ST_Intersects(e.footprint_geom, hm.boundary_geom) " +
+                "and not exists (select 1 from public.gis_field_building_household l where l.building_id=e.id) order by e.id",
+            hamlet
+        );
+        for (var row : empty) {
+            var properties = new LinkedHashMap<String, Object>();
+            properties.put("id", row.get("building_id").toString());
+            properties.put("height", clampHeight(row.get("height") instanceof Number n ? n.doubleValue() : null));
+            properties.put("quality", "NONE");
+            properties.put("household_count", 0);
+            properties.put("appearance", json.createObjectNode());
+            properties.put("households", List.of());
+            result.add(
+                Map.of(
+                    "type",
+                    "Feature",
+                    "id",
+                    row.get("building_id").toString(),
+                    "geometry",
+                    json.readTree(row.get("geometry").toString()),
+                    "properties",
+                    properties
+                )
+            );
+        }
         return result;
+    }
+
+    /**
+     * Whether a household's own coordinate (not a placeholder) lies inside its building: such a link is re-created from the
+     * coordinate automatically, so it is fixed by correcting the coordinate rather than by unlinking.
+     */
+    static final String PINNED_SQL =
+        "(h.coordinate_method='VERIFIED' and h.latitude is not null and h.longitude is not null " +
+        "and ST_Contains(b.footprint_geom, ST_SetSRID(ST_MakePoint(h.longitude, h.latitude), 4326)))";
+
+    private static final double STOREY_M = 3.5;
+
+    private static ResponseStatusException conflict(String message) {
+        return new ResponseStatusException(HttpStatus.CONFLICT, message);
+    }
+
+    /** Editing needs the map and the coordinate-editing permission, inside the hamlet being worked on. */
+    private long editableHamlet() {
+        roster.authorize("canViewAdvancedMap");
+        roster.authorize("canEditCoordinates");
+        if (!spatial.enabled()) throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "PostGIS chưa được bật và nghiệm thu");
+        return roster.hamlet();
+    }
+
+    /** Numeric household id behind a roster household of this hamlet. */
+    private long householdOf(java.util.UUID household, long hamlet) {
+        var ids = db.queryForList("select id from public.household where roster_id=? and hamlet_id=?", Long.class, household, hamlet);
+        if (ids.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hộ trong ấp đang mở");
+        return ids.getFirst();
+    }
+
+    private tools.jackson.databind.JsonNode building(String id) {
+        return writer.find(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy khối nhà"));
+    }
+
+    /**
+     * Links a household to a saved building. A household already in another building is moved only when {@code move} is set;
+     * otherwise the answer is a conflict naming that building so the officer can confirm.
+     */
+    public Map<String, Object> link(String buildingId, java.util.UUID household, boolean move) {
+        long hamlet = editableHamlet();
+        long id = householdOf(household, hamlet);
+        var target = building(buildingId);
+        String current = writer.buildingOf(id).orElse(null);
+        if (buildingId.equals(current)) return Map.of("buildingId", buildingId, "moved", false);
+        if (current != null && !move) throw conflict("Hộ đang thuộc khối nhà khác; xác nhận để chuyển sang khối nhà này");
+        writer.relink(id, buildingId, target);
+        return Map.of("buildingId", buildingId, "moved", current != null);
+    }
+
+    /** Removes a household from a building, unless its own verified coordinate would link it straight back. */
+    public void unlink(String buildingId, java.util.UUID household) {
+        long hamlet = editableHamlet();
+        long id = householdOf(household, hamlet);
+        var feature = building(buildingId);
+        if (!writer.buildingOf(id).map(buildingId::equals).orElse(false)) throw new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "Hộ không thuộc khối nhà này"
+        );
+        Boolean pinned = db.queryForObject(
+            "select " + PINNED_SQL + " from public.household h join public.gis_field_building b on b.id=? where h.id=?",
+            Boolean.class,
+            buildingId,
+            id
+        );
+        if (Boolean.TRUE.equals(pinned)) throw conflict(
+            "Hộ khớp khối nhà theo tọa độ đã xác minh; hãy sửa tọa độ của hộ thay vì gỡ liên kết"
+        );
+        writer.save(buildingId, writer.withLink(feature, id, false));
+    }
+
+    /**
+     * Saves a newly drawn building in this hamlet (at most 20 floors / 70 m), optionally linking a household to it right away.
+     */
+    public Map<String, Object> create(Map<String, Object> body) {
+        long hamlet = editableHamlet();
+        tools.jackson.databind.JsonNode geometry = json.valueToTree(body.get("geometry"));
+        if (!"Polygon".equals(geometry.path("type").asText())) throw new ResponseStatusException(
+            HttpStatus.BAD_REQUEST,
+            "Công trình phải là một đa giác"
+        );
+        int floors = body.get("floors") instanceof Number n ? n.intValue() : 1;
+        double height = body.get("height") instanceof Number n ? n.doubleValue() : Math.min(MAX_HEIGHT_M, floors * STOREY_M);
+        String name = Objects.toString(body.get("name"), "").strip();
+        String id = "custom-" + java.util.UUID.randomUUID();
+        var feature = json.createObjectNode();
+        feature.put("type", "Feature");
+        feature.put("id", id);
+        feature.set("geometry", geometry);
+        var properties = feature.putObject("properties");
+        properties.put("buildingId", id);
+        properties.put("height", height);
+        properties.put("floors", floors);
+        if (!name.isEmpty()) properties.put("name", name);
+        properties.put("estimated", false);
+        properties.putArray("householdIds");
+        FieldBuildingWriter.validate(id, feature);
+        Boolean inside = db.queryForObject(
+            "select ST_Intersects(ST_SetSRID(ST_GeomFromGeoJSON(?), 4326), boundary_geom) from public.hamlet where id=?",
+            Boolean.class,
+            geometry.toString(),
+            hamlet
+        );
+        if (!Boolean.TRUE.equals(inside)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Công trình phải nằm trong ranh ấp");
+        Object household = body.get("householdId");
+        if (household == null || household.toString().isBlank()) {
+            writer.save(id, feature);
+            return Map.of("buildingId", id, "moved", false);
+        }
+        java.util.UUID householdUuid;
+        try {
+            householdUuid = java.util.UUID.fromString(household.toString());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mã hộ không hợp lệ");
+        }
+        long householdId = householdOf(householdUuid, hamlet);
+        boolean elsewhere = writer.buildingOf(householdId).isPresent();
+        if (elsewhere && !Boolean.TRUE.equals(body.get("move"))) throw conflict(
+            "Hộ đang thuộc khối nhà khác; xác nhận để chuyển sang công trình mới"
+        );
+        writer.relink(householdId, id, feature);
+        return Map.of("buildingId", id, "moved", elsewhere);
     }
 }

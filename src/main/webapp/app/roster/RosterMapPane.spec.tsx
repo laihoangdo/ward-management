@@ -4,7 +4,9 @@ import { render, screen, waitFor, cleanup, act, fireEvent } from '@testing-libra
 import axios from 'axios';
 import RosterMapPane from './RosterMapPane';
 
-vi.mock('axios', () => ({ default: { get: vi.fn(), isAxiosError: (e: any) => Boolean(e?.isAxiosError) } }));
+vi.mock('axios', () => ({
+  default: { get: vi.fn(), post: vi.fn(), delete: vi.fn(), isAxiosError: (e: any) => Boolean(e?.isAxiosError) },
+}));
 
 const mapState = vi.hoisted(() => ({
   instance: null as any,
@@ -33,6 +35,9 @@ vi.mock('maplibre-gl', () => {
     setFilter = vi.fn();
     setPaintProperty = vi.fn();
     getLayer = vi.fn((id: string) => this.layers.find(l => l.id === id));
+    sources: Record<string, any> = {};
+    getSource = vi.fn((id: string) => this.sources[id]);
+    doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
     flyTo = vi.fn();
     easeTo = vi.fn();
     fitBounds = vi.fn();
@@ -42,7 +47,9 @@ vi.mock('maplibre-gl', () => {
       mapState.instance = this;
     }
     addControl() {}
-    addSource() {}
+    addSource(id: string) {
+      this.sources[id] = { setData: vi.fn() };
+    }
     addLayer(layer: any) {
       this.layers.push(layer);
     }
@@ -152,6 +159,8 @@ describe('Roster map pane', () => {
     effects.setDisplayState.mockReset();
     effects.failToAttach = false;
     vi.mocked(axios.get).mockReset();
+    vi.mocked(axios.post).mockReset();
+    vi.mocked(axios.delete).mockReset();
   });
   afterEach(cleanup);
 
@@ -159,11 +168,11 @@ describe('Roster map pane', () => {
     vi.mocked(axios.get).mockResolvedValue(payload);
     render(<RosterMapPane selectedId={null} onSelect={vi.fn()} />);
     const status = (await screen.findAllByRole('status'))[0].textContent;
-    expect(status).toContain('3 / 6 hộ có vị trí ghi nhận · 2 khối nhà');
+    expect(status).toContain('3 / 6 hộ có vị trí ghi nhận · 2 khối nhà có hộ');
     expect(status).toContain('3 hộ chưa có vị trí nên không hiện trên bản đồ');
     const legend = screen.getByRole('list', { name: 'Chú giải độ tin cậy vị trí' });
-    expect(legend.textContent).toContain('Chính xác (2)');
-    expect(legend.textContent).toContain('Ước lượng (1)');
+    expect(legend.textContent).toContain('Chính xác2');
+    expect(legend.textContent).toContain('Ước lượng1');
     expect(screen.getByText(/Chiều cao và màu mái chỉ để minh hoạ/)).toBeDefined();
     expect(axios.get).toHaveBeenCalledWith('/api/roster/map');
   });
@@ -291,5 +300,86 @@ describe('Roster map pane', () => {
     vi.mocked(axios.get).mockRejectedValueOnce(Object.assign(Error('unavailable'), { isAxiosError: true, response: { status: 503 } }));
     render(<RosterMapPane selectedId={null} onSelect={vi.fn()} />);
     expect((await screen.findByRole('alert')).textContent).toContain('PostGIS');
+  });
+
+  describe('editing', () => {
+    const emptyBuilding = {
+      type: 'Feature',
+      id: 'b3',
+      geometry: square(106.62, 10.87),
+      properties: { id: 'b3', height: 3.5, quality: 'NONE', household_count: 0, appearance: {}, households: [] },
+    };
+    const withEmpty = { data: { ...payload.data, buildings: [...payload.data.buildings, emptyBuilding] } };
+
+    it('shows no editing tools without the coordinate-editing permission', async () => {
+      vi.mocked(axios.get).mockResolvedValue(withEmpty);
+      await loaded(<RosterMapPane selectedId="h1" onSelect={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: 'Vẽ công trình' })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Gỡ hộ/ })).toBeNull();
+      // Buildings without households are drawn grey and counted in the key.
+      expect(screen.getByRole('list', { name: 'Chú giải độ tin cậy vị trí' }).textContent).toContain('Chưa có hộ1');
+    });
+
+    it('unlinks a household only after a second, confirming tap, then reloads and tells the list', async () => {
+      vi.mocked(axios.get).mockResolvedValue(withEmpty);
+      vi.mocked(axios.delete).mockResolvedValue({});
+      const onChanged = vi.fn();
+      await loaded(<RosterMapPane selectedId="h1" onSelect={vi.fn()} canEdit onChanged={onChanged} />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Gỡ hộ TC2-001 khỏi khối nhà' }));
+      expect(axios.delete).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'Xác nhận gỡ hộ TC2-001 khỏi khối nhà' }));
+      await waitFor(() => expect(axios.delete).toHaveBeenCalledWith('/api/roster/map/buildings/b1/households/h1'));
+      expect(await screen.findByText('Đã gỡ hộ TC2-001 khỏi khối nhà.')).toBeDefined();
+      expect(onChanged).toHaveBeenCalled();
+      expect(axios.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps the selected household when another building is clicked and asks before moving it there', async () => {
+      vi.mocked(axios.get).mockResolvedValue(withEmpty);
+      vi.mocked(axios.post).mockResolvedValue({ data: { buildingId: 'b3', moved: true } });
+      const onSelect = vi.fn();
+      await loaded(<RosterMapPane selectedId="h1" onSelect={onSelect} canEdit />);
+      act(() => mapState.layerHandlers['click:roster-buildings']({ features: [{ properties: { id: 'b3' } }] }));
+      expect(onSelect).not.toHaveBeenCalled();
+      const panel = await screen.findByRole('group', { name: 'Khối nhà' });
+      expect(panel.textContent).toContain('Khối nhà chưa có hộ');
+      expect(panel.textContent).toContain('đang ở khối nhà khác');
+      fireEvent.click(screen.getByRole('button', { name: 'Chuyển hộ sang khối nhà này' }));
+      await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith('/api/roster/map/buildings/b3/households', { householdId: 'h1', move: true }),
+      );
+      expect(await screen.findByText('Đã chuyển hộ TC2-001 sang khối nhà này.')).toBeDefined();
+    });
+
+    it('draws a building from at least three clicks and saves it with the selected household', async () => {
+      vi.mocked(axios.get).mockResolvedValue(withEmpty);
+      vi.mocked(axios.post).mockResolvedValue({ data: { buildingId: 'custom-1', moved: false } });
+      await loaded(<RosterMapPane selectedId="h9" onSelect={vi.fn()} canEdit />);
+      fireEvent.click(screen.getByRole('button', { name: 'Vẽ công trình' }));
+      expect(mapState.instance.doubleClickZoom.disable).toHaveBeenCalled();
+      const save = screen.getByRole('button', { name: 'Lưu công trình' }) as HTMLButtonElement;
+      act(() => mapState.handlers.click({ lngLat: { lng: 106.6, lat: 10.85 } }));
+      act(() => mapState.handlers.click({ lngLat: { lng: 106.6002, lat: 10.85 } }));
+      expect(save.disabled).toBe(true);
+      act(() => mapState.handlers.click({ lngLat: { lng: 106.6002, lat: 10.8502 } }));
+      expect(save.disabled).toBe(false);
+      fireEvent.change(screen.getByLabelText('Số tầng'), { target: { value: '3' } });
+      fireEvent.click(save);
+      await waitFor(() => expect(axios.post).toHaveBeenCalled());
+      const [url, body] = vi.mocked(axios.post).mock.calls[0] as [string, any];
+      expect(url).toBe('/api/roster/map/buildings');
+      expect(body).toMatchObject({ floors: 3, height: 10.5, householdId: 'h9', move: false });
+      expect(body.geometry.coordinates[0]).toHaveLength(4);
+      expect(await screen.findByText(/Đã lưu công trình và gắn hộ/)).toBeDefined();
+    });
+
+    it('caps a drawn building at 20 floors', async () => {
+      vi.mocked(axios.get).mockResolvedValue(withEmpty);
+      await loaded(<RosterMapPane selectedId={null} onSelect={vi.fn()} canEdit />);
+      fireEvent.click(screen.getByRole('button', { name: 'Vẽ công trình' }));
+      fireEvent.change(screen.getByLabelText('Số tầng'), { target: { value: '35' } });
+      expect((screen.getByLabelText('Số tầng') as HTMLInputElement).value).toBe('20');
+      expect(screen.getByText(/Chiều cao ước tính 70 m/)).toBeDefined();
+    });
   });
 });

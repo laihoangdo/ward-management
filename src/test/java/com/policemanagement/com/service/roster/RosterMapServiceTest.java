@@ -28,7 +28,13 @@ class RosterMapServiceTest {
         db = mock(JdbcTemplate.class);
         roster = mock(RosterService.class);
         spatial = mock(PostgisSpatialService.class);
-        service = new RosterMapService(db, roster, spatial, new ObjectMapper());
+        service = new RosterMapService(
+            db,
+            roster,
+            spatial,
+            new ObjectMapper(),
+            mock(com.policemanagement.com.service.FieldBuildingWriter.class)
+        );
         when(roster.hamlet()).thenReturn(28L);
         when(roster.boundaryGeoJson()).thenReturn("{\"type\":\"Polygon\",\"coordinates\":[]}");
     }

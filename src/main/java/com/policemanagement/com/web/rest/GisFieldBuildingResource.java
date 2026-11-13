@@ -1,8 +1,8 @@
 package com.policemanagement.com.web.rest;
 
+import com.policemanagement.com.service.FieldBuildingWriter;
 import com.policemanagement.com.service.FieldMapHistoryService;
 import com.policemanagement.com.service.rbac.RbacService;
-import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -27,12 +27,26 @@ public class GisFieldBuildingResource {
     private final ObjectMapper json;
     private final RbacService rbac;
     private final FieldMapHistoryService history;
+    private final FieldBuildingWriter writer;
 
+    /** Used outside Spring (tests): the writer then runs inside this controller's own transactions. */
     public GisFieldBuildingResource(JdbcTemplate db, ObjectMapper json, RbacService rbac, FieldMapHistoryService history) {
+        this(db, json, rbac, history, new FieldBuildingWriter(db, json, rbac, history));
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public GisFieldBuildingResource(
+        JdbcTemplate db,
+        ObjectMapper json,
+        RbacService rbac,
+        FieldMapHistoryService history,
+        FieldBuildingWriter writer
+    ) {
         this.db = db;
         this.json = json;
         this.rbac = rbac;
         this.history = history;
+        this.writer = writer;
     }
 
     @GetMapping
@@ -172,48 +186,7 @@ public class GisFieldBuildingResource {
     public JsonNode save(@PathVariable String id, @RequestBody JsonNode feature) {
         rbac.permission("canViewField3DMap");
         rbac.permission("canEditCoordinates");
-        validate(id, feature);
-        // Serialize footprint edits so concurrent requests cannot link one household twice.
-        db.execute("lock table gis_field_building in share row exclusive mode");
-        rbac.mapGeometry(feature.path("geometry"));
-        JsonNode before = null;
-        for (String stored : db.queryForList("select feature_json from gis_field_building where id = ?", String.class, id)) {
-            JsonNode previous = json.readTree(stored);
-            before = previous;
-            rbac.mapGeometry(previous.path("geometry"));
-            for (JsonNode link : previous.path("properties").path("householdIds")) rbac.household(Long.parseLong(link.asText()));
-        }
-        var requested = new HashSet<String>();
-        for (JsonNode link : feature.path("properties").path("householdIds")) {
-            try {
-                long householdId = Long.parseLong(link.asText());
-                rbac.household(householdId);
-                requested.add(link.asText());
-            } catch (NumberFormatException ex) {
-                invalid();
-            }
-        }
-        List<JsonNode> existing = db.query(
-            "select feature_json from gis_field_building where id <> ?",
-            (rs, row) -> json.readTree(rs.getString(1)),
-            id
-        );
-        for (JsonNode other : existing) {
-            for (JsonNode link : other.path("properties").path("householdIds")) {
-                if (requested.contains(link.asText())) throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Household already linked to another building"
-                );
-            }
-        }
-        String encoded = json.writeValueAsString(feature);
-        db.update(
-            "insert into gis_field_building (id, feature_json) values (?, ?) on conflict (id) do update set feature_json = excluded.feature_json",
-            id,
-            encoded
-        );
-        history.mutation(id, before, feature, false);
-        return feature;
+        return writer.save(id, feature);
     }
 
     /** Materialize coordinate matches without overwriting saved footprints or manual links. */
@@ -315,100 +288,7 @@ public class GisFieldBuildingResource {
     }
 
     static void validate(String id, JsonNode feature) {
-        if (feature == null || !feature.isObject()) invalid();
-        if (
-            !id.matches("[a-zA-Z0-9_-]{1,120}") ||
-            !"Feature".equals(feature.path("type").asText()) ||
-            !id.equals(feature.path("id").asText()) ||
-            !id.equals(feature.path("properties").path("buildingId").asText())
-        ) invalid();
-        JsonNode properties = feature.path("properties");
-        double height = properties.path("height").asDouble(-1);
-        if (
-            !Double.isFinite(height) ||
-            !properties.path("height").isNumber() ||
-            height < 0.5 ||
-            height > 70 ||
-            properties.path("name").asText("").length() > 255 ||
-            !properties.path("color").asText("#b6c9d6").matches("#[a-fA-F0-9]{6}")
-        ) invalid();
-        for (String key : List.of("floors", "levels")) {
-            JsonNode floors = properties.path(key);
-            if (!floors.isMissingNode() && (!floors.isIntegralNumber() || floors.asInt() < 1 || floors.asInt() > 20)) invalid();
-        }
-        for (String key : List.of("wallColor", "roofColor")) {
-            JsonNode value = properties.path(key);
-            if (!value.isMissingNode() && (!value.isString() || !value.asText().matches("#[a-fA-F0-9]{6}"))) invalid();
-        }
-        JsonNode roof = properties.path("roofShape");
-        if (!roof.isMissingNode() && !List.of("flat", "gable").contains(roof.asText())) invalid();
-        JsonNode floorHeight = properties.path("floorHeight");
-        if (
-            !floorHeight.isMissingNode() &&
-            (!floorHeight.isNumber() ||
-                !Double.isFinite(floorHeight.asDouble()) ||
-                floorHeight.asDouble() <= 0 ||
-                floorHeight.asDouble() > 70)
-        ) invalid();
-        JsonNode appearanceSource = properties.path("appearanceSource");
-        if (!appearanceSource.isMissingNode() && !"manual".equals(appearanceSource.asText())) invalid();
-        JsonNode estimated = properties.path("estimated");
-        if (!estimated.isMissingNode() && !estimated.isBoolean()) invalid();
-        JsonNode geometry = feature.path("geometry");
-        JsonNode coordinates = geometry.path("coordinates");
-        if (!coordinates.isArray() || coordinates.isEmpty() || coordinates.size() > 1000) invalid();
-        if ("Polygon".equals(geometry.path("type").asText())) validatePolygon(coordinates);
-        else if ("MultiPolygon".equals(geometry.path("type").asText())) {
-            for (JsonNode polygon : coordinates) validatePolygon(polygon);
-        } else invalid();
-        JsonNode links = properties.path("householdIds");
-        if (!links.isMissingNode()) {
-            if (!links.isArray() || links.size() > 1000) invalid();
-            for (JsonNode link : links) if (!link.isString() || !link.asText().matches("[a-zA-Z0-9_-]{1,120}")) invalid();
-        }
-        if (feature.toString().length() > 1000000) invalid();
-    }
-
-    private static void validatePolygon(JsonNode polygon) {
-        if (!polygon.isArray() || polygon.isEmpty() || polygon.size() > 100) invalid();
-        for (JsonNode ring : polygon) {
-            if (!ring.isArray() || ring.size() < 4 || ring.size() > 10000 || !ring.get(0).equals(ring.get(ring.size() - 1))) invalid();
-            double area = 0;
-            for (int i = 0; i < ring.size(); i++) {
-                JsonNode point = ring.get(i);
-                if (!point.isArray() || point.size() != 2 || !point.get(0).isNumber() || !point.get(1).isNumber()) invalid();
-                double x = point.get(0).asDouble(),
-                    y = point.get(1).asDouble();
-                if (!Double.isFinite(x) || !Double.isFinite(y) || Math.abs(x) > 180 || Math.abs(y) > 90) invalid();
-                JsonNode next = ring.get((i + 1) % ring.size());
-                double ox = ring.get(0).get(0).asDouble(),
-                    oy = ring.get(0).get(1).asDouble();
-                area += (x - ox) * (next.path(1).asDouble() - oy) - (next.path(0).asDouble() - ox) * (y - oy);
-            }
-            if (Math.abs(area) < 1e-12) invalid();
-            for (int i = 0; i < ring.size() - 1; i++) {
-                JsonNode a = ring.get(i),
-                    b = ring.get(i + 1);
-                if (a.equals(b)) invalid();
-                for (int j = i + 2; j < ring.size() - 1; j++) {
-                    if (i == 0 && j == ring.size() - 2) continue;
-                    JsonNode c = ring.get(j),
-                        d = ring.get(j + 1);
-                    if (
-                        Line2D.linesIntersect(
-                            a.get(0).asDouble(),
-                            a.get(1).asDouble(),
-                            b.get(0).asDouble(),
-                            b.get(1).asDouble(),
-                            c.get(0).asDouble(),
-                            c.get(1).asDouble(),
-                            d.get(0).asDouble(),
-                            d.get(1).asDouble()
-                        )
-                    ) invalid();
-                }
-            }
-        }
+        FieldBuildingWriter.validate(id, feature);
     }
 
     private static void invalid() {
