@@ -65,3 +65,11 @@ Tests cover coordinates/elevation alignment, polygon winding/courtyards, determi
 - `uCamera` is derived each frame from the inverse projection (the shared camera has no world matrix); haze uses it instead of `cameraPosition`.
 - Shader check without the backend: `target/shader-smoke/entry.js` (git-ignored, synthetic data) bundles with `npx rolldown entry.js --file bundle.js --format iife` and runs in headless Chrome; it reports shader errors and draws five fake buildings.
 - Ground shadows are a planar pass, not a shadow map: `shadowMaterial` reuses the building geometry, collapses walls, shears roofs onto the ground along the facade sun direction (length capped at 12 m of height) and multiplies the ground colour. It draws before the buildings (`renderOrder -1`) and follows the same visibility texel. Set `shadowRoot.visible = false` to switch it off.
+
+## Outlines and dimmed buildings
+
+- Wall corners and the roof line get a drawn outline in the fragment shader. Extruded meshes carry `aEdge` (two floats per
+  vertex, written by `appendExtrusion`); instanced boxes derive the same values from the instance scale, so they cost no
+  extra memory. A packet without `edges` is filled with "no outline" in `BuildingLayer.add`.
+- `setDisplayState` accepts `dim: true`: the building stays visible as a low grey block (display texel `y = 0.5`). Use it for
+  filters that should keep the street layout readable; `visible: false` still removes the building.

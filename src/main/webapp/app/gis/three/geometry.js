@@ -76,7 +76,10 @@ export function rectangleTemplate(rings, tolerance = 1e-4) {
 }
 
 export function createStreams() {
-  return { positions: [], normals: [], features: [], indices: [], boxes: [] };
+  // edges: two floats per vertex for the outline shader. Walls carry (signed distance from the wall's middle,
+  // distance below the wall top); the sign flips between the two corners so |value| is the half length.
+  // Roofs carry (0, -1), which means "no outline".
+  return { positions: [], normals: [], features: [], indices: [], boxes: [], edges: [] };
 }
 
 export function appendExtrusion(streams, rings, height, featureIndex) {
@@ -94,6 +97,7 @@ export function appendExtrusion(streams, rings, height, featureIndex) {
     streams.positions.push(flat[i], height, flat[i + 1]);
     streams.normals.push(0, 1, 0);
     streams.features.push(featureIndex);
+    streams.edges.push(0, -1);
   }
   for (let i = 0; i < triangles.length; i += 3) {
     let [a, b, c] = triangles.slice(i, i + 3);
@@ -111,6 +115,7 @@ export function appendExtrusion(streams, rings, height, featureIndex) {
         length = Math.hypot(dx, dz);
       const offset = streams.features.length;
       streams.positions.push(ax, 0, az, bx, 0, bz, bx, height, bz, ax, height, az);
+      streams.edges.push(-length / 2, height, length / 2, height, length / 2, 0, -length / 2, 0);
       for (let j = 0; j < 4; j++) {
         streams.normals.push(dz / length, 0, -dx / length);
         streams.features.push(featureIndex);
@@ -127,6 +132,7 @@ export function packStreams(streams) {
     features: new Float32Array(streams.features),
     indices: new Uint32Array(streams.indices),
     boxes: new Float32Array(streams.boxes),
+    edges: new Float32Array(streams.edges),
   };
 }
 
@@ -159,6 +165,7 @@ export function appendGableRoof(streams, ring, eave, rise, feature) {
       streams.positions.push(...vertex);
       streams.normals.push(...n.map(value => value / length));
       streams.features.push(feature);
+      streams.edges.push(0, -1);
     }
     streams.indices.push(start, start + 1, start + 2);
   }

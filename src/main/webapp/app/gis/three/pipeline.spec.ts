@@ -88,6 +88,17 @@ describe('Direct extrusion and exact template selection', () => {
       if (normal.y === 1) roofArea += cross.y / 2;
     }
     expect(roofArea).toBeCloseTo(84, 6);
+    // Outline data: two floats per vertex; roofs opt out with -1, each wall spans -half..+half and 0..height.
+    expect(packet.edges.length).toBe(packet.features.length * 2);
+    for (let vertex = 0; vertex < packet.features.length; vertex++) {
+      const wall = packet.normals[vertex * 3 + 1] === 0;
+      const top = packet.edges[vertex * 2 + 1];
+      if (!wall) expect(top).toBe(-1);
+      else {
+        expect(top).toBeCloseTo(9 - packet.positions[vertex * 3 + 1], 6);
+        expect(Math.abs(packet.edges[vertex * 2])).toBeGreaterThan(0);
+      }
+    }
     expect(new Set(packet.features)).toEqual(new Set([17]));
     expect(rectangleTemplate(rings)).toBeNull();
   });

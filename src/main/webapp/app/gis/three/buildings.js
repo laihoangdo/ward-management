@@ -17,7 +17,13 @@ const vertexShader = `
   #ifdef DIRECT_METADATA
     in vec4 aMetadata;
   #endif
+  #ifndef USE_INSTANCING
+    in vec2 aEdge;
+  #endif
   out vec3 vWorld;
+  // Outline data: x = signed distance from the middle of the wall, y = distance below the wall top (< 0: no outline).
+  out vec2 vEdge;
+  flat out float vEdgeHalf;
   flat out vec4 vAppearance;
   flat out float vVisible;
   flat out float vHighlight;
@@ -51,7 +57,19 @@ const vertexShader = `
       // Inverse-transpose equivalent for rotation + positive non-uniform scale, no shear.
       n /= vec3(dot(m[0], m[0]), dot(m[1], m[1]), dot(m[2], m[2]));
       n = m * n;
+      // Unit box: x and z span -0.5..0.5, y spans 0..1; the instance scale turns that into metres.
+      vec3 size = vec3(length(m[0]), length(m[1]), length(m[2]));
+      vEdge = vec2(0.0, -1.0);
+      vEdgeHalf = 0.0;
+      if (abs(normal.y) < 0.5) {
+        bool alongZ = abs(normal.x) > 0.5;
+        vEdgeHalf = 0.5 * (alongZ ? size.z : size.x);
+        vEdge = vec2((alongZ ? position.z * size.z : position.x * size.x), (1.0 - position.y) * size.y);
+      }
       p = instanceMatrix * p;
+    #else
+      vEdge = aEdge;
+      vEdgeHalf = abs(aEdge.x);
     #endif
     vNormal = normalize(mat3(modelMatrix) * n);
     vec4 world = modelMatrix * p;
@@ -72,6 +90,7 @@ const vertexShader = `
       if (display.y > 0.25 && display.y < 0.75) {
         // Filtered out: a low grey block keeps the street layout readable without competing with the matches.
         world.y *= 0.25;
+        vEdge.y *= 0.25;
         vColor = vec3(0.3, 0.33, 0.35);
       }
     }
@@ -88,6 +107,8 @@ const fragmentShader = `
   flat in vec4 vAppearance;
   flat in float vVisible;
   flat in float vHighlight;
+  in vec2 vEdge;
+  flat in float vEdgeHalf;
   uniform vec3 uCamera;
   uniform bool uRealistic;
   uniform int uMode;
@@ -137,6 +158,14 @@ const fragmentShader = `
         float paneSeed = fract(sin(dot(paneId, vec2(12.9898, 78.233)) + vAppearance.w * 43.0) * 43758.5453);
         glassColor *= mix(0.7, 1.55, paneSeed);
         color = mix(color, glassColor, windowMask * 0.84);
+      }
+      if (vEdge.y >= 0.0) {
+        // Drawn outline on wall corners and the roof line, like a modelling viewport. It fades out once a pixel
+        // covers more than about a metre, so distant blocks do not turn into dark noise.
+        float edge = min(vEdgeHalf - abs(vEdge.x), vEdge.y);
+        float aa = max(fwidth(edge), 0.0001);
+        float line = (1.0 - smoothstep(0.1, 0.1 + aa, edge)) * (1.0 - smoothstep(0.25, 1.2, aa));
+        color *= 1.0 - 0.4 * line;
       }
       float haze = 1.0 - exp(-length(uCamera - vWorld) * 0.000022);
       color = mix(color, vec3(0.25, 0.30, 0.32), min(haze, 0.22));
@@ -342,6 +371,13 @@ export class BuildingLayer {
       geometry.setAttribute('position', new THREE.BufferAttribute(packet.positions, 3));
       geometry.setAttribute('normal', new THREE.BufferAttribute(packet.normals, 3));
       geometry.setAttribute('aFeature', new THREE.BufferAttribute(packet.features, 1));
+      // Packets built without outline data must not default to (0, 0), which would paint every wall dark.
+      let edges = packet.edges;
+      if (!edges || edges.length !== packet.features.length * 2) {
+        edges = new Float32Array(packet.features.length * 2);
+        for (let i = 1; i < edges.length; i += 2) edges[i] = -1;
+      }
+      geometry.setAttribute('aEdge', new THREE.BufferAttribute(edges, 2));
       geometry.setIndex(new THREE.BufferAttribute(packet.indices, 1));
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
