@@ -42,6 +42,9 @@ import {
 } from '../utils/buildingTheme';
 import { areaSummary } from '../utils/areaSummary';
 import { drawLabelImage, LABEL_IMAGE_PREFIX, LABEL_PIXEL_RATIO, LANDMARK_IMAGE_PREFIX, labelText } from '../utils/mapLabelImage';
+import { useFieldNavigation } from '../navigation/useFieldNavigation';
+import { NavigationCard } from '../navigation/NavigationCard';
+import { searchPlaces } from '../navigation/placeSearch';
 
 interface Props {
   captureOfficer?: MapCaptureOfficer;
@@ -54,6 +57,10 @@ interface Props {
   onToggleFullscreen?: () => void;
   /** Commune-level users open on the whole commune from above; others open on their assigned hamlets. */
   communeOverview?: boolean;
+  /** Officer location and routing to a building (the 3D field map only). */
+  navigation?: boolean;
+  /** Route asked from outside the map (household record): the household to go to; a new nonce starts a new route. */
+  routeTarget?: { householdId: string; nonce: number } | null;
 }
 const EMPTY: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 const STATUS: Record<HouseholdStatus, string> = {
@@ -167,12 +174,15 @@ export default function FieldHouseMap({
   onToggleFullscreen,
   captureOfficer,
   communeOverview = false,
+  navigation = false,
+  routeTarget = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const initializedMapRef = useRef<maplibregl.Map | null>(null);
   const framedMapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
+  const nav = useFieldNavigation(mapRef, ready && navigation);
   const [layersOpen, setLayersOpen] = useState(() => !window.matchMedia?.(COMPACT_MAP_QUERY).matches);
   useEffect(() => {
     const mql = window.matchMedia?.(COMPACT_MAP_QUERY);
@@ -400,8 +410,8 @@ export default function FieldHouseMap({
       ),
     [households, linked, deferredSearch, explicitlyLinked],
   );
-  const liveRef = useRef({ mode, canLink, houseById, households, onSelect, busy, indexed, selectedId });
-  liveRef.current = { mode, canLink, houseById, households, onSelect, busy, indexed, selectedId };
+  const liveRef = useRef({ mode, canLink, houseById, households, onSelect, busy, indexed, selectedId, pickingOrigin: nav.pickingOrigin });
+  liveRef.current = { mode, canLink, houseById, households, onSelect, busy, indexed, selectedId, pickingOrigin: nav.pickingOrigin };
   const tooltipRef = useRef<HTMLDivElement>(null);
   const hoveredIdRef = useRef('');
   const highlightId = (buildingId: string) => {
@@ -821,7 +831,8 @@ export default function FieldHouseMap({
     });
     map.on('click', event => {
       const live = liveRef.current;
-      if (live.busy) return;
+      // While choosing a route start on the map, the click belongs to the navigation picker.
+      if (live.busy || live.pickingOrigin) return;
       if ((live.mode === 'draw' && live.canLink) || live.mode === 'area') {
         setDraft(prev => [...prev, [event.lngLat.lng, event.lngLat.lat]]);
         return;
@@ -1511,6 +1522,61 @@ export default function FieldHouseMap({
     onSelect(h);
   };
 
+  const navigateToHouse = (house: FieldHouse) => {
+    const label = house.properties.name || indexed.get(house.properties.buildingId)?.[0]?.ownerName || 'khối nhà đã chọn';
+    nav.start({ point: insidePoint(house), label, buildingId: house.properties.buildingId });
+    // Small screens: the guidance card replaces the building and layer panels so the road stays visible.
+    if ((containerRef.current?.clientWidth ?? 1000) <= 1024 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) {
+      setLayersOpen(false);
+      setSelectedId('');
+    }
+  };
+  // Route start by text: households with a building or surveyed point, named buildings and road names, all on the device.
+  const namedBuildings = useMemo(
+    () =>
+      houses
+        .filter(h => h.properties.name)
+        .map(h => ({ id: h.properties.buildingId, name: String(h.properties.name), point: centerOf(h) })),
+    [houses],
+  );
+  const findPlaces = (query: string) =>
+    searchPlaces(query, {
+      households: householdsOnMap,
+      householdPoint(h) {
+        const bId = buildingByHouseholdId.get(h.id);
+        const house = bId ? houseById.get(bId) : undefined;
+        if (house) return centerOf(house);
+        const [lat, lng] = h.coordinates ?? [];
+        return !h.coordinatesEstimated && h.coordinateMethod !== 'RANDOM_WITHIN_TC2' && Number.isFinite(lat) && Number.isFinite(lng)
+          ? [lng as number, lat as number]
+          : null;
+      },
+      buildings: namedBuildings,
+      graph: nav.graph,
+    });
+  // "Chỉ đường" from a household record: its building when linked, otherwise its provisional point.
+  useEffect(() => {
+    if (!navigation || !routeTarget) return;
+    const household = households.find(h => h.id === routeTarget.householdId);
+    const bId = buildingByHouseholdId.get(routeTarget.householdId);
+    const house = bId ? houseById.get(bId) : undefined;
+    if (house) {
+      setSelectedId(house.properties.buildingId);
+      navigateToHouse(house);
+      return;
+    }
+    const [lat, lng] = household?.coordinates ?? [];
+    if (household && Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0) {
+      nav.start({
+        point: [lng as number, lat as number],
+        label: `${household.houseNumber} ${household.street}`.trim() || household.ownerName,
+        provisional: true,
+      });
+    } else {
+      setNotice('Hộ chưa có vị trí trên bản đồ nên chưa chỉ đường được.');
+    }
+  }, [routeTarget?.nonce]);
+
   return (
     <div className="field-house-map">
       {screenshotBlob && <MapCapturePreview blob={screenshotBlob} onClose={() => setScreenshotBlob(null)} />}
@@ -1732,6 +1798,19 @@ export default function FieldHouseMap({
               Chụp ảnh PNG
             </button>
           </div>
+          {navigation && (
+            <div className="field-tool-group" role="group" aria-label="Định vị">
+              <button
+                type="button"
+                aria-pressed={nav.locating}
+                disabled={!ready}
+                title="Hiện vị trí hiện tại của tôi trên bản đồ (vị trí chỉ dùng trên thiết bị này)"
+                onClick={nav.toggleLocating}
+              >
+                {nav.locating ? 'Tắt vị trí của tôi' : 'Vị trí của tôi'}
+              </button>
+            </div>
+          )}
           <div className="field-tool-group" role="group" aria-label="Hiển thị">
             <button
               type="button"
@@ -1838,6 +1917,7 @@ export default function FieldHouseMap({
           Có thể giữ Ctrl + kéo chuột trái để xoay/nghiêng. Click để chọn nhà; khi vẽ, click để thêm đỉnh.
         </div>
         <div className="field-touch-help">Một ngón: di chuyển · Hai ngón: chụm để zoom, xoay hoặc kéo dọc để nghiêng</div>
+        {navigation && <NavigationCard nav={nav} findPlaces={findPlaces} />}
         <details className="field-layers" open={layersOpen} onToggle={event => setLayersOpen(event.currentTarget.open)}>
           <summary>Layer & bộ lọc</summary>
           {(
@@ -2103,6 +2183,18 @@ export default function FieldHouseMap({
                   Zoom tới khối nhà
                 </button>
               </div>
+              {navigation && (
+                <button
+                  type="button"
+                  className="field-primary"
+                  disabled={!ready || (nav.target?.buildingId === selectedId && nav.status !== 'arrived')}
+                  onClick={() => navigateToHouse(selected)}
+                >
+                  {nav.target?.buildingId === selectedId && nav.status !== 'arrived'
+                    ? 'Đang chỉ đường tới khối nhà này'
+                    : 'Đi tới khối nhà'}
+                </button>
+              )}
             </div>
             {mode === 'select' && canLink && canManageSelected && (
               <FieldHousePropertiesEditor

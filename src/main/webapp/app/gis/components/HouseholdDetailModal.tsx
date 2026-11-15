@@ -22,6 +22,7 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
+  Navigation,
 } from 'lucide-react';
 import { HouseholdFacility, InspectionPhoto, AppUser } from '../types';
 import { getHouseholdResidenceType, RESIDENCE_TYPE_CONFIG } from '../utils/residenceUtils';
@@ -65,6 +66,8 @@ interface HouseholdDetailModalProps {
   onDeleteHousehold?: (id: string) => void;
   onShowToast?: (msg: string) => void;
   onOpenRoster?: (household: HouseholdFacility, edit: boolean) => void;
+  /** Route from the officer's position to this household on the 3D field map (only offered there). */
+  onNavigate?: (household: HouseholdFacility) => void;
   /** Re-reads the household after a roster write so the map and lists show the saved values. */
   onReloadHousehold?: (id: string) => Promise<void>;
 }
@@ -84,6 +87,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
   onShowToast,
   onOpenRoster,
   onReloadHousehold,
+  onNavigate,
 }) => {
   // Roster-managed (TC2) households are written only through the audited roster API; the legacy household API refuses
   // every write. Their record is loaded on the first edit and kept as the source of truth for the version and notes.
@@ -535,6 +539,18 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                 <Edit3 aria-hidden="true" className="w-4 h-4" />
                 <span>{isEditingInfo ? 'Hủy chỉnh sửa' : 'Chỉnh sửa thông tin hộ'}</span>
               </button>
+              {onNavigate && (
+                <button
+                  type="button"
+                  className="gis-hh-btn"
+                  disabled={isSaving || locked}
+                  title="Chỉ đường từ vị trí của bạn tới hộ này trên bản đồ"
+                  onClick={() => onNavigate(household)}
+                >
+                  <Navigation aria-hidden="true" className="w-4 h-4" />
+                  <span>Chỉ đường</span>
+                </button>
+              )}
               <button
                 type="button"
                 id="btn-trigger-inspection-camera"

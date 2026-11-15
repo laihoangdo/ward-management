@@ -57,6 +57,9 @@ vi.mock('maplibre-gl', () => ({
       mocks.handlers.set(name, handler);
       return this;
     };
+    off = vi.fn();
+    removeLayer = vi.fn();
+    removeSource = vi.fn();
     getCanvas = () => ({ style: {} });
     getZoom = () => 16;
     getBearing = () => 30;
@@ -85,6 +88,12 @@ vi.mock('maplibre-gl', () => ({
     }
     addTo() {
       return this;
+    }
+    setRotation() {
+      return this;
+    }
+    getElement() {
+      return document.createElement('div');
     }
     remove() {}
   },
@@ -869,5 +878,98 @@ describe('field map controls', () => {
     const saved = vi.mocked(axios.put).mock.calls[0][1] as FieldHouse;
     expect(saved.geometry.coordinates[0][0][0]).toBeGreaterThan(106.99);
     await screen.findByText('Đã lưu vị trí mới và giữ liên kết hộ dân.');
+  });
+});
+
+describe('officer location and route to a building', () => {
+  it('follows the officer, guides to the selected building and stops cleanly', async () => {
+    let report: PositionCallback = () => undefined;
+    const geolocation = {
+      watchPosition: vi.fn((success: PositionCallback) => {
+        report = success;
+        return 7;
+      }),
+      clearWatch: vi.fn(),
+    };
+    vi.stubGlobal('navigator', { ...navigator, geolocation });
+    const position = (lng: number, lat: number) =>
+      act(() =>
+        report({
+          coords: { longitude: lng, latitude: lat, accuracy: 8, heading: null, speed: null },
+          timestamp: Date.now(),
+        } as unknown as GeolocationPosition),
+      );
+    render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} navigation />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('1 công trình');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Vị trí của tôi' }));
+    expect(geolocation.watchPosition).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.any(Function),
+      expect.objectContaining({ enableHighAccuracy: true }),
+    );
+    position(105.999, 9.999);
+    expect(mocks.markerAt).toHaveBeenCalledWith([105.999, 9.999]);
+    expect(mocks.flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [105.999, 9.999] }));
+
+    selectHouse();
+    fireEvent.click(await screen.findByRole('button', { name: 'Đi tới khối nhà' }));
+    expect(await screen.findByLabelText('Chỉ đường')).toBeDefined();
+    // The test road network is empty, so the route is a straight line to the building.
+    await screen.findByText('Đi theo hướng mũi tên tới đích');
+    expect(vi.mocked(axios.get)).toHaveBeenCalledWith('/api/gis/roads');
+    expect(screen.getByText(/^Còn/).textContent).toMatch(/m|km/);
+    expect(screen.getByText('Dữ liệu đường © OpenStreetMap contributors')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Kết thúc chỉ đường' }));
+    expect(screen.queryByLabelText('Chỉ đường')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Tắt vị trí của tôi' }));
+    expect(geolocation.clearWatch).toHaveBeenCalledWith(7);
+  });
+
+  it('routes from a start chosen on the map without GPS, and lets the officer switch back to GPS', async () => {
+    const geolocation = { watchPosition: vi.fn(() => 3), clearWatch: vi.fn() };
+    vi.stubGlobal('navigator', { ...navigator, geolocation });
+    render(<FieldHouseMap households={[]} canAdd canLink onAdd={vi.fn()} onSelect={vi.fn()} navigation />);
+    act(() => {
+      mocks.handlers.get('load')?.();
+    });
+    await screen.findByText('1 công trình');
+    selectHouse();
+    fireEvent.click(await screen.findByRole('button', { name: 'Đi tới khối nhà' }));
+    await screen.findByText('Đang chờ vị trí của bạn…');
+    expect(screen.getByText('Vị trí của tôi (GPS)')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đổi' }));
+    expect(screen.getByLabelText('Tìm điểm xuất phát')).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Chọn trên bản đồ' }));
+    await screen.findByText('Chạm vào bản đồ tại điểm xuất phát.');
+    // The picker's click handler is the latest one registered on the map.
+    act(() => {
+      mocks.handlers.get('click')?.({ point: {}, lngLat: { lng: 105.9995, lat: 9.9995 } });
+    });
+    expect(await screen.findByText(/^Điểm chọn trên bản đồ/)).toBeDefined();
+    expect(await screen.findByText(/^Quãng đường/)).toBeDefined();
+    expect(screen.getByText(/Lộ trình cố định từ điểm đã chọn/)).toBeDefined();
+    expect(mocks.fitBounds).toHaveBeenCalled();
+    // Following a chosen start needs no GPS.
+    expect(geolocation.watchPosition).toHaveBeenCalledTimes(1);
+    expect(geolocation.clearWatch).toHaveBeenCalledWith(3);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Đổi' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dùng vị trí GPS' }));
+    expect(await screen.findByText('Vị trí của tôi (GPS)')).toBeDefined();
+    expect(geolocation.watchPosition).toHaveBeenCalledTimes(2);
+  });
+
+  it('offers no location or route controls on maps without navigation', async () => {
+    await mount([house]);
+    expect(screen.queryByRole('button', { name: 'Vị trí của tôi' })).toBeNull();
+    selectHouse();
+    await screen.findByRole('button', { name: 'Zoom tới khối nhà' });
+    expect(screen.queryByRole('button', { name: 'Đi tới khối nhà' })).toBeNull();
   });
 });

@@ -241,6 +241,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   // Modals
   const [selectedHousehold, setSelectedHousehold] = useState<HouseholdFacility | null>(null);
+  // "Chỉ đường" from a household record on the 3D field map; the nonce restarts routing for the same household.
+  const [routeTarget, setRouteTarget] = useState<{ householdId: string; nonce: number } | null>(null);
   const [householdRouteError, setHouseholdRouteError] = useState('');
   const [householdRouteLoading, setHouseholdRouteLoading] = useState(false);
   const gisHouseholdId = routeParams.get('gisHousehold');
@@ -1178,6 +1180,8 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                       }}
                       isFullscreen={isMapFullscreen}
                       onToggleFullscreen={handleToggleMapFullscreen}
+                      navigation
+                      routeTarget={routeTarget}
                     />
                   </div>
                 </Suspense>
@@ -1413,6 +1417,14 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         onHouseholdUpdated={handleUpdateHouseholdFull}
         onDeleteHousehold={handleDeleteHousehold}
         onShowToast={showToast}
+        onNavigate={
+          activeTab === 'field-3d-map' || (activeTab === 'bando-3d' && currentUser?.role !== 'superadmin')
+            ? household => {
+                setRouteTarget(previous => ({ householdId: household.id, nonce: (previous?.nonce ?? 0) + 1 }));
+                updateQuery({ gisHousehold: null });
+              }
+            : undefined
+        }
         onReloadHousehold={async id => {
           // Roster writes go through /api/roster; re-read the household so the map and lists show the saved values.
           const fresh = await loadHouseholdDetail(id, new AbortController().signal);
