@@ -90,7 +90,7 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 
 ## Current serving state (reviewed 2026-11-10)
 
-- Public site serves production: image `police-app-production:20261111-3` since 2026-11-10 18:16 UTC (rollback candidates `20261111-2`, `20261111-1`, `20261108-1`, `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
+- Public site serves production: image `police-app-production:20261116-1` since 2026-11-15 23:46 UTC (see the release section below; this review paragraph describes the 2026-11-10 state) (rollback candidates `20261111-2`, `20261111-1`, `20261108-1`, `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
 - Read-only review evidence: public root 200, issuer `https://sunnytech.cloud/realms/jhipster`, anonymous RBAC 401, `staging-manifest.json`, `/admin/` and `/management/health` 404, MapLibre worker asset 200. `/realms/master/*` reaches only the application's SPA fallback, not Keycloak. Production, staging, audit-export and certbot units last ran with `Result=success`; root disk 52% used.
 - The staging application and realm `police-staging` remain publicly discoverable on the same host. Decide whether staging should stay public now that production is live.
 - Duplicate response headers: Cloudflare adds `Strict-Transport-Security: max-age=31536000; includeSubDomains` while the origin sends `max-age=86400`, and both the application CSP and an Nginx `frame-ancestors 'none'` CSP are present beside `X-Frame-Options: SAMEORIGIN`. Not a functional fault; unify deliberately (the Cloudflare value commits every subdomain to HTTPS for a year).
@@ -132,6 +132,30 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 - Existing officer account (created 2026-11-10 17:44) received the officer preset directly in the database after an offsite backup (2026-11-11T14:45:36Z): six permissions, assignment unchanged, profile version 4 → 5, `rbac_audit` row 1727 (`delegation`, actor `deployment-agent`).
 - Realm `jhipster` previously asked for OTP only from users who had configured it, and `prepare-production-identity.py` used the non-existent required action `CONFIGURE_OTP` (fixed to `CONFIGURE_TOTP`). `configure-production-admin-mfa.sh` now binds the copied flow `police-browser-admin-mfa`: password form, optional OTP for non-admins who configured it, and an `Admin OTP` sub-flow (`ROLE_ADMIN` → OTP Form REQUIRED). First run stopped before any change (aliases with spaces needed URL encoding); second run bound the flow and removed its temporary admin. The admin sub-flow had been created above the password form, so its execution priorities were corrected in the identity database (admin sub-flow 30, after the password form 10 and optional OTP 20) and Keycloak restarted; the script now orders and verifies this itself. Discovery 200, logout 302, app UP afterwards.
 - Effect: super admin and commune chief accounts must enroll OTP at their next sign-in; officers and hamlet managers are unchanged. Rollback: set realm `jhipster` `browserFlow` back to `browser` (the original flow was not modified). Not verified by the agent: a real administrator sign-in.
+
+## Release 20261116-1 — GĐ1–GĐ6, map record panel, routing, inspection photos as files (2026-11-15 23:46 UTC)
+
+- **Source and tests:** commit `1c31ac4` on `develop/3d-map`, clean tree, built in a separate git worktree.
+  - `mvn -Pprod,vps clean verify`: backend 318 unit (51 skipped, DB-gated), 372/372 integration, frontend lint 0 errors and 557/557 tests.
+  - Two failures were fixed on the way: a member-ordering lint error, and a timing-dependent landmark test (`752fc4d`, `1c31ac4`).
+  - Infrastructure tests 40/40.
+- **Artifact:** `audit-production-artifact.ps1` PASS; JAR SHA256 `de80a3610f1379d9fbbb497826fdacee1b690ea4d6711b14c1d78499521b6817`.
+  - Image `police-app-production:20261116-1` (`sha256:76e1cd55a7bc…`), files under `/opt/police-management/releases/20261116-1/`.
+- **Scripts:** the server copies of `update-production-app.py` (attachment mount) and `backup-production-local.sh` (attachments in the archive) were older than the repository.
+  - Replaced them; previous copies are in `/root/police-deployment-checkpoints/scripts-before-20261116-1/`.
+- **`update-production-app.py` (systemd unit `police-release-20261116-1`): `PRODUCTION_APP_UPDATED`, `liveVerified: true`, `attachmentMountAdded: true`.**
+  - Gates: offsite backup `production-20261115T234620Z-…` uploaded, restore drill, then Liquibase 51 → 62 changesets (`20261115000000` … `20261116010000`).
+  - The changesets include the 7,117 OpenStreetMap roads.
+- **Independent checks:**
+  - Data: households 1,291 / residents 5,074 unchanged; `gis_road` 7,117.
+  - The one base64 inspection photo moved to the attachment store at start-up (`gis_inspection_photo` 0, one `HOUSEHOLD` attachment, one file under `/var/lib/police-management/attachments/production`, owner uid 1000).
+  - Container healthy, no ERROR/Exception in the first 30 minutes of logs.
+  - Public routes: `/`, `/dashboard`, `/sign-in` 200; `/api/rbac/me` and `/api/gis/roads` 401 anonymous; `/management/health`, `/admin/`, manifest 404; realm discovery 200. The served bundle matches the build.
+- **Not verified by the agent:** a real officer sign-in on production.
+  - Not verified on a real phone either: GPS routing, which needs the HTTPS origin and location permission.
+- **Rollback:** `update-production-app.py police-app-production:20261113-2 --rollback`.
+  - The schema changes are additive, so the old code ignores the new tables.
+  - The old code reads inspection photos only from `gis_inspection_photo`, which is now empty. Photos taken after this release would not show until the release is restored.
 
 ## Release procedure for later production updates (from 2026-11-10)
 
