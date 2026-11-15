@@ -50,6 +50,9 @@ vi.mock('maplibre-gl', () => ({
     queryRenderedFeatures = mocks.queryRenderedFeatures;
     fitBounds = mocks.fitBounds;
     flyTo = mocks.flyTo;
+    off = vi.fn();
+    removeLayer = vi.fn();
+    removeSource = vi.fn();
     constructor(options: unknown) {
       mocks.mapOptions(options);
     }
@@ -57,9 +60,6 @@ vi.mock('maplibre-gl', () => ({
       mocks.handlers.set(name, handler);
       return this;
     };
-    off = vi.fn();
-    removeLayer = vi.fn();
-    removeSource = vi.fn();
     getCanvas = () => ({ style: {} });
     getZoom = () => 16;
     getBearing = () => 30;
