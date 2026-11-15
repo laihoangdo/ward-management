@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 /** JDBC DATE is a calendar date, not an instant in the server's historical time zone. */
-@ControllerAdvice(assignableTypes = RosterResource.class)
+@ControllerAdvice(assignableTypes = { RosterResource.class, SubjectResource.class, FacilityResource.class, GuidanceDocumentResource.class })
 public class RosterDateAdvice implements ResponseBodyAdvice<Object> {
 
     @Override

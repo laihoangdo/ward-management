@@ -2,13 +2,18 @@ import { HouseholdFacility } from '../types';
 import { getHouseholdResidenceType } from './residenceUtils';
 
 export function normalizeSearch(value: string) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase()
-    .trim();
+  return (
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase()
+      // "144/2, Ấp 61" and "144/2 ấp 61" are the same address: commas and semicolons separate words like spaces.
+      .replace(/[,;]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
 }
 
 export function matchesHouseholdSearch(household: HouseholdFacility, query: string) {

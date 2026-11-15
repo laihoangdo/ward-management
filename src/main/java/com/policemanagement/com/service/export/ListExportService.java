@@ -132,7 +132,12 @@ public class ListExportService {
 
     public Workbook xlsx(String kind, Map<String, String> filter) {
         var sheet = sheet(kind, filter, "xlsx");
-        String name = sheet.title().toLowerCase(java.util.Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]+", "-").replaceAll("(^-|-$)", "");
+        // Plain ASCII ("danh-sach-doi-tuong-he-hinh-su-20261115.xlsx") so every app the file is shared to keeps the name intact.
+        String plain = java.text.Normalizer.normalize(
+            sheet.title().replace("Đ", "D").replace("đ", "d"),
+            java.text.Normalizer.Form.NFD
+        ).replaceAll("\\p{M}", "");
+        String name = plain.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
         return new Workbook(
             name + "-" + LocalDate.now(ZONE).format(DateTimeFormatter.BASIC_ISO_DATE) + ".xlsx",
             ListSheetWorkbook.write(sheet)
@@ -147,20 +152,20 @@ public class ListExportService {
         String status = filter.getOrDefault("status", "ACTIVE");
         var columns = List.of(
             col("stt", "STT", 6, true),
-            col("name", "Họ và tên", 24, false),
-            col("birth", "Ngày sinh", 12, true),
-            col("gender", "Giới tính", 9, true),
-            col("identity", "Số ĐDCN", 16, true),
-            col("case", "Số HSCT", 12, true),
-            col("address", "Địa chỉ", 30, false),
+            col("name", "Họ và tên", 20, false),
+            col("birth", "Ngày sinh", 15, true),
+            col("gender", "Giới tính", 10, true),
+            col("identity", "Số ĐDCN", 15, true),
+            col("case", "Số HSCT", 11, true),
+            col("address", "Địa chỉ", 24, false),
             col("category", "Hệ", 12, false),
             col("subgroup", "Diện / nhóm", 18, false),
-            col("from", "Quản lý từ", 12, true),
-            col("until", "Đến ngày", 12, true),
-            col("lastSummon", "Gọi hỏi gần nhất", 12, true),
-            col("nextSummon", "Hạn gọi hỏi", 12, true),
+            col("from", "Quản lý từ", 15, true),
+            col("until", "Đến ngày", 15, true),
+            col("lastSummon", "Gọi hỏi gần nhất", 15, true),
+            col("nextSummon", "Hạn gọi hỏi", 15, true),
             col("records", "Tiền án / tiền sự / vi phạm", 12, true),
-            col("notes", "Ghi chú", 30, false)
+            col("notes", "Ghi chú", 22, false)
         );
         var counts = new LinkedHashMap<String, Integer>();
         var out = numbered(rows, row -> {
@@ -241,7 +246,7 @@ public class ListExportService {
             col("phone", "Điện thoại", 13, true),
             col("license", "Loại giấy phép", 18, false),
             col("licenseNumber", "Số giấy phép", 14, true),
-            col("expiry", "Hạn giấy phép", 12, true),
+            col("expiry", "Hạn giấy phép", 15, true),
             col("employees", "Nhân viên", 9, true),
             col("violations", "Vi phạm", 8, true),
             col("notes", "Ghi chú", 22, false)
@@ -302,9 +307,9 @@ public class ListExportService {
             col("stt", "STT", 6, true),
             col("number", "Số, ký hiệu", 16, true),
             col("authority", "Cơ quan ban hành", 24, false),
-            col("issued", "Ngày ban hành", 12, true),
+            col("issued", "Ngày ban hành", 15, true),
             col("title", "Trích yếu", 44, false),
-            col("received", "Ngày nhận", 12, true),
+            col("received", "Ngày nhận", 15, true),
             col("field", "Lĩnh vực", 16, false),
             col("files", "Bản quét", 9, true),
             col("notes", "Ghi chú", 24, false)

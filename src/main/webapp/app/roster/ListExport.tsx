@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { FileSpreadsheet, Printer, X } from 'lucide-react';
 import './residentExport.css';
+import { problemText } from '../subjects/subjectModel';
 
 /** A printable list from `/api/{screen}/export/print` (subjects, establishments, guidance documents). */
 export type ListSheet = {
@@ -31,8 +32,8 @@ async function exportError(e: unknown): Promise<string> {
     const data = e.response?.data;
     try {
       const body = data instanceof Blob ? JSON.parse(await data.text()) : data;
-      const message = body?.message ?? body?.detail ?? body?.title;
-      if (typeof message === 'string' && message) return message;
+      const message = problemText(body);
+      if (message) return message;
     } catch {
       // Not a JSON error body.
     }
@@ -175,7 +176,7 @@ export function ListPrintView({ data, onClose }: { data: ListSheet; onClose: () 
             {data.rows.map((row, i) => (
               <tr key={i}>
                 {row.map((cell, j) => (
-                  <td key={j} className={data.columns[j]?.center ? 'is-center' : undefined}>
+                  <td key={j} style={data.columns[j]?.center ? { textAlign: 'center' } : undefined}>
                     {cell}
                   </td>
                 ))}

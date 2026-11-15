@@ -182,7 +182,8 @@ public class FacilityService {
         }
     }
 
-    @Transactional(readOnly = true)
+    // Writable: opening a record is written to the audit log in the same transaction.
+    @Transactional
     public Map<String, Object> detail(UUID id) {
         facility(id, null);
         var row = db.queryForMap("select " + COLUMNS + " from tc2_roster.household h where h.id=?", id);

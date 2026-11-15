@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Camera, FileText, Star, Trash2 } from 'lucide-react';
+import { problemText } from '../subjects/subjectModel';
 // Registers the hamlet interceptor when the gallery is used outside the roster (subjects, facilities).
 import './hamletScope';
 
@@ -43,11 +44,7 @@ export async function shrinkImage(file: File): Promise<Blob> {
 }
 
 const message = (e: unknown) =>
-  axios.isAxiosError(e) && typeof e.response?.data?.message === 'string'
-    ? e.response.data.message
-    : axios.isAxiosError(e) && typeof e.response?.data?.detail === 'string'
-      ? e.response.data.detail
-      : 'Không thể xử lý tệp. Kiểm tra quyền và kết nối.';
+  (axios.isAxiosError(e) && problemText(e.response?.data)) || 'Không thể xử lý tệp. Kiểm tra quyền và kết nối.';
 
 const isPdf = (a: AttachmentItem) => a.mime === 'application/pdf';
 

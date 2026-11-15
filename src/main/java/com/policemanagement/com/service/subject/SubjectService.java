@@ -276,7 +276,8 @@ public class SubjectService {
         return result;
     }
 
-    @Transactional(readOnly = true)
+    // Writable: opening a record is written to the audit log in the same transaction.
+    @Transactional
     public Map<String, Object> detail(UUID id) {
         boolean political = authorizeView();
         subject(id, political);

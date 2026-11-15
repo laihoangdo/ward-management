@@ -91,7 +91,7 @@ export const CATEGORY_SCALE: ThemeLegendItem[] = [
   { color: '#dc2626', label: 'Nhà đối tượng' },
   { color: '#2563eb', label: 'Đảng viên' },
   { color: '#9333ea', label: 'CB hưu trí, CCB' },
-  { color: '#e2e8f0', label: 'Hộ không thuộc diện' },
+  { color: '#e2e8f0', label: 'Không thuộc diện' },
 ];
 const CATEGORY_ORDER: HouseholdCategory[] = ['SUBJECT', 'PARTY', 'RETIRED'];
 

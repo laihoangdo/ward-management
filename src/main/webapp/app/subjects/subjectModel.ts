@@ -62,12 +62,24 @@ export const todayIso = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+/**
+ * The server's own Vietnamese reason from an error body. JHipster problem responses carry it in `detail`; `message` is then a
+ * translation key such as "error.http.409", which must never reach the officer.
+ */
+export function problemText(data: unknown): string {
+  const body = (data ?? {}) as Record<string, unknown>;
+  const useful = (value: unknown): value is string => typeof value === 'string' && value.trim() !== '' && !/^error\.[\w.]+$/.test(value);
+  const text = [body.detail, body.message, body.title].find(useful) ?? '';
+  // A ResponseStatusException reads `409 CONFLICT "reason"`: keep only the reason.
+  return /^\d{3} [A-Z_]+ "([\s\S]*)"$/.exec(text)?.[1] ?? text;
+}
+
 export function errorText(e: unknown) {
   if (axios.isAxiosError(e)) {
-    const data = e.response?.data;
-    const message = data?.message ?? data?.detail ?? data?.title;
-    if (typeof message === 'string' && message) return message;
+    const message = problemText(e.response?.data);
+    if (message) return message;
     if (e.response?.status === 403) return 'Chưa được cấp quyền cho thao tác này.';
+    if (e.response?.status === 409) return 'Dữ liệu đã có hoặc đã được người khác sửa; tải lại rồi thử lại.';
   }
   return 'Không thể hoàn tất thao tác. Kiểm tra quyền và kết nối.';
 }

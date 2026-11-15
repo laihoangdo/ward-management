@@ -20,6 +20,8 @@ describe('Shared household lookup', () => {
     const home = { houseNumber: '12', street: 'Đường số 3' } as HouseholdFacility;
     expect(matchesHouseholdSearch(home, '12 duong so 3')).toBe(true);
     expect(matchesHouseholdSearch(home, '14 duong so 3')).toBe(false);
+    const raw = { street: '144/2, Ấp 61, Xã Bà Điểm' } as HouseholdFacility;
+    expect(matchesHouseholdSearch(raw, '144/2 ấp 61')).toBe(true);
   });
 
   it('reads lat, lng coordinates and swaps a pasted lng, lat pair', () => {
