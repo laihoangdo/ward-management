@@ -244,7 +244,7 @@ class RosterPostgresTest {
         db.execute("drop schema if exists legacy_mock_20261027 cascade");
         db.execute("drop table if exists public.subject_summon,public.subject_record,public.subject cascade");
         db.execute(
-            "drop table if exists public.facility_violation,public.facility_employee,public.attachment,public.document_record,public.resident_tag cascade"
+            "drop table if exists public.facility_violation,public.facility_employee,public.attachment,public.document_record,public.resident_tag,public.guidance_document cascade"
         );
         db.execute("drop table if exists public.resident,public.household,public.gis_building cascade");
         db.execute("alter table public.hamlet add column if not exists full_name text default 'Trung Chánh 2'");
@@ -299,6 +299,7 @@ class RosterPostgresTest {
         replay("20261115010000_subject_management.xml");
         replay("20261115020000_facility_management.xml");
         replay("20261115030000_resident_tag.xml");
+        replay("20261115040000_guidance_document.xml");
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         crypto = new RosterCrypto(temp.resolve("key").toString());
         rbac = mock(RbacService.class);
@@ -616,6 +617,74 @@ class RosterPostgresTest {
         when(rbac.global()).thenReturn(true);
         assertEquals(List.of(), tx.execute(s -> tags.save(person, List.of())));
         db.execute("drop table public.rbac_assignment");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void guidanceRegisterRecordsDocumentsWithScansAndNeedsTheManagePermission() throws Exception {
+        var attachments = new com.policemanagement.com.service.AttachmentRecords(
+            db,
+            rbac,
+            new com.policemanagement.com.service.AttachmentStorage(attachmentProperties())
+        );
+        var guidance = new com.policemanagement.com.service.guidance.GuidanceDocumentService(db, rbac, attachments);
+        var d = new HashMap<String, Object>(
+            Map.of(
+                "docNumber",
+                "125/HD-CAT",
+                "issuingAuthority",
+                "Công an Thành phố",
+                "issuedOn",
+                "2026-10-01",
+                "receivedOn",
+                "2026-10-05",
+                "title",
+                "Hướng dẫn rà soát cư trú cuối năm"
+            )
+        );
+        var created = tx.execute(s -> guidance.create(d));
+        UUID id = (UUID) created.get("id");
+        assertThrows(ResponseStatusException.class, () -> tx.execute(s -> guidance.create(new HashMap<>(d))));
+        var early = new HashMap<>(d);
+        early.put("docNumber", "126/HD-CAT");
+        early.put("receivedOn", "2026-09-01");
+        assertThrows(ResponseStatusException.class, () -> tx.execute(s -> guidance.create(early)));
+
+        byte[] pdf = "%PDF-1.7 test".getBytes();
+        tx.execute(s -> guidance.upload(id, pdf, "Bản quét"));
+        var files = tx.execute(s -> guidance.files(id));
+        assertEquals(1, files.size());
+        assertEquals("DOCUMENT", files.getFirst().category());
+        assertArrayEquals(pdf, tx.execute(s -> guidance.content(id, files.getFirst().id())).bytes());
+        assertNull(db.queryForObject("select hamlet_id from attachment where owner_kind='GUIDANCE'", Long.class));
+
+        assertEquals(1L, tx.execute(s -> guidance.list(Map.of("search", "cư trú"))).get("total"));
+        assertEquals(0L, tx.execute(s -> guidance.list(Map.of("year", "2025"))).get("total"));
+        var summary = tx.execute(s -> guidance.summary());
+        assertEquals(List.of(2026), summary.get("years"));
+        assertEquals(true, summary.get("canManage"));
+
+        var edit = new HashMap<>(d);
+        edit.put("title", "Hướng dẫn rà soát cư trú và tạm trú");
+        edit.put("version", created.get("version").toString());
+        assertEquals("Hướng dẫn rà soát cư trú và tạm trú", tx.execute(s -> guidance.update(id, edit)).get("title"));
+        assertThrows(ResponseStatusException.class, () -> tx.execute(s -> guidance.update(id, edit)));
+
+        // Any officer reads the register; writing needs canManageGuidanceDocs.
+        when(rbac.global()).thenReturn(false);
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canManageGuidanceDocs");
+        assertEquals(1L, tx.execute(s -> guidance.list(Map.of())).get("total"));
+        assertEquals(false, tx.execute(s -> guidance.summary()).get("canManage"));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
+            tx.executeWithoutResult(s -> guidance.delete(id))
+        );
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> tx.execute(s -> guidance.upload(id, pdf, "")));
+        doNothing().when(rbac).permission("canManageGuidanceDocs");
+        when(rbac.global()).thenReturn(true);
+
+        tx.executeWithoutResult(s -> guidance.delete(id));
+        assertEquals(0L, db.queryForObject("select count(*) from attachment where owner_kind='GUIDANCE'", Long.class));
+        assertEquals(0L, tx.execute(s -> guidance.list(Map.of())).get("total"));
     }
 
     @Test

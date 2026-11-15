@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261115040000-1" author="claude">
+        <comment>Register of guidance documents for ward police officers (văn bản hướng dẫn CSKV): number, issuing body, issue
+            date, title, date received, plus scanned PDF files as attachments (owner kind GUIDANCE). The register is
+            commune-wide, so attachments of commune-wide owners carry no hamlet.</comment>
+        <sql>
+            CREATE TABLE guidance_document (
+                id uuid PRIMARY KEY,
+                doc_number varchar(100) NOT NULL,
+                issuing_authority varchar(300) NOT NULL,
+                issued_on date NOT NULL,
+                title varchar(1000) NOT NULL,
+                received_on date,
+                field varchar(200) NOT NULL DEFAULT '',
+                summary varchar(4000) NOT NULL DEFAULT '',
+                notes varchar(2000) NOT NULL DEFAULT '',
+                version bigint NOT NULL DEFAULT 0,
+                created_at timestamptz NOT NULL DEFAULT now(),
+                created_by varchar(255) NOT NULL,
+                updated_at timestamptz NOT NULL DEFAULT now(),
+                updated_by varchar(255) NOT NULL,
+                CONSTRAINT ck_guidance_received CHECK (received_on IS NULL OR received_on &gt;= issued_on)
+            );
+            CREATE UNIQUE INDEX ux_guidance_number ON guidance_document (lower(doc_number), lower(issuing_authority), issued_on);
+            CREATE INDEX ix_guidance_issued ON guidance_document (issued_on DESC);
+            ALTER TABLE attachment ALTER COLUMN hamlet_id DROP NOT NULL;
+            ALTER TABLE attachment DROP CONSTRAINT attachment_owner_kind_check;
+            ALTER TABLE attachment ADD CONSTRAINT attachment_owner_kind_check CHECK (owner_kind IN ('RESIDENT','FACILITY','GUIDANCE'));
+        </sql>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT,INSERT,UPDATE,DELETE ON guidance_document TO police_runtime;
+            END IF;
+        END $$;</sql>
+        <rollback>
+            <sql>
+                DROP TABLE guidance_document;
+                DELETE FROM attachment WHERE owner_kind = 'GUIDANCE';
+                ALTER TABLE attachment DROP CONSTRAINT attachment_owner_kind_check;
+                ALTER TABLE attachment ADD CONSTRAINT attachment_owner_kind_check CHECK (owner_kind IN ('RESIDENT','FACILITY'));
+                ALTER TABLE attachment ALTER COLUMN hamlet_id SET NOT NULL;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

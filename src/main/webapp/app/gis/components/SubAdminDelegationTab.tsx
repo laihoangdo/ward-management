@@ -163,6 +163,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       canManageSubjects: false,
       canViewPoliticalSubjects: false,
       canManageFacilities: false,
+      canManageGuidanceDocs: false,
     },
   );
 
@@ -205,6 +206,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
         canManageSubjects: false,
         canViewPoliticalSubjects: false,
         canManageFacilities: false,
+        canManageGuidanceDocs: false,
       },
     );
     setAssignedHamletsInput(officer.assignedHamlets?.join(', ') || '');
@@ -365,6 +367,12 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       title: 'Cập nhật hồ sơ cơ sở kinh doanh, doanh nghiệp',
       desc: 'Ghi nhân viên cơ sở, lịch sử vi phạm, giấy tờ và hình ảnh kèm theo của CSKD có điều kiện và doanh nghiệp',
       icon: Store,
+    },
+    {
+      key: 'canManageGuidanceDocs',
+      title: 'Quản lý sổ văn bản hướng dẫn CSKV',
+      desc: 'Vào sổ, sửa, xoá văn bản hướng dẫn và tải lên bản quét; mọi cán bộ đều xem được sổ',
+      icon: FileText,
     },
   ];
 

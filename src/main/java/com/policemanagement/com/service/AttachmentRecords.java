@@ -79,7 +79,7 @@ public class AttachmentRecords {
     public Attachment add(
         String kind,
         UUID owner,
-        long hamlet,
+        Long hamlet,
         byte[] bytes,
         String caption,
         String photoCategory,

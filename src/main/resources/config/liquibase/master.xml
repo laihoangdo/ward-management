@@ -53,4 +53,5 @@
     <include file="config/liquibase/changelog/20261115010000_subject_management.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261115020000_facility_management.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261115030000_resident_tag.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261115040000_guidance_document.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

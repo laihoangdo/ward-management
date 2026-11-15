@@ -84,6 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     residents: UserCheck,
     subjects: UserSearch,
     facilities: Store,
+    guidance: BookOpen,
     documents: FileText,
     areas: Building2,
     logs: History,
@@ -120,7 +121,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   });
 
   const menuGroup = (id: NavigationTab) => {
-    if (['overview', 'households', 'residents', 'subjects', 'facilities', 'documents'].includes(id)) return 'Công việc hằng ngày';
+    if (['overview', 'households', 'residents', 'subjects', 'facilities', 'guidance', 'documents'].includes(id))
+      return 'Công việc hằng ngày';
     if (['area-map', 'advanced-map', 'field-3d-map', 'bando-3d', 'areas'].includes(id)) return 'Địa bàn và bản đồ';
     if (id === 'logs') return 'Lịch sử kiểm tra';
     if (id === 'settings') return 'Tài khoản của tôi';

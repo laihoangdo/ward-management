@@ -159,6 +159,28 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
     ],
   },
   {
+    id: 'guidance',
+    title: 'Văn bản hướng dẫn CSKV',
+    group: 'Công việc hằng ngày',
+    summary: 'Sổ theo dõi các văn bản hướng dẫn nghiệp vụ cảnh sát khu vực đã nhận.',
+    purpose: 'Tra cứu nhanh số văn bản, cơ quan ban hành, ngày ban hành, trích yếu, ngày nhận và mở bản quét PDF của văn bản.',
+    steps: [
+      {
+        heading: '1. Tìm văn bản',
+        detail: 'Gõ số, ký hiệu, trích yếu hoặc cơ quan ban hành; lọc theo năm ban hành hoặc cơ quan.',
+      },
+      {
+        heading: '2. Vào sổ văn bản mới',
+        detail: 'Bấm "+ Vào sổ văn bản", nhập số, cơ quan ban hành, ngày ban hành, trích yếu và ngày nhận, rồi tải lên bản quét PDF.',
+      },
+      {
+        heading: '3. In sổ',
+        detail: 'Bấm "In / Xuất Excel" để in danh sách văn bản theo bộ lọc đang chọn.',
+      },
+    ],
+    tips: ['Mọi cán bộ đều xem được sổ; vào sổ, sửa và xoá cần quyền "Quản lý văn bản hướng dẫn CSKV".'],
+  },
+  {
     id: 'facilities',
     title: 'Cơ sở kinh doanh & doanh nghiệp',
     group: 'Công việc hằng ngày',

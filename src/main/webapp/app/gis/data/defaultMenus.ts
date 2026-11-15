@@ -49,6 +49,13 @@ export const DEFAULT_MENUS: DynamicMenuItemConfig[] = [
     visibleRoles: allRoles,
   },
   {
+    id: 'guidance',
+    label: 'Văn bản hướng dẫn CSKV',
+    description: 'Sổ văn bản hướng dẫn nghiệp vụ đã nhận',
+    iconName: 'BookOpen',
+    visibleRoles: allRoles,
+  },
+  {
     id: 'documents',
     label: 'Quản lý giấy tờ & ANTT',
     description: 'Hồ sơ và thời hạn đã ghi nhận',
