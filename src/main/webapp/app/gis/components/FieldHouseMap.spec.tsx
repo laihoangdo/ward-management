@@ -27,6 +27,8 @@ const mocks = vi.hoisted(() => ({
   effectsHighlights: vi.fn(),
   effectsDispose: vi.fn(),
   mapRemove: vi.fn(),
+  flyTo: vi.fn(),
+  markerAt: vi.fn(),
 }));
 vi.mock('../three/field-effects.js', () => ({ attachFieldEffects: mocks.effectsAttach }));
 vi.mock('axios', () => ({ default: { get: vi.fn(), put: vi.fn(), post: vi.fn(), isAxiosError: vi.fn(() => false) } }));
@@ -47,6 +49,7 @@ vi.mock('maplibre-gl', () => ({
     setFilter = mocks.setFilter;
     queryRenderedFeatures = mocks.queryRenderedFeatures;
     fitBounds = mocks.fitBounds;
+    flyTo = mocks.flyTo;
     constructor(options: unknown) {
       mocks.mapOptions(options);
     }
@@ -75,6 +78,16 @@ vi.mock('maplibre-gl', () => ({
           };
   },
   NavigationControl: class {},
+  Marker: class {
+    setLngLat(at: unknown) {
+      mocks.markerAt(at);
+      return this;
+    }
+    addTo() {
+      return this;
+    }
+    remove() {}
+  },
   setWorkerUrl: vi.fn(),
 }));
 const house: FieldHouse = {
@@ -787,6 +800,48 @@ describe('field map controls', () => {
     expect(mocks.easeTo).toHaveBeenLastCalledWith(
       expect.objectContaining({ pitch: 75, zoom: 18.5, center: [(106 + 106.001) / 2, (10 + 10.001) / 2] }),
     );
+  });
+
+  it('colours buildings by management category from the category API', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url) === '/api/gis/household-categories'
+        ? Promise.resolve({ data: { households: { '1': ['SUBJECT', 'PARTY'] }, counts: {}, subjectsVisible: true } })
+        : originalGet(url, config),
+    );
+    await mount();
+    fireEvent.change(screen.getByLabelText('Tô màu theo'), { target: { value: 'category' } });
+    await waitFor(() => expect(axios.get).toHaveBeenCalledWith('/api/gis/household-categories'));
+    const colour = mocks.setPaintProperty.mock.calls.filter(([id, key]) => id === 'houses-3d' && key === 'fill-extrusion-color').at(-1)![2];
+    expect(JSON.stringify(colour)).toContain('categoryBucket');
+    expect(screen.getByRole('list', { name: 'Chú giải màu: Diện quản lý' })).toBeDefined();
+    expect(screen.getByText('Nhà đối tượng')).toBeDefined();
+    expect(screen.getByText('CB hưu trí, CCB')).toBeDefined();
+  });
+
+  it('names a business on its building label', async () => {
+    const originalGet = vi.mocked(axios.get).getMockImplementation()!;
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/badiem-houses.geojson')
+        ? Promise.resolve({
+            data: { type: 'FeatureCollection', features: [{ ...house, properties: { ...house.properties, householdIds: ['1'] } }] },
+          })
+        : originalGet(url, config),
+    );
+    await mount([{ ...household, type: 'business', businessName: 'Tạp hóa Minh' }]);
+    const labels = mocks.setData.mock.calls.map(([data]) => data.features).filter(features => features?.[0]?.properties?.label);
+    expect(labels.some(features => features[0].properties.label === 'Tạp hóa Minh · 1')).toBe(true);
+  });
+
+  it('flies to typed coordinates, pins them and selects the building there', async () => {
+    await mount();
+    const input = screen.getByLabelText('Tìm nhanh hộ dân trên bản đồ 3D');
+    fireEvent.change(input, { target: { value: '10.0004, 106.0005' } });
+    expect(await screen.findByText('Đi tới tọa độ')).toBeDefined();
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(mocks.markerAt).toHaveBeenCalledWith([106.0005, 10.0004]);
+    expect(mocks.flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [106.0005, 10.0004], zoom: 19 }));
+    expect(screen.queryByText(/Không có công trình đã lưu/)).toBeNull();
   });
 
   it('labels named buildings without households as landmarks', async () => {

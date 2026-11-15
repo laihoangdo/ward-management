@@ -12,6 +12,7 @@ import ResidentExportDialog from './ResidentExportDialog';
 import ResidentPhotos from './ResidentPhotos';
 import { activeHamlet, setActiveHamlet } from './hamletScope';
 import ResidentSubjects from '../subjects/ResidentSubjects';
+import ResidentTags from './ResidentTags';
 import { fetchRbacMe } from '../gis/services/rbacApiService';
 import type { AppUser } from '../gis/types';
 
@@ -1103,6 +1104,8 @@ function RosterWorkspace({
       <ResidentPhotos residentId={person.id} api={api} />
 
       <ResidentSubjects person={{ ...person, id: String(person.id), full_name: String(person.full_name) }} currentUser={exportUser} />
+
+      <ResidentTags residentId={String(person.id)} api={api} currentUser={exportUser} />
 
       <details open className="roster-subcard">
         <summary>Giấy tờ định danh ({person.identities.length})</summary>

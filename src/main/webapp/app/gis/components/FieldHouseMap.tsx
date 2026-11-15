@@ -26,10 +26,13 @@ import './FieldHouseMap.css';
 import { frameMapCapture, MapCaptureOfficer } from '../utils/mapCapture';
 import { MapCapturePreview } from './MapCapturePreview';
 import FieldHousePropertiesEditor from './FieldHousePropertiesEditor';
-import { matchesHouseholdSearch } from '../utils/householdSearch';
+import { matchesHouseholdSearch, parseCoordinateQuery } from '../utils/householdSearch';
 import {
   BUILDING_THEMES,
   BuildingTheme,
+  CATEGORY_SCALE,
+  categoryBucket,
+  HouseholdCategory,
   OCCUPANCY_SCALE,
   RECENCY_SCALE,
   RESIDENT_SCALE,
@@ -82,6 +85,10 @@ const scaleExpression = (property: string, colors: string[]): maplibregl.Express
   ] as unknown as maplibregl.ExpressionSpecification;
 const THEME_EXPRESSION: Record<BuildingTheme, maplibregl.ExpressionSpecification> = {
   status: OWN_COLOR,
+  category: scaleExpression(
+    'categoryBucket',
+    CATEGORY_SCALE.map(item => item.color),
+  ),
   occupancy: ['case', ['get', 'occupied'], OCCUPANCY_SCALE[0].color, OCCUPANCY_SCALE[1].color],
   residents: scaleExpression(
     'residentBucket',
@@ -294,6 +301,25 @@ export default function FieldHouseMap({
   const [representation, setRepresentation] = useState<'3d' | 'point'>('3d');
   const [theme, setTheme] = useState<BuildingTheme>('status');
   const [themeNow] = useState(() => Date.now());
+  // Household categories (subject / party member / retired cadre or veteran) for the "Diện quản lý" colours; loaded when chosen.
+  const [categories, setCategories] = useState<{ map: Map<string, HouseholdCategory[]>; subjectsVisible: boolean } | null>(null);
+  const noCategories = useMemo(() => new Map<string, HouseholdCategory[]>(), []);
+  const categoryMap = categories?.map ?? noCategories;
+  useEffect(() => {
+    if (theme !== 'category') return undefined;
+    let cancelled = false;
+    axios
+      .get<{ households: Record<string, HouseholdCategory[]>; subjectsVisible: boolean }>('/api/gis/household-categories')
+      .then(({ data }) => {
+        if (!cancelled) setCategories({ map: new Map(Object.entries(data.households ?? {})), subjectsVisible: data.subjectsVisible });
+      })
+      .catch(() => {
+        if (!cancelled) setNotice('Không tải được diện quản lý của hộ; bản đồ tô màu tạm theo hộ không thuộc diện.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [theme, households]);
   const [layers, setLayers] = useState({
     satellite: true,
     map: false,
@@ -346,6 +372,14 @@ export default function FieldHouseMap({
   const quickMatches = useMemo(
     () => (deferredQuickSearch.trim() ? searchHouseholds(householdsOnMap, deferredQuickSearch, QUICK_RESULT_LIMIT) : []),
     [householdsOnMap, deferredQuickSearch],
+  );
+  const quickCoordinate = useMemo(() => parseCoordinateQuery(deferredQuickSearch), [deferredQuickSearch]);
+  const coordinateMarkerRef = useRef<maplibregl.Marker | null>(null);
+  useEffect(
+    () => () => {
+      coordinateMarkerRef.current?.remove();
+    },
+    [],
   );
   const [quickActive, setQuickActive] = useState(0);
   useEffect(() => setQuickActive(0), [quickMatches]);
@@ -944,6 +978,7 @@ export default function FieldHouseMap({
           business: residents.some(r => r.status === 'business'),
           residentBucket: residentBucket(residents),
           checkedBucket: recencyBucket(residents, themeNow),
+          categoryBucket: categoryBucket(residents, categoryMap),
           displayColor: residents.length ? COLORS[highestStatus(residents)] : (h.properties.color ?? '#b6c9d6'),
         },
       };
@@ -956,7 +991,7 @@ export default function FieldHouseMap({
     for (const h of houses) {
       const id = h.properties.buildingId;
       const residents = indexed.get(id);
-      const buckets = `${residentBucket(residents ?? [])}|${recencyBucket(residents ?? [], themeNow)}`;
+      const buckets = `${residentBucket(residents ?? [])}|${recencyBucket(residents ?? [], themeNow)}|${categoryBucket(residents ?? [], categoryMap)}`;
       const key = `${inThreeScopeIds.has(id) ? 1 : 0}|${residents ? residents.map(r => r.status).join(',') : ''}|${buckets}`;
       const cached = previous.get(id);
       if (!cached || cached.house !== h || cached.key !== key) changed.push(h);
@@ -992,7 +1027,7 @@ export default function FieldHouseMap({
     houseSource?.setData({ type: 'FeatureCollection', features: houses.map(decorate) });
     housesLoadedMapRef.current = houses.length ? map : null;
     if (wantPoints || pointsLoaded) loadAllPoints();
-  }, [houses, indexed, ready, inThreeScopeIds, representation, themeNow]);
+  }, [houses, indexed, ready, inThreeScopeIds, representation, themeNow, categoryMap]);
 
   // House-number labels for buildings with households, honouring the status filter.
   useEffect(() => {
@@ -1007,7 +1042,10 @@ export default function FieldHouseMap({
         // Without a building name or house number, one owner's name would mislabel a shared building: show the count.
         const place = target.properties.name || first.houseNumber;
         const count = `${residents.length} hộ`;
-        const label = labelText(residents.length > 1 ? (place ? `${place} · ${count}` : count) : place || first.ownerName);
+        // A business or enterprise in the building is named on it, so officers find shops and companies by sight.
+        const business = residents.find(r => r.type === 'business' && r.businessName?.trim())?.businessName?.trim();
+        const base = residents.length > 1 ? (place ? `${place} · ${count}` : count) : place || (business ? '' : first.ownerName);
+        const label = labelText(business ? (base ? `${business} · ${base}` : business) : base);
         if (!label) continue;
         features.push({
           type: 'Feature',
@@ -1105,10 +1143,15 @@ export default function FieldHouseMap({
             theme === 'status' && residents.length > 1
               ? [...STATUS_PRIORITY, 'unverified' as const].map(key => residents.filter(resident => resident.status === key).length)
               : undefined,
-          color: theme === 'status' ? (occupied ? COLORS[highestStatus(residents)] : own) : (themeColor(theme, residents, themeNow) ?? own),
+          color:
+            theme === 'status'
+              ? occupied
+                ? COLORS[highestStatus(residents)]
+                : own
+              : (themeColor(theme, residents, themeNow, categoryMap) ?? own),
         };
       }),
-    [houses, indexed, layers.occupied, layers.empty, status, theme, themeNow],
+    [houses, indexed, layers.occupied, layers.empty, status, theme, themeNow, categoryMap],
   );
   const themeScale =
     theme === 'status'
@@ -1120,7 +1163,9 @@ export default function FieldHouseMap({
         ? RESIDENT_SCALE
         : theme === 'recency'
           ? RECENCY_SCALE
-          : OCCUPANCY_SCALE;
+          : theme === 'category'
+            ? CATEGORY_SCALE.filter((item, index) => index !== 0 || categories?.subjectsVisible !== false)
+            : OCCUPANCY_SCALE;
   const themeLegend = [
     ...themeScale,
     { color: '#f97316', label: 'Vị trí tạm' }, // taste-skill-ignore: màu điểm tạm có sẵn của lớp bản đồ
@@ -1418,6 +1463,24 @@ export default function FieldHouseMap({
       { padding: 56, maxZoom: 17.8, pitch: 58, bearing: -18, duration: 900 },
     );
   };
+  // "lat, lng" search: fly there, drop a pin and select the building that contains the point, if any.
+  const goToCoordinate = ([lng, lat]: [number, number]) => {
+    setQuickSearch('');
+    const map = mapRef.current;
+    if (!map) return;
+    coordinateMarkerRef.current?.remove();
+    coordinateMarkerRef.current = new maplibregl.Marker({ color: '#dc2626' }).setLngLat([lng, lat]).addTo(map);
+    const target = houses.find(house => {
+      const [w, s, e, n] = houseBounds(house);
+      return lng >= w && lng <= e && lat >= s && lat <= n && containsHousePoint(house.geometry, [lng, lat]);
+    });
+    if (target) {
+      setSelectedId(target.properties.buildingId);
+      setMode('select');
+    }
+    map.flyTo({ center: [lng, lat], zoom: 19, pitch: representation === '3d' ? 55 : 0, duration: 800 });
+    setNotice(target ? '' : `Không có công trình đã lưu tại ${lat.toFixed(6)}, ${lng.toFixed(6)}; đã cắm ghim vị trí.`);
+  };
   const jumpToHousehold = (h: HouseholdFacility) => {
     setQuickSearch('');
     if ((containerRef.current?.clientWidth ?? 1000) <= 1024 || window.matchMedia?.(COMPACT_MAP_QUERY).matches) {
@@ -1462,7 +1525,7 @@ export default function FieldHouseMap({
           <input
             type="search"
             aria-label="Tìm nhanh hộ dân trên bản đồ 3D"
-            placeholder="Tìm nhanh chủ hộ, mã hộ, địa chỉ…"
+            placeholder="Tìm chủ hộ, số nhà + đường, cơ sở, tọa độ…"
             value={quickSearch}
             role="combobox"
             aria-expanded={quickMatches.length > 0}
@@ -1472,6 +1535,12 @@ export default function FieldHouseMap({
             onChange={e => setQuickSearch(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Escape') setQuickSearch('');
+              const coordinate = parseCoordinateQuery(quickSearch);
+              if (e.key === 'Enter' && coordinate) {
+                e.preventDefault();
+                goToCoordinate(coordinate);
+                return;
+              }
               if (!quickMatches.length) return;
               if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                 e.preventDefault();
@@ -1517,7 +1586,23 @@ export default function FieldHouseMap({
               )}
             </div>
           )}
-          {deferredQuickSearch.trim() && quickMatches.length === 0 && (
+          {quickCoordinate && (
+            <div className="field-quick-results" role="listbox" aria-label="Đi tới tọa độ">
+              <button
+                type="button"
+                role="option"
+                aria-selected
+                className="field-quick-item field-quick-item-active"
+                onClick={() => goToCoordinate(quickCoordinate)}
+              >
+                <strong>Đi tới tọa độ</strong>
+                <span>
+                  {quickCoordinate[1].toFixed(6)}, {quickCoordinate[0].toFixed(6)} · Enter để bay tới và cắm ghim
+                </span>
+              </button>
+            </div>
+          )}
+          {!quickCoordinate && deferredQuickSearch.trim() && quickMatches.length === 0 && (
             <div className="field-quick-results" role="status">
               <small className="field-quick-more">Không tìm thấy hộ dân phù hợp trong phạm vi bản đồ.</small>
             </div>
@@ -1820,6 +1905,12 @@ export default function FieldHouseMap({
               </span>
             ))}
           </div>
+          {theme === 'category' && (
+            <small>
+              Nhà nhiều hộ lấy màu của diện cao nhất (đối tượng &gt; đảng viên &gt; CB hưu trí, CCB).
+              {categories?.subjectsVisible === false ? ' Nhà đối tượng chỉ hiện với cán bộ được cấp quyền xem đối tượng.' : ''}
+            </small>
+          )}
           {theme === 'status' && (
             <small>Tường nhà nhiều hộ chia dải màu theo tỷ lệ hộ mỗi trạng thái, không phải vị trí tầng của từng hộ.</small>
           )}

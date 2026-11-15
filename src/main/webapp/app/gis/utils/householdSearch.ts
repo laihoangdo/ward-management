@@ -18,6 +18,8 @@ export function matchesHouseholdSearch(household: HouseholdFacility, query: stri
     household.ownerName,
     household.houseNumber,
     household.street,
+    // "12 Đường số 3": house number and street typed together.
+    household.houseNumber && household.street ? `${household.houseNumber} ${household.street}` : undefined,
     household.hamlet,
     household.code,
     household.ownerPhone,
@@ -34,4 +36,17 @@ export function matchesHouseholdSearch(household: HouseholdFacility, query: stri
     (q === 'kinh doanh' && household.type === 'business') ||
     (q === 'ho gia dinh' && household.type === 'household')
   );
+}
+
+/**
+ * "lat, lng" typed or pasted into a map search (decimal degrees with a fractional part, so "12 3" stays a text search; comma, semicolon or space separated). A pair pasted the
+ * other way round (lng, lat, as GIS tools copy it) is swapped when only that order is valid. Returns [lng, lat] or null.
+ */
+export function parseCoordinateQuery(query: string): [number, number] | null {
+  const match = /^\s*(-?\d{1,3}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)\s*$/.exec(query);
+  if (!match) return null;
+  let [lat, lng] = [Number(match[1]), Number(match[2])];
+  if (Math.abs(lat) > 90 && Math.abs(lng) <= 90) [lat, lng] = [lng, lat];
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return [lng, lat];
 }

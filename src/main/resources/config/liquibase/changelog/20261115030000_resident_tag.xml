@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261115030000-1" author="claude">
+        <comment>Social standing of a resident shown on the area map (diện xã hội): party member (đảng viên), retired cadre
+            (cán bộ hưu trí) and veteran (cựu chiến binh). One row per resident and tag; removing a tag deletes the row and
+            the change is written to rbac_audit.</comment>
+        <sql>
+            CREATE TABLE resident_tag (
+                resident_id uuid NOT NULL REFERENCES resident(roster_id) ON DELETE CASCADE,
+                hamlet_id bigint NOT NULL REFERENCES hamlet(id),
+                tag varchar(20) NOT NULL CHECK (tag IN ('DANG_VIEN','CB_HUU_TRI','CCB')),
+                created_at timestamptz NOT NULL DEFAULT now(),
+                created_by varchar(255) NOT NULL,
+                PRIMARY KEY (resident_id, tag)
+            );
+            CREATE INDEX ix_resident_tag_hamlet ON resident_tag (hamlet_id, tag);
+        </sql>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT,INSERT,DELETE ON resident_tag TO police_runtime;
+            END IF;
+        END $$;</sql>
+        <rollback>
+            <sql>DROP TABLE resident_tag;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

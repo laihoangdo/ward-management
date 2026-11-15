@@ -244,7 +244,7 @@ class RosterPostgresTest {
         db.execute("drop schema if exists legacy_mock_20261027 cascade");
         db.execute("drop table if exists public.subject_summon,public.subject_record,public.subject cascade");
         db.execute(
-            "drop table if exists public.facility_violation,public.facility_employee,public.attachment,public.document_record cascade"
+            "drop table if exists public.facility_violation,public.facility_employee,public.attachment,public.document_record,public.resident_tag cascade"
         );
         db.execute("drop table if exists public.resident,public.household,public.gis_building cascade");
         db.execute("alter table public.hamlet add column if not exists full_name text default 'Trung Chánh 2'");
@@ -298,6 +298,7 @@ class RosterPostgresTest {
         replay("20261115000000_resident_profile_attachment.xml");
         replay("20261115010000_subject_management.xml");
         replay("20261115020000_facility_management.xml");
+        replay("20261115030000_resident_tag.xml");
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         crypto = new RosterCrypto(temp.resolve("key").toString());
         rbac = mock(RbacService.class);
@@ -565,6 +566,56 @@ class RosterPostgresTest {
         assertNotNull(tx.execute(s -> subjects.create(again)).get("id"));
         verify(rbac, atLeastOnce()).audit(eq("subject-create"), any(), any());
         verify(rbac, atLeastOnce()).audit(eq("read"), eq("subject:" + id), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void residentTagsColourTheAreaMapAndSubjectsNeedTheViewPermission() throws Exception {
+        stageAndApply();
+        UUID person = db.queryForObject("select id from tc2_roster.resident", UUID.class);
+        String household = db.queryForObject(
+            "select h.id::text from public.household h join tc2_roster.household_membership m on m.household_id=h.roster_id" +
+                " where m.resident_id=? and m.valid_to is null limit 1",
+            String.class,
+            person
+        );
+        var tags = new ResidentTagService(db, service, rbac);
+        assertEquals(List.of(), tx.execute(s -> tags.tags(person)));
+        assertEquals(List.of("DANG_VIEN", "CCB"), tx.execute(s -> tags.save(person, List.of("CCB", "DANG_VIEN"))));
+        assertThrows(ResponseStatusException.class, () -> tx.execute(s -> tags.save(person, List.of("KHAC"))));
+        var map = tx.execute(s -> tags.mapCategories());
+        assertEquals(List.of("PARTY", "RETIRED"), ((Map<String, Object>) map.get("households")).get(household));
+
+        var subjects = new com.policemanagement.com.service.subject.SubjectService(db, service, crypto, rbac);
+        var d = new HashMap<String, Object>();
+        d.put("residentId", person.toString());
+        d.put("category", "CT");
+        d.put("managedFrom", java.time.LocalDate.now().toString());
+        tx.execute(s -> subjects.create(d));
+        map = tx.execute(s -> tags.mapCategories());
+        assertEquals(List.of("SUBJECT", "PARTY", "RETIRED"), ((Map<String, Object>) map.get("households")).get(household));
+        assertEquals(1, ((Map<String, Integer>) map.get("counts")).get("SUBJECT"));
+
+        // A hamlet officer without the political permission sees the party member, not the political subject.
+        db.execute("create table if not exists public.rbac_assignment(subject text, hamlet_id bigint)");
+        db.update("insert into public.rbac_assignment values ('officer-1', 28)");
+        when(rbac.global()).thenReturn(false);
+        when(rbac.current()).thenReturn(Map.of("id", "officer-1"));
+        when(rbac.visibleMapHouseholds()).thenReturn(java.util.Set.of(household));
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canViewPoliticalSubjects");
+        map = tx.execute(s -> tags.mapCategories());
+        assertEquals(List.of("PARTY", "RETIRED"), ((Map<String, Object>) map.get("households")).get(household));
+        assertEquals(true, map.get("subjectsVisible"));
+        when(rbac.visibleMapHouseholds()).thenReturn(java.util.Set.of());
+        assertEquals(Map.of(), tx.execute(s -> tags.mapCategories()).get("households"));
+
+        // Removing the tags needs the edit permission.
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canUpdateInspection");
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> tx.execute(s -> tags.save(person, List.of())));
+        doNothing().when(rbac).permission("canUpdateInspection");
+        when(rbac.global()).thenReturn(true);
+        assertEquals(List.of(), tx.execute(s -> tags.save(person, List.of())));
+        db.execute("drop table public.rbac_assignment");
     }
 
     @Test

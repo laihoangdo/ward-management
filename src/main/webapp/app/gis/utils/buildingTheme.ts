@@ -1,10 +1,11 @@
 import { HouseholdFacility } from '../types';
 
 /** What a building's colour stands for. 'status' is the default and keeps the household status colours. */
-export type BuildingTheme = 'status' | 'residents' | 'occupancy' | 'recency';
+export type BuildingTheme = 'status' | 'category' | 'residents' | 'occupancy' | 'recency';
 
 export const BUILDING_THEMES: Record<BuildingTheme, string> = {
   status: 'Trạng thái hộ',
+  category: 'Diện quản lý',
   residents: 'Số nhân khẩu',
   occupancy: 'Có hộ / chưa có hộ',
   recency: 'Lần kiểm tra gần nhất',
@@ -71,8 +72,34 @@ export function recencyBucket(households: HouseholdFacility[], now: number): num
 }
 
 /** Colour for the non-status themes; undefined keeps the building's own appearance. */
-export function themeColor(theme: Exclude<BuildingTheme, 'status'>, households: HouseholdFacility[], now: number): string | undefined {
+export function themeColor(
+  theme: Exclude<BuildingTheme, 'status'>,
+  households: HouseholdFacility[],
+  now: number,
+  categories: ReadonlyMap<string, HouseholdCategory[]> = new Map(),
+): string | undefined {
+  if (theme === 'category') return CATEGORY_SCALE[categoryBucket(households, categories)]?.color;
   if (theme === 'occupancy') return OCCUPANCY_SCALE[households.length ? 0 : 1].color;
   if (theme === 'residents') return RESIDENT_SCALE[residentBucket(households)]?.color;
   return RECENCY_SCALE[recencyBucket(households, now)]?.color;
+}
+
+/** Household categories from /api/gis/household-categories, highest priority first. */
+export type HouseholdCategory = 'SUBJECT' | 'PARTY' | 'RETIRED';
+/** Officers' key: red for a subject's house, blue for a party member, purple for a retired cadre or veteran. */
+export const CATEGORY_SCALE: ThemeLegendItem[] = [
+  { color: '#dc2626', label: 'Nhà đối tượng' },
+  { color: '#2563eb', label: 'Đảng viên' },
+  { color: '#9333ea', label: 'CB hưu trí, CCB' },
+  { color: '#e2e8f0', label: 'Hộ không thuộc diện' },
+];
+const CATEGORY_ORDER: HouseholdCategory[] = ['SUBJECT', 'PARTY', 'RETIRED'];
+
+/** Bucket index into CATEGORY_SCALE by the highest category of any household in the building, or -1 without households. */
+export function categoryBucket(households: HouseholdFacility[], categories: ReadonlyMap<string, HouseholdCategory[]>): number {
+  if (!households.length) return -1;
+  let best = CATEGORY_ORDER.length;
+  for (const household of households)
+    for (const category of categories.get(household.id) ?? []) best = Math.min(best, CATEGORY_ORDER.indexOf(category));
+  return best;
 }

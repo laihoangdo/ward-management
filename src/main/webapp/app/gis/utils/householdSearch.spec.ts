@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchesHouseholdSearch } from './householdSearch';
+import { matchesHouseholdSearch, parseCoordinateQuery } from './householdSearch';
 import { HouseholdFacility } from '../types';
 
 describe('Shared household lookup', () => {
@@ -14,5 +14,20 @@ describe('Shared household lookup', () => {
     expect(matchesHouseholdSearch(household, 'tran thi huong')).toBe(true);
     expect(matchesHouseholdSearch(household, 'canh bao')).toBe(true);
     expect(matchesHouseholdSearch(household, 'No matching owner')).toBe(false);
+  });
+
+  it('matches a house number typed together with the street', () => {
+    const home = { houseNumber: '12', street: 'Đường số 3' } as HouseholdFacility;
+    expect(matchesHouseholdSearch(home, '12 duong so 3')).toBe(true);
+    expect(matchesHouseholdSearch(home, '14 duong so 3')).toBe(false);
+  });
+
+  it('reads lat, lng coordinates and swaps a pasted lng, lat pair', () => {
+    expect(parseCoordinateQuery('10.8541, 106.6123')).toEqual([106.6123, 10.8541]);
+    expect(parseCoordinateQuery('106.6123 10.8541')).toEqual([106.6123, 10.8541]);
+    expect(parseCoordinateQuery('10.85;106.61')).toEqual([106.61, 10.85]);
+    expect(parseCoordinateQuery('12 3')).toBeNull();
+    expect(parseCoordinateQuery('Nguyễn 10.5')).toBeNull();
+    expect(parseCoordinateQuery('95.1, 200.2')).toBeNull();
   });
 });
