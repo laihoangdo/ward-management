@@ -130,6 +130,35 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
     tips: ['Nút tắt "Nhân khẩu" luôn có sẵn trên thanh tiêu đề trên cùng để chuyển nhanh sang màn hình này từ bất kỳ menu nào.'],
   },
   {
+    id: 'subjects',
+    title: 'Quản lý đối tượng',
+    group: 'Công việc hằng ngày',
+    summary: 'Quản lý đối tượng hệ an ninh, chính trị, hình sự, ma túy, tệ nạn xã hội và đối tượng cần theo dõi, nghi vấn trong địa bàn.',
+    purpose:
+      'Theo dõi thời gian đưa vào quản lý, thời hạn quản lý, tiền án, tiền sự, vi phạm và lịch gọi hỏi răn đe; cảnh báo khi sắp đến hạn.',
+    steps: [
+      {
+        heading: '1. Đưa nhân khẩu vào diện quản lý',
+        detail:
+          'Bấm "Đưa vào diện quản lý", tìm nhân khẩu theo họ tên hoặc số ĐDCN, chọn hệ đối tượng, ngày đưa vào quản lý, thời hạn và chu kỳ gọi hỏi.',
+      },
+      {
+        heading: '2. Lọc theo hệ và theo hạn',
+        detail:
+          'Bấm từng hệ để xem riêng; bấm "Hết / sắp hết hạn quản lý" hoặc "Đến hạn gọi hỏi" để rà soát các đối tượng cần xử lý trước.',
+      },
+      {
+        heading: '3. Ghi tiền án, tiền sự, vi phạm và lần gọi hỏi',
+        detail:
+          'Mở hồ sơ đối tượng, bấm "Ghi gọi hỏi, răn đe" sau mỗi lần làm việc; hạn gọi hỏi tiếp theo được tính lại tự động theo chu kỳ.',
+      },
+    ],
+    tips: [
+      'Thông tin cá nhân và hình ảnh lấy từ hồ sơ nhân khẩu; sửa ở mục Quản lý nhân khẩu.',
+      'Hệ chính trị cần quyền riêng; mỗi lần mở hồ sơ đối tượng đều được ghi nhật ký.',
+    ],
+  },
+  {
     id: 'area-map',
     title: 'Bản đồ số hóa khu vực',
     group: 'Địa bàn và bản đồ',

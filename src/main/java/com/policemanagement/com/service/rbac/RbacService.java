@@ -30,7 +30,10 @@ public class RbacService {
         "canSendReminders",
         "canUpdateInspection",
         "canManageStreets",
-        "canRevealIdentity"
+        "canRevealIdentity",
+        "canViewSubjects",
+        "canManageSubjects",
+        "canViewPoliticalSubjects"
     );
     private static final Set<String> MAP_VIEW_PERMISSIONS = Set.of("canViewAdvancedMap", "canViewField3DMap");
     private static final List<String> OFFICER_PRESET = List.of(
@@ -43,7 +46,15 @@ public class RbacService {
     );
     private static final List<String> HAMLET_MANAGER_PRESET = java.util.stream.Stream.concat(
         OFFICER_PRESET.stream(),
-        java.util.stream.Stream.of("canAddHouseholds", "canSendReminders", "canManageStreets", "canExportReports")
+        // Subjects under management start with the hamlet manager; political subjects stay opt-in below the commune chief.
+        java.util.stream.Stream.of(
+            "canAddHouseholds",
+            "canSendReminders",
+            "canManageStreets",
+            "canExportReports",
+            "canViewSubjects",
+            "canManageSubjects"
+        )
     ).toList();
 
     /**

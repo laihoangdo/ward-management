@@ -10,6 +10,8 @@ import RosterPatrol from './RosterPatrol';
 import HouseholdSplitDialog from './HouseholdSplitDialog';
 import ResidentExportDialog from './ResidentExportDialog';
 import ResidentPhotos from './ResidentPhotos';
+import { activeHamlet, setActiveHamlet } from './hamletScope';
+import ResidentSubjects from '../subjects/ResidentSubjects';
 import { fetchRbacMe } from '../gis/services/rbacApiService';
 import type { AppUser } from '../gis/types';
 
@@ -24,23 +26,8 @@ type Field = {
   showWhen?: (data: Row) => boolean;
 };
 const api = '/api/roster';
-const HAMLET_STORAGE_KEY = 'roster_hamlet_v1';
-// Hamlet chosen in the selector; empty means the server picks the user's default hamlet.
-let activeHamlet = '';
-try {
-  const saved = window.sessionStorage.getItem(HAMLET_STORAGE_KEY);
-  if (saved && /^d+$/.test(saved)) activeHamlet = saved;
-} catch {
-  /* session storage may be unavailable; the server default applies */
-}
-const hamletParam = () => (activeHamlet ? `&hamletId=${encodeURIComponent(activeHamlet)}` : '');
-// Every roster request carries the selected hamlet; the backend re-checks the user's territory scope.
-axios.interceptors?.request.use(config => {
-  if (activeHamlet && typeof config.url === 'string' && config.url.startsWith(api)) {
-    config.params = { ...config.params, hamletId: activeHamlet };
-  }
-  return config;
-});
+// Hamlet chosen in the selector (empty: the server default); shared with the photo and subject screens.
+const hamletParam = () => (activeHamlet() ? `&hamletId=${encodeURIComponent(activeHamlet())}` : '');
 const text = (v: unknown): string =>
   v == null ? '' : typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? `${v}` : JSON.stringify(v);
 const kinds = [
@@ -1105,6 +1092,8 @@ function RosterWorkspace({
       </dl>
 
       <ResidentPhotos residentId={person.id} api={api} />
+
+      <ResidentSubjects person={{ ...person, id: String(person.id), full_name: String(person.full_name) }} currentUser={exportUser} />
 
       <details open className="roster-subcard">
         <summary>Giấy tờ định danh ({person.identities.length})</summary>
@@ -2343,7 +2332,7 @@ type HamletOption = { id: number; name: string; full_name?: string; is_default?:
 
 export default function RosterPage(props: React.ComponentProps<typeof RosterWorkspace>) {
   const [hamlets, setHamlets] = useState<HamletOption[]>([]);
-  const [hamlet, setHamlet] = useState(activeHamlet);
+  const [hamlet, setHamlet] = useState(activeHamlet());
   const [epoch, setEpoch] = useState(0);
   useEffect(() => {
     let cancelled = false;
@@ -2352,9 +2341,9 @@ export default function RosterPage(props: React.ComponentProps<typeof RosterWork
         const list = response?.data;
         if (cancelled || !Array.isArray(list)) return;
         setHamlets(list as HamletOption[]);
-        if (activeHamlet && !list.some(h => String(h.id) === activeHamlet)) {
+        if (activeHamlet() && !list.some(h => String(h.id) === activeHamlet())) {
           // A remembered hamlet the user can no longer open: fall back to the server default and reload.
-          activeHamlet = '';
+          setActiveHamlet('', false);
           setHamlet('');
           setEpoch(n => n + 1);
         }
@@ -2367,12 +2356,7 @@ export default function RosterPage(props: React.ComponentProps<typeof RosterWork
   const selected = hamlets.some(h => String(h.id) === hamlet) ? hamlet : '';
   const effective = selected || String(hamlets.find(h => h.is_default)?.id ?? '');
   const choose = (value: string) => {
-    activeHamlet = value;
-    try {
-      window.sessionStorage.setItem(HAMLET_STORAGE_KEY, value);
-    } catch {
-      /* the selection still applies for this page view */
-    }
+    setActiveHamlet(value);
     setHamlet(value);
   };
   return (

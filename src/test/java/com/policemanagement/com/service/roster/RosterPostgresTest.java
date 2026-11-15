@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.*;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.ObjectMapper;
 
 @EnabledIfEnvironmentVariable(named = "RUN_TC2_DB_TESTS", matches = "true")
@@ -241,6 +242,7 @@ class RosterPostgresTest {
         );
         db.execute("drop schema if exists tc2_roster cascade");
         db.execute("drop schema if exists legacy_mock_20261027 cascade");
+        db.execute("drop table if exists public.subject_summon,public.subject_record,public.subject cascade");
         db.execute("drop table if exists public.resident,public.household,public.gis_building cascade");
         db.execute("alter table public.hamlet add column if not exists full_name text default 'Trung Chánh 2'");
         db.execute(
@@ -289,6 +291,14 @@ class RosterPostgresTest {
             Path.of("src/main/resources/config/liquibase/changelog/20261115000000_resident_profile_attachment.xml")
         );
         db.execute(profile.substring(profile.indexOf("<sql>") + 5, profile.indexOf("</sql>")));
+        String subjects = Files.readString(Path.of("src/main/resources/config/liquibase/changelog/20261115010000_subject_management.xml"));
+        String open = "<sql splitStatements=\"false\">";
+        db.execute(
+            subjects
+                .substring(subjects.indexOf(open) + open.length(), subjects.indexOf("</sql>"))
+                .replace("&gt;", ">")
+                .replace("&lt;", "<")
+        );
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         crypto = new RosterCrypto(temp.resolve("key").toString());
         rbac = mock(RbacService.class);
@@ -464,6 +474,85 @@ class RosterPostgresTest {
         d.put("version", 2);
         d.put("occupation", "x".repeat(201));
         assertThrows(Exception.class, () -> tx.execute(s -> service.updateResident(id, d)));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void subjectsTrackRecordsSummonsDueDatesAndHidePoliticalWithoutPermission() throws Exception {
+        stageAndApply();
+        UUID person = db.queryForObject("select id from tc2_roster.resident", UUID.class);
+        var subjects = new com.policemanagement.com.service.subject.SubjectService(db, service, crypto, rbac);
+        var today = java.time.LocalDate.now();
+        var d = new HashMap<String, Object>();
+        d.put("residentId", person.toString());
+        d.put("category", "HS");
+        d.put("subgroup", "Tù tha về");
+        d.put("managedFrom", today.minusMonths(2).toString());
+        d.put("managedUntil", today.plusDays(10).toString());
+        d.put("summonIntervalMonths", "1");
+        var created = tx.execute(s -> subjects.create(d));
+        UUID id = (UUID) created.get("id");
+        assertEquals("001••••••001", created.get("identity_masked"));
+        assertEquals(true, created.get("management_due"));
+        // Never summoned: first interview was due one month after the start, so it is overdue.
+        assertEquals(true, created.get("summon_overdue"));
+        assertThrows(ResponseStatusException.class, () -> tx.execute(s -> subjects.create(new HashMap<>(d))));
+
+        var record = new HashMap<String, Object>(
+            Map.of("kind", "TIEN_AN", "offense", "Trộm cắp tài sản", "penalty", "24 tháng tù", "occurredOn", "2020-03-01")
+        );
+        var withRecord = tx.execute(s -> subjects.addRecord(id, record));
+        assertEquals(1, ((List<?>) withRecord.get("records")).size());
+
+        var summon = new HashMap<String, Object>(Map.of("summonedOn", today.toString(), "content", "Răn đe không tái phạm"));
+        var summoned = tx.execute(s -> subjects.addSummon(id, summon));
+        assertEquals(false, summoned.get("summon_overdue"));
+        assertEquals(today.plusMonths(1).toString(), summoned.get("next_summon_due").toString());
+
+        var summary = tx.execute(s -> subjects.summary());
+        assertEquals(1L, ((Map<String, Long>) summary.get("byCategory")).get("HS"));
+        assertEquals(1L, summary.get("managementDue"));
+        assertEquals(1L, tx.execute(s -> subjects.list(Map.of("due", "MANAGEMENT"))).get("total"));
+        assertEquals(0L, tx.execute(s -> subjects.list(Map.of("due", "SUMMON"))).get("total"));
+        assertEquals(1L, tx.execute(s -> subjects.list(Map.of("search", "001079000001"))).get("total"));
+
+        // The security category records violations only.
+        var security = new HashMap<>(d);
+        security.put("category", "AN");
+        UUID securityId = (UUID) tx.execute(s -> subjects.create(security)).get("id");
+        assertThrows(ResponseStatusException.class, () ->
+            tx.execute(s -> subjects.addRecord(securityId, new HashMap<>(Map.of("kind", "TIEN_SU", "offense", "x"))))
+        );
+
+        // Political subjects are invisible without canViewPoliticalSubjects.
+        var political = new HashMap<>(d);
+        political.put("category", "CT");
+        UUID politicalId = (UUID) tx.execute(s -> subjects.create(political)).get("id");
+        when(rbac.global()).thenReturn(false);
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canViewPoliticalSubjects");
+        assertEquals(2L, tx.execute(s -> subjects.list(Map.of())).get("total"));
+        assertFalse(((Map<String, Long>) tx.execute(s -> subjects.summary()).get("byCategory")).containsKey("CT"));
+        assertThrows(ResponseStatusException.class, () -> tx.execute(s -> subjects.detail(politicalId)));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
+            tx.execute(s -> subjects.list(Map.of("category", "CT")))
+        );
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canViewSubjects");
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canManageSubjects");
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () -> tx.execute(s -> subjects.list(Map.of())));
+        doNothing().when(rbac).permission("canViewSubjects");
+        doNothing().when(rbac).permission("canManageSubjects");
+        when(rbac.global()).thenReturn(true);
+
+        var end = new HashMap<String, Object>(Map.of("endedOn", today.toString(), "reason", "Hết thời hạn", "version", 0));
+        var ended = tx.execute(s -> subjects.end(id, end));
+        assertEquals("ENDED", ended.get("status"));
+        assertEquals(false, ended.get("management_due"));
+        assertThrows(ResponseStatusException.class, () -> tx.execute(s -> subjects.end(id, end)));
+        // After ending, the same person can be put under the same category again.
+        var again = new HashMap<>(d);
+        assertNotNull(tx.execute(s -> subjects.create(again)).get("id"));
+        verify(rbac, atLeastOnce()).audit(eq("subject-create"), any(), any());
+        verify(rbac, atLeastOnce()).audit(eq("read"), eq("subject:" + id), any());
     }
 
     @Test

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { Camera, Star, Trash2 } from 'lucide-react';
+// Registers the hamlet interceptor when the gallery is used outside the roster (subjects screen).
+import './hamletScope';
 
 /** Metadata of a resident portrait (bytes are fetched separately, never cached by the browser). */
 export type ResidentPhoto = {

@@ -34,6 +34,14 @@ export const DEFAULT_MENUS: DynamicMenuItemConfig[] = [
     visibleRoles: allRoles,
   },
   {
+    id: 'subjects',
+    label: 'Quản lý đối tượng',
+    description: 'Đối tượng theo hệ, hạn quản lý và gọi hỏi',
+    iconName: 'UserSearch',
+    visibleRoles: allRoles,
+    requiredPermission: 'canViewSubjects',
+  },
+  {
     id: 'documents',
     label: 'Quản lý giấy tờ & ANTT',
     description: 'Hồ sơ và thời hạn đã ghi nhận',

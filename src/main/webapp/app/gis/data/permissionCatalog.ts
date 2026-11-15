@@ -2,7 +2,7 @@ import type { SubAdminFeaturePermissions, UserRole } from '../types';
 
 export type PermissionKey = keyof SubAdminFeaturePermissions;
 
-/** Short Vietnamese labels for the 11 business permissions, in the server's catalogue order. */
+/** Short Vietnamese labels for the 14 business permissions, in the server's catalogue order. */
 export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   canViewAdvancedMap: 'Xem bản đồ lưới chuyên sâu',
   canViewField3DMap: 'Xem bản đồ không gian 3D',
@@ -15,6 +15,9 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   canUpdateInspection: 'Ghi nhận kết quả kiểm tra thực địa',
   canManageStreets: 'Phân chia tuyến đường & hẻm',
   canRevealIdentity: 'Xem số CCCD đầy đủ',
+  canViewSubjects: 'Xem đối tượng quản lý',
+  canManageSubjects: 'Cập nhật hồ sơ đối tượng',
+  canViewPoliticalSubjects: 'Xem đối tượng hệ chính trị',
 };
 
 export const PERMISSION_KEYS = Object.keys(PERMISSION_LABELS) as PermissionKey[];

@@ -19,6 +19,9 @@ import {
   Edit3,
   Eye,
   Lock,
+  UserSearch,
+  ClipboardList,
+  ShieldAlert,
 } from 'lucide-react';
 import { AppUser, SubAdminFeaturePermissions } from '../types';
 import { saveDelegation, fetchRbacAreas, fetchDelegationRoads, fetchPermissionGroups } from '../services/authService';
@@ -155,6 +158,9 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       canUpdateInspection: false,
       canManageStreets: false,
       canRevealIdentity: false,
+      canViewSubjects: false,
+      canManageSubjects: false,
+      canViewPoliticalSubjects: false,
     },
   );
 
@@ -193,6 +199,9 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
         canUpdateInspection: false,
         canManageStreets: false,
         canRevealIdentity: false,
+        canViewSubjects: false,
+        canManageSubjects: false,
+        canViewPoliticalSubjects: false,
       },
     );
     setAssignedHamletsInput(officer.assignedHamlets?.join(', ') || '');
@@ -329,6 +338,24 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       title: 'Xem số CCCD đầy đủ (có kiểm soát)',
       desc: 'Cho phép mở số định danh đầy đủ của nhân khẩu; mỗi lần xem đều được ghi nhật ký kiểm tra',
       icon: Eye,
+    },
+    {
+      key: 'canViewSubjects',
+      title: 'Xem danh sách đối tượng quản lý',
+      desc: 'Xem đối tượng hệ an ninh, hình sự, ma túy, TNXH, nghi vấn trong địa bàn; mở hồ sơ đều được ghi nhật ký',
+      icon: UserSearch,
+    },
+    {
+      key: 'canManageSubjects',
+      title: 'Cập nhật hồ sơ đối tượng',
+      desc: 'Đưa vào / kết thúc diện quản lý, ghi tiền án, tiền sự, vi phạm và lịch gọi hỏi răn đe',
+      icon: ClipboardList,
+    },
+    {
+      key: 'canViewPoliticalSubjects',
+      title: 'Xem và cập nhật đối tượng hệ chính trị',
+      desc: 'Quyền riêng cho hệ chính trị; không có quyền này thì đối tượng hệ chính trị bị ẩn hoàn toàn',
+      icon: ShieldAlert,
     },
   ];
 

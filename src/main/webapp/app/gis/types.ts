@@ -6,6 +6,7 @@ export type NavigationTab =
   | 'bando-3d'
   | 'households'
   | 'residents'
+  | 'subjects'
   | 'documents'
   | 'areas'
   | 'logs'
@@ -39,6 +40,9 @@ export interface SubAdminFeaturePermissions {
   canUpdateInspection: boolean; // Được ghi nhận kết quả kiểm tra thực địa
   canManageStreets: boolean; // Được phân tuyến đường hẻm phụ trách
   canRevealIdentity: boolean; // Được xem số CCCD đầy đủ (mỗi lần xem đều ghi nhật ký)
+  canViewSubjects?: boolean; // Được xem đối tượng quản lý (trừ hệ chính trị)
+  canManageSubjects?: boolean; // Được đưa vào / cập nhật / kết thúc diện quản lý đối tượng
+  canViewPoliticalSubjects?: boolean; // Được xem và cập nhật đối tượng hệ chính trị
 }
 
 export interface AppUser {

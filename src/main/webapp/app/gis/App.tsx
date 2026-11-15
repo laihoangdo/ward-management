@@ -20,6 +20,7 @@ import { BaDiem3DMapEditor } from './components/BaDiem3DMapEditor';
 const FieldHouseMap = React.lazy(() => import('./components/FieldHouseMap'));
 const MapLibreAreaMap = React.lazy(() => import('./components/MapLibreAreaMap'));
 const UnifiedRoster = React.lazy(() => import('../roster/RosterPage'));
+const SubjectsTab = React.lazy(() => import('../subjects/SubjectsTab'));
 import { DocumentsTab } from './components/DocumentsTab';
 import { AreasTab } from './components/AreasTab';
 import { LogsTab } from './components/LogsTab';
@@ -1202,6 +1203,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                     currentUser={currentUser}
                     embedded
                   />
+                </Suspense>
+              )}
+
+              {activeTab === 'subjects' && (
+                <Suspense fallback={<p>Đang tải danh sách đối tượng…</p>}>
+                  <SubjectsTab key={`${currentUser.id}:${currentUser.version ?? 0}`} currentUser={currentUser} />
                 </Suspense>
               )}
 
