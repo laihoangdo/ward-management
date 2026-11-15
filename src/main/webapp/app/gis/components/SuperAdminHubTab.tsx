@@ -35,13 +35,13 @@ import {
 } from '../types';
 import {
   fetchRbacAreas,
-  updateDynamicMenusInFirestore,
-  saveAllowedEmailInFirestore,
-  deleteAllowedEmailInFirestore,
-  saveUserInFirestore,
-  deleteUserInFirestore,
-  saveHcmAdminUnitInFirestore,
-  deleteHcmAdminUnitInFirestore,
+  updateDynamicMenusOnServer,
+  saveAllowedEmailOnServer,
+  deleteAllowedEmailOnServer,
+  saveUserOnServer,
+  deleteUserOnServer,
+  saveHcmAdminUnitOnServer,
+  deleteHcmAdminUnitOnServer,
   createSecurityAlert,
   subscribeBlacklistedIps,
   addIpToBlacklist,
@@ -124,7 +124,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   // Dynamic Menus State
   const [menus, setMenus] = useState<DynamicMenuItemConfig[]>(effectiveMenusList);
 
-  // Synchronize when effectiveMenusList changes from parent/Firestore
+  // Synchronize when effectiveMenusList changes from the parent (server settings)
   React.useEffect(() => {
     if (effectiveMenusList && effectiveMenusList.length > 0) {
       setMenus(effectiveMenusList);
@@ -210,7 +210,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   const [resolvingAlertId, setResolvingAlertId] = useState<string | null>(null);
   const [resolveNoteText, setResolveNoteText] = useState('');
 
-  // Subscribe to Blacklist IPs from Firestore
+  // Load blacklisted IPs from the server
   React.useEffect(() => {
     const unsubscribe = subscribeBlacklistedIps(ips => {
       setBlacklistedIps(ips);
@@ -287,7 +287,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     });
     setMenus(updated);
     try {
-      await updateDynamicMenusInFirestore(updated);
+      await updateDynamicMenusOnServer(updated);
       onShowToast(`Đã cập nhật hiển thị menu [${menuId}] cho vai trò ${role}.`);
     } catch (e) {
       console.warn('Update dynamic menus error:', e);
@@ -322,7 +322,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     };
 
     try {
-      await saveAllowedEmailInFirestore(entry);
+      await saveAllowedEmailOnServer(entry);
       setIsAddEmailOpen(false);
       setNewEmailForm({
         email: '',
@@ -343,7 +343,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   const handleDeleteAllowedEmail = async (id: string, email: string) => {
     if (window.confirm(`Bạn có chắc muốn xóa email [${email}] khỏi danh sách cấp phép?`)) {
       try {
-        await deleteAllowedEmailInFirestore(id);
+        await deleteAllowedEmailOnServer(id);
         onShowToast(`Đã xóa email ${email} khỏi Whitelist.`);
       } catch (err: any) {
         alert('Lỗi khi xóa email: ' + err.message);
@@ -385,7 +385,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     };
 
     try {
-      await saveUserInFirestore(newUser);
+      await saveUserOnServer(newUser);
       setIsAddUserOpen(false);
       setNewUserForm({ username: '', fullName: '', role: 'officer', hamletIds: [] });
       onShowToast(`Đã đồng bộ tài khoản ${newUser.username} với Keycloak`);
@@ -402,7 +402,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     const newStatus = user.status === 'active' ? 'locked' : 'active';
     const updated = { ...user, status: newStatus as 'active' | 'locked' };
     try {
-      await saveUserInFirestore(updated);
+      await saveUserOnServer(updated);
       onShowToast(`Đã chuyển trạng thái tài khoản ${user.username} sang [${newStatus}].`);
     } catch (err: any) {
       alert('Lỗi cập nhật: ' + err.message);
@@ -429,7 +429,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
     };
 
     try {
-      await saveHcmAdminUnitInFirestore(newUnit);
+      await saveHcmAdminUnitOnServer(newUnit);
       setIsAddUnitOpen(false);
       onShowToast(
         `Đã lưu đơn vị hành chính [${newUnit.hamlet} - ${newUnit.ward} - ${newUnit.district}] kèm ${streetsArr.length} đường hẻm.`,
@@ -454,7 +454,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
           totalHouseholds: item.totalHouseholds ?? 0,
           updatedAt: new Date().toLocaleDateString('vi-VN'),
         };
-        await saveHcmAdminUnitInFirestore(u);
+        await saveHcmAdminUnitOnServer(u);
       }
       setShowImportModal(false);
       setImportJsonText('');
@@ -474,7 +474,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
         details: `Cảnh báo kiểm thử bảo mật định kỳ do Super Admin phát động. Địa chỉ IP 113.161.72.19 phát hiện thực hiện 5 lần cập nhật trường đặc biệt không hợp lệ trên bảng "appUsers".`,
         sourceIp: '113.161.72.19',
         attemptedEmailOrUser: 'suspicious_scanner_bot',
-        targetResource: '/api/firestore/admin-privileges',
+        targetResource: '/api/rbac/users',
         adminEmailTarget: targetAdminEmail,
       });
 
@@ -829,7 +829,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() => deleteHcmAdminUnitInFirestore(unit.id)}
+                        onClick={() => deleteHcmAdminUnitOnServer(unit.id)}
                         className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-900 transition"
                         title="Xóa đơn vị"
                       >
@@ -1026,7 +1026,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                             type="button"
                             onClick={() => {
                               if (window.confirm('Delete this Keycloak account?'))
-                                void deleteUserInFirestore(u.id).catch(() => onShowToast('Cannot delete account'));
+                                void deleteUserOnServer(u.id).catch(() => onShowToast('Cannot delete account'));
                             }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition"
                             title="Xóa tài khoản"

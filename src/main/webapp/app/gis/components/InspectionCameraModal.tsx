@@ -2,7 +2,7 @@ import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X, RefreshCw, Upload, Check, AlertCircle, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react';
 import { HouseholdFacility, InspectionPhoto } from '../types';
-import { addInspectionPhotoToHousehold } from '../services/firestoreService';
+import { addInspectionPhotoToHousehold } from '../services/householdRecordService';
 import { cameraErrorMessage, isExpectedCameraError, shouldRetryCameraConstraints } from '../utils/cameraErrors';
 
 interface InspectionCameraModalProps {
@@ -149,7 +149,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     const width = video.videoWidth || 1280;
     const height = video.videoHeight || 720;
 
-    // Scale canvas to max 1280 width to keep Firestore doc size optimal
+    // Scale to at most 1200 px on the long side to keep the stored photo small
     const maxDimension = 1200;
     let targetWidth = width;
     let targetHeight = height;
@@ -273,8 +273,8 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
     startCamera(facingMode);
   };
 
-  // Save to Firestore
-  const handleSaveToFirestore = async () => {
+  // Save to the server (private attachment store)
+  const handleSavePhoto = async () => {
     if (!household || !capturedImage) return;
 
     setIsSaving(true);
@@ -547,20 +547,20 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                   </button>
 
                   <button
-                    id="btn-save-photo-firestore"
-                    onClick={handleSaveToFirestore}
+                    id="btn-save-inspection-photo"
+                    onClick={handleSavePhoto}
                     disabled={isSaving}
                     className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Đang lưu vào Firestore...</span>
+                        <span>Đang lưu ảnh…</span>
                       </>
                     ) : (
                       <>
                         <Check className="w-4 h-4" />
-                        <span>Lưu vào Firestore</span>
+                        <span>Lưu ảnh</span>
                       </>
                     )}
                   </button>

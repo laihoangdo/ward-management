@@ -9,7 +9,7 @@ import axios from 'axios';
 
 vi.mock('./InspectionCameraModal', () => ({ InspectionCameraModal: () => null }));
 vi.mock('./OcrScanModal', () => ({ OcrScanModal: () => null }));
-vi.mock('../services/firestoreService', () => ({ deleteInspectionPhotoFromHousehold: vi.fn() }));
+vi.mock('../services/householdRecordService', () => ({ deleteInspectionPhotoFromHousehold: vi.fn() }));
 
 const household = {
   id: '1',

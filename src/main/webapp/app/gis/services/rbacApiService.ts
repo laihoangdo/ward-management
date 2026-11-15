@@ -110,19 +110,19 @@ async function deleteSetting(kind: string, id: string) {
   await axios.delete(`/api/rbac/settings/${kind}/${encodeURIComponent(id)}`);
   changed([kind, ...(['policy', 'whitelist', 'blacklist', 'units'].includes(kind) ? ['me'] : [])]);
 }
-export async function updateDynamicMenusInFirestore(menus: DynamicMenuItemConfig[]) {
+export async function updateDynamicMenusOnServer(menus: DynamicMenuItemConfig[]) {
   await axios.put('/api/rbac/settings/menus', menus);
   changed(['menus']);
 }
-export const saveAllowedEmailInFirestore = (data: AllowedEmailEntry) => saveSetting('whitelist', data);
-export const deleteAllowedEmailInFirestore = (id: string) => deleteSetting('whitelist', id);
-export const saveHcmAdminUnitInFirestore = (data: HcmAdminUnit) => saveSetting('units', data);
-export const deleteHcmAdminUnitInFirestore = (id: string) => deleteSetting('units', id);
-export async function saveUserInFirestore(user: AppUser) {
+export const saveAllowedEmailOnServer = (data: AllowedEmailEntry) => saveSetting('whitelist', data);
+export const deleteAllowedEmailOnServer = (id: string) => deleteSetting('whitelist', id);
+export const saveHcmAdminUnitOnServer = (data: HcmAdminUnit) => saveSetting('units', data);
+export const deleteHcmAdminUnitOnServer = (id: string) => deleteSetting('units', id);
+export async function saveUserOnServer(user: AppUser) {
   await axios.post('/api/rbac/users', user);
   changed(['users']);
 }
-export async function deleteUserInFirestore(id: string) {
+export async function deleteUserOnServer(id: string) {
   await axios.delete(`/api/rbac/users/${encodeURIComponent(id)}`);
   changed(['users']);
 }

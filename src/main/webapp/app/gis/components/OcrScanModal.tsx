@@ -2,9 +2,11 @@ import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, ScanLine, CheckCircle, AlertTriangle, X, RefreshCw, Sparkles, Upload, Check, RotateCcw, Images } from 'lucide-react';
 import { HouseholdFacility, InspectionPhoto, OcrExtractedData, Resident } from '../types';
-import { updateHouseholdDataInFirestore, addInspectionPhotoToHousehold } from '../services/firestoreService';
+import { updateHouseholdRecord, addInspectionPhotoToHousehold } from '../services/householdRecordService';
 import { encryptCccd, maskCccd } from '../utils/cryptoUtils';
 import { scanDocument } from '../services/ocrService';
+import { inspectionPhotoDataUrl } from '../services/inspectionPhotos';
+import { InspectionImage } from './InspectionImage';
 import { cameraErrorMessage, isExpectedCameraError } from '../utils/cameraErrors';
 
 interface OcrScanModalProps {
@@ -161,10 +163,16 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
   };
 
   // Pick existing photo from household gallery
-  const handleSelectExistingPhoto = (photoUrl: string) => {
-    setSelectedImage(photoUrl);
+  // Saved photos come from the permission-checked endpoint; OCR needs the pixels as a data URL.
+  const handleSelectExistingPhoto = async (photoUrl: string) => {
     stopStream();
-    runOcrExtraction(photoUrl);
+    try {
+      const image = await inspectionPhotoDataUrl(photoUrl);
+      setSelectedImage(image);
+      runOcrExtraction(image);
+    } catch {
+      setErrorMessage('Không tải được ảnh đã lưu để quét. Thử lại hoặc chụp ảnh mới.');
+    }
   };
 
   // Recognize locally; closing the modal cancels the worker and discards stale results.
@@ -206,7 +214,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
     startCamera(facingMode);
   };
 
-  // Save to Firestore and update household
+  // Save to the server and update the household
   const handleConfirmAndSave = async () => {
     if (!extractedData) return;
     if (
@@ -274,7 +282,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             `${household.notes || ''}\n[${timestamp}] Quét OCR thêm nhân khẩu: ${newResident.fullName} (CCCD mã hóa AES-256: ${maskCccd(rawCccd)}).`.trim(),
         };
 
-        updatedHousehold = await updateHouseholdDataInFirestore(household.id, partialUpdate, household);
+        updatedHousehold = await updateHouseholdRecord(household.id, partialUpdate, household);
       } else if (applyMode === 'update_owner') {
         // Update Household Owner Info
         const partialUpdate: Partial<HouseholdFacility> = {
@@ -283,7 +291,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             `${household.notes || ''}\n[${timestamp}] Cập nhật chủ hộ qua quét OCR CCCD: ${extractedData.fullName} (CCCD: ${extractedData.idCardNumber || 'N/A'}).`.trim(),
         };
 
-        updatedHousehold = await updateHouseholdDataInFirestore(household.id, partialUpdate, household);
+        updatedHousehold = await updateHouseholdRecord(household.id, partialUpdate, household);
       } else if (applyMode === 'update_business') {
         // Update Business info
         const partialUpdate: Partial<HouseholdFacility> = {
@@ -295,7 +303,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             `${household.notes || ''}\n[${timestamp}] Cập nhật giấy phép kinh doanh qua OCR: ${extractedData.businessName || ''} (MST: ${extractedData.taxCode || 'N/A'}).`.trim(),
         };
 
-        updatedHousehold = await updateHouseholdDataInFirestore(household.id, partialUpdate, household);
+        updatedHousehold = await updateHouseholdRecord(household.id, partialUpdate, household);
       }
 
       // If user selected to also save the document image to inspection photos
@@ -393,7 +401,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
               <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
                 <CheckCircle className="w-8 h-8" />
               </div>
-              <h4 className="text-base font-bold text-slate-900 dark:text-white">Cập nhật thông tin thành công vào Firestore!</h4>
+              <h4 className="text-base font-bold text-slate-900 dark:text-white">Đã cập nhật thông tin vào hồ sơ!</h4>
               <p className="text-xs text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
                 {applyMode === 'add_resident'
                   ? `Đã trích xuất và bổ sung nhân khẩu ${extractedData?.fullName || ''} (CCCD: ${extractedData?.idCardNumber || 'N/A'}) vào danh sách cư trú của hộ ${household.code}.`
@@ -544,11 +552,11 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     {existingPhotos.map(p => (
                       <div
                         key={p.id}
-                        onClick={() => handleSelectExistingPhoto(p.url)}
+                        onClick={() => void handleSelectExistingPhoto(p.url)}
                         className="relative w-20 h-14 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 hover:border-emerald-500 cursor-pointer shrink-0 group transition-colors"
                         title={p.caption || 'Chọn ảnh này để quét OCR'}
                       >
-                        <img src={p.url} alt="Ảnh kiểm tra" className="w-full h-full object-cover" />
+                        <InspectionImage src={p.url} alt="Ảnh kiểm tra" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-slate-900/30 group-hover:bg-emerald-950/40 flex items-center justify-center transition-colors">
                           <ScanLine className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>

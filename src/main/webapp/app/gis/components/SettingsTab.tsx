@@ -5,7 +5,7 @@ import { OfficerProfile } from '../types';
 interface SettingsTabProps {
   officer: OfficerProfile;
   onUpdateOfficer: (updated: Partial<OfficerProfile>) => Promise<void>;
-  isFirestoreConnected?: boolean;
+  isServerConnected?: boolean;
   backendStatus?: 'checking' | 'online' | 'offline';
   theme?: 'light' | 'dark';
   onSetTheme?: (theme: 'light' | 'dark') => void;

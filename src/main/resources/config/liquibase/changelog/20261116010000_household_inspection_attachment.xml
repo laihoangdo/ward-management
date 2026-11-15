@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261116010000-1" author="claude">
+        <comment>Household inspection photos move from base64 text in gis_inspection_photo to the shared attachment store
+            (file on the private attachment folder, metadata row here) under owner kind HOUSEHOLD, owner = household roster id.
+            Existing photos are moved by the application at start-up (InspectionPhotoMigration), keeping their ids; rows it
+            cannot move stay in gis_inspection_photo and are still served from there.</comment>
+        <sql>
+            ALTER TABLE attachment DROP CONSTRAINT attachment_owner_kind_check;
+            ALTER TABLE attachment ADD CONSTRAINT attachment_owner_kind_check CHECK (owner_kind IN ('RESIDENT','FACILITY','GUIDANCE','HOUSEHOLD'));
+        </sql>
+        <rollback>
+            <sql splitStatements="false">DO $$ BEGIN
+                IF EXISTS (SELECT 1 FROM attachment WHERE owner_kind = 'HOUSEHOLD') THEN
+                    RAISE EXCEPTION 'Household inspection photos are stored as attachments; move them back before rolling back';
+                END IF;
+                ALTER TABLE attachment DROP CONSTRAINT attachment_owner_kind_check;
+                ALTER TABLE attachment ADD CONSTRAINT attachment_owner_kind_check CHECK (owner_kind IN ('RESIDENT','FACILITY','GUIDANCE'));
+            END $$;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

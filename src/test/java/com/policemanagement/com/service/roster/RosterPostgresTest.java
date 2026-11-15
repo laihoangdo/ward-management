@@ -227,6 +227,103 @@ class RosterPostgresTest {
     }
 
     @Test
+    void inspectionPhotosAreFilesInTheAttachmentStoreAndOldBase64PhotosMoveKeepingTheirIds() throws Exception {
+        stageAndApply();
+        long house = db.queryForObject("select id from public.household where roster_id is not null order by id limit 1", Long.class);
+        UUID roster = db.queryForObject("select roster_id from public.household where id=?", UUID.class, house);
+        when(rbac.current()).thenReturn(Map.of("fullName", "Cán bộ thử"));
+        var storage = new com.policemanagement.com.service.AttachmentStorage(attachmentProperties());
+        var photos = new com.policemanagement.com.service.gis.InspectionPhotoService(
+            db,
+            rbac,
+            new com.policemanagement.com.service.AttachmentRecords(db, rbac, storage)
+        );
+        String png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=";
+        byte[] bytes = Base64.getDecoder().decode(png.substring(png.indexOf(',') + 1));
+        // A photo saved before the move: base64 text in the old table.
+        db.execute("drop table if exists public.gis_inspection_photo");
+        db.execute(
+            "create table public.gis_inspection_photo(id uuid primary key,household_id bigint not null,image_data text not null," +
+                "caption varchar(2000) not null default '',category varchar(32) not null,captured_at timestamptz not null default now()," +
+                "taken_by varchar(255) not null,actor_subject varchar(255) not null)"
+        );
+        UUID old = UUID.randomUUID();
+        db.update(
+            "insert into public.gis_inspection_photo(id,household_id,image_data,caption,category,captured_at,taken_by,actor_subject)" +
+                " values (?,?,?,?,?,now() - interval '1 day',?,?)",
+            old,
+            house,
+            png,
+            "Ảnh cũ",
+            "facade",
+            "Người chụp cũ",
+            "old-subject"
+        );
+
+        var saved = tx.execute(s ->
+            photos.save(house, new com.policemanagement.com.service.gis.InspectionPhotoService.Upload(png, " Mặt tiền ", "business_sign"))
+        );
+        assertEquals("/api/gis/households/" + house + "/inspection-photos/" + saved.id() + "/content", saved.url());
+        assertEquals("Mặt tiền", saved.caption());
+        assertEquals("Cán bộ thử", saved.takenBy());
+        String key = db.queryForObject(
+            "select storage_key from attachment where id=? and owner_kind='HOUSEHOLD' and owner_id=?",
+            String.class,
+            saved.id(),
+            roster
+        );
+        assertArrayEquals(bytes, storage.read(key));
+        // New and old photos are listed together, newest first, and both are readable.
+        assertEquals(
+            List.of(saved.id(), old),
+            photos
+                .list(house)
+                .stream()
+                .map(p -> p.id())
+                .toList()
+        );
+        assertArrayEquals(bytes, photos.content(house, old).bytes());
+        assertEquals("image/png", photos.content(house, saved.id()).mime());
+
+        var migration = new com.policemanagement.com.service.gis.InspectionPhotoMigration(
+            db,
+            storage,
+            new DataSourceTransactionManager(db.getDataSource())
+        );
+        assertEquals(1, migration.migrate());
+        assertEquals(0L, db.queryForObject("select count(*) from public.gis_inspection_photo", Long.class));
+        var moved = db.queryForMap("select * from attachment where id=?", old);
+        assertEquals("HOUSEHOLD", moved.get("owner_kind"));
+        assertEquals(roster, moved.get("owner_id"));
+        assertEquals("Người chụp cũ", moved.get("created_by"));
+        assertEquals("old-subject", moved.get("created_by_subject"));
+        assertEquals("Ảnh cũ", moved.get("caption"));
+        assertEquals("facade", moved.get("category"));
+        assertArrayEquals(bytes, photos.content(house, old).bytes());
+        assertEquals(
+            List.of(saved.id(), old),
+            photos
+                .list(house)
+                .stream()
+                .map(p -> p.id())
+                .toList()
+        );
+        assertEquals(0, migration.migrate());
+
+        tx.executeWithoutResult(s -> photos.delete(house, old));
+        assertEquals(
+            List.of(saved.id()),
+            photos
+                .list(house)
+                .stream()
+                .map(p -> p.id())
+                .toList()
+        );
+        assertThrows(ResponseStatusException.class, () -> tx.executeWithoutResult(s -> photos.delete(house, old)));
+        db.execute("drop table public.gis_inspection_photo");
+    }
+
+    @Test
     void reviewingAConflictPreservesOriginalIdentityAndLogsDecision() throws Exception {
         UUID collection = (UUID) stage(
             RosterWorkbookTest.row(2, "Người A", "1979", "001079000001") + RosterWorkbookTest.row(3, "Người B", "1980", "001079000001")
@@ -350,6 +447,7 @@ class RosterPostgresTest {
         replay("20261115020000_facility_management.xml");
         replay("20261115030000_resident_tag.xml");
         replay("20261115040000_guidance_document.xml");
+        replay("20261116010000_household_inspection_attachment.xml");
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         crypto = new RosterCrypto(temp.resolve("key").toString());
         rbac = mock(RbacService.class);

@@ -1569,3 +1569,13 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
     padding-inline: 8px;
   }
 }
+
+/* Household inspection photo while it loads from the permission-checked endpoint (InspectionImage). */
+.gis-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-muted, #526170);
+}

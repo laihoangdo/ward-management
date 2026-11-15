@@ -5,12 +5,18 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.policemanagement.com.config.ApplicationProperties;
+import com.policemanagement.com.service.AttachmentRecords;
+import com.policemanagement.com.service.AttachmentStorage;
+import com.policemanagement.com.service.gis.InspectionPhotoService;
 import com.policemanagement.com.service.rbac.RbacService;
 import com.policemanagement.com.web.rest.errors.ExceptionTranslator;
+import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -32,6 +38,10 @@ class InspectionPhotoRestoreHttpTest {
     private MockMvc mvc;
     private long household;
     private final ObjectMapper mapper = new ObjectMapper();
+
+    @TempDir
+    Path attachments;
+
     private static final String PNG =
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNgAAIAAAUAAen63NgAAAAASUVORK5CYII=";
 
@@ -47,7 +57,10 @@ class InspectionPhotoRestoreHttpTest {
         household = db.queryForObject("select min(id) from public.household", Long.class);
         rbac = mock(RbacService.class);
         when(rbac.current()).thenReturn(Map.of("id", "synthetic-photo-test", "fullName", "Synthetic Test Officer"));
-        mvc = MockMvcBuilders.standaloneSetup(new GisInspectionPhotoResource(db, rbac))
+        var properties = new ApplicationProperties();
+        properties.getAttachments().setRoot(attachments.toString());
+        var photos = new InspectionPhotoService(db, rbac, new AttachmentRecords(db, rbac, new AttachmentStorage(properties)));
+        mvc = MockMvcBuilders.standaloneSetup(new GisInspectionPhotoResource(photos))
             .setControllerAdvice(new ExceptionTranslator(new MockEnvironment()))
             .build();
     }
@@ -67,7 +80,7 @@ class InspectionPhotoRestoreHttpTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(mapper.writeValueAsString(Map.of("url", PNG, "caption", " Synthetic fixture ", "category", "general")))
                     )
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.caption").value("Synthetic fixture"))
                     .andExpect(jsonPath("$.takenBy").value("Synthetic Test Officer"))
                     .andReturn()
@@ -77,13 +90,18 @@ class InspectionPhotoRestoreHttpTest {
                 long otherHousehold = db.queryForObject("select min(id) from public.household where id<>?", Long.class, household);
                 mvc.perform(delete("/api/gis/households/" + otherHousehold + "/inspection-photos/" + id)).andExpect(status().isNotFound());
                 mvc.perform(get(path())).andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"));
+                // The image is a file in the attachment store, read back through the permission-checked content endpoint.
                 assertEquals(
                     1L,
-                    db.queryForObject("select count(*) from gis_inspection_photo where id=?::uuid and image_data=?", Long.class, id, PNG)
+                    db.queryForObject("select count(*) from attachment where id=?::uuid and owner_kind='HOUSEHOLD'", Long.class, id)
                 );
+                mvc.perform(get(path() + "/" + id + "/content"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType("image/png"))
+                    .andExpect(header().string("X-Content-Type-Options", "nosniff"));
                 mvc.perform(delete(path() + "/" + id)).andExpect(status().isNoContent());
                 mvc.perform(delete(path() + "/" + id)).andExpect(status().isNotFound());
-                assertEquals(0L, db.queryForObject("select count(*) from gis_inspection_photo where id=?::uuid", Long.class, id));
+                assertEquals(0L, db.queryForObject("select count(*) from attachment where id=?::uuid", Long.class, id));
                 verify(rbac, atLeastOnce()).permission("canUpdateInspection");
                 verify(rbac, atLeastOnce()).household(household);
             } catch (Exception e) {

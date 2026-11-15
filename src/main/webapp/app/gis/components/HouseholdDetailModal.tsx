@@ -29,10 +29,12 @@ import { getHouseholdResidenceType, RESIDENCE_TYPE_CONFIG } from '../utils/resid
 import { getEffectiveResidentsList } from '../utils/residentRosterUtils';
 import { InspectionCameraModal } from './InspectionCameraModal';
 import { OcrScanModal } from './OcrScanModal';
-import { deleteInspectionPhotoFromHousehold } from '../services/firestoreService';
+import { deleteInspectionPhotoFromHousehold } from '../services/householdRecordService';
 import { showsSourceAddress } from '../services/householdApiService';
 import { BADIEM_51_HAMLETS } from '../data/baDiemHamlets';
 import { RosterHouseholdInlineEdit } from './RosterHouseholdInlineEdit';
+import { InspectionImage } from './InspectionImage';
+import { useInspectionImageUrl } from '../services/inspectionPhotos';
 import { errorText } from '../../subjects/subjectModel';
 
 const ALLEY_BADGE_CLASS =
@@ -385,6 +387,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
       setIsDeletingPhotoId(photoId);
       await deleteInspectionPhotoFromHousehold(household.id, photoId, household.inspectionPhotos || []);
       setPhotos(previous => previous.filter(p => p.id !== photoId));
+      setSelectedPhotoForView(current => (current?.id === photoId ? null : current));
       setSavedAlert('Đã xóa ảnh kiểm tra khỏi hồ sơ.');
       setTimeout(() => setSavedAlert(null), 2500);
     } catch (err) {
@@ -396,6 +399,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
   };
 
   const effectiveResidents = useMemo(() => getEffectiveResidentsList(household), [household]);
+  // The open photo is loaded once from the permission-checked endpoint, for both the large view and the download.
+  const viewerImage = useInspectionImageUrl(selectedPhotoForView?.url);
 
   const dialogRef = useDialogFocus(true, () => requestDiscard('close'), isSaving);
   // On the map the record is a side panel (bottom sheet on phones) that leaves the map usable: clicking another building
@@ -999,7 +1004,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                         onClick={() => setSelectedPhotoForView(photo)}
                         className="group relative rounded-lg overflow-hidden border border-slate-200 bg-white aspect-4/3 cursor-pointer"
                       >
-                        <img src={photo.url} alt={photo.caption || 'Ảnh hiện trạng'} className="w-full h-full object-cover" />
+                        <InspectionImage src={photo.url} alt={photo.caption || 'Ảnh hiện trạng'} className="w-full h-full object-cover" />
                         <div className={PHOTO_SCRIM_CLASS}>
                           <div className="flex justify-end">
                             <button
@@ -1160,11 +1165,17 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
 
             {/* Viewer Image Display */}
             <div className="flex-1 bg-black flex items-center justify-center p-2 overflow-hidden min-h-[300px]">
-              <img
-                src={selectedPhotoForView.url}
-                alt={selectedPhotoForView.caption}
-                className="max-w-full max-h-[70vh] object-contain rounded-lg"
-              />
+              {viewerImage.src ? (
+                <img
+                  src={viewerImage.src}
+                  alt={selectedPhotoForView.caption || 'Ảnh kiểm tra hiện trạng'}
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                />
+              ) : (
+                <span role="status" className="text-sm text-slate-400">
+                  {viewerImage.failed ? 'Không tải được ảnh.' : 'Đang tải ảnh…'}
+                </span>
+              )}
             </div>
 
             {/* Viewer Footer */}
@@ -1172,13 +1183,15 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
               <span className="font-mono text-[11px]">
                 Hồ sơ: {household.code} - {household.houseNumber} {household.street}
               </span>
-              <a
-                href={selectedPhotoForView.url}
-                download={`hien_trang_${household.code}_${Date.now()}.jpg`}
-                className="text-blue-400 hover:underline font-semibold"
-              >
-                Tải ảnh gốc về máy
-              </a>
+              {viewerImage.src && (
+                <a
+                  href={viewerImage.src}
+                  download={`hien_trang_${household.code}_${selectedPhotoForView.id}.${viewerImage.src.startsWith('data:image/png') ? 'png' : 'jpg'}`}
+                  className="text-blue-400 hover:underline font-semibold"
+                >
+                  Tải ảnh gốc về máy
+                </a>
+              )}
             </div>
           </div>
         </div>

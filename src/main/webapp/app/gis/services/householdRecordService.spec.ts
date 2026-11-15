@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { checkBackendHealth, updateHouseholdDataInFirestore } from './firestoreService';
+import { checkBackendHealth, updateHouseholdRecord } from './householdRecordService';
 import { updateHouseholdInBackend } from './householdApiService';
 import type { HouseholdFacility } from '../types';
 
@@ -53,12 +53,12 @@ describe('OCR updates', () => {
   } as HouseholdFacility;
   it('preserves existing fields when updating the owner and uses the saved result', async () => {
     vi.mocked(updateHouseholdInBackend).mockResolvedValue({ ...household, ownerName: 'Mới' });
-    const saved = await updateHouseholdDataInFirestore('12', { ownerName: 'Mới' }, household);
+    const saved = await updateHouseholdRecord('12', { ownerName: 'Mới' }, household);
     expect(updateHouseholdInBackend).toHaveBeenCalledWith({ ...household, ownerName: 'Mới' });
     expect(saved.street).toBe('Đường A');
   });
   it('propagates server failure to the review dialog', async () => {
     vi.mocked(updateHouseholdInBackend).mockRejectedValue(new Error('save failed'));
-    await expect(updateHouseholdDataInFirestore('12', { ownerName: 'Mới' }, household)).rejects.toThrow('save failed');
+    await expect(updateHouseholdRecord('12', { ownerName: 'Mới' }, household)).rejects.toThrow('save failed');
   });
 });

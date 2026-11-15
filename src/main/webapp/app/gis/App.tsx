@@ -61,7 +61,7 @@ import {
   SecurityAlert,
 } from './types';
 import { DEFAULT_MENUS as INITIAL_DYNAMIC_MENUS } from './data/defaultMenus';
-import { sendDocReminderInFirestore, checkBackendHealth } from './services/firestoreService';
+import { sendDocumentReminder, checkBackendHealth } from './services/householdRecordService';
 import {
   subscribeUsers,
   subscribeAllowedEmails,
@@ -404,7 +404,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     }, 3500);
   };
 
-  // Initialize Firestore and Backend on app load
+  // Check the backend connection on app load
   useEffect(() => {
     const onRbacError = (event: Event) => showToast((event as CustomEvent<string>).detail);
     window.addEventListener('rbac-error', onRbacError);
@@ -800,7 +800,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
 
   const handleSendReminder = async (docId: string) => {
     try {
-      await sendDocReminderInFirestore(docId);
+      await sendDocumentReminder(docId);
       showToast('Đã lưu yêu cầu nhắc nhở; đang chờ gửi');
     } catch {
       showToast('Không thể lưu yêu cầu nhắc nhở');

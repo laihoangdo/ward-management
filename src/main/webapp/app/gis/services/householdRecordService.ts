@@ -1,4 +1,4 @@
-// Compatibility import path only. Business data is persisted by the server.
+// Household record writes and photo uploads; everything is persisted by the project server (no Firebase/Firestore).
 import axios from 'axios';
 import type { HouseholdFacility, InspectionPhoto } from '../types';
 import { encryptCccd } from '../utils/cryptoUtils';
@@ -21,7 +21,7 @@ export async function deleteInspectionPhotoFromHousehold(
   await deleteInspectionPhoto(householdId, photoId);
 }
 
-export async function updateHouseholdDataInFirestore(
+export async function updateHouseholdRecord(
   householdId: string,
   updates: Partial<HouseholdFacility>,
   currentHousehold: HouseholdFacility,
@@ -41,7 +41,7 @@ export async function updateHouseholdDataInFirestore(
   return { ...currentHousehold, ...fullHousehold, ...saved, residentsList: saved.residentsList ?? currentHousehold.residentsList };
 }
 
-export async function sendDocReminderInFirestore(id: string): Promise<void> {
+export async function sendDocumentReminder(id: string): Promise<void> {
   if (!/^\d+$/.test(id)) throw new Error('Invalid server document ID');
   await axios.post(`/api/rbac/documents/${id}/reminder`);
 }
