@@ -192,19 +192,39 @@ public class SubjectService {
         boolean political = authorizeView();
         int page = parsePage(filter.getOrDefault("page", "0"));
         var where = where(filter, political);
-        String from = " from subject s join tc2_roster.resident r on r.id=s.resident_id where " + where.text();
-        long total = db.queryForObject("select count(*)" + from, Long.class, where.args().toArray());
+        long total = db.queryForObject("select count(*)" + from(where), Long.class, where.args().toArray());
+        var items = rows(where, PAGE_SIZE, (long) page * PAGE_SIZE);
+        return new LinkedHashMap<>(Map.of("items", items, "total", total, "page", page, "pageSize", PAGE_SIZE));
+    }
+
+    /** Most rows a printed or exported list holds. */
+    public static final int EXPORT_LIMIT = 5000;
+
+    /** Every subject matching the filter (up to {@link #EXPORT_LIMIT}), in list order, for the printed list. */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> all(Map<String, String> filter) {
+        boolean political = authorizeView();
+        var where = where(filter, political);
+        var items = rows(where, EXPORT_LIMIT, 0);
+        return items;
+    }
+
+    private static String from(Where where) {
+        return " from subject s join tc2_roster.resident r on r.id=s.resident_id where " + where.text();
+    }
+
+    private List<Map<String, Object>> rows(Where where, int limit, long offset) {
         var args = new ArrayList<>(where.args());
-        args.add((long) page * PAGE_SIZE);
+        args.add(offset);
         var items = db.queryForList(
             "select s.id, s.resident_id, s.category, s.subgroup, s.managed_from, s.managed_until, s.summon_interval_months, s.status," +
-                " s.ended_on, " +
+                " s.ended_on, s.notes, s.suspicious_signs, s.tb136_scope, " +
                 PERSON +
                 ", " +
                 DUE +
-                from +
+                from(where) +
                 " order by s.status, r.full_name, s.id limit " +
-                PAGE_SIZE +
+                limit +
                 " offset ?",
             args.toArray()
         );
@@ -213,7 +233,7 @@ public class SubjectService {
             person(row);
             flags(row, today);
         }
-        return new LinkedHashMap<>(Map.of("items", items, "total", total, "page", page, "pageSize", PAGE_SIZE));
+        return items;
     }
 
     /** Active subjects per category and due counts of the visible categories, for the tab header and the warning bell. */

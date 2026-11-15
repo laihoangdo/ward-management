@@ -688,6 +688,83 @@ class RosterPostgresTest {
     }
 
     @Test
+    void listExportsPrintSubjectsAndGuidanceWithMaskedIdentityAndNeedTheExportPermission() throws Exception {
+        stageAndApply();
+        UUID person = db.queryForObject("select id from tc2_roster.resident", UUID.class);
+        var attachments = new com.policemanagement.com.service.AttachmentRecords(
+            db,
+            rbac,
+            new com.policemanagement.com.service.AttachmentStorage(attachmentProperties())
+        );
+        var subjects = new com.policemanagement.com.service.subject.SubjectService(db, service, crypto, rbac);
+        var facilities = new com.policemanagement.com.service.facility.FacilityService(db, service, crypto, rbac, attachments);
+        var guidance = new com.policemanagement.com.service.guidance.GuidanceDocumentService(db, rbac, attachments);
+        var lists = new com.policemanagement.com.service.export.ListExportService(db, rbac, service, subjects, facilities, guidance);
+        var d = new HashMap<String, Object>();
+        d.put("residentId", person.toString());
+        d.put("category", "MT");
+        d.put("subgroup", "Sau cai nghiện");
+        d.put("managedFrom", "2026-01-15");
+        tx.execute(s -> subjects.create(d));
+        tx.execute(s ->
+            guidance.create(
+                new HashMap<>(
+                    Map.of("docNumber", "9/HD", "issuingAuthority", "Công an Thành phố", "issuedOn", "2026-03-02", "title", "Hướng dẫn A")
+                )
+            )
+        );
+
+        var sheet = tx.execute(s -> lists.sheet("subjects", Map.of("category", "MT"), "print"));
+        assertEquals("DANH SÁCH ĐỐI TƯỢNG HỆ MA TÚY", sheet.title());
+        assertEquals(1, sheet.rows().size());
+        var row = sheet.rows().getFirst();
+        assertEquals("1", row.getFirst());
+        assertTrue(row.contains("001••••••001"));
+        assertTrue(row.contains("15/01/2026"));
+        assertTrue(row.contains("Sau cai nghiện"));
+        assertFalse(String.join("|", row).contains("001079000001"));
+        assertEquals("Tổng số: 1 đối tượng", sheet.totalLine());
+        verify(rbac).audit(eq("list-export"), eq("list:subjects"), any());
+
+        var register = tx.execute(s -> lists.sheet("guidance", Map.of("year", "2026"), "print"));
+        assertEquals(List.of("1", "9/HD", "Công an Thành phố", "02/03/2026", "Hướng dẫn A", "", "", "0", ""), register.rows().getFirst());
+        assertTrue(
+            tx
+                .execute(s -> lists.sheet("facilities", Map.of(), "print"))
+                .rows()
+                .isEmpty()
+        );
+
+        var file = tx.execute(s -> lists.xlsx("subjects", Map.of()));
+        assertTrue(file.name().endsWith(".xlsx"));
+        try (var book = new org.apache.poi.xssf.usermodel.XSSFWorkbook(new java.io.ByteArrayInputStream(file.content()))) {
+            var first = book.getSheetAt(0);
+            assertEquals("DANH SÁCH ĐỐI TƯỢNG QUẢN LÝ", first.getRow(3).getCell(0).getStringCellValue());
+            assertEquals("Họ và tên", first.getRow(8).getCell(1).getStringCellValue());
+            assertEquals("001••••••001", first.getRow(9).getCell(4).getStringCellValue());
+        }
+
+        // Subject and establishment lists need canExportReports; the guidance register only needs a signed-in officer.
+        when(rbac.global()).thenReturn(false);
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canExportReports");
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
+            tx.execute(s -> lists.sheet("subjects", Map.of(), "print"))
+        );
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
+            tx.execute(s -> lists.sheet("facilities", Map.of(), "print"))
+        );
+        assertEquals(
+            1,
+            tx
+                .execute(s -> lists.sheet("guidance", Map.of(), "print"))
+                .rows()
+                .size()
+        );
+        doNothing().when(rbac).permission("canExportReports");
+        when(rbac.global()).thenReturn(true);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void establishmentsTrackConditionalLicenceEmployeesViolationsAndPapers() throws Exception {
         stageAndApply();

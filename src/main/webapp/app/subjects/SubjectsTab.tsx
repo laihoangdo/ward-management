@@ -5,6 +5,7 @@ import './subjects.css';
 import type { AppUser } from '../gis/types';
 import SubjectDetail, { DueBadges } from './SubjectDetail';
 import SubjectForm from './SubjectForm';
+import { ListExportActions } from '../roster/ListExport';
 import {
   CATEGORIES,
   birthText,
@@ -39,6 +40,7 @@ export default function SubjectsTab({ currentUser }: { currentUser: AppUser }) {
   const [loading, setLoading] = useState(false);
   const political = summary?.canViewPolitical ?? access.political;
   const canManage = summary?.canManage ?? access.manage;
+  const canExport = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canExportReports === true;
 
   const loadSummary = useCallback(() => {
     fetchSummary()
@@ -171,6 +173,20 @@ export default function SubjectsTab({ currentUser }: { currentUser: AppUser }) {
                   <option value="ALL">Tất cả</option>
                 </select>
               </label>
+              {canExport && (
+                <div className="roster-actions">
+                  <ListExportActions
+                    base="/api/subjects"
+                    fallbackName="danh-sach-doi-tuong.xlsx"
+                    params={{
+                      status,
+                      ...(category ? { category } : {}),
+                      ...(due ? { due } : {}),
+                      ...(search.trim() ? { search: search.trim() } : {}),
+                    }}
+                  />
+                </div>
+              )}
             </div>
             <div className="roster-table">
               <table>

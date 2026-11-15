@@ -5,6 +5,7 @@ import '../subjects/subjects.css';
 import { useRouteQuery, RECORD_QUERY_KEYS } from '../gis/utils/useRouteQuery';
 import { displayDay, errorText } from '../subjects/subjectModel';
 import FacilityDetail, { LicenseBadges } from './FacilityDetail';
+import { ListExportActions } from '../roster/ListExport';
 import {
   FACILITY_TYPES,
   GROUPS,
@@ -167,6 +168,18 @@ export default function FacilitiesTab() {
                   ))}
                 </select>
               </label>
+              <div className="roster-actions">
+                <ListExportActions
+                  base="/api/facilities"
+                  fallbackName="danh-sach-co-so.xlsx"
+                  params={{
+                    ...(group ? { group } : {}),
+                    ...(type ? { type } : {}),
+                    ...(due ? { due: 'LICENSE' } : {}),
+                    ...(search.trim() ? { search: search.trim() } : {}),
+                  }}
+                />
+              </div>
             </div>
             <div className="roster-table">
               <table>

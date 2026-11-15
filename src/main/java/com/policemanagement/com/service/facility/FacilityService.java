@@ -115,15 +115,31 @@ public class FacilityService {
         var where = where(filter);
         String from = " from tc2_roster.household h where " + where.text();
         long total = db.queryForObject("select count(*)" + from, Long.class, where.args().toArray());
-        var args = new ArrayList<>(where.args());
-        args.add((long) page * PAGE_SIZE);
+        var items = rows(from, where.args(), PAGE_SIZE, (long) page * PAGE_SIZE);
+        return new LinkedHashMap<>(Map.of("items", items, "total", total, "page", page, "pageSize", PAGE_SIZE));
+    }
+
+    /** Most rows a printed or exported list holds. */
+    public static final int EXPORT_LIMIT = 5000;
+
+    /** Every establishment matching the filter (up to {@link #EXPORT_LIMIT}), in list order, for the printed list. */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> all(Map<String, String> filter) {
+        roster.authorize(null);
+        var where = where(filter);
+        return rows(" from tc2_roster.household h where " + where.text(), where.args(), EXPORT_LIMIT, 0);
+    }
+
+    private List<Map<String, Object>> rows(String from, List<Object> whereArgs, int limit, long offset) {
+        var args = new ArrayList<>(whereArgs);
+        args.add(offset);
         var items = db.queryForList(
-            "select " + COLUMNS + from + " order by h.business_name nulls last, h.raw_address, h.id limit " + PAGE_SIZE + " offset ?",
+            "select " + COLUMNS + from + " order by h.business_name nulls last, h.raw_address, h.id limit " + limit + " offset ?",
             args.toArray()
         );
         LocalDate today = LocalDate.now();
         for (var row : items) flags(row, today);
-        return new LinkedHashMap<>(Map.of("items", items, "total", total, "page", page, "pageSize", PAGE_SIZE));
+        return items;
     }
 
     @Transactional(readOnly = true)

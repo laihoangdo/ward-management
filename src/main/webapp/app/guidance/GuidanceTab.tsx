@@ -4,6 +4,7 @@ import { BookOpen } from 'lucide-react';
 import '../roster/roster.css';
 import '../subjects/subjects.css';
 import AttachmentGallery from '../roster/AttachmentGallery';
+import { ListExportActions } from '../roster/ListExport';
 import { EntryDialog, type Field } from '../subjects/SubjectDetail';
 import { displayDay, errorText } from '../subjects/subjectModel';
 
@@ -188,6 +189,17 @@ export default function GuidanceTab() {
                   ))}
                 </select>
               </label>
+              <div className="roster-actions">
+                <ListExportActions
+                  base={API}
+                  fallbackName="so-van-ban-huong-dan.xlsx"
+                  params={{
+                    ...(search.trim() ? { search: search.trim() } : {}),
+                    ...(year ? { year } : {}),
+                    ...(authority ? { authority } : {}),
+                  }}
+                />
+              </div>
             </div>
             <div className="roster-table">
               <table>
