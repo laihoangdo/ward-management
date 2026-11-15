@@ -174,7 +174,7 @@ export default function SubjectsTab({ currentUser }: { currentUser: AppUser }) {
                 </select>
               </label>
               {canExport && (
-                <div className="roster-actions">
+                <div className="roster-actions roster-list-export">
                   <ListExportActions
                     base="/api/subjects"
                     fallbackName="danh-sach-doi-tuong.xlsx"

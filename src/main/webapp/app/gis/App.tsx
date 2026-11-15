@@ -1413,6 +1413,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         onHouseholdUpdated={handleUpdateHouseholdFull}
         onDeleteHousehold={handleDeleteHousehold}
         onShowToast={showToast}
+        onReloadHousehold={async id => {
+          // Roster writes go through /api/roster; re-read the household so the map and lists show the saved values.
+          const fresh = await loadHouseholdDetail(id, new AbortController().signal);
+          setHouseholds(prev => prev.map(h => (h.id === id ? { ...fresh, gridPosition: h.gridPosition } : h)));
+          setSelectedHousehold(prev => (prev?.id === id ? fresh : prev));
+        }}
         onOpenRoster={(household, edit) => {
           if (!canOpenMenu('households')) {
             showToast('Bạn không có quyền mở danh sách hộ.');

@@ -112,6 +112,11 @@ public class RosterResource {
         return service.updateHousehold(id, data);
     }
 
+    @PutMapping("/households/{id}/inspection-notes")
+    public Map<String, Object> updateInspectionNotes(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
+        return service.updateInspectionNotes(id, data);
+    }
+
     @PostMapping("/households/{id}/split")
     public Map<String, Object> splitHousehold(@PathVariable UUID id, @RequestBody Map<String, Object> data) {
         return service.splitHousehold(id, data);

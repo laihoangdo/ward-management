@@ -882,6 +882,10 @@ public class RosterService {
         authorize(null);
         rbac.audit("read", "roster-household:" + id, Map.of());
         var h = get("household", id);
+        // Field-inspection note kept on the household row (not part of the roster view).
+        h.putAll(
+            db.queryForMap("select notes inspection_notes,last_checked_date,officer_in_charge from public.household where roster_id=?", id)
+        );
         h.put(
             "members",
             db.queryForList(
@@ -1261,6 +1265,31 @@ public class RosterService {
                 version(d)
             )
         );
+        return household(id);
+    }
+
+    /**
+     * Field-inspection note written from the map record. It lives on the household row outside the roster view, so the
+     * write is version-checked like other household edits and logged with its text in the RBAC audit.
+     */
+    public Map<String, Object> updateInspectionNotes(UUID id, Map<String, Object> d) {
+        authorize("canUpdateInspection");
+        get("household", id);
+        String notes = s(d, "notes").trim();
+        if (notes.length() > 2000) throw bad("Ghi chú kiểm tra tối đa 2000 ký tự");
+        String officer = String.valueOf(rbac.current().getOrDefault("fullName", rbac.subject()));
+        context(rbac.subject(), "CORRECTION", "Ghi chú kiểm tra thực địa", null, null);
+        changed(
+            db.update(
+                "update public.household set notes=?,last_checked_date=to_char(current_date,'DD/MM/YYYY'),officer_in_charge=?,version=version+1,updated_at=now() where roster_id=? and hamlet_id=? and version=?",
+                notes.isEmpty() ? null : notes,
+                officer,
+                id,
+                hamlet(),
+                version(d)
+            )
+        );
+        rbac.audit("update-inspection-notes", "roster-household:" + id, Map.of("notes", notes));
         return household(id);
     }
 

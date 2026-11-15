@@ -189,7 +189,7 @@ export default function GuidanceTab() {
                   ))}
                 </select>
               </label>
-              <div className="roster-actions">
+              <div className="roster-actions roster-list-export">
                 <ListExportActions
                   base={API}
                   fallbackName="so-van-ban-huong-dan.xlsx"

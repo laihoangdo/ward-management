@@ -307,32 +307,546 @@ html.dark .text-purple-600 { /* taste-skill-ignore */
   }
 }
 
-/* Keep geographical context visible behind the record drawer. */
-.gis-household-drawer {
-  justify-content: flex-end;
-  padding: 0;
-  background: rgb(15 23 42 / 18%);
-  backdrop-filter: none; /* taste-skill-ignore: tắt blur cho drawer */
-}
-.gis-household-drawer > div {
-  margin: 0;
-  height: 100dvh;
-  max-height: 100dvh;
-  max-width: 620px;
-  border-radius: 0;
-}
 .gis-household-dialog :is(input, select, textarea) {
   font-size: 14px;
 }
 .gis-household-dialog button {
   min-height: 40px;
 }
-.gis-household-dialog > div > :first-child {
-  flex-wrap: wrap;
-  gap: 8px;
-}
 .gis-record-sections {
   min-height: 48px;
+}
+
+/* Household record (HouseholdDetailModal). Centred dialog on list screens; on the map a side panel (bottom sheet on
+   phones) that leaves the map clickable, so another building can be picked while the record stays open. */
+.gis-hh-panel {
+  --hh-warn-bg: #fff7e6;
+  --hh-warn-text: #6b4500;
+  --hh-warn-border: #e8c27a;
+  --hh-danger-bg: #fdeeed;
+  --hh-danger-text: #8a1c14;
+  --hh-danger-border: #efb8b3;
+  --hh-ok-bg: #e9f5ee;
+  --hh-ok-text: #1d5c38;
+  --hh-ok-border: #a9d4b9;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--gis-surface, #ffffff);
+  color: var(--gis-text, #172c35);
+  border: 1px solid var(--gis-border, #cbd2d9);
+}
+html.dark .gis-hh-panel {
+  --hh-warn-bg: #33270f;
+  --hh-warn-text: #f3d58f;
+  --hh-warn-border: #6f5521;
+  --hh-danger-bg: #361a1a;
+  --hh-danger-text: #f5b7b1;
+  --hh-danger-border: #74302b;
+  --hh-ok-bg: #14301f;
+  --hh-ok-text: #a7dfbd;
+  --hh-ok-border: #2d5e42;
+}
+.gis-hh-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 10px 16px;
+  border-bottom: 1px solid var(--gis-border, #cbd2d9);
+  flex-shrink: 0;
+}
+.gis-hh-heading {
+  flex: 1;
+  min-width: 0;
+}
+.gis-hh-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin: 0 0 2px;
+  font-size: 12px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-code {
+  font-weight: 600;
+  color: var(--gis-accent-text, #1c4e3a);
+  font-variant-numeric: tabular-nums;
+}
+#__page-root .gis-hh-panel .gis-hh-title {
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--gis-text, #172c35);
+  overflow-wrap: anywhere;
+}
+.gis-hh-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.gis-hh-head-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.gis-hh-panel .gis-hh-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gis-muted, #526170);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.gis-hh-panel .gis-hh-icon-btn:hover:not(:disabled) {
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-text, #172c35);
+}
+.gis-hh-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.gis-hh-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 16px;
+  flex-shrink: 0;
+}
+.gis-hh-panel .gis-hh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 6px;
+  background: var(--gis-surface, #ffffff);
+  color: var(--gis-text, #172c35);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+.gis-hh-panel .gis-hh-btn:hover:not(:disabled) {
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-text, #172c35);
+}
+.gis-hh-panel .gis-hh-btn.is-primary {
+  background: var(--gis-primary, #1c4e3a);
+  border-color: var(--gis-primary, #1c4e3a);
+  color: var(--gis-on-primary, #ffffff);
+}
+.gis-hh-panel .gis-hh-btn.is-primary:hover:not(:disabled) {
+  background: var(--gis-primary-hover, #153c2c);
+  color: var(--gis-on-primary, #ffffff);
+}
+.gis-hh-panel .gis-hh-btn.is-active {
+  background: var(--gis-selected, #e8f1ec);
+  border-color: var(--gis-accent-text, #1c4e3a);
+  color: var(--gis-accent-text, #1c4e3a);
+}
+.gis-hh-panel .gis-hh-btn.is-danger {
+  border-color: var(--hh-danger-border);
+  color: var(--hh-danger-text);
+}
+.gis-hh-panel .gis-hh-btn.is-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--gis-accent-text, #1c4e3a);
+}
+.gis-hh-panel .gis-hh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.gis-hh-note {
+  margin: 0;
+  padding: 0 16px 10px;
+  font-size: 12px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-panel .gis-hh-tabs {
+  display: flex;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 8px;
+  overflow-x: auto;
+  border-top: 1px solid var(--gis-border, #cbd2d9);
+  border-bottom: 1px solid var(--gis-border, #cbd2d9);
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.gis-hh-panel .gis-hh-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--gis-muted, #526170);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.gis-hh-panel .gis-hh-tab:hover {
+  color: var(--gis-text, #172c35);
+  border-bottom-color: var(--gis-border, #cbd2d9);
+}
+.gis-hh-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  font-size: 11px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.gis-hh-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  padding: 14px 16px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 14px;
+}
+.gis-hh-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--gis-border, #cbd2d9);
+  scroll-margin-top: 8px;
+}
+.gis-hh-section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.gis-hh-section:focus {
+  outline: none;
+}
+#__page-root .gis-hh-panel .gis-hh-section-title {
+  color: var(--gis-text, #172c35);
+}
+.gis-hh-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+.gis-hh-subtle {
+  font-size: 12px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+.gis-hh-facts dt {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-facts dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.gis-hh-form {
+  padding: 12px;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 8px;
+  background: var(--gis-surface-soft, #f1f5f3);
+}
+.gis-hh-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 12px;
+}
+.gis-hh-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.gis-hh-field-wide {
+  grid-column: 1 / -1;
+}
+.gis-hh-panel .gis-hh-field label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-panel .gis-hh-field :is(input, select) {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--gis-control-border, #84939c);
+  border-radius: 6px;
+  background: var(--gis-surface, #ffffff);
+  color: var(--gis-text, #172c35);
+}
+.gis-hh-panel .gis-hh-field [aria-invalid='true'] {
+  border-color: var(--hh-danger-text);
+}
+.gis-hh-field-error {
+  font-size: 12px;
+  color: var(--hh-danger-text);
+}
+.gis-hh-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.gis-hh-form > .gis-hh-alert {
+  margin-bottom: 10px;
+}
+.gis-hh-people {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 8px;
+}
+.gis-hh-people li {
+  padding: 8px 12px;
+}
+.gis-hh-people li + li {
+  border-top: 1px solid var(--gis-border, #cbd2d9);
+}
+.gis-hh-person-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.gis-hh-person-meta,
+.gis-hh-person-id {
+  font-size: 12px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-person-id {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gis-hh-panel .gis-hh-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gis-accent-text, #1c4e3a);
+}
+.gis-hh-panel .gis-hh-link-btn:hover:not(:disabled) {
+  background: var(--gis-surface-soft, #f1f5f3);
+}
+.gis-hh-photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.gis-hh-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-notes {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.gis-hh-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.gis-hh-alert.is-warning {
+  background: var(--hh-warn-bg);
+  border-color: var(--hh-warn-border);
+  color: var(--hh-warn-text);
+}
+.gis-hh-alert.is-danger,
+.gis-hh-alert.is-error {
+  background: var(--hh-danger-bg);
+  border-color: var(--hh-danger-border);
+  color: var(--hh-danger-text);
+}
+.gis-hh-alert.is-success {
+  background: var(--hh-ok-bg);
+  border-color: var(--hh-ok-border);
+  color: var(--hh-ok-text);
+  font-weight: 600;
+}
+.gis-hh-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 999px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-accent-text, #1c4e3a);
+  font-size: 11px;
+  font-weight: 600;
+}
+.gis-hh-chip.is-warning {
+  background: var(--hh-warn-bg);
+  border-color: var(--hh-warn-border);
+  color: var(--hh-warn-text);
+}
+.gis-hh-chip.is-danger {
+  background: var(--hh-danger-bg);
+  border-color: var(--hh-danger-border);
+  color: var(--hh-danger-text);
+}
+.gis-hh-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 16px;
+  border-top: 1px solid var(--gis-border, #cbd2d9);
+  flex-shrink: 0;
+}
+
+/* Map panel: desktop 440 px and tablet 380 px on the right, under the app header; the map stays clickable. */
+.gis-household-dialog.gis-household-drawer {
+  top: 56px;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+  background: transparent;
+  pointer-events: none;
+  backdrop-filter: none; /* taste-skill-ignore: tắt blur cho drawer */
+}
+:fullscreen .gis-household-dialog.gis-household-drawer {
+  top: 0;
+}
+.gis-household-drawer > * {
+  pointer-events: auto;
+}
+/* Unsaved edit or saving: the panel is modal again so a click on the map cannot drop the edit. */
+.gis-household-dialog.gis-household-drawer.is-locked {
+  background: rgb(15 23 42 / 18%);
+  pointer-events: auto;
+}
+.gis-household-drawer > .gis-hh-panel {
+  width: min(440px, 100%);
+  max-height: none;
+  margin: 0;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  box-shadow: -6px 0 18px rgb(15 23 42 / 16%);
+}
+.gis-household-drawer.is-collapsed > .gis-hh-panel {
+  align-self: flex-start;
+  margin: 10px;
+  border-width: 1px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgb(15 23 42 / 18%);
+}
+.gis-household-drawer.is-collapsed .gis-hh-head {
+  border-bottom: 0;
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+  .gis-household-drawer > .gis-hh-panel {
+    width: min(380px, 100%);
+  }
+  .gis-hh-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Phone: bottom sheet over the lower part of the screen; collapsing leaves only the title bar. */
+@media (max-width: 767px) {
+  .gis-household-dialog.gis-household-drawer {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .gis-household-drawer > .gis-hh-panel {
+    width: 100%;
+    height: 62dvh;
+    max-height: 62dvh;
+    border-width: 1px 0 0;
+    border-radius: 14px 14px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -6px 18px rgb(15 23 42 / 18%);
+  }
+  .gis-household-drawer.is-collapsed > .gis-hh-panel {
+    align-self: flex-end;
+    height: auto;
+    margin: 0;
+    border-width: 1px 0 0;
+    border-radius: 14px 14px 0 0;
+  }
+  .gis-household-drawer .gis-hh-head {
+    position: relative;
+    padding-top: 16px;
+  }
+  .gis-household-drawer .gis-hh-head::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: var(--gis-border, #cbd2d9);
+  }
+  /* Every action stays visible: two equal columns, labels may wrap. */
+  .gis-hh-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gis-hh-panel .gis-hh-btn {
+    min-height: 44px;
+    white-space: normal;
+    text-align: center;
+  }
 }
 [role='listbox'] [data-active='true'] {
   outline: 2px solid #2563eb; /* taste-skill-ignore: focus ring chức năng */
@@ -979,15 +1493,6 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
   .gis-operational-map {
     height: 52dvh;
     min-height: 260px;
-  }
-  .gis-household-drawer {
-    align-items: flex-end;
-  }
-  .gis-household-drawer > div {
-    height: 85dvh;
-    max-height: 85dvh;
-    max-width: 100%;
-    border-radius: 16px 16px 0 0;
   }
   :is(.gis-household-dialog, .gis-household-create-dialog) {
     overscroll-behavior: contain;

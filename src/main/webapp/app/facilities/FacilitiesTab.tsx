@@ -168,7 +168,7 @@ export default function FacilitiesTab() {
                   ))}
                 </select>
               </label>
-              <div className="roster-actions">
+              <div className="roster-actions roster-list-export">
                 <ListExportActions
                   base="/api/facilities"
                   fallbackName="danh-sach-co-so.xlsx"

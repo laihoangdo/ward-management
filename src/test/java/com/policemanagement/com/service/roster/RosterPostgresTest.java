@@ -181,6 +181,52 @@ class RosterPostgresTest {
     }
 
     @Test
+    void fieldInspectionNotesAreVersionCheckedStoredOnTheHouseholdAndAudited() throws Exception {
+        stageAndApply();
+        var h = new HashMap<String, Object>();
+        h.put("requestId", UUID.randomUUID().toString());
+        h.put("rawAddress", "15 Trưng Vương 3");
+        h.put("reason", "Khảo sát");
+        var created = tx.execute(s -> service.createHousehold(h));
+        UUID id = (UUID) created.get("id");
+        assertNull(created.get("inspection_notes"));
+
+        var notes = new HashMap<String, Object>(Map.of("notes", "  Đã kiểm tra PCCC  ", "version", created.get("version")));
+        var saved = tx.execute(s -> service.updateInspectionNotes(id, notes));
+        assertEquals("Đã kiểm tra PCCC", saved.get("inspection_notes"));
+        assertEquals("test-officer", saved.get("officer_in_charge"));
+        assertTrue(((String) saved.get("last_checked_date")).matches("\\d{2}/\\d{2}/\\d{4}"));
+        assertEquals(((Number) created.get("version")).longValue() + 1, ((Number) saved.get("version")).longValue());
+        assertEquals("Đã kiểm tra PCCC", db.queryForObject("select notes from public.household where roster_id=?", String.class, id));
+        verify(rbac).audit(eq("update-inspection-notes"), eq("roster-household:" + id), eq(Map.of("notes", "Đã kiểm tra PCCC")));
+        assertEquals(
+            "Ghi chú kiểm tra thực địa",
+            db.queryForObject(
+                "select reason from tc2_roster.change_event where entity_id=? and operation='UPDATE' order by id desc limit 1",
+                String.class,
+                id
+            )
+        );
+
+        // The version read before the save is now stale.
+        var stale = tx.execute(s -> {
+            try {
+                service.updateInspectionNotes(id, notes);
+                return null;
+            } catch (org.springframework.web.server.ResponseStatusException e) {
+                return e;
+            }
+        });
+        assertEquals(409, stale.getStatusCode().value());
+        var tooLong = new HashMap<String, Object>(Map.of("notes", "x".repeat(2001), "version", saved.get("version")));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () ->
+            tx.execute(s -> service.updateInspectionNotes(id, tooLong))
+        );
+        var cleared = new HashMap<String, Object>(Map.of("notes", "", "version", saved.get("version")));
+        assertNull(tx.execute(s -> service.updateInspectionNotes(id, cleared)).get("inspection_notes"));
+    }
+
+    @Test
     void reviewingAConflictPreservesOriginalIdentityAndLogsDecision() throws Exception {
         UUID collection = (UUID) stage(
             RosterWorkbookTest.row(2, "Người A", "1979", "001079000001") + RosterWorkbookTest.row(3, "Người B", "1980", "001079000001")
@@ -288,6 +334,10 @@ class RosterPostgresTest {
         );
         String facility = Files.readString(Path.of("src/main/resources/config/liquibase/changelog/20261112000000_household_facility.xml"));
         db.execute(facility.substring(facility.indexOf("<sql>") + 5, facility.indexOf("</sql>")));
+        // The JHipster changelog also creates the field-inspection note columns written from the map record.
+        db.execute(
+            "alter table public.household add column if not exists notes text, add column if not exists last_checked_date varchar(255), add column if not exists officer_in_charge varchar(255)"
+        );
         // The JHipster changelog creates resident.notes in the real schema; the profile migration exposes it with occupation.
         db.execute("alter table public.resident add column if not exists notes text");
         // The JHipster changelog creates document_record; establishments list the papers linked to them.

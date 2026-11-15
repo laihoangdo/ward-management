@@ -398,6 +398,21 @@
   gap: 6px;
   margin-left: auto;
 }
+/* "In danh sách" / "Xuất Excel": icon and label stay on one line; the pair sits side by side at every width. */
+.roster-filter-bar .roster-list-export {
+  margin: 0;
+  gap: 6px;
+}
+.roster-list-export button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.roster-list-export .roster-error {
+  flex-basis: 100%;
+}
 .roster-list-pane .roster-table {
   flex: 1 1 auto;
 }
@@ -788,6 +803,12 @@
   }
   .roster-filter-cta .roster-primary {
     flex: 1 1 auto;
+  }
+  .roster-filter-bar .roster-list-export {
+    grid-column: 1 / -1;
+  }
+  .roster-list-export button {
+    flex: 1 1 0;
   }
   /* Tables become compact cards: identity first, each other field labelled. */
   .roster-list-pane .roster-table table {

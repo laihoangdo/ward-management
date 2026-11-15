@@ -25,10 +25,11 @@ export function setActiveHamlet(value: string, persist = true) {
   }
 }
 
-// Every scoped request carries the selected hamlet; registered once, whichever screen loads first.
+// Every scoped request carries the selected hamlet; registered once, whichever screen loads first. A request that names
+// its own hamlet (the map record of a household in another hamlet) keeps it.
 axios.interceptors?.request.use(config => {
   const url = config.url;
-  if (active && typeof url === 'string' && SCOPED_PREFIXES.some(prefix => url.startsWith(prefix))) {
+  if (active && typeof url === 'string' && SCOPED_PREFIXES.some(prefix => url.startsWith(prefix)) && config.params?.hamletId == null) {
     config.params = { ...config.params, hamletId: active };
   }
   return config;
