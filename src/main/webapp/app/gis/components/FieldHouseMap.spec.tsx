@@ -863,8 +863,11 @@ describe('field map controls', () => {
         : originalGet(url, config),
     );
     await mount([]);
-    const landmarks = mocks.setData.mock.calls.map(([data]) => data.features).filter(features => features[0]?.properties?.rank === 0);
-    expect(landmarks.at(-1)).toEqual([expect.objectContaining({ properties: { label: 'Trụ sở Công an xã', rank: 0 } })]);
+    // Landmark labels are written by an effect after the buildings load; under load that can land after mount returns.
+    await waitFor(() => {
+      const landmarks = mocks.setData.mock.calls.map(([data]) => data.features).filter(features => features[0]?.properties?.rank === 0);
+      expect(landmarks.at(-1)).toEqual([expect.objectContaining({ properties: { label: 'Trụ sở Công an xã', rank: 0 } })]);
+    });
   });
 
   it('previews and saves a new footprint location', async () => {
