@@ -98,7 +98,9 @@ public class ResidentExportService {
         "RELIGIOUS",
         "Tôn giáo, tín ngưỡng",
         "SPECIAL",
-        "Giám sát đặc biệt"
+        "Giám sát đặc biệt",
+        "ENTERPRISE",
+        "Doanh nghiệp"
     );
 
     /** Count of people per hamlet, gender and residence kind, for the summary sheet. */

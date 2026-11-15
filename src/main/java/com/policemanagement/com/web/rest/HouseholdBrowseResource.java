@@ -231,7 +231,7 @@ public class HouseholdBrowseResource {
         String base =
             "with scoped as (select h.*, coalesce(h.hamlet,'') as browse_hamlet, " +
             RESIDENCE +
-            " as browse_residence, case when h.type in ('BUSINESS','BOARDING_HOUSE') then 'business' when h.type='SPECIAL' then 'special_monitoring' else 'household' end as browse_type from household h where " +
+            " as browse_residence, case when h.type in ('BUSINESS','BOARDING_HOUSE','ENTERPRISE') then 'business' when h.type='SPECIAL' then 'special_monitoring' else 'household' end as browse_type from household h where " +
             scope +
             ") ";
         String filter = "1=1";

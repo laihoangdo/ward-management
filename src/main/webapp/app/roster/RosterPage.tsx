@@ -84,6 +84,7 @@ const facilityTypes: string[][] = [
   ['BOARDING_HOUSE', 'Nhà trọ / cơ sở lưu trú'],
   ['RELIGIOUS', 'Cơ sở tôn giáo, tín ngưỡng'],
   ['SPECIAL', 'Hộ cần giám sát đặc biệt'],
+  ['ENTERPRISE', 'Doanh nghiệp'],
 ];
 const licenseTypes: string[][] = [
   ['', 'Chưa có / chưa rõ'],
@@ -92,7 +93,7 @@ const licenseTypes: string[][] = [
   ['FIRE_SAFETY', 'Giấy chứng nhận / thẩm duyệt PCCC'],
   ['OTHER', 'Giấy phép khác'],
 ];
-const isEstablishment = (d: Row) => ['BUSINESS', 'BOARDING_HOUSE', 'RELIGIOUS'].includes(text(d.facilityType));
+const isEstablishment = (d: Row) => ['BUSINESS', 'BOARDING_HOUSE', 'RELIGIOUS', 'ENTERPRISE'].includes(text(d.facilityType));
 const householdFields: Field[] = [
   { key: 'rawAddress', label: 'Địa chỉ nguyên bản', required: true },
   { key: 'representative', label: 'Tên chủ hộ / người đại diện theo nguồn' },
@@ -100,6 +101,13 @@ const householdFields: Field[] = [
   { key: 'facilityType', label: 'Loại hình cơ sở', options: facilityTypes },
   { key: 'businessName', label: 'Tên cơ sở (biển hiệu)', required: true, showWhen: isEstablishment },
   { key: 'businessCategory', label: 'Ngành nghề kinh doanh / hoạt động', showWhen: isEstablishment },
+  {
+    // Boarding houses are always conditional (server rule), so the box is only asked for the other establishments.
+    key: 'conditional',
+    label: 'Ngành nghề kinh doanh có điều kiện về ANTT',
+    type: 'checkbox',
+    showWhen: d => isEstablishment(d) && text(d.facilityType) !== 'BOARDING_HOUSE',
+  },
   { key: 'licenseType', label: 'Loại giấy phép', options: licenseTypes, showWhen: isEstablishment },
   { key: 'licenseNumber', label: 'Số giấy phép', showWhen: d => isEstablishment(d) && Boolean(text(d.licenseType)) },
   {
@@ -780,6 +788,7 @@ function RosterWorkspace({
         licenseType: household.license_type ?? '',
         licenseNumber: household.license_number,
         licenseExpiry: household.license_expiry,
+        conditional: household.is_conditional === true,
         version: household.version,
       },
       async save(r) {

@@ -33,7 +33,8 @@ public class RbacService {
         "canRevealIdentity",
         "canViewSubjects",
         "canManageSubjects",
-        "canViewPoliticalSubjects"
+        "canViewPoliticalSubjects",
+        "canManageFacilities"
     );
     private static final Set<String> MAP_VIEW_PERMISSIONS = Set.of("canViewAdvancedMap", "canViewField3DMap");
     private static final List<String> OFFICER_PRESET = List.of(
@@ -53,7 +54,8 @@ public class RbacService {
             "canManageStreets",
             "canExportReports",
             "canViewSubjects",
-            "canManageSubjects"
+            "canManageSubjects",
+            "canManageFacilities"
         )
     ).toList();
 

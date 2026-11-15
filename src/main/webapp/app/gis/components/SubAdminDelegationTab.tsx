@@ -22,6 +22,7 @@ import {
   UserSearch,
   ClipboardList,
   ShieldAlert,
+  Store,
 } from 'lucide-react';
 import { AppUser, SubAdminFeaturePermissions } from '../types';
 import { saveDelegation, fetchRbacAreas, fetchDelegationRoads, fetchPermissionGroups } from '../services/authService';
@@ -161,6 +162,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       canViewSubjects: false,
       canManageSubjects: false,
       canViewPoliticalSubjects: false,
+      canManageFacilities: false,
     },
   );
 
@@ -202,6 +204,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
         canViewSubjects: false,
         canManageSubjects: false,
         canViewPoliticalSubjects: false,
+        canManageFacilities: false,
       },
     );
     setAssignedHamletsInput(officer.assignedHamlets?.join(', ') || '');
@@ -356,6 +359,12 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
       title: 'Xem và cập nhật đối tượng hệ chính trị',
       desc: 'Quyền riêng cho hệ chính trị; không có quyền này thì đối tượng hệ chính trị bị ẩn hoàn toàn',
       icon: ShieldAlert,
+    },
+    {
+      key: 'canManageFacilities',
+      title: 'Cập nhật hồ sơ cơ sở kinh doanh, doanh nghiệp',
+      desc: 'Ghi nhân viên cơ sở, lịch sử vi phạm, giấy tờ và hình ảnh kèm theo của CSKD có điều kiện và doanh nghiệp',
+      icon: Store,
     },
   ];
 

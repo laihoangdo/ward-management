@@ -7,6 +7,7 @@ export type NavigationTab =
   | 'households'
   | 'residents'
   | 'subjects'
+  | 'facilities'
   | 'documents'
   | 'areas'
   | 'logs'
@@ -43,6 +44,7 @@ export interface SubAdminFeaturePermissions {
   canViewSubjects?: boolean; // Được xem đối tượng quản lý (trừ hệ chính trị)
   canManageSubjects?: boolean; // Được đưa vào / cập nhật / kết thúc diện quản lý đối tượng
   canViewPoliticalSubjects?: boolean; // Được xem và cập nhật đối tượng hệ chính trị
+  canManageFacilities?: boolean; // Được cập nhật nhân viên, vi phạm, giấy tờ và hình ảnh cơ sở kinh doanh
 }
 
 export interface AppUser {

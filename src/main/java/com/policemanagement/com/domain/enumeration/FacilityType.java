@@ -9,4 +9,5 @@ public enum FacilityType {
     BOARDING_HOUSE,
     RELIGIOUS,
     SPECIAL,
+    ENTERPRISE,
 }

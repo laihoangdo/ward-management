@@ -42,6 +42,13 @@ export const DEFAULT_MENUS: DynamicMenuItemConfig[] = [
     requiredPermission: 'canViewSubjects',
   },
   {
+    id: 'facilities',
+    label: 'Cơ sở kinh doanh & DN',
+    description: 'CSKD có điều kiện, cơ sở và doanh nghiệp địa bàn',
+    iconName: 'Store',
+    visibleRoles: allRoles,
+  },
+  {
     id: 'documents',
     label: 'Quản lý giấy tờ & ANTT',
     description: 'Hồ sơ và thời hạn đã ghi nhận',

@@ -160,6 +160,12 @@ public class RosterService {
         return hamlet();
     }
 
+    /** Territory (and optional permission) check for a household of the current hamlet; returns its row. */
+    public Map<String, Object> requireHousehold(UUID id, String permission) {
+        authorize(permission);
+        return get("household", id);
+    }
+
     private Map<String, Object> get(String table, UUID id) {
         if (!Set.of("household", "resident", "residence_record", "household_membership").contains(table)) throw bad("Invalid entity");
         var rows = db.queryForList("select * from tc2_roster." + table + " where id=? and hamlet_id=?", id, hamlet());
@@ -970,15 +976,15 @@ public class RosterService {
     }
 
     /** Same codes as {@code FacilityType}, which the legacy GIS screens already map. */
-    static final List<String> FACILITY_TYPES = List.of("RESIDENTIAL", "BUSINESS", "BOARDING_HOUSE", "RELIGIOUS", "SPECIAL");
+    static final List<String> FACILITY_TYPES = List.of("RESIDENTIAL", "BUSINESS", "BOARDING_HOUSE", "RELIGIOUS", "SPECIAL", "ENTERPRISE");
     /** Facility kinds that carry a business name, trade and licence. */
-    static final Set<String> ESTABLISHMENTS = Set.of("BUSINESS", "BOARDING_HOUSE", "RELIGIOUS");
+    static final Set<String> ESTABLISHMENTS = Set.of("BUSINESS", "BOARDING_HOUSE", "RELIGIOUS", "ENTERPRISE");
     static final List<String> LICENSE_TYPES = List.of("BUSINESS_REGISTRATION", "SECURITY_CONDITION", "FIRE_SAFETY", "OTHER");
 
     /**
-     * Facility type, name, trade and licence as {type, businessName, businessCategory, licenseType, licenseNumber, licenseExpiry}.
-     * A plain household or a monitored household carries no establishment details; a field an older client does not send keeps
-     * its stored value.
+     * Facility type, name, trade and licence as {type, businessName, businessCategory, licenseType, licenseNumber, licenseExpiry,
+     * conditional}. A plain household or a monitored household carries no establishment details; a field an older client does
+     * not send keeps its stored value. Boarding houses are always a conditional business line.
      */
     Object[] facility(Map<String, Object> d, Map<String, Object> old) {
         String type = d.containsKey("facilityType")
@@ -988,7 +994,12 @@ public class RosterService {
               : Objects.toString(old.get("type"), "");
         if (type.isEmpty()) type = "RESIDENTIAL";
         if (!FACILITY_TYPES.contains(type)) throw bad("Loại hình cơ sở không hợp lệ");
-        if (!ESTABLISHMENTS.contains(type)) return new Object[] { type, null, null, null, null, null };
+        if (!ESTABLISHMENTS.contains(type)) return new Object[] { type, null, null, null, null, null, false };
+        boolean conditional =
+            type.equals("BOARDING_HOUSE") ||
+            (d.containsKey("conditional")
+                ? Boolean.parseBoolean(Objects.toString(d.get("conditional"), "false"))
+                : old != null && Boolean.TRUE.equals(old.get("is_conditional")));
         String name = facilityText(d, old, "businessName", "business_name", 255);
         if (name == null) throw bad("Nhập tên cơ sở cho loại hình này");
         String licenseType = facilityText(d, old, "licenseType", "license_type", 100);
@@ -1008,6 +1019,7 @@ public class RosterService {
             licenseType,
             facilityText(d, old, "licenseNumber", "license_number", 100),
             expiry,
+            conditional,
         };
     }
 
@@ -1028,7 +1040,7 @@ public class RosterService {
         double[] p = point(s(d, "rawAddress") + "|" + id);
         Object[] f = facility(d, null);
         db.update(
-            "insert into tc2_roster.household(id,hamlet_id,code,source_case_number,case_scope,representative_name,phone,raw_address,origin,latitude,longitude,coordinate_method,coordinate_seed,boundary_hash,type,business_name,business_category,license_type,license_number,license_expiry) values (?,?,?,?,?,?,?,?,'MANUAL',?,?,'RANDOM_WITHIN_TC2',?,?,?,?,?,?,?,?)",
+            "insert into tc2_roster.household(id,hamlet_id,code,source_case_number,case_scope,representative_name,phone,raw_address,origin,latitude,longitude,coordinate_method,coordinate_seed,boundary_hash,type,business_name,business_category,license_type,license_number,license_expiry,is_conditional) values (?,?,?,?,?,?,?,?,'MANUAL',?,?,'RANDOM_WITHIN_TC2',?,?,?,?,?,?,?,?,?)",
             id,
             hamlet(),
             "TC2-M-" + id.toString().substring(0, 12),
@@ -1046,7 +1058,8 @@ public class RosterService {
             f[2],
             f[3],
             f[4],
-            f[5]
+            f[5],
+            f[6]
         );
         return id;
     }
@@ -1231,7 +1244,7 @@ public class RosterService {
         context(rbac.subject(), "CORRECTION", s(d, "reason"), s(d, "effectiveDate"), null);
         changed(
             db.update(
-                "update tc2_roster.household set representative_name=?,phone=?,raw_address=?,source_case_number=?,verification_status=?,type=?,business_name=?,business_category=?,license_type=?,license_number=?,license_expiry=?,version=version+1,updated_at=now() where id=? and version=?",
+                "update tc2_roster.household set representative_name=?,phone=?,raw_address=?,source_case_number=?,verification_status=?,type=?,business_name=?,business_category=?,license_type=?,license_number=?,license_expiry=?,is_conditional=?,version=version+1,updated_at=now() where id=? and version=?",
                 nullable(d, "representative"),
                 nullable(d, "phone"),
                 s(d, "rawAddress"),
@@ -1243,6 +1256,7 @@ public class RosterService {
                 f[3],
                 f[4],
                 f[5],
+                f[6],
                 id,
                 version(d)
             )

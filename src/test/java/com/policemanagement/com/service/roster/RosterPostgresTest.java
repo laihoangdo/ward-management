@@ -243,6 +243,9 @@ class RosterPostgresTest {
         db.execute("drop schema if exists tc2_roster cascade");
         db.execute("drop schema if exists legacy_mock_20261027 cascade");
         db.execute("drop table if exists public.subject_summon,public.subject_record,public.subject cascade");
+        db.execute(
+            "drop table if exists public.facility_violation,public.facility_employee,public.attachment,public.document_record cascade"
+        );
         db.execute("drop table if exists public.resident,public.household,public.gis_building cascade");
         db.execute("alter table public.hamlet add column if not exists full_name text default 'Trung Chánh 2'");
         db.execute(
@@ -287,18 +290,14 @@ class RosterPostgresTest {
         db.execute(facility.substring(facility.indexOf("<sql>") + 5, facility.indexOf("</sql>")));
         // The JHipster changelog creates resident.notes in the real schema; the profile migration exposes it with occupation.
         db.execute("alter table public.resident add column if not exists notes text");
-        String profile = Files.readString(
-            Path.of("src/main/resources/config/liquibase/changelog/20261115000000_resident_profile_attachment.xml")
-        );
-        db.execute(profile.substring(profile.indexOf("<sql>") + 5, profile.indexOf("</sql>")));
-        String subjects = Files.readString(Path.of("src/main/resources/config/liquibase/changelog/20261115010000_subject_management.xml"));
-        String open = "<sql splitStatements=\"false\">";
+        // The JHipster changelog creates document_record; establishments list the papers linked to them.
         db.execute(
-            subjects
-                .substring(subjects.indexOf(open) + open.length(), subjects.indexOf("</sql>"))
-                .replace("&gt;", ">")
-                .replace("&lt;", "<")
+            "create table public.document_record(id bigint primary key,doc_name text,doc_type text,document_number text," +
+                "issuing_authority text,issued_on date,expiry_on date,status text,household_id bigint references public.household(id))"
         );
+        replay("20261115000000_resident_profile_attachment.xml");
+        replay("20261115010000_subject_management.xml");
+        replay("20261115020000_facility_management.xml");
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         crypto = new RosterCrypto(temp.resolve("key").toString());
         rbac = mock(RbacService.class);
@@ -306,6 +305,19 @@ class RosterPostgresTest {
         when(rbac.global()).thenReturn(true);
         when(rbac.subject()).thenReturn("test-officer");
         service = new RosterService(db, new ObjectMapper(), crypto, rbac);
+    }
+
+    /** Runs every forward SQL block of a changelog in order (rollback blocks skipped), as Liquibase would. */
+    private void replay(String changelog) throws Exception {
+        String xml = Files.readString(Path.of("src/main/resources/config/liquibase/changelog/" + changelog)).replaceAll(
+            "(?s)<rollback>.*?</rollback>",
+            ""
+        );
+        var blocks = java.util.regex.Pattern.compile("(?s)<sql[^>]*>(.*?)</sql>").matcher(xml);
+        while (blocks.find()) {
+            String sql = blocks.group(1).replace("&gt;", ">").replace("&lt;", "<").replace("&amp;", "&");
+            new TransactionTemplate(new DataSourceTransactionManager(db.getDataSource())).executeWithoutResult(s -> db.execute(sql));
+        }
     }
 
     private Path unifySql() {
@@ -553,6 +565,122 @@ class RosterPostgresTest {
         assertNotNull(tx.execute(s -> subjects.create(again)).get("id"));
         verify(rbac, atLeastOnce()).audit(eq("subject-create"), any(), any());
         verify(rbac, atLeastOnce()).audit(eq("read"), eq("subject:" + id), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void establishmentsTrackConditionalLicenceEmployeesViolationsAndPapers() throws Exception {
+        stageAndApply();
+        var facilities = new com.policemanagement.com.service.facility.FacilityService(
+            db,
+            service,
+            crypto,
+            rbac,
+            new com.policemanagement.com.service.AttachmentRecords(
+                db,
+                rbac,
+                new com.policemanagement.com.service.AttachmentStorage(attachmentProperties())
+            )
+        );
+        UUID house = db.queryForObject("select id from tc2_roster.household", UUID.class);
+        var before = db.queryForMap("select version, raw_address from tc2_roster.household where id=?", house);
+        var today = java.time.LocalDate.now();
+        var edit = new HashMap<String, Object>();
+        edit.put("rawAddress", before.get("raw_address"));
+        edit.put("facilityType", "BOARDING_HOUSE");
+        edit.put("businessName", "Nhà trọ Bình An");
+        edit.put("licenseType", "SECURITY_CONDITION");
+        edit.put("licenseNumber", "123/ANTT");
+        edit.put("licenseExpiry", today.plusDays(20).toString());
+        edit.put("conditional", false);
+        edit.put("version", before.get("version"));
+        edit.put("reason", "Đăng ký cơ sở lưu trú");
+        tx.execute(s -> service.updateHousehold(house, edit));
+        // Boarding houses are always conditional, whatever the form sent.
+        assertEquals(true, db.queryForObject("select is_conditional from tc2_roster.household where id=?", Boolean.class, house));
+
+        var summary = tx.execute(s -> facilities.summary());
+        assertEquals(1L, summary.get("conditional"));
+        assertEquals(1L, summary.get("license_due"));
+        var list = tx.execute(s -> facilities.list(Map.of("group", "CONDITIONAL")));
+        var row = ((List<Map<String, Object>>) list.get("items")).getFirst();
+        assertEquals("Nhà trọ Bình An", row.get("business_name"));
+        assertEquals(true, row.get("license_due"));
+        assertEquals(0L, tx.execute(s -> facilities.list(Map.of("group", "OTHER"))).get("total"));
+        assertEquals(1L, tx.execute(s -> facilities.list(Map.of("due", "LICENSE", "search", "123/antt"))).get("total"));
+
+        UUID person = db.queryForObject("select id from tc2_roster.resident", UUID.class);
+        tx.execute(s -> facilities.addEmployee(house, new HashMap<>(Map.of("residentId", person.toString(), "position", "Quản lý"))));
+        var withOutsider = tx.execute(s ->
+            facilities.addEmployee(
+                house,
+                new HashMap<>(
+                    Map.of("fullName", "Lê Văn Ngoài", "identity", "079095000123", "birthYear", "1995", "startedOn", "2026-01-02")
+                )
+            )
+        );
+        var employees = (List<Map<String, Object>>) withOutsider.get("employees");
+        assertEquals(2, employees.size());
+        assertTrue(employees.stream().anyMatch(e -> "Người mẫu".equals(e.get("full_name"))));
+        var outsider = employees
+            .stream()
+            .filter(e -> "Lê Văn Ngoài".equals(e.get("full_name")))
+            .findFirst()
+            .orElseThrow();
+        assertFalse(outsider.toString().contains("079095000123"));
+        assertNotNull(outsider.get("identity_masked"));
+        assertFalse(
+            db
+                .queryForObject("select identity_ciphertext from facility_employee where full_name='Lê Văn Ngoài'", String.class)
+                .contains("079095")
+        );
+        UUID outsiderId = (UUID) outsider.get("id");
+        var ended = tx.execute(s -> facilities.endEmployee(house, outsiderId, new HashMap<>(Map.of("endedOn", today.toString()))));
+        assertEquals(1L, ((Number) ended.get("employee_count")).longValue());
+        assertThrows(ResponseStatusException.class, () ->
+            tx.execute(s -> facilities.endEmployee(house, outsiderId, new HashMap<>(Map.of("endedOn", today.toString()))))
+        );
+
+        var violated = tx.execute(s ->
+            facilities.addViolation(house, new HashMap<>(Map.of("content", "Không trình báo lưu trú", "penalty", "Phạt 2.000.000đ")))
+        );
+        assertEquals(1, ((List<?>) violated.get("violations")).size());
+
+        long legacy = db.queryForObject("select id from public.household where roster_id=?", Long.class, house);
+        db.update(
+            "insert into public.document_record(id,doc_name,doc_type,document_number,household_id,expiry_on) values (1,'GCN ANTT','license_security','45/GCN',?,?)",
+            legacy,
+            java.sql.Date.valueOf(today.plusMonths(6))
+        );
+        byte[] pdf = "%PDF-1.7 test".getBytes();
+        tx.execute(s -> facilities.upload(house, pdf, "Giấy chứng nhận ANTT"));
+        var detail = tx.execute(s -> facilities.detail(house));
+        assertEquals(1, ((List<?>) detail.get("documents")).size());
+        var files = (List<com.policemanagement.com.service.AttachmentRecords.Attachment>) detail.get("attachments");
+        assertEquals("DOCUMENT", files.getFirst().category());
+        assertFalse(files.getFirst().primary());
+        assertArrayEquals(pdf, tx.execute(s -> facilities.attachment(house, files.getFirst().id())).bytes());
+
+        // Writes need canManageFacilities; a plain household is not an establishment.
+        when(rbac.global()).thenReturn(false);
+        doThrow(new org.springframework.security.access.AccessDeniedException("no")).when(rbac).permission("canManageFacilities");
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
+            tx.execute(s -> facilities.addViolation(house, new HashMap<>(Map.of("content", "x"))))
+        );
+        doNothing().when(rbac).permission("canManageFacilities");
+        when(rbac.global()).thenReturn(true);
+        var plain = new HashMap<>(edit);
+        plain.put("facilityType", "RESIDENTIAL");
+        plain.put("version", db.queryForObject("select version from tc2_roster.household where id=?", Long.class, house));
+        tx.execute(s -> service.updateHousehold(house, plain));
+        assertThrows(ResponseStatusException.class, () -> tx.execute(s -> facilities.detail(house)));
+        verify(rbac, atLeastOnce()).audit(eq("read"), eq("facility:" + house), any());
+    }
+
+    private com.policemanagement.com.config.ApplicationProperties attachmentProperties() {
+        var properties = new com.policemanagement.com.config.ApplicationProperties();
+        properties.getAttachments().setRoot(temp.resolve("attachments").toString());
+        return properties;
     }
 
     @Test

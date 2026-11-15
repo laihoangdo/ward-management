@@ -40,7 +40,7 @@ public record ResidentFilter(
     String sort
 ) {
     static final Set<String> KINDS = Set.of("PERMANENT", "TEMPORARY", "NOHT", "ARTICLE19");
-    static final Set<String> FACILITY_TYPES = Set.of("RESIDENTIAL", "BUSINESS", "BOARDING_HOUSE", "RELIGIOUS", "SPECIAL");
+    static final Set<String> FACILITY_TYPES = Set.of("RESIDENTIAL", "BUSINESS", "BOARDING_HOUSE", "RELIGIOUS", "SPECIAL", "ENTERPRISE");
     static final Set<String> SORTS = Set.of("HOUSEHOLD", "NAME", "ADDRESS", "BIRTH");
     private static final Pattern CODE = Pattern.compile("[A-Z_]{1,40}");
 
@@ -400,7 +400,9 @@ public record ResidentFilter(
         "RELIGIOUS",
         "cơ sở tôn giáo, tín ngưỡng",
         "SPECIAL",
-        "hộ cần giám sát đặc biệt"
+        "hộ cần giám sát đặc biệt",
+        "ENTERPRISE",
+        "doanh nghiệp"
     );
     static final Map<String, String> CAMPAIGN_LABELS = Map.ofEntries(
         Map.entry("MILITARY", "nghĩa vụ quân sự (nam 18–27, thường trú)"),

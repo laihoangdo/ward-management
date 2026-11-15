@@ -21,6 +21,7 @@ const FieldHouseMap = React.lazy(() => import('./components/FieldHouseMap'));
 const MapLibreAreaMap = React.lazy(() => import('./components/MapLibreAreaMap'));
 const UnifiedRoster = React.lazy(() => import('../roster/RosterPage'));
 const SubjectsTab = React.lazy(() => import('../subjects/SubjectsTab'));
+const FacilitiesTab = React.lazy(() => import('../facilities/FacilitiesTab'));
 import { DocumentsTab } from './components/DocumentsTab';
 import { AreasTab } from './components/AreasTab';
 import { LogsTab } from './components/LogsTab';
@@ -1209,6 +1210,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               {activeTab === 'subjects' && (
                 <Suspense fallback={<p>Đang tải danh sách đối tượng…</p>}>
                   <SubjectsTab key={`${currentUser.id}:${currentUser.version ?? 0}`} currentUser={currentUser} />
+                </Suspense>
+              )}
+
+              {activeTab === 'facilities' && (
+                <Suspense fallback={<p>Đang tải danh sách cơ sở…</p>}>
+                  <FacilitiesTab key={`${currentUser.id}:${currentUser.version ?? 0}`} />
                 </Suspense>
               )}
 

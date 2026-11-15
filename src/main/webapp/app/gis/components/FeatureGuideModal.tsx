@@ -159,6 +159,34 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
     ],
   },
   {
+    id: 'facilities',
+    title: 'Cơ sở kinh doanh & doanh nghiệp',
+    group: 'Công việc hằng ngày',
+    summary: 'Quản lý cơ sở kinh doanh có điều kiện về ANTT và các cơ sở, doanh nghiệp trên địa bàn.',
+    purpose:
+      'Theo dõi tên cơ sở, chủ cơ sở, nhân viên, giấy tờ và hình ảnh kèm theo, thời hạn giấy phép và lịch sử vi phạm của từng cơ sở.',
+    steps: [
+      {
+        heading: '1. Đăng ký cơ sở',
+        detail:
+          'Ở Danh sách hộ dân, chọn loại hình cơ sở (cơ sở kinh doanh, nhà trọ, doanh nghiệp…), nhập tên, ngành nghề, giấy phép và đánh dấu ngành nghề có điều kiện.',
+      },
+      {
+        heading: '2. Rà soát giấy phép sắp hết hạn',
+        detail: 'Bấm "Giấy phép hết / sắp hết hạn" để xem các cơ sở có giấy phép hết hạn hoặc còn dưới 30 ngày.',
+      },
+      {
+        heading: '3. Cập nhật nhân viên, vi phạm, giấy tờ',
+        detail:
+          'Mở hồ sơ cơ sở để thêm nhân viên (chọn nhân khẩu trong địa bàn hoặc nhập người ngoài), ghi vi phạm và đính kèm ảnh hoặc bản quét PDF giấy tờ.',
+      },
+    ],
+    tips: [
+      'Số ĐDCN của nhân viên ngoài địa bàn được mã hoá và chỉ hiện dạng che.',
+      'Nhà trọ / cơ sở lưu trú luôn thuộc nhóm có điều kiện.',
+    ],
+  },
+  {
     id: 'area-map',
     title: 'Bản đồ số hóa khu vực',
     group: 'Địa bàn và bản đồ',

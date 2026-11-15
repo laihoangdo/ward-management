@@ -2,7 +2,7 @@ import axios from 'axios';
 
 /** Hamlet the officer works on, shared by the roster, resident photos and subjects screens (server re-checks scope). */
 export const HAMLET_STORAGE_KEY = 'roster_hamlet_v1';
-const SCOPED_PREFIXES = ['/api/roster', '/api/subjects'];
+const SCOPED_PREFIXES = ['/api/roster', '/api/subjects', '/api/facilities'];
 
 let active = '';
 try {

@@ -28,7 +28,7 @@ export const mapDtoToHousehold = (dto: IHousehold, index: number = 0): Household
 
   // Chuyển đổi FacilityType
   let type: 'household' | 'business' | 'special_monitoring' = 'household';
-  if (dto.type === 'BUSINESS' || dto.type === 'BOARDING_HOUSE') {
+  if (dto.type === 'BUSINESS' || dto.type === 'BOARDING_HOUSE' || dto.type === 'ENTERPRISE') {
     type = 'business';
   } else if (dto.type === 'SPECIAL') {
     type = 'special_monitoring';
@@ -102,7 +102,7 @@ export const mapHouseholdToDto = (h: Partial<HouseholdFacility>): IHousehold => 
   const numericId = h.id && !isNaN(Number(h.id)) ? Number(h.id) : undefined;
 
   // Mapping type sang FacilityType enum
-  let type: 'RESIDENTIAL' | 'BUSINESS' | 'BOARDING_HOUSE' | 'RELIGIOUS' | 'SPECIAL' = 'RESIDENTIAL';
+  let type: 'RESIDENTIAL' | 'BUSINESS' | 'BOARDING_HOUSE' | 'RELIGIOUS' | 'SPECIAL' | 'ENTERPRISE' = 'RESIDENTIAL';
   if (h.type === 'business') {
     type = 'BUSINESS';
   } else if (h.type === 'special_monitoring') {

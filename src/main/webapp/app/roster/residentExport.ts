@@ -89,6 +89,7 @@ export const facilityOptions: [string, string][] = [
   ['BOARDING_HOUSE', 'Nhà trọ / cơ sở lưu trú'],
   ['RELIGIOUS', 'Cơ sở tôn giáo, tín ngưỡng'],
   ['SPECIAL', 'Hộ cần giám sát đặc biệt'],
+  ['ENTERPRISE', 'Doanh nghiệp'],
 ];
 
 export const sortOptions: [ExportFilter['sort'], string][] = [

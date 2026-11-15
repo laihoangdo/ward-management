@@ -16,10 +16,17 @@ import {
   type Row,
 } from './subjectModel';
 
-type Field = { key: string; label: string; type?: 'date' | 'textarea' | 'select'; required?: boolean; options?: string[][]; max?: number };
+export type Field = {
+  key: string;
+  label: string;
+  type?: 'date' | 'textarea' | 'select';
+  required?: boolean;
+  options?: string[][];
+  max?: number;
+};
 
 /** Small form dialog for a record, an interview or ending the management period. */
-function EntryDialog({
+export function EntryDialog({
   title,
   fields,
   initial,

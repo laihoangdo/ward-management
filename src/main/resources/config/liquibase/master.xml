@@ -51,4 +51,5 @@
     <include file="config/liquibase/changelog/20261112000000_household_facility.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261115000000_resident_profile_attachment.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20261115010000_subject_management.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20261115020000_facility_management.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>
