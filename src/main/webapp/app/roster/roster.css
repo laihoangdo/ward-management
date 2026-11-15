@@ -1187,3 +1187,102 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Resident profile (GĐ1): ID column, profile facts, portrait gallery. */
+.roster-mono {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.roster-page textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--roster-border);
+  border-radius: 6px;
+  background: var(--roster-surface);
+  color: var(--roster-text);
+  font: inherit;
+  resize: vertical;
+}
+.roster-profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px 16px;
+  margin: 10px 0;
+}
+.roster-profile dt {
+  font-size: 12px;
+  color: var(--roster-muted);
+}
+.roster-profile dd {
+  margin: 0;
+  color: var(--roster-text);
+  overflow-wrap: anywhere;
+}
+.roster-profile-wide {
+  grid-column: 1 / -1;
+}
+.roster-profile-wide dd {
+  white-space: pre-wrap;
+}
+.roster-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.roster-photo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  background: var(--roster-surface);
+  border: 1px solid var(--roster-border);
+  border-radius: 6px;
+}
+.roster-photo[data-primary] {
+  border-color: var(--roster-primary);
+}
+.roster-photo img,
+.roster-photo-placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 4px;
+  background: var(--roster-soft);
+}
+.roster-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--roster-muted);
+}
+.roster-photo-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.roster-photo .roster-actions {
+  margin: 0;
+  gap: 4px;
+}
+.roster-photo-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+.roster-photo-upload label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 220px;
+  font-size: 13px;
+}
+.roster-btn-sm svg {
+  vertical-align: -2px;
+}

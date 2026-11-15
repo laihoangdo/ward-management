@@ -201,3 +201,21 @@ Gate scripts require the synthetic fixture created by `generate-secrets.py`. Boo
 
 - Review found that production had **no migration step**: `update-production-app.py` only swapped the image and the `vps` profile disables Liquibase. Releases that add changesets (for example `20261108000000`/`20261108010000`) must go through the updated script, which runs the new `migrate-production-db.sh` after an artifact checksum and Trivy gate, then `verify-production-live.py`, with automatic return to the previous image. The full procedure is in `PRODUCTION-CUTOVER.md` ("Release procedure").
 - Do not run `npm run db:migrate` against production from a workstation: the production database has no published port by design.
+
+## Resident photo attachments — 2026-11-15
+
+- Release GĐ1 adds resident portrait photos. Bytes are **files on the host**, not in PostgreSQL. The `attachment` table only holds metadata: random 32-hex `storage_key`, MIME type, size, SHA-256 and owner. The `vps` profile sets `application.attachments.root=/var/lib/police/attachments` inside the container; the container root stays `read_only`.
+- Host folders: `/var/lib/police-management/attachments/production` and `/var/lib/police-management/attachments/staging`. Each is owned by `1000:1000` (the app user in `App.Dockerfile`) with mode `0700`; the parent folder is `root` `0700`. Files are sharded as `<first 2 hex>/<key>`. Writes go to a `*.part` temp file followed by an atomic rename.
+- Production: `update-production-app.py` creates the folder and adds the bind mount `…/attachments/production:/var/lib/police/attachments` right after the secrets mount, once and idempotently, before the image swap (stage `attachment-folder`). It then validates the compose file with `docker compose config --quiet`. The mount is also kept on automatic rollback. `deploy-production-app.py` is the historic first deploy and is intentionally unchanged.
+- Staging: `app.compose.yml` carries the same mount; `bootstrap-app.sh` and `update-app.sh` create the folder.
+- Backups: `backup-production-local.sh` and `staging/backup-local.sh` add `attachments/<scope>` to the same GPG archive (offsite upload unchanged), **after** the database dump, excluding `*.part` files.
+  - Free space must cover the folder plus 1 GiB.
+  - `metadata.json` gains `attachments` and `attachmentFiles`; it stays `format: 1`, so the existing restore and drill scripts still extract only their known members.
+- Restore of photos (manual, into a new instance only):
+
+  ```bash
+  gpg --decrypt <archive> | tar -xzf - -C <new-root> attachments/production
+  ```
+
+  Then bind-mount `<new-root>/attachments/production` (chown 1000:1000) at `/var/lib/police/attachments`. Never extract over the live folder.
+- Known limit: database dump and file copy are not atomic. A photo **deleted** during the backup run can have its row in the dump but no file in the archive. Uploads during the run are harmless, because their row is not in the dump.

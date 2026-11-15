@@ -13,6 +13,7 @@ public class ApplicationProperties {
 
     private final Liquibase liquibase = new Liquibase();
     private final Roster roster = new Roster();
+    private final Attachments attachments = new Attachments();
 
     // jhipster-needle-application-properties-property
 
@@ -22,6 +23,24 @@ public class ApplicationProperties {
 
     public Roster getRoster() {
         return roster;
+    }
+
+    public Attachments getAttachments() {
+        return attachments;
+    }
+
+    /** Server folder for attachment bytes (portraits, scanned papers); outside the web root and backed up with the database. */
+    public static class Attachments {
+
+        private String root = ".tc2-private/attachments";
+
+        public String getRoot() {
+            return root;
+        }
+
+        public void setRoot(String root) {
+            this.root = root;
+        }
     }
 
     public static class Roster {

@@ -25,9 +25,18 @@ for entry in 'Monolithic:database.dump' 'keycloak:keycloak.dump'; do
     "${compose[@]}" exec -T database bash -ec 'export PGPASSWORD="$(cat /run/secrets/database_owner)"; exec pg_dump -U Monolithic -Fc -d "$1"' -- "$database" > "$work/$file"
 done
 "${compose[@]}" exec -T database bash -ec 'export PGPASSWORD="$(cat /run/secrets/database_owner)"; exec pg_dumpall -U Monolithic --roles-only' > "$work/roles.sql"
-printf '{"scope":"synthetic-staging","format":1,"crossDatabaseAtomic":false,"offsite":false}\n' > "$work/metadata.json"
-# Includes app key, Keycloak/config credentials and image manifests, but NOT the backup passphrase.
-tar -czf - -C "$work" . -C /etc/police-management secrets/staging -C /opt/police-management staging -C /etc nginx letsencrypt \
+# Attachment files are archived AFTER the database dump: the app writes a file before its row and deletes it only after the
+# row is gone, so every row in the dump still has its file unless that photo was deleted during this backup run.
+attachments=/var/lib/police-management/attachments/staging
+install -d -m 0700 /var/lib/police-management/attachments
+install -d -m 0700 -o 1000 -g 1000 "$attachments"
+attachment_files=$(find "$attachments" -type f ! -name '*.part' | wc -l)
+needed=$(( $(du -sk "$attachments" | cut -f 1) + 1048576 ))
+[[ "$available" -ge "$needed" ]] || { printf '%s\n' 'Not enough free space for the attachment folder plus 1 GiB: backup blocked.' >&2; exit 1; }
+printf '{"scope":"synthetic-staging","format":1,"crossDatabaseAtomic":false,"offsite":false,"attachments":"attachments/staging","attachmentFiles":%s}\n' "$attachment_files" > "$work/metadata.json"
+# Includes app key, Keycloak/config credentials, image manifests and attachment files, but NOT the backup passphrase.
+tar --exclude='*.part' -czf - -C "$work" . -C /etc/police-management secrets/staging -C /opt/police-management staging -C /etc nginx letsencrypt \
+    -C /var/lib/police-management attachments/staging \
     | gpg --batch --pinentry-mode loopback --passphrase-file "$key" --symmetric --cipher-algo AES256 --output "$output.partial"
 mv -- "$output.partial" "$output"
 sha256sum "$output" > "$output.sha256"

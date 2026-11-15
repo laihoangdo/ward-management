@@ -25,11 +25,20 @@ dump police-production-candidate-db-20261105 Monolithic > "$work/database.dump"
 dump police-staging-database-1 keycloak > "$work/keycloak.dump"
 docker exec -i police-production-candidate-db-20261105 bash -ec \
     'export PGPASSWORD="$(cat /run/secrets/database_owner)"; exec pg_dumpall -h 127.0.0.1 -U Monolithic --roles-only' > "$work/roles.sql"
-printf '{"scope":"production","format":1,"crossDatabaseAtomic":false,"offsite":false}\n' > "$work/metadata.json"
-# Includes production app/identity secrets and the candidate key, but NOT the backup passphrase.
-tar -czf - -C "$work" . \
+# Attachment files are archived AFTER the database dump: the app writes a file before its row and deletes it only after the
+# row is gone, so every row in the dump still has its file unless that photo was deleted during this backup run.
+attachments=/var/lib/police-management/attachments/production
+install -d -m 0700 /var/lib/police-management/attachments
+install -d -m 0700 -o 1000 -g 1000 "$attachments"
+attachment_files=$(find "$attachments" -type f ! -name '*.part' | wc -l)
+needed=$(( $(du -sk "$attachments" | cut -f 1) + 1048576 ))
+[[ "$available" -ge "$needed" ]] || { printf '%s\n' 'Not enough free space for the attachment folder plus 1 GiB: backup blocked.' >&2; exit 1; }
+printf '{"scope":"production","format":1,"crossDatabaseAtomic":false,"offsite":false,"attachments":"attachments/production","attachmentFiles":%s}\n' "$attachment_files" > "$work/metadata.json"
+# Includes production app/identity secrets, the candidate key and attachment files, but NOT the backup passphrase.
+tar --exclude='*.part' -czf - -C "$work" . \
     -C /etc/police-management secrets/production secrets/production-candidate-20261105 \
     -C /opt/police-management production -C /etc nginx letsencrypt \
+    -C /var/lib/police-management attachments/production \
     | gpg --batch --pinentry-mode loopback --passphrase-file "$key" --symmetric --cipher-algo AES256 --output "$output.partial"
 mv -- "$output.partial" "$output"
 sha256sum "$output" > "$output.sha256"

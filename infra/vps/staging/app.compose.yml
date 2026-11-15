@@ -10,6 +10,8 @@ services:
       LOGGING_LEVEL_COM_POLICEMANAGEMENT_COM: WARN
     volumes:
       - /etc/police-management/secrets/staging/app:/run/secrets/app:ro
+      # Resident photos (application.attachments.root in application-vps.yml); uid 1000, 0700, in backup-local.sh.
+      - /var/lib/police-management/attachments/staging:/var/lib/police/attachments
     ports:
       - '127.0.0.1:18081:8080'
     extra_hosts:

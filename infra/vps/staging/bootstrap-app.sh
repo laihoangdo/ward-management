@@ -19,6 +19,8 @@ printf '%s  release.jar\n' "$actual" > "$destination/release.sha256"
 cd "$destination"
 docker build -f App.Dockerfile -t police-app-staging:20261104-2 .
 compose=(docker compose -f compose.yml -f app.compose.yml)
+install -d -m 0700 /var/lib/police-management/attachments
+install -d -m 0700 -o 1000 -g 1000 /var/lib/police-management/attachments/staging
 "${compose[@]}" config --quiet
 if ! "${compose[@]}" run --rm migrate > /root/police-deployment-checkpoints/staging-app-migration-20261104.log 2>&1; then
     printf '%s\n' 'Staging migration failed. Inspect the root-only migration log privately; application not started.' >&2

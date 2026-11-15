@@ -31,6 +31,10 @@ SCANNER = Path('/opt/police-management/security/trivy')
 SCANS = Path('/var/lib/police-management/scans')
 MARKER = Path('/var/lib/police-management/production-app-20261107.json')
 UPLOAD_MARKER = Path('/var/lib/police-management/last-production-gcs-upload.json')
+ATTACHMENTS = Path('/var/lib/police-management/attachments/production')
+SECRETS_MOUNT = '      - /etc/police-management/secrets/production/app:/run/secrets/app:ro\n'
+ATTACHMENT_MOUNT = '      - ' + str(ATTACHMENTS) + ':/var/lib/police/attachments\n'
+APP_UID = 1000
 TAG_PATTERN = re.compile(r'^police-app-production:[0-9]{8}-[0-9]+$')
 IMAGE_LINE = re.compile(r'    image: (police-app-production:[0-9]{8}-[0-9]+)\n')
 STAGE = 'preflight'
@@ -63,6 +67,26 @@ def pin(image):
     COMPOSE.write_text(IMAGE_LINE.sub('    image: ' + image + '\n', text))
     COMPOSE.chmod(0o600)
     checked(['docker', 'compose', '-f', str(COMPOSE), 'up', '-d', 'app'])
+
+
+def ensure_attachments():
+    """Resident photos live on the host (application.attachments.root=/var/lib/police/attachments in the vps profile).
+
+    Idempotent: creates the folder for the app user only and adds the bind mount next to the secrets mount once.
+    The container root stays read-only; backup-production-local.sh archives this folder."""
+    ATTACHMENTS.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    ATTACHMENTS.mkdir(mode=0o700, exist_ok=True)
+    os.chown(ATTACHMENTS, APP_UID, APP_UID)
+    ATTACHMENTS.chmod(0o700)
+    text = COMPOSE.read_text()
+    if ATTACHMENT_MOUNT in text:
+        return False
+    if text.count(SECRETS_MOUNT) != 1:
+        raise RuntimeError('Expected exactly one production secrets mount line')
+    COMPOSE.write_text(text.replace(SECRETS_MOUNT, SECRETS_MOUNT + ATTACHMENT_MOUNT))
+    COMPOSE.chmod(0o600)
+    checked(['docker', 'compose', '-f', str(COMPOSE), 'config', '--quiet'])
+    return True
 
 
 def require_recent_backup():
@@ -129,6 +153,8 @@ def run():
         STAGE = 'database-migration'
         checked([str(MIGRATE), image])
 
+    STAGE = 'attachment-folder'
+    mount_added = ensure_attachments()
     STAGE = 'swap-image'
     pin(image)
     STAGE = 'health'
@@ -145,11 +171,12 @@ def run():
 
     STAGE = 'update-marker'
     state.update({'image': image, 'previousImage': previous, 'updatedAt': dt.datetime.now(dt.timezone.utc).isoformat(),
-                  'releaseSha256': None if rollback else mode.lower(), 'rollback': rollback})
+                  'releaseSha256': None if rollback else mode.lower(), 'rollback': rollback,
+                  'attachmentsMounted': True})
     MARKER.write_text(json.dumps(state))
     MARKER.chmod(0o600)
     print(json.dumps({'result': 'PRODUCTION_APP_UPDATED', 'image': image, 'previousImage': previous,
-                      'rollback': rollback, 'liveVerified': True}))
+                      'rollback': rollback, 'liveVerified': True, 'attachmentMountAdded': mount_added}))
 
 
 if __name__ == '__main__':

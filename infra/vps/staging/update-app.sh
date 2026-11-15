@@ -35,6 +35,9 @@ docker image rm "$candidate" >/dev/null
 install -m 0644 "$source_dir/app.compose.yml" "$destination/app.compose.yml"
 printf '%s  release.jar\n' "$actual" > "$destination/release.sha256"
 docker compose -f compose.yml -f app.compose.yml config --quiet
+# Attachment folder bind-mounted by app.compose.yml; must exist and be writable by the app user (uid 1000) only.
+install -d -m 0700 /var/lib/police-management/attachments
+install -d -m 0700 -o 1000 -g 1000 /var/lib/police-management/attachments/staging
 if ! "$destination/migrate-existing-staging-db.sh"; then
     cp "$checkpoint/app.compose.yml" "$destination/app.compose.yml"
     cp "$checkpoint/release.jar" "$destination/release.jar"

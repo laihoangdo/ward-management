@@ -39,6 +39,7 @@ public class ResidentExportService {
         new Column("birth", "Ngày sinh", 14),
         new Column("gender", "Giới tính", 8),
         new Column("identity", "Số định danh", 16),
+        new Column("caseNumber", "Số HSCT", 14),
         new Column("kind", "Diện cư trú", 15),
         new Column("sourceStatus", "Tình trạng", 20),
         new Column("registrationDate", "Ngày đăng ký", 14),
@@ -55,6 +56,7 @@ public class ResidentExportService {
         new Column("father", "Họ tên cha", 24),
         new Column("mother", "Họ tên mẹ", 24),
         new Column("classification", "Phân loại", 24),
+        new Column("occupation", "Nghề nghiệp, nơi làm việc", 28),
         new Column("origin", "Nguồn", 12),
         new Column("note", "Ghi chú", 22)
     );
@@ -65,6 +67,7 @@ public class ResidentExportService {
         "birth",
         "gender",
         "identity",
+        "caseNumber",
         "kind",
         "sourceStatus",
         "registrationDate",
@@ -214,14 +217,14 @@ public class ResidentExportService {
     private String rowSql(ResidentFilter filter, ResidentFilter.Sql where, ResidentFilter.Sql record, boolean byHamlet, int limit) {
         return (
             "select r.hamlet_id, hm.name hamlet_name, r.full_name, r.birth_date, r.birth_year, r.birth_date_precision, r.gender," +
-            " r.father_name, r.mother_name, r.origin, rec.record_kind, rec.source_status, rec.registration_date, rec.valid_to," +
+            " r.father_name, r.mother_name, r.origin, r.occupation, r.workplace, r.notes, rec.record_kind, rec.source_status, rec.registration_date, rec.valid_to," +
             " rec.classification_raw, " +
             address("permanentAddress") +
             " permanent_address, " +
             address("temporaryAddress") +
             " temporary_address, " +
             address("currentAddress") +
-            " current_address, m.household_id, m.head_flag, m.relationship_code, h.code household_code, h.raw_address household_address," +
+            " current_address, m.household_id, m.head_flag, m.relationship_code, h.code household_code, h.source_case_number case_number, h.raw_address household_address," +
             " h.type facility_type, coalesce(head.full_name, h.representative_name) head_name," +
             " (select i.number_ciphertext from tc2_roster.resident_identity i where i.resident_id=r.id and i.active" +
             "  order by i.verified desc, i.valid_from desc nulls last limit 1) identity_ciphertext" +
@@ -305,6 +308,7 @@ public class ResidentExportService {
                                   ? "Nữ"
                                   : nz(rs.getString("gender"));
                             case "identity" -> wantsIdentity ? identity(rs.getString("identity_ciphertext"), full) : "";
+                            case "caseNumber" -> nz(rs.getString("case_number"));
                             case "kind" -> KIND.getOrDefault(nz(rs.getString("record_kind")), nz(rs.getString("record_kind")));
                             case "sourceStatus" -> nz(rs.getString("source_status"));
                             case "registrationDate" -> date(rs.getDate("registration_date"));
@@ -327,6 +331,13 @@ public class ResidentExportService {
                             case "father" -> nz(rs.getString("father_name"));
                             case "mother" -> nz(rs.getString("mother_name"));
                             case "classification" -> nz(rs.getString("classification_raw"));
+                            case "occupation" -> String.join(
+                                " · ",
+                                java.util.stream.Stream.of(rs.getString("occupation"), rs.getString("workplace"))
+                                    .filter(v -> v != null && !v.isBlank())
+                                    .toList()
+                            );
+                            case "note" -> nz(rs.getString("notes"));
                             case "origin" -> "EXCEL".equals(rs.getString("origin")) ? "Excel gốc" : "Nhập trực tiếp";
                             default -> "";
                         }

@@ -153,6 +153,13 @@ public class RosterService {
         db.queryForObject("select pg_advisory_xact_lock(27592,28)", Object.class);
     }
 
+    /** Territory (and optional permission) check for a resident of the current hamlet; returns that hamlet. */
+    public long requireResident(UUID id, String permission) {
+        authorize(permission);
+        get("resident", id);
+        return hamlet();
+    }
+
     private Map<String, Object> get(String table, UUID id) {
         if (!Set.of("household", "resident", "residence_record", "household_membership").contains(table)) throw bad("Invalid entity");
         var rows = db.queryForList("select * from tc2_roster." + table + " where id=? and hamlet_id=?", id, hamlet());
@@ -482,7 +489,7 @@ public class RosterService {
         required(d, "fullName");
         UUID id = UUID.randomUUID();
         db.update(
-            "insert into tc2_roster.resident(id,hamlet_id,full_name,birth_date,birth_year,birth_date_precision,gender,father_name,mother_name,origin) values (?,?,?,?::date,?::integer,?,?,?,?,?)",
+            "insert into tc2_roster.resident(id,hamlet_id,full_name,birth_date,birth_year,birth_date_precision,gender,father_name,mother_name,origin,occupation,workplace,notes) values (?,?,?,?::date,?::integer,?,?,?,?,?,?,?,?)",
             id,
             hamlet(),
             s(d, "fullName"),
@@ -492,7 +499,10 @@ public class RosterService {
             nullable(d, "gender"),
             nullable(d, "fatherName"),
             nullable(d, "motherName"),
-            origin
+            origin,
+            nullable(d, "occupation"),
+            nullable(d, "workplace"),
+            nullable(d, "notes")
         );
         String identity = s(d, "identity");
         if (!identity.isEmpty()) db.update(
@@ -709,17 +719,46 @@ public class RosterService {
         long total = db.queryForObject("select count(*)" + from, Long.class, where.args().toArray());
         var params = new ArrayList<>(where.args());
         params.add((long) page * 30);
-        var items = db.queryForList(
-            "select r.*,(select count(*) from tc2_roster.residence_record rr where rr.resident_id=r.id) record_count," +
-                "(select count(*) from tc2_roster.household_membership m where m.resident_id=r.id and m.valid_to is null) household_count" +
-                from +
-                " order by r.full_name,r.id limit 30 offset ?",
-            params.toArray()
-        );
+        var items = db.queryForList(LIST_COLUMNS + from + " order by r.full_name,r.id limit 30 offset ?", params.toArray());
+        listColumns(items);
         var result = new LinkedHashMap<String, Object>(Map.of("items", items, "total", total, "page", page));
         Long unevaluable = unevaluable(filter, hamlets);
         if (unevaluable != null) result.put("unevaluable", unevaluable);
         return result;
+    }
+
+    /**
+     * Columns of the resident list the officer asked for: masked personal ID, residence file number (HSCT) and address of the
+     * current household, and the residence kind of the current record (same choice of household and record as the export).
+     * Correlated subqueries run only for the 30 rows of the page.
+     */
+    private static final String LIST_COLUMNS =
+        "select r.*,(select count(*) from tc2_roster.residence_record rr where rr.resident_id=r.id) record_count," +
+        "(select count(*) from tc2_roster.household_membership m where m.resident_id=r.id and m.valid_to is null) household_count," +
+        "(select i.number_ciphertext from tc2_roster.resident_identity i where i.resident_id=r.id and i.active" +
+        " order by i.verified desc, i.valid_from desc nulls last limit 1) identity_ciphertext," +
+        "(select json_build_object('code',h.source_case_number,'address',h.raw_address)::text from tc2_roster.household_membership m" +
+        " join tc2_roster.household h on h.id=m.household_id where m.resident_id=r.id and m.valid_to is null" +
+        " order by m.is_head desc, m.valid_from desc nulls last, m.id limit 1) current_household," +
+        "(select json_build_object('kind',rr.record_kind,'address',(select a.raw_address from tc2_roster.residence_record_address l" +
+        " join tc2_roster.residence_address a on a.id=l.address_id where l.record_id=rr.id order by case l.address_role" +
+        " when 'currentAddress' then 0 when 'permanentAddress' then 1 else 2 end limit 1))::text" +
+        " from tc2_roster.residence_record rr where rr.resident_id=r.id" +
+        " order by (rr.valid_to is null or rr.valid_to>=current_date) desc, rr.registration_date desc nulls last, rr.id limit 1) current_record";
+
+    /** Replaces the identity ciphertext by its masked form and flattens the household/record summaries. */
+    private void listColumns(List<Map<String, Object>> items) {
+        for (var row : items) {
+            Object cipher = row.remove("identity_ciphertext");
+            row.put("identity_masked", cipher == null ? null : CccdProtection.mask(crypto.decrypt(cipher.toString())));
+            Object houseJson = row.remove("current_household");
+            Object recordJson = row.remove("current_record");
+            Map<String, Object> house = houseJson == null ? Map.of() : decode(houseJson.toString());
+            Map<String, Object> record = recordJson == null ? Map.of() : decode(recordJson.toString());
+            row.put("case_number", house.get("code"));
+            row.put("record_kind", record.get("kind"));
+            row.put("address", house.get("address") != null ? house.get("address") : record.get("address"));
+        }
     }
 
     /**
@@ -1086,7 +1125,13 @@ public class RosterService {
         }
         if (!s(d, "gender").isBlank() && !Set.of("MALE", "FEMALE", "OTHER").contains(s(d, "gender"))) throw bad("Giới tính không hợp lệ");
         if (!s(d, "identity").isBlank() && !s(d, "identity").matches("[0-9]{9,12}")) throw bad("Định danh phải giữ dạng text 9–12 chữ số");
+        if (s(d, "occupation").length() > 200) throw bad("Nghề nghiệp tối đa 200 ký tự");
+        if (s(d, "workplace").length() > 300) throw bad("Nơi làm việc tối đa 300 ký tự");
+        if (s(d, "notes").length() > 2000) throw bad("Lưu ý khác tối đa 2000 ký tự");
     }
+
+    /** Request key and column of the optional resident profile fields. */
+    private static final String[][] PROFILE_FIELDS = { { "occupation", "occupation" }, { "workplace", "workplace" }, { "notes", "notes" } };
 
     public Map<String, Object> addMember(UUID household, Map<String, Object> d) {
         authorize("canAddHouseholds");
@@ -1211,20 +1256,30 @@ public class RosterService {
         required(d, "reason");
         validatePerson(d);
         context(rbac.subject(), "CORRECTION", s(d, "reason"), s(d, "effectiveDate"), null);
-        changed(
-            db.update(
-                "update tc2_roster.resident set full_name=?,birth_date=?::date,birth_year=?::integer,birth_date_precision=?,gender=?,father_name=?,mother_name=?,version=version+1,updated_at=now() where id=? and version=?",
+        var sql = new StringBuilder(
+            "update tc2_roster.resident set full_name=?,birth_date=?::date,birth_year=?::integer,birth_date_precision=?,gender=?,father_name=?,mother_name=?"
+        );
+        var args = new ArrayList<Object>(
+            Arrays.asList(
                 s(d, "fullName"),
                 nullable(d, "birthDate"),
                 nullable(d, "birthYear"),
                 s(d, "birthPrecision"),
                 nullable(d, "gender"),
                 nullable(d, "fatherName"),
-                nullable(d, "motherName"),
-                id,
-                version(d)
+                nullable(d, "motherName")
             )
         );
+        // Profile fields are only written when the form sends them, so an older client cannot blank them by omission.
+        for (String[] field : PROFILE_FIELDS)
+            if (d.containsKey(field[0])) {
+                sql.append(',').append(field[1]).append("=?");
+                args.add(nullable(d, field[0]));
+            }
+        sql.append(",version=version+1,updated_at=now() where id=? and version=?");
+        args.add(id);
+        args.add(version(d));
+        changed(db.update(sql.toString(), args.toArray()));
         return resident(id);
     }
 

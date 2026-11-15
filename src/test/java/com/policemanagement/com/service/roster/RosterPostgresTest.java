@@ -283,6 +283,12 @@ class RosterPostgresTest {
         );
         String facility = Files.readString(Path.of("src/main/resources/config/liquibase/changelog/20261112000000_household_facility.xml"));
         db.execute(facility.substring(facility.indexOf("<sql>") + 5, facility.indexOf("</sql>")));
+        // The JHipster changelog creates resident.notes in the real schema; the profile migration exposes it with occupation.
+        db.execute("alter table public.resident add column if not exists notes text");
+        String profile = Files.readString(
+            Path.of("src/main/resources/config/liquibase/changelog/20261115000000_resident_profile_attachment.xml")
+        );
+        db.execute(profile.substring(profile.indexOf("<sql>") + 5, profile.indexOf("</sql>")));
         tx = new TransactionTemplate(new DataSourceTransactionManager(ds));
         crypto = new RosterCrypto(temp.resolve("key").toString());
         rbac = mock(RbacService.class);
@@ -418,6 +424,46 @@ class RosterPostgresTest {
         var independent = tx.execute(s -> service.createResident(d));
         assertEquals(independent.get("id"), tx.execute(s -> service.createResident(new HashMap<>(d))).get("id"));
         assertEquals(1L, tx.execute(s -> service.residents("", "", "MANUAL", 0)).get("total"));
+    }
+
+    @Test
+    void residentListShowsMaskedIdKindAddressAndProfileFieldsSurviveOmission() throws Exception {
+        stageAndApply();
+        @SuppressWarnings("unchecked")
+        var items = (List<Map<String, Object>>) tx.execute(s -> service.residents("", "", "", 0)).get("items");
+        var row = items.getFirst();
+        assertEquals("001••••••001", row.get("identity_masked"));
+        assertFalse(row.containsKey("identity_ciphertext"));
+        assertEquals("PERMANENT", row.get("record_kind"));
+        assertNotNull(row.get("address"));
+        assertTrue(row.containsKey("case_number"));
+
+        UUID id = (UUID) row.get("id");
+        var d = new HashMap<String, Object>();
+        d.put("fullName", "Người mẫu");
+        d.put("birthPrecision", "YEAR");
+        d.put("birthYear", 1979);
+        d.put("occupation", "Thợ hồ");
+        d.put("workplace", "Công trình ấp 3");
+        d.put("notes", "Hay vắng nhà ban ngày");
+        d.put("version", 0);
+        d.put("reason", "Bổ sung việc làm");
+        tx.execute(s -> service.updateResident(id, d));
+        var saved = tx.execute(s -> service.resident(id));
+        assertEquals("Thợ hồ", saved.get("occupation"));
+        assertEquals("Hay vắng nhà ban ngày", saved.get("notes"));
+
+        // An older client that does not send the profile keys must not blank them.
+        d.remove("occupation");
+        d.remove("workplace");
+        d.remove("notes");
+        d.put("version", 1);
+        tx.execute(s -> service.updateResident(id, d));
+        assertEquals("Thợ hồ", db.queryForObject("select occupation from tc2_roster.resident where id=?", String.class, id));
+
+        d.put("version", 2);
+        d.put("occupation", "x".repeat(201));
+        assertThrows(Exception.class, () -> tx.execute(s -> service.updateResident(id, d)));
     }
 
     @Test

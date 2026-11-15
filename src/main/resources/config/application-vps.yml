@@ -42,6 +42,10 @@ rbac:
 application:
   roster:
     key-file: /run/secrets/app/data.key
+  # Bind-mounted host folder (uid 1000, 0700): /var/lib/police-management/attachments/<production|staging>.
+  # The container root is read-only; included in the encrypted VPS backups.
+  attachments:
+    root: /var/lib/police/attachments
   liquibase:
     async-start: false
 

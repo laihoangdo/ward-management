@@ -9,6 +9,7 @@ import RosterMapPane from './RosterMapPane';
 import RosterPatrol from './RosterPatrol';
 import HouseholdSplitDialog from './HouseholdSplitDialog';
 import ResidentExportDialog from './ResidentExportDialog';
+import ResidentPhotos from './ResidentPhotos';
 import { fetchRbacMe } from '../gis/services/rbacApiService';
 import type { AppUser } from '../gis/types';
 
@@ -84,7 +85,11 @@ const personFields: Field[] = [
   },
   { key: 'fatherName', label: 'Họ tên cha' },
   { key: 'motherName', label: 'Họ tên mẹ' },
+  { key: 'occupation', label: 'Nghề nghiệp / việc làm' },
+  { key: 'workplace', label: 'Nơi làm việc' },
+  { key: 'notes', label: 'Lưu ý khác', type: 'textarea' },
 ];
+const genderLabel = (code: unknown) => (code === 'MALE' ? 'Nam' : code === 'FEMALE' ? 'Nữ' : code === 'OTHER' ? 'Khác' : 'Chưa rõ');
 // Same codes as the server's FacilityType; establishments carry a name, trade and licence.
 const facilityTypes: string[][] = [
   ['RESIDENTIAL', 'Hộ gia đình'],
@@ -288,6 +293,14 @@ function Editor({
                       </select>
                     ) : f.type === 'checkbox' ? (
                       <input type="checkbox" checked={Boolean(data[f.key])} onChange={e => change(f.key, e.target.checked)} />
+                    ) : f.type === 'textarea' ? (
+                      <textarea
+                        readOnly={readOnly}
+                        rows={3}
+                        value={text(data[f.key])}
+                        maxLength={2000}
+                        onChange={e => change(f.key, e.target.value)}
+                      />
                     ) : (
                       <input
                         required={f.required}
@@ -1035,6 +1048,9 @@ function RosterWorkspace({
                   gender: person.gender,
                   fatherName: person.father_name,
                   motherName: person.mother_name,
+                  occupation: person.occupation,
+                  workplace: person.workplace,
+                  notes: person.notes,
                   version: person.version,
                 },
                 async save(r) {
@@ -1060,6 +1076,35 @@ function RosterWorkspace({
           <button onClick={() => run(() => showHistory('resident', person.id, 0))}>Lịch sử cá nhân</button>
         </div>
       </div>
+
+      <dl className="roster-profile">
+        <div>
+          <dt>Giới tính</dt>
+          <dd>{genderLabel(person.gender)}</dd>
+        </div>
+        <div>
+          <dt>Họ tên cha</dt>
+          <dd>{person.father_name || 'Chưa có'}</dd>
+        </div>
+        <div>
+          <dt>Họ tên mẹ</dt>
+          <dd>{person.mother_name || 'Chưa có'}</dd>
+        </div>
+        <div>
+          <dt>Nghề nghiệp / việc làm</dt>
+          <dd>{person.occupation || 'Chưa có'}</dd>
+        </div>
+        <div>
+          <dt>Nơi làm việc</dt>
+          <dd>{person.workplace || 'Chưa có'}</dd>
+        </div>
+        <div className="roster-profile-wide">
+          <dt>Lưu ý khác</dt>
+          <dd>{person.notes || 'Chưa có'}</dd>
+        </div>
+      </dl>
+
+      <ResidentPhotos residentId={person.id} api={api} />
 
       <details open className="roster-subcard">
         <summary>Giấy tờ định danh ({person.identities.length})</summary>
@@ -1708,21 +1753,28 @@ function RosterWorkspace({
                   <table>
                     <thead>
                       <tr>
-                        <th>Họ tên</th>
-                        <th>Ngày / năm sinh</th>
-                        <th className="roster-num">Hộ hiện hành</th>
-                        <th className="roster-num">Hồ sơ cư trú</th>
+                        <th className="roster-num">STT</th>
+                        <th>Họ và tên</th>
+                        <th>Ngày sinh</th>
+                        <th>Số ĐDCN</th>
+                        <th>Số HSCT</th>
+                        <th>Giới tính</th>
+                        <th>Diện NK</th>
+                        <th>Địa chỉ</th>
                         <th>Nguồn</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map(r => (
+                      {items.map((r, index) => (
                         <tr
                           key={r.id}
                           className="roster-table-row"
                           data-selected={detailOpen && person?.id === r.id}
                           onClick={() => run(() => loadPerson(r.id))}
                         >
+                          <td data-label="STT" className="roster-num">
+                            {page * 30 + index + 1}
+                          </td>
                           <td className="roster-cell-identity">
                             <button
                               className="roster-row-link"
@@ -1734,15 +1786,18 @@ function RosterWorkspace({
                               {r.full_name}
                             </button>
                           </td>
-                          <td data-label="Ngày / năm sinh">
+                          <td data-label="Ngày sinh">
                             {displayDate(r.birth_date) || r.birth_year || 'Chưa rõ'}
                             {r.birth_date_precision === 'YEAR' && ' (chỉ biết năm)'}
                           </td>
-                          <td data-label="Hộ hiện hành" className="roster-num">
-                            {r.household_count}
+                          <td data-label="Số ĐDCN" className="roster-mono">
+                            {r.identity_masked || '—'}
                           </td>
-                          <td data-label="Hồ sơ cư trú" className="roster-num">
-                            {r.record_count}
+                          <td data-label="Số HSCT">{r.case_number || '—'}</td>
+                          <td data-label="Giới tính">{genderLabel(r.gender)}</td>
+                          <td data-label="Diện NK">{kinds.find(([v]) => v === r.record_kind)?.[1] ?? '—'}</td>
+                          <td data-label="Địa chỉ" className="roster-cell-address">
+                            {r.address || (Number(r.household_count) === 0 ? 'Chưa gắn hộ' : '—')}
                           </td>
                           <td data-label="Nguồn">
                             <span className={`roster-badge ${r.origin === 'EXCEL' ? 'roster-badge--muted' : 'roster-badge--ok'}`}>

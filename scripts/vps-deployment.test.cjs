@@ -516,3 +516,30 @@ test('administrator OTP is required through a copied flow with a temporary admin
   assert.ok(!script.includes('authentication/flows/browser/executions'));
   assert.doesNotMatch(script, /\|\s*head\b|bash -x|set -x/);
 });
+
+test('resident photo attachments live on a uid-1000 host folder that is mounted, created and backed up', () => {
+  const vps = fs.readFileSync(path.join(__dirname, '..', 'src', 'main', 'resources', 'config', 'application-vps.yml'), 'utf8');
+  assert.match(vps, /attachments:\n\s+root: \/var\/lib\/police\/attachments/);
+  const staging = read('staging/app.compose.yml');
+  assert.match(staging, /- \/var\/lib\/police-management\/attachments\/staging:\/var\/lib\/police\/attachments\n/);
+  assert.match(staging, /read_only: true/);
+  for (const name of ['staging/update-app.sh', 'staging/bootstrap-app.sh']) {
+    assert.match(read(name), /install -d -m 0700 -o 1000 -g 1000 \/var\/lib\/police-management\/attachments\/staging/);
+  }
+  for (const [name, scope] of [
+    ['backup-production-local.sh', 'production'],
+    ['staging/backup-local.sh', 'staging'],
+  ]) {
+    const script = read(name);
+    assert.match(script, new RegExp(`-C /var/lib/police-management attachments/${scope}`));
+    assert.match(script, /tar --exclude='\*\.part' -czf -/);
+    assert.match(script, /"attachmentFiles":%s/);
+    // Files are archived after the database dump, inside the same encrypted stream.
+    assert.ok(script.indexOf('attachments=') > script.indexOf('roles.sql'));
+    assert.match(script, /--symmetric --cipher-algo AES256/);
+  }
+  const update = read('update-production-app.py');
+  assert.match(update, /ATTACHMENTS = Path\('\/var\/lib\/police-management\/attachments\/production'\)/);
+  assert.match(update, /os\.chown\(ATTACHMENTS, APP_UID, APP_UID\)/);
+  assert.ok(update.indexOf("STAGE = 'attachment-folder'") < update.indexOf("STAGE = 'swap-image'"));
+});

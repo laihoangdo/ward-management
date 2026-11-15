@@ -29,4 +29,16 @@ if ($LASTEXITCODE -ne 0) { throw 'Restore failed; current database was not chang
 if ($LASTEXITCODE -ne 0) { throw 'Restore reconciliation failed' }
 & docker exec $Container rm -f -- $remote
 if ($LASTEXITCODE -ne 0) { Write-Warning 'Restore succeeded, but its temporary container dump could not be removed' }
-Write-Output "Restored into $TargetDatabase. To open encrypted sources use the data.key from this backup via application.roster.key-file. The active database has not been switched."
+# Attachment reconciliation: every attachment row of the restored database should have its file in the backup folder.
+$attachmentNote = ''
+$hasTable = & docker exec $Container psql -U Monolithic -d $TargetDatabase -At -c "SELECT to_regclass('public.attachment') IS NOT NULL"
+if ($LASTEXITCODE -eq 0 -and $hasTable.Trim() -eq 't') {
+    $keys = @(& docker exec $Container psql -U Monolithic -d $TargetDatabase -At -c 'SELECT storage_key FROM public.attachment' | Where-Object { $_ -match '^[0-9a-f]{32}$' })
+    if ($LASTEXITCODE -ne 0) { throw 'Attachment reconciliation query failed' }
+    $attachmentDir = Join-Path $resolvedBackup 'attachments'
+    $missing = @($keys | Where-Object { -not (Test-Path -LiteralPath (Join-Path (Join-Path $attachmentDir $_.Substring(0, 2)) $_)) })
+    Write-Output "Attachments: $($keys.Count) rows, $($missing.Count) files missing from this backup."
+    if ($missing.Count -gt 0) { Write-Warning 'Some attachment rows have no file in this backup (deleted during the backup run, or an older backup without attachments).' }
+    if ($keys.Count -gt 0) { $attachmentNote = " Point application.attachments.root at a COPY of $attachmentDir for that instance." }
+}
+Write-Output "Restored into $TargetDatabase. To open encrypted sources use the data.key from this backup via application.roster.key-file.$attachmentNote The active database has not been switched."
