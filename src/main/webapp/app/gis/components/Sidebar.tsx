@@ -172,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const roleInfo = getRoleBadge();
 
   const renderSidebarContent = (isMobileDrawer = false) => (
-    <div className="gis-sidebar flex flex-col h-full w-full bg-[#0f172a] text-slate-100 select-none">
+    <div className="gis-sidebar flex flex-col h-full w-full bg-[var(--gis-sidebar-background,#122e35)] text-[var(--gis-sidebar-text,#f1f7f5)] select-none">
       {/* Brand Header */}
       <div className="gis-sidebar-brand p-3.5 sm:p-4 border-b border-slate-800 flex items-center justify-between gap-2">
         <Link
@@ -318,7 +318,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <BookOpen className="w-4 h-4 text-emerald-400 group-hover:text-white shrink-0" />
               <span className="gis-nav-item-label truncate">Hướng dẫn sử dụng</span>
             </div>
-            <span className="gis-nav-item-badge text-[10px] text-emerald-200 bg-emerald-900/70 px-1.5 py-0.5 rounded border border-emerald-700/60">
+            <span className="gis-nav-item-badge text-[12px] text-emerald-200 bg-emerald-900/70 px-1.5 py-0.5 rounded border border-emerald-700/60">
               Cẩm nang
             </span>
           </button>
@@ -342,7 +342,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => handleSelect(item.id)}
                 className={`gis-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors duration-150 min-h-[42px] cursor-pointer ${
                   isActive
-                    ? 'bg-slate-700 text-white'
+                    ? 'bg-[var(--gis-sidebar-active,#e8f1ec)] text-[var(--gis-on-selected,#153c2c)]'
                     : isSpecial
                       ? 'text-amber-300 hover:bg-slate-800/80 bg-slate-900/40 border border-slate-800/60'
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -420,7 +420,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             aria-label="Đóng menu điều hành"
             onClick={onCloseMobile}
-            className="fixed inset-0 bg-slate-950/60 transition-opacity animate-in fade-in duration-200"
+            className="fixed inset-0 gis-modal-scrim transition-opacity animate-in fade-in duration-200"
           />
 
           {/* Drawer Panel */}

@@ -242,7 +242,7 @@ const HouseholdClassification: React.FC<{
         <button
           id="btn-isolate-group"
           onClick={() => onIsolateGroup(getHouseholdNeighborhoodGroup(household))}
-          className="flex-1 py-1 px-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center"
+          className="flex-1 py-1 px-2 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer text-center"
           title="Chỉ hiển thị các nhà cùng Tổ này trên bản đồ"
         >
           Chỉ xem {getHouseholdNeighborhoodGroup(household)}
@@ -474,7 +474,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                   setIsFullscreen(false);
                   onNavigateTab('field-3d-map');
                 }}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
                 title="Mở bản đồ không gian 3D thực địa"
               >
                 <Compass className="w-3.5 h-3.5" />
@@ -527,7 +527,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               <button
                 id="map-refresh-button"
                 onClick={onRefresh}
-                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 min-h-[40px] cursor-pointer"
+                className="px-3.5 py-2 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 min-h-[40px] cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Cập nhật</span>
@@ -637,10 +637,12 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="gis-hit-target absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label="Xóa từ khóa tìm kiếm"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -807,8 +809,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               {selectedHamlet !== 'all' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[11px] font-bold">
                   {selectedHamlet}
-                  <button onClick={() => setSelectedHamlet('all')} className="hover:text-blue-950">
-                    <X className="w-3 h-3" />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHamlet('all')}
+                    className="gis-hit-target hover:text-blue-950"
+                    aria-label="Bỏ lọc ấp"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -816,8 +823,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               {selectedLegacyHamlet !== 'all' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-white text-[11px] font-bold">
                   {selectedLegacyHamlet}
-                  <button onClick={() => setSelectedLegacyHamlet('all')} className="hover:text-slate-300" aria-label="Bỏ lọc ấp cũ">
-                    <X className="w-3 h-3" />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLegacyHamlet('all')}
+                    className="gis-hit-target hover:text-slate-300"
+                    aria-label="Bỏ lọc ấp cũ"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -825,8 +837,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               {selectedGroup !== 'all' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-600 text-white text-[11px] font-bold">
                   Tổ: {selectedGroup}
-                  <button onClick={() => setSelectedGroup('all')} className="hover:text-slate-200">
-                    <X className="w-3 h-3" />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGroup('all')}
+                    className="gis-hit-target hover:text-slate-200"
+                    aria-label="Bỏ lọc tổ"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -834,8 +851,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               {selectedAlley !== 'all' && (
                 <span className={ALLEY_FILTER_TAG}>
                   Hẻm: {selectedAlley}
-                  <button onClick={() => setSelectedAlley('all')} className="hover:text-slate-200">
-                    <X className="w-3 h-3" />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAlley('all')}
+                    className="gis-hit-target hover:text-slate-200"
+                    aria-label="Bỏ lọc hẻm"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -843,8 +865,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               {activeStreet !== 'all' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-white text-[11px] font-bold">
                   Đường: {activeStreet}
-                  <button onClick={() => setActiveStreet('all')} className="hover:text-slate-300">
-                    <X className="w-3 h-3" />
+                  <button
+                    type="button"
+                    onClick={() => setActiveStreet('all')}
+                    className="gis-hit-target hover:text-slate-300"
+                    aria-label="Bỏ lọc đường"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -852,8 +879,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               {onlyWarnings && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[11px] font-bold">
                   Chỉ cảnh báo
-                  <button onClick={() => setOnlyWarnings(false)} className="hover:text-amber-950">
-                    <X className="w-3 h-3" />
+                  <button
+                    type="button"
+                    onClick={() => setOnlyWarnings(false)}
+                    className="gis-hit-target hover:text-amber-950"
+                    aria-label="Bỏ lọc chỉ cảnh báo"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -861,8 +893,13 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               {searchQuery && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200 text-slate-800 text-[11px] font-bold">
                   Tìm: "{searchQuery}"
-                  <button onClick={() => setSearchQuery('')} className="hover:text-slate-950">
-                    <X className="w-3 h-3" />
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="gis-hit-target hover:text-slate-950"
+                    aria-label="Bỏ lọc tìm kiếm"
+                  >
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -870,7 +907,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               <button
                 id="btn-clear-all-filters"
                 onClick={handleReset}
-                className="text-[11px] text-rose-600 hover:text-rose-700 font-bold ml-1.5 underline cursor-pointer"
+                className="gis-hit-target text-[11px] text-rose-600 hover:text-rose-700 font-bold ml-1.5 underline cursor-pointer"
               >
                 Xóa tất cả bộ lọc
               </button>
@@ -944,9 +981,18 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 <div
                   key={item.id}
                   id={`house-card-${item.id}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
                   onClick={() => setInspectedHousehold(item)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setInspectedHousehold(item);
+                    }
+                  }}
                   className={`p-3 rounded-xl border-2 cursor-pointer transition-colors duration-150 relative flex flex-col justify-between ${status.boxBorder} ${
-                    isSelected ? 'ring-3 ring-[#1c4e3a] border-[#1c4e3a] bg-emerald-50/40' : ''
+                    isSelected ? 'ring-3 ring-[var(--gis-primary,#1c4e3a)] border-[var(--gis-primary,#1c4e3a)] bg-emerald-50/40' : ''
                   }`}
                 >
                   <div>
@@ -1060,7 +1106,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               <p className="font-medium">Không tìm thấy vị trí nào phù hợp với bộ lọc hiện tại.</p>
               <button
                 onClick={handleReset}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
               >
                 Khôi phục toàn bộ bản đồ
               </button>
@@ -1073,7 +1119,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
           <div
             role="region"
             aria-label="Chi tiết nhanh hộ đang chọn"
-            className="lg:hidden sticky bottom-2 z-20 bg-white dark:bg-slate-900 border-2 border-[#1c4e3a] dark:border-emerald-600 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5"
+            className="lg:hidden sticky bottom-2 z-20 bg-white dark:bg-slate-900 border-2 border-[var(--gis-primary,#1c4e3a)] dark:border-emerald-600 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2.5"
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -1100,7 +1146,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               <button
                 type="button"
                 onClick={() => onSelectHousehold(inspectedHousehold)}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Mở hồ sơ</span>
@@ -1224,7 +1270,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
                 <button
                   id="btn-view-household-detail"
                   onClick={() => onSelectHousehold(inspectedHousehold)}
-                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5" />
                   <span>Xem hồ sơ hộ dân & cập nhật</span>

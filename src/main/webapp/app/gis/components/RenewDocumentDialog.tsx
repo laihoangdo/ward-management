@@ -6,6 +6,7 @@ import { DocumentCommand, hcmToday } from '../services/documentLifecycle';
 import { useDialogFocus } from '../utils/useDialogFocus';
 import { DiscardChangesDialog } from './DiscardChangesDialog';
 import { useUnsavedPageGuard } from '../utils/useUnsavedPageGuard';
+import { FormCheckSummary, useFormCheck } from './useFormCheck';
 
 export function RenewDocumentDialog({
   document,
@@ -17,6 +18,7 @@ export function RenewDocumentDialog({
   onSave: (command: DocumentCommand) => Promise<void>;
 }) {
   const source: Partial<DocumentRecord> = document || {};
+  const renewCheck = useFormCheck('renew-document-form-errors');
   const [date, setDate] = useState('');
   const [issuedOn, setIssuedOn] = useState(source.issueDate || '');
   const [reason, setReason] = useState('');
@@ -106,17 +108,20 @@ export function RenewDocumentDialog({
       aria-modal="true"
       aria-labelledby="renew-document-title"
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-4"
     >
       <DiscardChangesDialog open={showDiscard} onContinue={() => setShowDiscard(false)} onDiscard={onClose} />
       <form
-        onSubmit={submit}
+        noValidate
+        onSubmit={renewCheck.guard(submit)}
+        onChange={renewCheck.onFieldChange}
         aria-busy={saving}
         className="w-full max-w-xl max-h-[90dvh] overflow-y-auto rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl space-y-4"
       >
         <h2 id="renew-document-title" className="text-lg font-bold">
           {!document ? 'Đăng ký hồ sơ' : document.expiryOn ? 'Gia hạn hồ sơ' : 'Đối chiếu hồ sơ nguồn'}
         </h2>
+        <FormCheckSummary id="renew-document-form-errors" problems={renewCheck.problems} summaryRef={renewCheck.summaryRef} />
         <p className="text-xs text-slate-500">
           Chỉ dùng cho hồ sơ có ngày hết hạn xác định. Không nhập ngày giả cho giấy tờ không thời hạn hoặc chưa biết hạn.
         </p>
@@ -135,23 +140,11 @@ export function RenewDocumentDialog({
             <>
               <label className="block text-sm">
                 Tên hồ sơ
-                <input
-                  required
-                  maxLength={255}
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="block w-full border rounded p-2"
-                />
+                <input required maxLength={255} value={name} onChange={e => setName(e.target.value)} className="gis-control mt-1" />
               </label>
               <label className="block text-sm">
                 Loại hồ sơ
-                <input
-                  required
-                  maxLength={255}
-                  value={kind}
-                  onChange={e => setKind(e.target.value)}
-                  className="block w-full border rounded p-2"
-                />
+                <input required maxLength={255} value={kind} onChange={e => setKind(e.target.value)} className="gis-control mt-1" />
               </label>
             </>
           )}
@@ -162,7 +155,7 @@ export function RenewDocumentDialog({
             <div className="space-y-2">
               <label className="block text-sm">
                 Tìm hộ theo mã hoặc địa chỉ
-                <input value={search} onChange={e => setSearch(e.target.value)} className="block w-full border rounded p-2" />
+                <input value={search} onChange={e => setSearch(e.target.value)} className="gis-control mt-1" />
               </label>
               {searching && <p role="status">Đang tìm hộ…</p>}
               {searchError && <p role="alert">{searchError}</p>}
@@ -184,16 +177,11 @@ export function RenewDocumentDialog({
           )}
           <label className="block text-sm">
             Số giấy tờ (nếu biết)
-            <input maxLength={255} value={number} onChange={e => setNumber(e.target.value)} className="block w-full border rounded p-2" />
+            <input maxLength={255} value={number} onChange={e => setNumber(e.target.value)} className="gis-control mt-1" />
           </label>
           <label className="block text-sm">
             Cơ quan cấp (nếu biết)
-            <input
-              maxLength={255}
-              value={authority}
-              onChange={e => setAuthority(e.target.value)}
-              className="block w-full border rounded p-2"
-            />
+            <input maxLength={255} value={authority} onChange={e => setAuthority(e.target.value)} className="gis-control mt-1" />
           </label>
           <label className="block text-sm">
             Ngày cấp (nếu biết)
@@ -202,7 +190,7 @@ export function RenewDocumentDialog({
               value={issuedOn}
               max={date || undefined}
               onChange={e => setIssuedOn(e.target.value)}
-              className="block w-full border rounded p-2"
+              className="gis-control mt-1"
             />
           </label>
           <label className="block text-sm font-semibold">
@@ -214,18 +202,12 @@ export function RenewDocumentDialog({
               disabled={saving}
               value={date}
               onChange={event => setDate(event.target.value)}
-              className="mt-2 block w-full rounded-lg border border-slate-300 p-2"
+              className="gis-control mt-1"
             />
           </label>
           <label className="block text-sm">
             Lý do / căn cứ đối chiếu
-            <textarea
-              required
-              maxLength={2000}
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-              className="block w-full border rounded p-2"
-            />
+            <textarea required maxLength={2000} value={reason} onChange={e => setReason(e.target.value)} className="gis-control mt-1" />
           </label>
         </fieldset>
         {date && !source.expiryOn && date < hcmToday() && (

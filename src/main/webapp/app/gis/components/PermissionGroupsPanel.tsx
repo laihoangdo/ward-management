@@ -4,6 +4,8 @@ import { Layers, Plus, Pencil, Trash2 } from 'lucide-react';
 import type { PermissionGroup } from '../types';
 import { deletePermissionGroup, fetchPermissionGroups, savePermissionGroup } from '../services/rbacApiService';
 import { GROUP_ROLE_LABELS, PERMISSION_KEYS, PERMISSION_LABELS, type PermissionKey } from '../data/permissionCatalog';
+import { FormCheckSummary, useFormCheck } from './useFormCheck';
+import '../../shared/stack-table.css';
 
 interface Props {
   onShowToast: (message: string) => void;
@@ -21,6 +23,7 @@ const errorDetail = (error: unknown) => {
  * revokes the removed permissions from members who hold them after an explicit confirmation.
  */
 export const PermissionGroupsPanel: React.FC<Props> = ({ onShowToast }) => {
+  const groupCheck = useFormCheck('permission-group-form-errors');
   const [groups, setGroups] = useState<PermissionGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<PermissionGroup | null>(null);
@@ -118,7 +121,7 @@ export const PermissionGroupsPanel: React.FC<Props> = ({ onShowToast }) => {
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left text-slate-300">
+          <table className="gis-stack-table w-full text-xs text-left text-slate-300">
             <thead className="text-slate-400">
               <tr>
                 <th className="py-2 pr-3">Nhóm</th>
@@ -132,14 +135,22 @@ export const PermissionGroupsPanel: React.FC<Props> = ({ onShowToast }) => {
             <tbody>
               {groups.map(group => (
                 <tr key={group.id} className="border-t border-slate-800">
-                  <td className="py-2 pr-3">
+                  <td data-label="Nhóm" className="py-2 pr-3">
                     <div className="font-semibold text-white">{group.name}</div>
                     {group.builtIn && <div className="text-[11px] text-slate-500">Nhóm gốc</div>}
                   </td>
-                  <td className="py-2 pr-3">{GROUP_ROLE_LABELS[group.role]}</td>
-                  <td className="py-2 pr-3 tabular-nums">{group.ceiling.length}/11</td>
-                  <td className="py-2 pr-3 tabular-nums">{group.defaults.length}</td>
-                  <td className="py-2 pr-3 tabular-nums">{group.members ?? 0}</td>
+                  <td data-label="Vai trò" className="py-2 pr-3">
+                    {GROUP_ROLE_LABELS[group.role]}
+                  </td>
+                  <td data-label="Được phép" className="py-2 pr-3 tabular-nums">
+                    {group.ceiling.length}/11
+                  </td>
+                  <td data-label="Mặc định" className="py-2 pr-3 tabular-nums">
+                    {group.defaults.length}
+                  </td>
+                  <td data-label="Cán bộ" className="py-2 pr-3 tabular-nums">
+                    {group.members ?? 0}
+                  </td>
                   <td className="py-2 text-right whitespace-nowrap">
                     <button
                       type="button"
@@ -176,11 +187,14 @@ export const PermissionGroupsPanel: React.FC<Props> = ({ onShowToast }) => {
         <form
           aria-label={editing.id ? `Sửa nhóm ${editing.name}` : 'Tạo nhóm quyền'}
           className="border border-slate-700 rounded-xl p-4 space-y-4"
-          onSubmit={event => {
+          noValidate
+          onSubmit={groupCheck.guard(event => {
             event.preventDefault();
             void save(false);
-          }}
+          })}
+          onChange={groupCheck.onFieldChange}
         >
+          <FormCheckSummary id="permission-group-form-errors" problems={groupCheck.problems} summaryRef={groupCheck.summaryRef} />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <label className="block text-slate-300">
               Tên nhóm
@@ -218,7 +232,7 @@ export const PermissionGroupsPanel: React.FC<Props> = ({ onShowToast }) => {
             </label>
           </div>
 
-          <table className="w-full text-xs text-slate-300">
+          <table className="gis-stack-table w-full text-xs text-slate-300">
             <thead className="text-slate-400">
               <tr>
                 <th className="py-1.5 text-left">Quyền</th>
@@ -231,8 +245,10 @@ export const PermissionGroupsPanel: React.FC<Props> = ({ onShowToast }) => {
                 const allowed = editing.ceiling.includes(key);
                 return (
                   <tr key={key} className="border-t border-slate-800">
-                    <td className="py-1.5">{PERMISSION_LABELS[key]}</td>
-                    <td className="py-1.5 text-center">
+                    <td data-label="Quyền" className="py-1.5">
+                      {PERMISSION_LABELS[key]}
+                    </td>
+                    <td data-label="Được phép" className="py-1.5 text-center">
                       <input
                         type="checkbox"
                         aria-label={`Được phép: ${PERMISSION_LABELS[key]}`}
@@ -240,7 +256,7 @@ export const PermissionGroupsPanel: React.FC<Props> = ({ onShowToast }) => {
                         onChange={() => toggle('ceiling', key)}
                       />
                     </td>
-                    <td className="py-1.5 text-center">
+                    <td data-label="Mặc định" className="py-1.5 text-center">
                       <input
                         type="checkbox"
                         aria-label={`Mặc định: ${PERMISSION_LABELS[key]}`}

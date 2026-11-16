@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AuditLogEntry, AuditActionType, HouseholdFacility } from '../types';
 import { Pagination } from './Pagination';
+import { FormCheckSummary, useFormCheck } from './useFormCheck';
 
 interface LogsTabProps {
   logs: AuditLogEntry[];
@@ -57,6 +58,7 @@ const ValueChange: React.FC<{ before?: string; after?: string }> = ({ before, af
 };
 
 export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHousehold, onAddManualLog }) => {
+  const manualLogCheck = useFormCheck('manual-log-form-errors');
   const [savingManualLog, setSavingManualLog] = useState(false);
   const [manualSaveError, setManualSaveError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -307,11 +309,11 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
   return (
     <div className="gis-logs space-y-4 sm:space-y-6 pb-12">
       {/* Tab Header Banner */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-6 border border-slate-200 dark:border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Loaded when the tab opens; no "real-time" or "encrypted" claim the data does not back. */}
           <div>
-            <h2 id="logs-title" className="gis-panel-title text-slate-900 dark:text-white">
+            <h2 id="logs-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               Nhật ký thao tác & minh bạch quản lý
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 mb-0 max-w-3xl">
@@ -324,7 +326,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             <button
               id="btn-export-audit-csv"
               onClick={handleExportCsv}
-              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors border border-slate-300 dark:border-slate-700 cursor-pointer shadow-xs"
+              className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors border border-slate-300 dark:border-slate-700 cursor-pointer"
               title="Xuất bảng kê lưu vết kiểm toán ra tệp tin Excel/CSV"
             >
               <Download className="w-4 h-4 text-slate-600 dark:text-slate-400" />
@@ -334,7 +336,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             <button
               id="btn-add-manual-log"
               onClick={() => setIsManualModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Ghi chú nhật ký kiểm tra tuần tra thủ công"
             >
               <Plus className="w-4 h-4" />
@@ -384,7 +386,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
       </div>
 
       {/* Filter and Search Controls */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 space-y-3">
         {/* Top search and filter selects */}
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           {/* Search Input */}
@@ -400,22 +402,24 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-slate-400 hover:text-slate-600"
+                aria-label="Xóa từ khóa tìm kiếm"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             )}
           </div>
 
           {/* Time Range Select */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               id="select-time-range"
               aria-label="Lọc thời gian ghi nhận"
               value={selectedTimeRange}
               onChange={e => setSelectedTimeRange(e.target.value)}
-              className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="min-w-0 max-w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="all">Toàn bộ thời gian</option>
               <option value="today">Hôm nay ({new Date().toLocaleDateString('vi-VN')})</option>
@@ -427,7 +431,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
               aria-label="Lọc theo loại đối tượng"
               value={selectedTargetType}
               onChange={e => setSelectedTargetType(e.target.value)}
-              className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              className="min-w-0 max-w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="all">Tất cả đối tượng</option>
               <option value="household">Hộ dân / Cơ sở kinh doanh</option>
@@ -453,7 +457,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             onClick={() => setSelectedActionFilter('all')}
             className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors cursor-pointer ${
               selectedActionFilter === 'all'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -465,7 +469,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             onClick={() => setSelectedActionFilter('coordinates')}
             className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'coordinates'
-                ? 'bg-indigo-600 text-white shadow-xs' // taste-skill-ignore: màu phân loại loại hành động
+                ? 'bg-indigo-600 text-white' // taste-skill-ignore: màu phân loại loại hành động
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -478,7 +482,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             onClick={() => setSelectedActionFilter('profile')}
             className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'profile'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-blue-600 text-white'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -491,7 +495,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             onClick={() => setSelectedActionFilter('reminders')}
             className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'reminders'
-                ? 'bg-amber-600 text-white shadow-xs'
+                ? 'bg-amber-600 text-white'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -504,7 +508,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             onClick={() => setSelectedActionFilter('add')}
             className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'add'
-                ? 'bg-emerald-600 text-white shadow-xs'
+                ? 'bg-emerald-600 text-white'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -517,7 +521,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
             onClick={() => setSelectedActionFilter('ocr')}
             className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
               selectedActionFilter === 'ocr'
-                ? 'bg-purple-600 text-white shadow-xs' // taste-skill-ignore: màu phân loại loại hành động
+                ? 'bg-purple-600 text-white' // taste-skill-ignore: màu phân loại loại hành động
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -561,7 +565,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
               <div
                 key={log.id}
                 id={`audit-log-${log.id}`}
-                className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800/80 transition-all duration-200 shadow-xs hover:shadow-sm"
+                className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800/80 transition-colors duration-200"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   {/* Left Column: Icon + Core Information */}
@@ -625,7 +629,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                     {/* Hash tag */}
                     {log.integrityHash && (
                       <span
-                        className="text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md truncate max-w-[140px]"
+                        className="text-[12px] font-mono text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-md truncate max-w-[140px]"
                         title={log.integrityHash}
                       >
                         {log.integrityHash.slice(0, 15)}...
@@ -708,7 +712,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
 
       {/* Modal: Ghi nhật ký kiểm tra thực địa thủ công */}
       {isManualModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 gis-modal-scrim">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
@@ -718,14 +722,22 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">Ghi Nhật Ký Tuần Tra / Kiểm Tra Thực Địa</h3>
               </div>
               <button
+                type="button"
                 onClick={() => setIsManualModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label="Đóng"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitManualLog} className="space-y-4">
+            <form
+              noValidate
+              onSubmit={manualLogCheck.guard(handleSubmitManualLog)}
+              onChange={manualLogCheck.onFieldChange}
+              className="space-y-4"
+            >
+              <FormCheckSummary id="manual-log-form-errors" problems={manualLogCheck.problems} summaryRef={manualLogCheck.summaryRef} />
               {manualSaveError && (
                 <p role="alert" className="text-sm text-red-700">
                   {manualSaveError}
@@ -796,7 +808,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                 <button
                   type="submit"
                   disabled={savingManualLog}
-                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition-colors shadow-sm"
+                  className="px-4 py-2 rounded-xl bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white text-xs sm:text-sm font-semibold transition-colors"
                 >
                   Lưu vào nhật ký hệ thống
                 </button>

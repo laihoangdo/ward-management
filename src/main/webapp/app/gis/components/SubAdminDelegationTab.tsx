@@ -75,7 +75,7 @@ const AssignmentChecklist: React.FC<{
             >
               <input
                 type="checkbox"
-                className="h-4 w-4 shrink-0 accent-[#1c4e3a]"
+                className="h-4 w-4 shrink-0 accent-[var(--gis-primary,#1c4e3a)]"
                 checked={chosen.has(option.value)}
                 onChange={e => toggle(option.value, e.target.checked)}
               />
@@ -90,6 +90,8 @@ const AssignmentChecklist: React.FC<{
 
 export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ currentUser, usersList, onShowToast }) => {
   const [areas, setAreas] = useState<{ id: number; hamletId: number; communeId: number; name: string; hamletName: string }[]>([]);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   const [selectedHamletIds, setSelectedHamletIds] = useState<number[]>([]);
   const [selectedCommuneId, setSelectedCommuneId] = useState<number | null>(null);
   const [roads, setRoads] = useState<{ hamletId: number; name: string }[]>([]);
@@ -122,8 +124,11 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
   useEffect(() => {
     void fetchRbacAreas()
       .then(setAreas)
-      .catch(() => onShowToast('Không thể tải danh mục địa bàn.'));
-  }, []);
+      .catch(() => {
+        onShowToast('Không thể tải danh mục địa bàn.');
+        setLoadError('Không thể tải danh mục địa bàn. Kiểm tra quyền và kết nối.');
+      });
+  }, [reloadKey]);
   const isSuperAdmin = currentUser.role === 'superadmin';
   const isAdmin = currentUser.role === 'admin';
   const isSubAdmin = currentUser.role === 'sub-admin';
@@ -408,13 +413,31 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                   ? 'Cán bộ Quản lý Ấp trực tiếp phân công tuyến đường/hẻm và ủy quyền các tính năng nghiệp vụ cho Công an viên cấp dưới trong ca trực.'
                   : 'Quản trị viên Tối cao phân bổ địa bàn và phân quyền nghiệp vụ cho toàn bộ cán bộ các cấp trên hệ thống.'}
             </p>
+            {loadError && (
+              <div
+                role="alert"
+                className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-rose-800 bg-rose-950/60 px-3 py-2 text-sm text-rose-100"
+              >
+                <span>{loadError}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoadError('');
+                    setReloadKey(key => key + 1);
+                  }}
+                  className="rounded-md border border-rose-700 px-2.5 py-1 text-xs font-semibold text-white hover:bg-rose-900"
+                >
+                  Thử lại
+                </button>
+              </div>
+            )}
           </div>
 
           <button
             type="button"
             id="btn-save-delegation"
             onClick={handleSaveDelegation}
-            className="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm flex items-center gap-2 transition-colors cursor-pointer self-start md:self-auto"
+            className="py-2.5 px-5 rounded-xl bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-semibold text-sm flex items-center gap-2 transition-colors cursor-pointer self-start md:self-auto"
           >
             <ShieldCheck className="w-4 h-4" />
             Lưu Cấu Hình Phân Quyền

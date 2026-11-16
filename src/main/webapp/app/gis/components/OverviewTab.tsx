@@ -151,7 +151,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
             <button
               onClick={() => onNavigateTab('area-map')}
-              className="flex-1 sm:flex-initial px-3.5 py-2 bg-[#1c4e3a] hover:bg-[#153d2e] text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 min-h-[40px]"
+              className="flex-1 sm:flex-initial px-3.5 py-2 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 min-h-[40px]"
             >
               <span>Xem sơ đồ khối</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -331,7 +331,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
               <span className="truncate">TB ~{totalCount > 0 ? (totalResidents / totalCount).toFixed(1) : 0} người / hộ</span>
             </div>
-            <span className="text-[11px] font-semibold text-[#1c4e3a] dark:text-[#a7dfbd] group-hover:underline flex items-center gap-0.5">
+            <span className="text-[11px] font-semibold text-[var(--gis-primary,#1c4e3a)] dark:text-[#a7dfbd] group-hover:underline flex items-center gap-0.5">
               Tra cứu <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </div>
@@ -360,7 +360,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <div
                     key={item.id}
                     id={`warning-line-${item.id}`}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onSelectHousehold(item)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectHousehold(item);
+                      }
+                    }}
                     className="p-3 bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 hover:bg-white dark:hover:bg-slate-800 cursor-pointer transition-colors"
                   >
                     <div className="flex items-center gap-2 min-w-0">
@@ -370,7 +378,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                         {item.licenseExpiry ? `(Hết hạn: ${item.licenseExpiry})` : ''}
                       </span>
                     </div>
-                    <span className="self-start sm:self-auto text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-bold shrink-0">
+                    <span className="self-start sm:self-auto text-[12px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 font-bold shrink-0">
                       {item.warningMessage?.split('(')[0]?.trim() || 'Sắp hết hạn'}
                     </span>
                   </div>
@@ -402,7 +410,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <FileCheck className="w-3.5 h-3.5" />
                   <span>Xem danh sách hồ sơ cần thẩm định</span>
                 </button>
-                <span className="text-[10px] sm:text-[11px] text-amber-800 dark:text-amber-400 italic">
+                <span className="text-[12px] text-amber-800 dark:text-amber-400 italic">
                   * Thông báo nhắc hạn đã được gửi tự động qua hệ thống.
                 </span>
               </div>
@@ -415,7 +423,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
-            <h3 id="demographic-stats-title" className="gis-section-title text-[#1e293b] dark:text-white">
+            <h3 id="demographic-stats-title" className="gis-section-title text-[var(--gis-text,#172c35)]">
               Cơ cấu nhân khẩu
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -444,10 +452,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           {/* Gender Card */}
           <div
             id="gender-orb-card"
-            className="p-5 rounded-2xl bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700"
+            className="p-5 rounded-2xl bg-[var(--gis-surface-soft,#f1f5f3)] border border-[var(--gis-border,#cbd2d9)]"
           >
             <div className="flex items-center justify-between mb-4">
-              <h4 id="gender-orb-title" className="gis-panel-title text-[#1e293b] dark:text-white flex items-center gap-2">
+              <h4 id="gender-orb-title" className="gis-panel-title text-[var(--gis-text,#172c35)] flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-600" />
                 <span>Tỷ lệ nam nữ</span>
               </h4>
@@ -477,7 +485,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <span className="w-3 h-3 rounded-full bg-pink-500 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Giới tính Nữ</span>
                 </div>
-                <div id="gender-female-label" className="text-sm font-bold text-[#334155] dark:text-white">
+                <div id="gender-female-label" className="text-sm font-bold text-[var(--gis-text,#172c35)]">
                   Nữ: {totalFemale.toLocaleString('vi-VN')} ({femalePercent}%)
                 </div>
               </div>
@@ -487,7 +495,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Giới tính Nam</span>
                 </div>
-                <div id="gender-male-label" className="text-sm font-bold text-[#334155] dark:text-white">
+                <div id="gender-male-label" className="text-sm font-bold text-[var(--gis-text,#172c35)]">
                   Nam: {totalMale.toLocaleString('vi-VN')} ({malePercent}%)
                 </div>
               </div>
@@ -495,12 +503,9 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
 
           {/* Age Card */}
-          <div
-            id="age-orb-card"
-            className="p-5 rounded-2xl bg-[#f8fafc] dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700"
-          >
+          <div id="age-orb-card" className="p-5 rounded-2xl bg-[var(--gis-surface-soft,#f1f5f3)] border border-[var(--gis-border,#cbd2d9)]">
             <div className="flex items-center justify-between mb-4">
-              <h4 id="age-orb-title" className="gis-panel-title text-[#1e293b] dark:text-white flex items-center gap-2">
+              <h4 id="age-orb-title" className="gis-panel-title text-[var(--gis-text,#172c35)] flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-600" />
                 <span>Cơ cấu độ tuổi</span>
               </h4>
@@ -530,7 +535,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Độ tuổi trưởng thành</span>
                 </div>
-                <div id="age-adult-label" className="text-sm font-bold text-[#334155] dark:text-white">
+                <div id="age-adult-label" className="text-sm font-bold text-[var(--gis-text,#172c35)]">
                   Từ 18 trở lên: {totalAbove18.toLocaleString('vi-VN')} ({above18Percent}%)
                 </div>
               </div>
@@ -540,7 +545,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Trẻ em & Thiếu niên</span>
                 </div>
-                <div id="age-under-label" className="text-sm font-bold text-[#334155] dark:text-white">
+                <div id="age-under-label" className="text-sm font-bold text-[var(--gis-text,#172c35)]">
                   Dưới 18: {totalUnder18.toLocaleString('vi-VN')} ({under18Percent}%)
                 </div>
               </div>
@@ -590,7 +595,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             return (
               <div
                 key={h.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectHousehold(h)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSelectHousehold(h);
+                  }
+                }}
                 className={`p-2.5 rounded-xl border text-center cursor-pointer transition-colors ${badgeBg}`}
                 title={`${h.houseNumber} ${h.street} - ${h.ownerName}`}
               >
@@ -598,7 +611,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                   <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`}></span>
                   <span className="text-[11px] font-bold truncate">Số {h.houseNumber}</span>
                 </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate font-medium">{h.street}</div>
+                <div className="text-[12px] text-slate-500 dark:text-slate-400 truncate font-medium">{h.street}</div>
                 <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{h.hamlet}</div>
               </div>
             );
@@ -606,7 +619,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
 
           {totalCount > 16 && (
             <div
+              role="button"
+              tabIndex={0}
               onClick={() => onNavigateTab('households')}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onNavigateTab('households');
+                }
+              }}
               className="p-2.5 rounded-xl border border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20 text-center cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex flex-col items-center justify-center col-span-2 sm:col-span-4 lg:col-span-8 py-3"
             >
               <span className="text-xs font-bold text-blue-600 dark:text-blue-400">

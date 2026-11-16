@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Bell, Moon, Sun, Monitor, Database, CheckCircle, Save, RefreshCw } from 'lucide-react';
 import { OfficerProfile } from '../types';
+import { FormCheckSummary, useFormCheck } from './useFormCheck';
 
 interface SettingsTabProps {
   officer: OfficerProfile;
@@ -18,6 +19,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   theme = 'light',
   onSetTheme,
 }) => {
+  const settingsCheck = useFormCheck('settings-form-errors');
   const [officerName, setOfficerName] = useState(officer.officerName);
   const [rank, setRank] = useState(officer.rank);
   const [soundAlerts, setSoundAlerts] = useState(true);
@@ -53,7 +55,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   return (
     <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
       {/* Banner */}
-      <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80">
         <div>
           <h2 id="settings-title" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Cài đặt
@@ -79,7 +81,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Account Card */}
-        <div id="account-card" className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <div id="account-card" className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 id="account-title" className="gis-panel-title text-slate-900 flex items-center gap-2">
               <User aria-hidden="true" className="w-4 h-4 text-slate-500" />
@@ -87,7 +89,13 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             </h3>
           </div>
 
-          <form onSubmit={handleSave} className="space-y-3.5 sm:space-y-4 text-xs">
+          <form
+            noValidate
+            onSubmit={settingsCheck.guard(handleSave)}
+            onChange={settingsCheck.onFieldChange}
+            className="space-y-3.5 sm:space-y-4 text-xs"
+          >
+            <FormCheckSummary id="settings-form-errors" problems={settingsCheck.problems} summaryRef={settingsCheck.summaryRef} />
             <div>
               <label htmlFor="settings-username" className="block text-slate-700 font-bold mb-1 text-sm">
                 Tài khoản đăng nhập (Hệ thống điều hành):
@@ -168,7 +176,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-xs min-h-[42px]"
+                className="w-full py-2.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 min-h-[42px]"
               >
                 <Save className="w-4 h-4" />
                 <span>{saving ? 'Đang lưu...' : 'Cập nhật thông tin cán bộ'}</span>
@@ -178,7 +186,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
 
         {/* Appearance Card */}
-        <div id="appearance-card" className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+        <div id="appearance-card" className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 id="appearance-title" className="gis-panel-title text-slate-900 flex items-center gap-2">
               <Monitor aria-hidden="true" className="w-4 h-4 text-slate-500" />
@@ -205,7 +213,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 aria-describedby="settings-preference-note"
                 checked={soundAlerts}
                 onChange={e => setSoundAlerts(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                className="w-4 h-4 shrink-0 rounded border-slate-300 cursor-pointer"
               />
             </div>
 
@@ -249,9 +257,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   type="button"
                   id="theme-select-light"
                   onClick={() => onSetTheme && onSetTheme('light')}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  className={`p-3 rounded-xl border text-left transition-colors cursor-pointer flex flex-col justify-between ${
                     theme === 'light'
-                      ? 'bg-white border-blue-600 ring-2 ring-blue-500/20 shadow-xs'
+                      ? 'bg-white border-blue-600 ring-2 ring-blue-500/20'
                       : 'bg-white/60 border-slate-200 hover:border-slate-300 opacity-80'
                   }`}
                 >
@@ -260,7 +268,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       <Sun className="w-4 h-4 text-amber-500" />
                     </div>
                     {theme === 'light' && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">Đang chọn</span>
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">Đang chọn</span>
                     )}
                   </div>
                   <div>
@@ -276,9 +284,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   type="button"
                   id="theme-select-dark"
                   onClick={() => onSetTheme && onSetTheme('dark')}
-                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  className={`p-3 rounded-xl border text-left transition-colors cursor-pointer flex flex-col justify-between ${
                     theme === 'dark'
-                      ? 'bg-slate-900 border-amber-400 ring-2 ring-amber-400/30 text-white shadow-xs'
+                      ? 'bg-slate-900 border-amber-400 ring-2 ring-amber-400/30 text-white'
                       : 'bg-slate-800/80 border-slate-700 hover:border-slate-600 text-slate-200 opacity-80'
                   }`}
                 >
@@ -287,7 +295,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       <Moon className="w-4 h-4 text-slate-300" />
                     </div>
                     {theme === 'dark' && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">Đang chọn</span>
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">Đang chọn</span>
                     )}
                   </div>
                   <div>

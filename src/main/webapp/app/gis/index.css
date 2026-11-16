@@ -958,10 +958,6 @@ html.dark :is(#__page-root, .gis-login) {
 #__page-root .gis-sidebar button {
   font-size: 14px;
 }
-#__page-root .gis-sidebar [class~='text-[10px]'],
-#__page-root .gis-header [class~='text-[10px]'] {
-  font-size: 12px;
-}
 #__page-root :is(.gis-header, .gis-records, [role='dialog']) .text-xs {
   font-size: 14px;
 }
@@ -1156,9 +1152,6 @@ html.dark :is(#__page-root, .gis-login) {
 #__page-root .gis-logs button {
   box-shadow: none !important;
 }
-#__page-root .gis-logs [class~='text-[10px]'] {
-  font-size: 12px;
-}
 /* prettier-ignore */
 #__page-root .gis-logs :is(.text-slate-400, .text-slate-500, [class*='text-indigo-600/70'], [class*='text-blue-600/70'], [class*='text-amber-600/70']) { /* taste-skill-ignore: sửa tương phản chú thích, giữ màu phân loại ở badge và số liệu */
   color: var(--gis-muted) !important;
@@ -1224,10 +1217,7 @@ html.dark :is(#__page-root, .gis-login) {
 #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) button {
   box-shadow: none !important;
 }
-#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class~='text-[9px]'], [class~='text-[10px]']) {
-  font-size: 12px;
-}
-#__page-root #superadmin-hub-tab [class~='text-[10px]'] {
+#__page-root #superadmin-hub-tab [class~='text-[12px]'] {
   color: #b0c0cb;
 }
 #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) .gis-admin-title,
@@ -1405,9 +1395,6 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
 #__page-root .gis-overview :is(.text-slate-400, .text-slate-500) {
   color: var(--gis-muted) !important;
 }
-#__page-root .gis-overview [class~='text-[10px]'] {
-  font-size: 12px;
-}
 #__page-root .gis-overview [id^='stat-'][id$='-label'] {
   white-space: normal;
   overflow: visible;
@@ -1519,9 +1506,14 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
 
 /* Tablet Navigation Rail (768px - 1279px) when not expanded */
 @media (min-width: 768px) and (max-width: 1279px) {
+  /* The rail is ~72px wide: logo and the expand toggle stack instead of squeezing the logo link to ~15px. */
   #__page-root .gis-sidebar--rail-tablet .gis-sidebar-brand {
     padding-inline: 8px;
+    flex-direction: column;
     justify-content: center;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-sidebar-brand-link {
+    flex: none;
   }
   #__page-root .gis-sidebar--rail-tablet .gis-sidebar-brand a {
     justify-content: center;
@@ -1555,7 +1547,9 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
   }
   #__page-root .gis-sidebar--rail-tablet :is(.gis-nav-item, .gis-nav-home) {
     justify-content: center;
-    padding-inline: 0;
+    /* !important: Bootstrap's own `.px-3 { padding: 1rem !important }` shares the Tailwind class name and
+       otherwise leaves ~9px for a 16px icon in the 72px rail, clipping it. */
+    padding-inline: 0 !important;
   }
   #__page-root .gis-sidebar--rail-tablet #account-card {
     margin-inline: 8px;
@@ -1578,4 +1572,88 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
   min-height: 48px;
   background: var(--gis-surface-soft, #f1f5f3);
   color: var(--gis-muted, #526170);
+}
+
+/* Small inline icon buttons (filter-chip X, clear search, dialog close): the drawn icon stays small,
+   the pointer target grows to at least 24px without moving surrounding layout. */
+/* In the base layer: Tailwind utilities (@layer utilities) such as `absolute` must win over this default. */
+@layer base {
+  .gis-hit-target {
+    position: relative;
+  }
+}
+.gis-hit-target::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 28px);
+  height: max(100%, 28px);
+  transform: translate(-50%, -50%);
+}
+
+/* Native choice controls take the brand accent. Tailwind text-* colours on a checkbox have no effect
+   (no forms plugin), so without this every checkbox, radio and slider showed the browser's blue. */
+#__page-root :is(input[type='checkbox'], input[type='radio'], input[type='range']) {
+  accent-color: var(--gis-primary);
+}
+html.dark #__page-root :is(input[type='checkbox'], input[type='radio'], input[type='range']) {
+  accent-color: var(--gis-accent-text);
+}
+/* Shared look for date fields and native selects that are not inside the roster workspace. */
+#__page-root .gis-control {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--gis-control-border);
+  border-radius: 6px;
+  background: var(--gis-surface);
+  color: var(--gis-text);
+  font: inherit;
+}
+#__page-root .gis-control:disabled {
+  opacity: 0.6;
+}
+html.dark #__page-root .gis-control {
+  color-scheme: dark;
+}
+
+/* One scrim for every GIS dialog: same dimming, no backdrop blur (blur over the WebGL map is expensive). */
+.gis-modal-scrim {
+  background-color: rgb(2 6 23 / 60%);
+}
+
+/* Summary of fields still missing, shown at the top of a form (useFormCheck). */
+.gis-form-summary {
+  padding: 10px 12px;
+  border: 1px solid #fda4af;
+  border-radius: 6px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.gis-form-summary ul {
+  margin: 4px 0 0;
+  padding-inline-start: 20px;
+}
+.gis-form-summary:focus-visible {
+  outline: 3px solid var(--gis-focus);
+  outline-offset: 2px;
+}
+html.dark .gis-form-summary {
+  border-color: #9f3545;
+  background: #3b1720;
+  color: #fecdd3;
+}
+
+/* Thin scrollbars in every scroll area of the dashboard (page, sidebar, panels, wide tables).
+   :where() keeps specificity at zero so local choices such as `scrollbar-width: none` on tab rows still win. */
+:where(#__page-root, #__page-root *) {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--gis-muted) 45%, transparent) transparent;
+}
+:where(#__page-root .gis-sidebar, #__page-root .gis-sidebar *) {
+  scrollbar-color: color-mix(in srgb, var(--gis-sidebar-muted) 40%, transparent) transparent;
 }

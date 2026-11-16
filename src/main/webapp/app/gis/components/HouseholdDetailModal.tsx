@@ -37,8 +37,7 @@ import { InspectionImage } from './InspectionImage';
 import { useInspectionImageUrl } from '../services/inspectionPhotos';
 import { errorText } from '../../subjects/subjectModel';
 
-const ALLEY_BADGE_CLASS =
-  'text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700'; // taste-skill-ignore: màu phân loại tuyến hẻm đồng bộ sơ đồ địa bàn
+const ALLEY_BADGE_CLASS = 'text-[11px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700'; // taste-skill-ignore: màu phân loại tuyến hẻm đồng bộ sơ đồ địa bàn
 const PHOTO_SCRIM_CLASS =
   'absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between'; // taste-skill-ignore: scrim trung tính trên ảnh thật để đọc caption và nút xoá
 
@@ -459,7 +458,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
       className={
         drawer
           ? `gis-household-dialog gis-household-drawer fixed inset-0 z-50 flex${locked ? ' is-locked' : ''}${collapsed ? ' is-collapsed' : ''}`
-          : 'gis-household-dialog fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto'
+          : 'gis-household-dialog fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-3 sm:p-4 overflow-y-auto'
       }
     >
       <div
@@ -854,7 +853,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       <button
                         onClick={handleSaveInfo}
                         disabled={isSaving}
-                        className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                        className="px-4 py-1.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
                       >
                         <Save className="w-3.5 h-3.5" />
                         <span>Lưu thông tin</span>
@@ -1001,7 +1000,16 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                     {photos.map(photo => (
                       <div
                         key={photo.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Xem ảnh lớn"
                         onClick={() => setSelectedPhotoForView(photo)}
+                        onKeyDown={event => {
+                          if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
+                            event.preventDefault();
+                            setSelectedPhotoForView(photo);
+                          }
+                        }}
                         className="group relative rounded-lg overflow-hidden border border-slate-200 bg-white aspect-4/3 cursor-pointer"
                       >
                         <InspectionImage src={photo.url} alt={photo.caption || 'Ảnh hiện trạng'} className="w-full h-full object-cover" />
@@ -1011,7 +1019,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                               type="button"
                               onClick={e => handleDeletePhoto(photo.id, e)}
                               disabled={isSaving || isDeletingPhotoId === photo.id}
-                              className="p-1 rounded-md bg-rose-600/90 text-white hover:bg-rose-600 transition-colors"
+                              className="p-1.5 rounded-md bg-rose-600/90 text-white hover:bg-rose-600 transition-colors"
                               title="Xóa ảnh này"
                               aria-label="Xóa ảnh này"
                             >
@@ -1125,7 +1133,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
       {/* FULLSIZE PHOTO VIEWER MODAL */}
       {selectedPhotoForView && (
         <div
-          className="fixed inset-0 z-[11000] bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
+          className="fixed inset-0 z-[11000] bg-black/90 flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
           onClick={() => setSelectedPhotoForView(null)}
         >
           <div

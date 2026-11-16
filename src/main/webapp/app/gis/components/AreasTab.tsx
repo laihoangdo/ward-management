@@ -44,7 +44,7 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Banner */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <div>
           <h2 id="area-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Quản lý khu vực dân cư các Ấp thuộc Xã Bà Điểm
@@ -134,7 +134,7 @@ export const AreasTab: React.FC<AreasTabProps> = ({ households, onSelectHousehol
       </div>
 
       {/* List of Houses in Selected Hamlet */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pb-3 border-b border-slate-100 dark:border-slate-800">
           <h3 className="gis-area-list-title text-slate-900 dark:text-white flex items-center gap-2">
             <Building2 className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />

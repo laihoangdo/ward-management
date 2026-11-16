@@ -18,6 +18,7 @@ import {
 } from './residentExport';
 import ResidentPrintView from './ResidentPrintView';
 import './residentExport.css';
+import '../shared/stack-table.css';
 
 const api = '/api/roster/residents/export';
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -554,7 +555,7 @@ export default function ResidentExportDialog({
 
             {preview && preview.rows.length > 0 && (
               <div className="roster-table roster-export-preview">
-                <table>
+                <table className="gis-stack-table">
                   <caption className="roster-export-muted">
                     Xem trước {preview.rows.length} / {preview.total.toLocaleString('vi-VN')} dòng
                     {effectiveColumns.includes('identity') ? ' · số định danh được che' : ''}
@@ -572,7 +573,9 @@ export default function ResidentExportDialog({
                     {preview.rows.map((row, i) => (
                       <tr key={i}>
                         {row.map((cell, j) => (
-                          <td key={j}>{cell}</td>
+                          <td key={j} data-label={preview.columns[j]?.header}>
+                            {cell}
+                          </td>
                         ))}
                       </tr>
                     ))}

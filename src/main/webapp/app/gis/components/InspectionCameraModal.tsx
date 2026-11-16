@@ -339,7 +339,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
         {/* Top Header */}
         <div className="px-4 sm:px-6 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-800 flex items-center justify-center text-white font-bold shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[var(--gis-primary,#1c4e3a)] flex items-center justify-center text-white font-bold shrink-0">
               <Camera className="w-5 h-5" />
             </div>
             <div>
@@ -415,7 +415,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                   <div className="pt-1 flex items-center justify-center gap-2">
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <Upload className="w-4 h-4" />
                       <span>Chọn ảnh từ thiết bị</span>
@@ -435,7 +435,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
             /* Captured Photo Preview */
             <div className="relative w-full h-full flex items-center justify-center bg-black">
               <img src={capturedImage} alt="Ảnh hiện trạng chụp được" className="w-full h-full object-contain" />
-              <div className="absolute top-3 left-3 bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5">
+              <div className="absolute top-3 left-3 bg-[var(--gis-primary,#1c4e3a)] text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Ảnh đã chụp thành công</span>
               </div>
@@ -550,7 +550,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
                     id="btn-save-inspection-photo"
                     onClick={handleSavePhoto}
                     disabled={isSaving}
-                    className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {isSaving ? (
                       <>

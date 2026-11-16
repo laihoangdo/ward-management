@@ -763,7 +763,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
   return (
     <div className="relative w-full h-full flex flex-col bg-slate-950 text-slate-100 select-none overflow-hidden font-sans">
       {/* 1. TOP HEADER TOOLBAR */}
-      <div className="h-14 px-4 bg-slate-900/90 backdrop-blur border-b border-slate-800 flex items-center justify-between z-20 shrink-0">
+      <div className="h-14 px-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 flex items-center justify-center text-amber-400">
             <Boxes className="w-5 h-5" />
@@ -771,11 +771,11 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
           <div>
             <div className="flex items-center space-x-2">
               <span className="font-bold text-slate-100 text-sm tracking-wide">BẢN ĐỒ 3D VỆ TINH</span>
-              <span className="px-2 py-0.5 text-[10px] uppercase font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full">
+              <span className="px-2 py-0.5 text-[11px] uppercase font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full">
                 Xã Bà Điểm Mới
               </span>
               {hasUnsavedChanges && (
-                <span className="flex items-center space-x-1 px-2 py-0.5 text-[11px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full animate-pulse">
+                <span className="flex items-center space-x-1 px-2 py-0.5 text-[11px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                   <span>Chưa lưu</span>
                 </span>
@@ -791,7 +791,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
         <div className="flex items-center space-x-1.5 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
           <button
             onClick={() => setEditMode('select')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               editMode === 'select' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-700/60'
             }`}
             title="Công cụ chọn công trình (Click)"
@@ -801,7 +801,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
           </button>
           <button
             onClick={() => setEditMode('move')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               editMode === 'move' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-700/60'
             }`}
             title="Kéo di chuyển vị trí khối nhà trên mặt đất"
@@ -811,7 +811,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
           </button>
           <button
             onClick={() => setEditMode('rotate')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               editMode === 'rotate' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-700/60' // taste-skill-ignore: màu mode Xoay, phân biệt Chọn xanh và Di chuyển amber
             }`}
             title="Xoay hướng nhà"
@@ -825,15 +825,16 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
           <button
             onClick={handleUndo}
             disabled={historyIndex <= 0}
-            className="p-1.5 rounded hover:bg-slate-700/60 disabled:opacity-30 disabled:hover:bg-transparent text-slate-300"
+            className="p-1.5 rounded-md hover:bg-slate-700/60 disabled:opacity-30 disabled:hover:bg-transparent text-slate-300"
             title="Hoàn tác (Ctrl+Z)"
+            aria-label="Hoàn tác"
           >
             <Undo2 className="w-4 h-4" />
           </button>
           <button
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
-            className="p-1.5 rounded hover:bg-slate-700/60 disabled:opacity-30 disabled:hover:bg-transparent text-slate-300"
+            className="p-1.5 rounded-md hover:bg-slate-700/60 disabled:opacity-30 disabled:hover:bg-transparent text-slate-300"
             title="Làm lại (Ctrl+Y)"
           >
             <Redo2 className="w-4 h-4" />
@@ -845,7 +846,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
           {hasUnsavedChanges && (
             <button
               onClick={handleCancel}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition-all"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition-colors"
             >
               Hủy thay đổi
             </button>
@@ -853,7 +854,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
           <button
             onClick={handleSave}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all"
+            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Lưu bản nháp trên thiết bị</span>
@@ -861,7 +862,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
           <button
             onClick={handleExportGeoJSON}
-            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all"
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
             title="Tải tệp GeoJSON đã cập nhật"
           >
             <Download className="w-3.5 h-3.5" />
@@ -871,7 +872,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
           <button
             onClick={handleSyncToBlender}
             disabled={isSyncingBlender}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600/90 hover:bg-orange-500 text-white border border-orange-500/40 shadow-sm transition-all"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600/90 hover:bg-orange-500 text-white border border-orange-500/40 shadow-sm transition-colors"
             title="Đồng bộ trực tiếp với ứng dụng Blender đang mở"
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -892,7 +893,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
       {/* Status banner */}
       {statusMessage && (
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-emerald-950/90 border border-emerald-500 text-emerald-200 px-4 py-2 rounded-lg shadow-xl text-xs flex items-center space-x-2 backdrop-blur animate-in fade-in zoom-in duration-200">
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30 bg-emerald-950/90 border border-emerald-500 text-emerald-200 px-4 py-2 rounded-lg shadow-xl text-xs flex items-center space-x-2 animate-in fade-in zoom-in duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{statusMessage}</span>
         </div>
@@ -911,13 +912,13 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
         {/* Floating Controls (Top-Left): Layer & Lighting Settings */}
         <div className="absolute top-4 left-4 z-10 flex flex-col space-y-2 pointer-events-auto">
           {/* Layer toggles panel */}
-          <div className="bg-slate-900/85 backdrop-blur border border-slate-800 rounded-xl p-3 shadow-xl w-60 text-xs">
+          <div className="bg-slate-900/85 border border-slate-800 rounded-xl p-3 shadow-xl w-60 text-xs">
             <div className="flex items-center justify-between font-semibold text-slate-200 mb-2.5 pb-1.5 border-b border-slate-800">
               <span className="flex items-center space-x-1.5">
                 <Layers className="w-3.5 h-3.5 text-blue-400" />
                 <span>Lớp bản đồ</span>
               </span>
-              <span className="text-[10px] text-slate-400 font-normal">Zoom 16 SAS</span>
+              <span className="text-[11px] text-slate-400 font-normal">Zoom 16 SAS</span>
             </div>
 
             {/* Satellite toggle & opacity */}
@@ -932,7 +933,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                   />
                   <span>Ảnh vệ tinh mặt đất</span>
                 </label>
-                <span className="text-[10px] text-slate-400 font-mono">{Math.round(satelliteOpacity * 100)}%</span>
+                <span className="text-[11px] text-slate-400 font-mono">{Math.round(satelliteOpacity * 100)}%</span>
               </div>
               {showSatellite && (
                 <input
@@ -968,7 +969,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                 <div className="grid grid-cols-2 gap-1 text-[11px]">
                   <button
                     onClick={() => setFilterCategory('all')}
-                    className={`px-2 py-1 rounded text-center transition-all ${
+                    className={`px-2 py-1 rounded text-center transition-colors ${
                       filterCategory === 'all' ? 'bg-blue-600 text-white font-medium' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
@@ -976,7 +977,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                   </button>
                   <button
                     onClick={() => setFilterCategory('residential')}
-                    className={`px-2 py-1 rounded text-center transition-all ${
+                    className={`px-2 py-1 rounded text-center transition-colors ${
                       filterCategory === 'residential'
                         ? 'bg-amber-600 text-white font-medium'
                         : 'bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -986,7 +987,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                   </button>
                   <button
                     onClick={() => setFilterCategory('commercial')}
-                    className={`px-2 py-1 rounded text-center transition-all ${
+                    className={`px-2 py-1 rounded text-center transition-colors ${
                       filterCategory === 'commercial'
                         ? 'bg-cyan-600 text-white font-medium'
                         : 'bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -996,7 +997,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                   </button>
                   <button
                     onClick={() => setFilterCategory('other')}
-                    className={`px-2 py-1 rounded text-center transition-all ${
+                    className={`px-2 py-1 rounded text-center transition-colors ${
                       filterCategory === 'other'
                         ? 'bg-orange-600 text-white font-medium'
                         : 'bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -1010,7 +1011,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
           </div>
 
           {/* Camera Presets & Time of day */}
-          <div className="bg-slate-900/85 backdrop-blur border border-slate-800 rounded-xl p-2.5 shadow-xl flex items-center space-x-2 text-xs">
+          <div className="bg-slate-900/85 border border-slate-800 rounded-xl p-2.5 shadow-xl flex items-center space-x-2 text-xs">
             <span className="text-[11px] text-slate-400 font-medium pl-1">Góc nhìn:</span>
             <button
               onClick={() => setCameraPreset('overview')}
@@ -1036,21 +1037,21 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
             {/* Time of day */}
             <button
               onClick={() => setTimeOfDay('day')}
-              className={`p-1.5 rounded ${timeOfDay === 'day' ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400 hover:text-white'}`}
+              className={`p-1.5 rounded-md ${timeOfDay === 'day' ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400 hover:text-white'}`}
               title="Ánh sáng ban ngày"
             >
               <Sun className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setTimeOfDay('sunset')}
-              className={`p-1.5 rounded ${timeOfDay === 'sunset' ? 'bg-orange-500/20 text-orange-400' : 'text-slate-400 hover:text-white'}`}
+              className={`p-1.5 rounded-md ${timeOfDay === 'sunset' ? 'bg-orange-500/20 text-orange-400' : 'text-slate-400 hover:text-white'}`}
               title="Ánh sáng hoàng hôn"
             >
               <Sunset className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setTimeOfDay('night')}
-              className={`p-1.5 rounded ${timeOfDay === 'night' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:text-white'}`}
+              className={`p-1.5 rounded-md ${timeOfDay === 'night' ? 'bg-blue-500/20 text-blue-400' : 'text-slate-400 hover:text-white'}`}
               title="Ánh sáng ban đêm"
             >
               <Moon className="w-3.5 h-3.5" />
@@ -1060,7 +1061,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
         {/* Floating Building Tooltip (Hover) */}
         {hoveredBuildingId && !selectedBuildingId && (
-          <div className="absolute bottom-6 left-6 z-10 bg-slate-900/90 backdrop-blur border border-slate-700 px-3.5 py-2 rounded-lg shadow-xl text-xs pointer-events-none">
+          <div className="absolute bottom-6 left-6 z-10 bg-slate-900/90 border border-slate-700 px-3.5 py-2 rounded-lg shadow-xl text-xs pointer-events-none">
             {(() => {
               const b = buildings.get(hoveredBuildingId);
               if (!b) return null;
@@ -1081,18 +1082,20 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
         {/* 3. RIGHT INSPECTOR / EDITING PANEL (When Building Selected) */}
         {currentSelected && (
-          <div className="absolute top-4 right-4 bottom-4 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-2xl shadow-2xl z-20 flex flex-col overflow-hidden text-xs">
+          <div className="absolute top-4 right-4 bottom-4 w-80 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl z-20 flex flex-col overflow-hidden text-xs">
             {/* Panel Header */}
             <div className="px-4 py-3 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" aria-hidden="true"></span>
                 <span className="font-bold text-slate-100 text-sm">Chỉnh Sửa Công Trình</span>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedBuildingId(null)}
-                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800"
+                aria-label="Đóng chỉnh sửa công trình"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -1107,7 +1110,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                   onChange={e => updateBuilding(currentSelected.id, { name: e.target.value }, 'Đổi tên')}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-blue-500"
                 />
-                <span className="text-[10px] text-slate-500 block mt-1">ID: {currentSelected.id}</span>
+                <span className="text-[11px] text-slate-500 block mt-1">ID: {currentSelected.id}</span>
               </div>
 
               {/* Geographic Coordinates */}
@@ -1117,15 +1120,15 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                     <MapPin className="w-3 h-3 text-red-400" />
                     <span>Tọa độ GPS WGS84</span>
                   </span>
-                  <button onClick={() => setCameraPreset('focus')} className="text-[10px] text-blue-400 hover:underline">
+                  <button onClick={() => setCameraPreset('focus')} className="text-[11px] text-blue-400 hover:underline">
                     Focus camera
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-300">
-                  <div className="bg-slate-900/60 p-1.5 rounded">Vĩ độ: {currentSelected.lat.toFixed(6)}°</div>
-                  <div className="bg-slate-900/60 p-1.5 rounded">Kinh độ: {currentSelected.lng.toFixed(6)}°</div>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-300">
+                  <div className="bg-slate-900/60 p-1.5 rounded-md">Vĩ độ: {currentSelected.lat.toFixed(6)}°</div>
+                  <div className="bg-slate-900/60 p-1.5 rounded-md">Kinh độ: {currentSelected.lng.toFixed(6)}°</div>
                 </div>
-                <div className="text-[10px] text-slate-400">
+                <div className="text-[11px] text-slate-400">
                   Diện tích đáy: <b className="text-slate-200">{Math.round(currentSelected.area_m2)} m²</b>
                 </div>
               </div>
@@ -1184,7 +1187,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                     <button
                       key={r.id}
                       onClick={() => updateBuilding(currentSelected.id, { roofType: r.id as RoofType }, 'Đổi kiểu mái')}
-                      className={`px-2.5 py-1.5 rounded-lg border text-left transition-all text-[11px] ${
+                      className={`px-2.5 py-1.5 rounded-lg border text-left transition-colors text-[11px] ${
                         currentSelected.roofType === r.id
                           ? 'border-amber-500 bg-amber-500/15 text-amber-200 font-medium'
                           : 'border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -1302,7 +1305,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                 onClick={() => {
                   setEditMode(editMode === 'move' ? 'select' : 'move');
                 }}
-                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition-all ${
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors ${
                   editMode === 'move' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >

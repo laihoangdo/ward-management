@@ -37,7 +37,7 @@ const AppContent = () => {
 
   if (isGisDashboard) {
     return (
-      <div className="gis-viewport-wrapper w-full h-screen h-[100dvh] overflow-hidden m-0 p-0 bg-[#f8fafc] dark:bg-[#090d16]">
+      <div className="gis-viewport-wrapper w-full h-screen h-[100dvh] overflow-hidden m-0 p-0 bg-[var(--gis-background,#f8f9fa)] dark:bg-[#0b1520]">
         <ToastContainer position="top-left" className="toastify-container" toastClassName="toastify-toast" />
         <ErrorBoundary>
           <AppRoutes />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import AttachmentGallery from '../roster/AttachmentGallery';
 import { EntryDialog } from '../subjects/SubjectDetail';
@@ -15,6 +15,10 @@ function EmployeeDialog({ facilityId, onSaved, onClose }: { facilityId: string; 
   const [chosen, setChosen] = useState<Person | null>(null);
   const [data, setData] = useState<Record<string, string>>({ startedOn: '' });
   const [error, setError] = useState('');
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
   const [busy, setBusy] = useState(false);
   const set = (key: string, value: string) => setData(d => ({ ...d, [key]: value }));
 
@@ -67,7 +71,7 @@ function EmployeeDialog({ facilityId, onSaved, onClose }: { facilityId: string; 
       <section role="dialog" aria-modal="true" aria-label="Thêm nhân viên cơ sở" className="roster-dialog">
         <h2>Thêm nhân viên cơ sở</h2>
         {error && (
-          <div role="alert" className="roster-error">
+          <div ref={errorRef} tabIndex={-1} role="alert" className="roster-error">
             {error}
           </div>
         )}

@@ -131,7 +131,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
   return (
     <div
       id="modal-map-quick-guide-overlay"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 gis-modal-scrim animate-in fade-in duration-200"
       onClick={handleFinish}
       role="dialog"
       aria-modal="true"
@@ -150,7 +150,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
                   Cán bộ chiến sĩ mới
                 </span>
                 <span className="text-xs text-slate-400 hidden sm:inline">• Bản đồ số thực địa quản lý địa bàn</span>
@@ -182,7 +182,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
               <button
                 key={item.id}
                 onClick={() => setActiveFeatureIndex(idx)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer ${
                   isActive
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
@@ -211,7 +211,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${active.tagColor}`}>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${active.tagColor}`}>
                         Tính năng {activeFeatureIndex + 1}/{guideItems.length}
                       </span>
                       <h3 className="text-base font-bold text-slate-900 mt-0.5">{active.title}</h3>
@@ -247,7 +247,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
           <div>
             <h4 className="text-sm font-semibold text-slate-600 mb-3 flex items-center gap-1.5">
               <span>Danh mục toàn bộ các công cụ bản đồ</span>
-              <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full font-bold">6 công cụ</span>
+              <span className="text-[11px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full font-bold">6 công cụ</span>
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -257,8 +257,17 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                 return (
                   <div
                     key={item.id}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
                     onClick={() => setActiveFeatureIndex(idx)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer text-left relative flex flex-col justify-between ${
+                    onKeyDown={event => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setActiveFeatureIndex(idx);
+                      }
+                    }}
+                    className={`p-4 rounded-2xl border transition-colors cursor-pointer text-left relative flex flex-col justify-between ${
                       isSelected
                         ? 'bg-white border-blue-500 ring-2 ring-blue-200'
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
@@ -273,7 +282,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                           <span className="text-xs font-bold text-slate-900">{item.title}</span>
                         </div>
                         {isSelected && (
-                          <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]">
+                          <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px]">
                             <Check className="w-3 h-3" />
                           </span>
                         )}
@@ -317,7 +326,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
             <button
               id="btn-confirm-map-guide-start"
               onClick={handleFinish}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 cursor-pointer"
             >
               <span>Bắt đầu sử dụng bản đồ</span>
               <ArrowRight className="w-4 h-4" />

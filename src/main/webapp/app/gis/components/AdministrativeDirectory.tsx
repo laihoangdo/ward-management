@@ -8,6 +8,7 @@ interface Unit {
 
 function useUnits(path: string | null) {
   const [state, setState] = useState<{ units: Unit[]; loading: boolean; error: boolean }>({ units: [], loading: false, error: false });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let active = true;
     setState({ units: [], loading: path !== null, error: false });
@@ -23,8 +24,8 @@ function useUnits(path: string | null) {
     return () => {
       active = false;
     };
-  }, [path]);
-  return state;
+  }, [path, attempt]);
+  return { ...state, retry: () => setAttempt(n => n + 1) };
 }
 
 export function AdministrativeDirectory({ onCommuneChange }: { onCommuneChange?: (id: number | null) => void }) {
@@ -64,24 +65,37 @@ export function AdministrativeDirectory({ onCommuneChange }: { onCommuneChange?:
           },
           { label: 'Ấp / Khu phố', state: hamlets, value: hamletId, change: setHamletId, enabled: !!communeId },
         ].map(item => (
-          <label key={item.label} className="text-xs text-slate-300">
-            {item.label}
-            <select
-              aria-label={item.label}
-              value={item.value}
-              disabled={!item.enabled || item.state.loading || item.state.error}
-              onChange={event => item.change(event.target.value)}
-              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white"
-            >
-              <option value="">{item.state.loading ? 'Đang tải...' : 'Chọn ' + item.label}</option>
-              {item.state.units.map(unit => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.fullName}
-                </option>
-              ))}
-            </select>
-            {item.state.error && <span role="alert">Không thể tải danh mục.</span>}
-          </label>
+          <div key={item.label} className="text-xs text-slate-300">
+            <label className="block">
+              {item.label}
+              <select
+                aria-label={item.label}
+                value={item.value}
+                disabled={!item.enabled || item.state.loading || item.state.error}
+                onChange={event => item.change(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-white"
+              >
+                <option value="">{item.state.loading ? 'Đang tải...' : 'Chọn ' + item.label}</option>
+                {item.state.units.map(unit => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.fullName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {item.state.error && (
+              <span role="alert" className="mt-1 flex flex-wrap items-center gap-2">
+                Không thể tải danh mục.
+                <button
+                  type="button"
+                  onClick={item.state.retry}
+                  className="rounded-md border border-slate-600 px-2 py-1 text-xs text-white hover:bg-slate-800"
+                >
+                  Thử lại
+                </button>
+              </span>
+            )}
+          </div>
         ))}
       </div>
       <p className="text-xs text-slate-400">

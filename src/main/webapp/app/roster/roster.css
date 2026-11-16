@@ -121,7 +121,7 @@
   position: fixed;
   inset: 0;
   z-index: 2000;
-  background: #0f172aaa;
+  background: rgb(2 6 23 / 60%);
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -1314,4 +1314,29 @@
   margin: 0 0 10px;
   padding: 0;
   list-style: none;
+}
+
+/* Load error with a way forward: message and a retry button on one line, wrapping on narrow screens. */
+.roster-error--retry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+/* File picker button follows the roster buttons instead of the browser's grey default. */
+.roster-page input[type='file']::file-selector-button {
+  margin-inline-end: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--roster-border);
+  border-radius: 6px;
+  background: var(--roster-surface);
+  color: var(--roster-text);
+  font: inherit;
+  cursor: pointer;
+}
+.roster-error:focus-visible {
+  outline: 2px solid var(--roster-primary);
+  outline-offset: 2px;
 }

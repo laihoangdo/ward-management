@@ -154,8 +154,17 @@ export default function GuidanceTab() {
       </div>
 
       {error && (
-        <div role="alert" className="roster-error">
-          {error}
+        <div role="alert" className="roster-error roster-error--retry">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => {
+              loadSummary();
+              void load();
+            }}
+          >
+            Thử lại
+          </button>
         </div>
       )}
 
@@ -243,6 +252,11 @@ export default function GuidanceTab() {
                 </tbody>
               </table>
             </div>
+            {loading && items.length === 0 && (
+              <p role="status" className="roster-empty-hint">
+                Đang tải…
+              </p>
+            )}
             {!loading && items.length === 0 && <p>Chưa có văn bản phù hợp trong sổ.</p>}
             <div className="roster-actions roster-pagination-bar">
               <button disabled={page === 0} onClick={() => setPage(page - 1)}>

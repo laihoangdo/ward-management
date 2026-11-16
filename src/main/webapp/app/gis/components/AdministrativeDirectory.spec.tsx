@@ -29,3 +29,17 @@ it('loads children by DB parent IDs and clears selection when the province chang
   fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '' } });
   await waitFor(() => expect(screen.queryByRole('option', { name: 'DB hamlet' })).toBeNull());
 });
+
+it('offers a retry when a catalogue fails to load', async () => {
+  let fail = true;
+  vi.mocked(axios.get).mockImplementation(async () => {
+    if (fail) throw new Error('offline');
+    return { data: [{ id: 9, fullName: 'DB province' }] };
+  });
+  render(<AdministrativeDirectory />);
+  const retry = await screen.findByRole('button', { name: 'Thử lại' });
+  fail = false;
+  fireEvent.click(retry);
+  await screen.findByRole('option', { name: 'DB province' });
+  expect(screen.queryByRole('button', { name: 'Thử lại' })).toBeNull();
+});

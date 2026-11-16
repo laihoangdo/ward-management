@@ -33,7 +33,7 @@ export function DocumentHistoryDialog({ document, onClose }: { document: Documen
       aria-modal="true"
       aria-labelledby="document-history-title"
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-4"
     >
       <div className="w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-xl bg-white dark:bg-slate-900 p-5 space-y-3">
         <h2 id="document-history-title" className="text-lg font-bold">

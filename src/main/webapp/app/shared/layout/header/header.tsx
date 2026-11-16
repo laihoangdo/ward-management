@@ -42,8 +42,8 @@ const Header = (props: IHeaderProps) => {
   return (
     <div id="app-header">
       {renderDevRibbon()}
-      <LoadingBar ref={loadingBarRef} className="loading-bar" color="#009cd8" />
-      <Navbar data-cy="navbar" data-bs-theme="dark" expand="md" fixed="top" className="bg-primary" collapseOnSelect>
+      <LoadingBar ref={loadingBarRef} className="loading-bar" color="#d4af37" />
+      <Navbar data-cy="navbar" data-bs-theme="dark" expand="md" fixed="top" className="jh-navbar-surface" collapseOnSelect>
         <Navbar.Toggle aria-controls="header-tabs" aria-label="Menu" />
         <Brand />
         <Navbar.Collapse id="header-tabs">

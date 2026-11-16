@@ -83,7 +83,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
       {/* Banner */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div>
             <h2 id="document-title" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -130,7 +130,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
       )}
 
       {/* Filter and search bar */}
-      <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+      <div className="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -187,9 +187,9 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
         </p>
       )}
       {/* Document List */}
-      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-          <h3 id="document-list-title" className="gis-panel-title text-[#1e293b] dark:text-white flex items-center gap-2">
+          <h3 id="document-list-title" className="gis-panel-title text-[var(--gis-text,#172c35)] flex items-center gap-2">
             <FileText aria-hidden="true" className="w-4 h-4 text-slate-500" />
             <span>Danh sách giấy tờ đang theo dõi ({filteredDocs.length})</span>
           </h3>
@@ -208,7 +208,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
               return (
                 <div
                   key={doc.id}
-                  className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
+                  className={`p-3.5 sm:p-4 rounded-xl border transition-colors ${
                     isExpired
                       ? 'bg-red-50/70 dark:bg-red-950/20 border-red-300 dark:border-red-700/60'
                       : isExpiring
@@ -261,7 +261,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                           disabled={!canRemind}
                           className={`flex-1 sm:flex-initial px-3 py-2 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[38px] ${
                             isExpiring
-                              ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'
+                              ? 'bg-amber-600 hover:bg-amber-700 text-white'
                               : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
                           }`}
                         >
@@ -272,7 +272,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                         <button
                           onClick={() => onRenewDocument(doc.id)}
                           disabled={!canRenew}
-                          className="flex-1 sm:flex-initial px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs min-h-[38px]"
+                          className="flex-1 sm:flex-initial px-3 py-2 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[38px]"
                         >
                           <FileCheck className="w-3 h-3" />
                           <span>{doc.expiryOn ? 'Gia hạn' : 'Đối chiếu'}</span>

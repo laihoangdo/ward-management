@@ -12,7 +12,7 @@ export function DiscardChangesDialog({ open, onContinue, onDiscard }: { open: bo
       aria-labelledby="discard-title"
       aria-describedby="discard-description"
       tabIndex={-1}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center gis-modal-scrim p-4"
     >
       <div className="w-full max-w-sm rounded-xl bg-white dark:bg-slate-900 p-5 shadow-xl">
         <h2 id="discard-title" className="text-lg font-bold">

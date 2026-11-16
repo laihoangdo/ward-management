@@ -386,6 +386,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
     }
   }, [theme]);
 
+  // The theme belongs to the dashboard shell only: pages outside it (roster route, JHipster pages) have no dark styles.
+  useEffect(() => () => document.documentElement.classList.remove('dark'), []);
+
   const handleToggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
@@ -927,7 +930,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   return (
     <div
       id="__page-root"
-      className={`flex h-screen h-[100dvh] w-full bg-[#f8fafc] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 font-sans overflow-hidden ${isMapFullscreen ? 'p-0' : ''}`}
+      className={`flex h-screen h-[100dvh] w-full bg-[var(--gis-background,#f8f9fa)] text-[var(--gis-text,#172c35)] font-sans overflow-hidden ${isMapFullscreen ? 'p-0' : ''}`}
     >
       {idleSession.secondsLeft !== null && (
         <div
@@ -1062,7 +1065,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                         <button
                           type="button"
                           onClick={() => setActiveTab('households')}
-                          className="px-2.5 py-1 bg-[#1c4e3a] hover:bg-[#153c2c] text-white font-semibold rounded-lg border border-[#1c4e3a] transition-colors text-[11px] cursor-pointer"
+                          className="px-2.5 py-1 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-semibold rounded-lg border border-[var(--gis-primary,#1c4e3a)] transition-colors text-[11px] cursor-pointer"
                         >
                           Xem danh sách hộ ({displayedHouseholds.length})
                         </button>
@@ -1309,12 +1312,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               aria-current={activeTab === 'overview' ? 'page' : undefined}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
                 activeTab === 'overview'
-                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <LayoutDashboard
-                className={`w-4.5 h-4.5 ${activeTab === 'overview' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+                className={`w-4.5 h-4.5 ${activeTab === 'overview' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
               />
               <span className="text-[11px] mt-0.5 leading-tight">Tổng quan</span>
             </button>
@@ -1326,11 +1329,13 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               aria-current={activeTab === 'area-map' ? 'page' : undefined}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
                 activeTab === 'area-map'
-                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Map className={`w-4.5 h-4.5 ${activeTab === 'area-map' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`} />
+              <Map
+                className={`w-4.5 h-4.5 ${activeTab === 'area-map' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
+              />
               <span className="text-[11px] mt-0.5 leading-tight">Sơ đồ</span>
             </button>
 
@@ -1341,11 +1346,13 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               aria-current={activeTab === 'households' ? 'page' : undefined}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
                 activeTab === 'households'
-                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              <Users className={`w-4.5 h-4.5 ${activeTab === 'households' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`} />
+              <Users
+                className={`w-4.5 h-4.5 ${activeTab === 'households' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
+              />
               <span className="text-[11px] mt-0.5 leading-tight">Hộ dân</span>
             </button>
 
@@ -1356,12 +1363,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               aria-current={activeTab === 'residents' ? 'page' : undefined}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
                 activeTab === 'residents'
-                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <UserCheck
-                className={`w-4.5 h-4.5 ${activeTab === 'residents' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+                className={`w-4.5 h-4.5 ${activeTab === 'residents' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
               />
               <span className="text-[11px] mt-0.5 leading-tight">Nhân khẩu</span>
             </button>
@@ -1373,12 +1380,12 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               aria-current={activeTab === 'documents' ? 'page' : undefined}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] relative ${
                 activeTab === 'documents'
-                  ? 'text-[#1c4e3a] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                  ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
               <FileText
-                className={`w-4.5 h-4.5 ${activeTab === 'documents' ? 'text-[#1c4e3a] dark:text-emerald-300' : 'text-slate-400'}`}
+                className={`w-4.5 h-4.5 ${activeTab === 'documents' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
               />
               <span className="text-[11px] mt-0.5 leading-tight">Hồ sơ</span>
               {warningCount > 0 && <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />}

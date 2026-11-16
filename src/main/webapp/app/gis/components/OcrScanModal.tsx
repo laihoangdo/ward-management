@@ -353,7 +353,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
       aria-modal="true"
       aria-label="OCR"
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-2 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-2 sm:p-4 overflow-y-auto"
     >
       <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in duration-150 my-auto max-h-[94vh] flex flex-col">
         {/* Header */}
@@ -414,7 +414,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   id="btn-ocr-success-finish"
                   disabled={isSaving}
                   onClick={requestClose}
-                  className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer inline-flex items-center gap-2"
+                  className="px-6 py-2.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-bold text-xs rounded-xl transition-colors cursor-pointer inline-flex items-center gap-2"
                 >
                   <Check className="w-4 h-4" />
                   <span>Hoàn tất & Đóng cửa sổ</span>
@@ -436,7 +436,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     onClick={() => setDocTypeMode('auto')}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                       docTypeMode === 'auto'
-                        ? 'bg-emerald-800 text-white'
+                        ? 'bg-[var(--gis-primary,#1c4e3a)] text-white'
                         : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -447,7 +447,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     onClick={() => setDocTypeMode('cccd')}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                       docTypeMode === 'cccd'
-                        ? 'bg-emerald-800 text-white'
+                        ? 'bg-[var(--gis-primary,#1c4e3a)] text-white'
                         : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -458,7 +458,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     onClick={() => setDocTypeMode('business_license')}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                       docTypeMode === 'business_license'
-                        ? 'bg-emerald-800 text-white'
+                        ? 'bg-[var(--gis-primary,#1c4e3a)] text-white'
                         : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-100'
                     }`}
                   >
@@ -501,6 +501,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   onClick={handleToggleFacing}
                   className="absolute top-3 right-3 p-2 bg-slate-900/90 hover:bg-slate-800 text-white rounded-xl border border-slate-700 transition-colors cursor-pointer"
                   title="Đổi camera trước/sau"
+                  aria-label="Đổi camera trước/sau"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
@@ -534,7 +535,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   id="btn-capture-ocr-shot"
                   type="button"
                   onClick={handleCaptureFromVideo}
-                  className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer min-h-[42px]"
+                  className="px-6 py-2.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer min-h-[42px]"
                 >
                   <Camera className="w-4 h-4" />
                   <span>Chụp & Phân Tích OCR Ngay</span>
@@ -552,7 +553,16 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     {existingPhotos.map(p => (
                       <div
                         key={p.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={p.caption ? `Quét OCR ảnh: ${p.caption}` : 'Quét OCR ảnh này'}
                         onClick={() => void handleSelectExistingPhoto(p.url)}
+                        onKeyDown={event => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            void handleSelectExistingPhoto(p.url);
+                          }
+                        }}
                         className="relative w-20 h-14 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 hover:border-emerald-500 cursor-pointer shrink-0 group transition-colors"
                         title={p.caption || 'Chọn ảnh này để quét OCR'}
                       >
@@ -570,7 +580,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             /* STEP 2: PROCESSING ANIMATION */
             <div className="py-12 px-4 text-center space-y-4">
               <div className="relative w-16 h-16 mx-auto">
-                <div className="relative w-16 h-16 rounded-2xl bg-emerald-700 flex items-center justify-center text-white">
+                <div className="relative w-16 h-16 rounded-2xl bg-[var(--gis-primary,#1c4e3a)] flex items-center justify-center text-white">
                   <Sparkles className="w-8 h-8 animate-spin" />
                 </div>
               </div>
@@ -628,7 +638,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                       onClick={() => setApplyMode('add_resident')}
                       className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                         applyMode === 'add_resident'
-                          ? 'bg-emerald-800 text-white'
+                          ? 'bg-[var(--gis-primary,#1c4e3a)] text-white'
                           : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600'
                       }`}
                     >
@@ -639,7 +649,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                       onClick={() => setApplyMode('update_owner')}
                       className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                         applyMode === 'update_owner'
-                          ? 'bg-emerald-800 text-white'
+                          ? 'bg-[var(--gis-primary,#1c4e3a)] text-white'
                           : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600'
                       }`}
                     >
@@ -650,7 +660,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                       onClick={() => setApplyMode('update_business')}
                       className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                         applyMode === 'update_business'
-                          ? 'bg-emerald-800 text-white'
+                          ? 'bg-[var(--gis-primary,#1c4e3a)] text-white'
                           : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600'
                       }`}
                     >
@@ -853,7 +863,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                 type="button"
                 onClick={handleConfirmAndSave}
                 disabled={isSaving}
-                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-1.5 cursor-pointer min-h-[38px] disabled:opacity-60"
+                className="px-5 py-2 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-semibold rounded-xl text-sm transition-colors flex items-center gap-1.5 cursor-pointer min-h-[38px] disabled:opacity-60"
               >
                 {isSaving ? (
                   <>

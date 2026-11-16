@@ -9,7 +9,11 @@ import PrivateRoute from 'app/shared/auth/private-route';
 import ErrorBoundaryRoutes from 'app/shared/error/error-boundary-routes';
 import { Authority } from 'app/shared/jhipster/constants';
 
-const loading = <div>loading ...</div>;
+const loading = (
+  <div role="status" className="p-3">
+    Đang tải…
+  </div>
+);
 
 const Admin = React.lazy(() => import('app/modules/administration'));
 const GisDashboard = React.lazy(() => import('app/gis/App'));

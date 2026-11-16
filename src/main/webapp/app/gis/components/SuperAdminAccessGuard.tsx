@@ -25,7 +25,7 @@ export const SuperAdminAccessGuard: React.FC<SuperAdminAccessGuardProps> = ({
             <Lock className="w-6 h-6" />
           </div>
           <div>
-            <span className="px-2.5 py-0.5 rounded text-[10px] uppercase font-mono font-bold bg-red-950 text-red-300 border border-red-700/60">
+            <span className="px-2.5 py-0.5 rounded text-[11px] uppercase font-mono font-bold bg-red-950 text-red-300 border border-red-700/60">
               Yêu Cầu Thẩm Quyền Tối Cao
             </span>
             <h2 className="text-xl sm:text-2xl font-bold text-white mt-0.5 tracking-tight">Trung tâm quản trị</h2>

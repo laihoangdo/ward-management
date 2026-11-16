@@ -446,7 +446,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
       role="dialog"
       aria-modal="true"
       aria-labelledby="feature-guide-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-2.5 sm:p-4 md:p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-2.5 sm:p-4 md:p-6"
       onClick={onClose}
     >
       <div
@@ -457,7 +457,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
         {/* Modal Header */}
         <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/60 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-[#1c4e3a] text-white flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-[var(--gis-primary,#1c4e3a)] text-white flex items-center justify-center shrink-0">
               <BookOpen className="w-5 h-5" />
             </div>
             <div className="min-w-0">
@@ -498,18 +498,22 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
                   onClick={() => setSelectedId(guide.id)}
                   className={`flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left text-xs font-semibold shrink-0 md:w-full cursor-pointer border ${
                     isSelected
-                      ? 'bg-[#1c4e3a] text-white border-[#1c4e3a]'
+                      ? 'bg-[var(--gis-primary,#1c4e3a)] text-white border-[var(--gis-primary,#1c4e3a)]'
                       : 'bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700 hover:bg-emerald-50/60 dark:hover:bg-slate-800'
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-[#1c4e3a] dark:text-emerald-400'}`} />
+                    <Icon
+                      className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-400'}`}
+                    />
                     <span className="truncate">{guide.title}</span>
                   </div>
                   {isCurrentScreen && (
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${
-                        isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 dark:bg-emerald-950 text-[#1c4e3a] dark:text-emerald-300'
+                      className={`px-1.5 py-0.5 rounded text-[11px] font-bold shrink-0 ${
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-emerald-100 dark:bg-emerald-950 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300'
                       }`}
                     >
                       Đang mở
@@ -526,7 +530,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
             <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#1c4e3a] text-white">
+                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--gis-primary,#1c4e3a)] text-white">
                     {currentGuide.group}
                   </span>
                   {currentGuide.id === normalizedActiveTab && (
@@ -534,7 +538,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
                   )}
                 </div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white m-0 flex items-center gap-2">
-                  <CurrentIcon className="w-5 h-5 text-[#1c4e3a] dark:text-emerald-400 shrink-0" />
+                  <CurrentIcon className="w-5 h-5 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-400 shrink-0" />
                   <span>{currentGuide.title}</span>
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 m-0 leading-relaxed">{currentGuide.summary}</p>
@@ -546,7 +550,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
                     onNavigateTab(currentGuide.id);
                     onClose();
                   }}
-                  className="px-3.5 py-2 rounded-lg bg-[#1c4e3a] hover:bg-[#153c2c] text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer self-start sm:self-center"
+                  className="px-3.5 py-2 rounded-lg bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer self-start sm:self-center"
                 >
                   <span>Mở phân hệ này</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -569,7 +573,9 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
                     key={step.heading}
                     className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/40"
                   >
-                    <div className="text-xs sm:text-sm font-bold text-[#1c4e3a] dark:text-emerald-300 mb-1">{step.heading}</div>
+                    <div className="text-xs sm:text-sm font-bold text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 mb-1">
+                      {step.heading}
+                    </div>
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 m-0 leading-relaxed">{step.detail}</p>
                   </div>
                 ))}
@@ -607,7 +613,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-[#1c4e3a] hover:bg-[#153c2c] text-white text-xs font-semibold cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white text-xs font-semibold cursor-pointer"
           >
             Đã hiểu, đóng hướng dẫn
           </button>
@@ -638,7 +644,7 @@ export const ActiveMenuGuideBanner: React.FC<ActiveMenuGuideBannerProps> = ({ ac
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#1c4e3a] text-white text-[11px] font-bold shrink-0">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--gis-primary,#1c4e3a)] text-white text-[11px] font-bold shrink-0">
             <BookOpen className="w-3.5 h-3.5" />
             <span>Hướng dẫn</span>
           </span>
@@ -650,14 +656,14 @@ export const ActiveMenuGuideBanner: React.FC<ActiveMenuGuideBannerProps> = ({ ac
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded(prev => !prev)}
-            className="px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[#1c4e3a] dark:text-emerald-300 text-xs font-semibold cursor-pointer"
+            className="px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 text-xs font-semibold cursor-pointer"
           >
             {expanded ? 'Thu gọn các bước' : `Xem ${guide.steps.length} bước thao tác`}
           </button>
           <button
             type="button"
             onClick={onOpenFullGuide}
-            className="px-2.5 py-1 rounded-lg bg-[#1c4e3a] hover:bg-[#153c2c] text-white text-xs font-semibold flex items-center gap-1 cursor-pointer"
+            className="px-2.5 py-1 rounded-lg bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white text-xs font-semibold flex items-center gap-1 cursor-pointer"
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Tất cả menu</span>
@@ -676,7 +682,7 @@ export const ActiveMenuGuideBanner: React.FC<ActiveMenuGuideBannerProps> = ({ ac
                 key={step.heading}
                 className="p-2.5 rounded-lg bg-white dark:bg-slate-900/80 border border-emerald-200/70 dark:border-slate-700"
               >
-                <div className="text-xs font-bold text-[#1c4e3a] dark:text-emerald-300 mb-1">{step.heading}</div>
+                <div className="text-xs font-bold text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 mb-1">{step.heading}</div>
                 <p className="text-xs text-slate-600 dark:text-slate-300 m-0 leading-relaxed">{step.detail}</p>
               </div>
             ))}

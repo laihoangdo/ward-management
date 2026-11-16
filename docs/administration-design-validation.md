@@ -117,3 +117,39 @@ Phần này cập nhật trạng thái cuối, thay cho kết luận còn 34 FAI
 - Inspector còn WARN về tỷ lệ chữ 11–12px, viền panel mạnh và khoảng cách 41px ở hai khối Hub. Giữ theo mật độ danh sách/mã cấu hình, khả năng phân biệt panel dark và khoảng cách giữa mô tả với nhóm thao tác; không có chữ dưới sàn 11px ở các màn hình inspector này. Không gọi đây là chứng nhận WCAG.
 - **460 WARN tĩnh không bị xoá/ẩn**: gồm mono cho mã/ID, bóng overlay, trạng thái đang quét/nghe, màu dữ liệu và cả nợ trình bày cũ như `transition-all`/blur ở phần chưa cải tổ. Đây không phải 460 lỗi chức năng, nhưng cũng không phải khẳng định mọi WARN đều lý tưởng. Đã tách rõ khỏi 0 FAIL để không báo project “hoàn hảo”.
 - Kết thúc phạm vi cải thiện và kiểm tra trên; UAT với tài khoản/địa bàn thật, mọi tổ hợp dữ liệu, thiết bị camera/micro và screen reader vẫn cần môi trường kiểm thử nghiệp vụ riêng. Không đổi API, route, dữ liệu, kiểm tra RBAC/địa bàn hay thuật toán renderer.
+
+## Rà soát bằng skill `ui-ux` (evondevKit) — 16/11/2026
+
+Chế độ **soi** (nhánh V của skill), chấm theo hệ của dự án (`MASTER.md`, token `--gis-*`), không theo token của skill. Nguồn: đọc code; chưa chạy `probe.mjs` của skill (cần Playwright, chưa cài) và bộ smoke CDP cũ trong `target/` đã bị dọn khi build, nên phần soi ban đầu dựa trên đọc code; kiểm tra trình duyệt được làm sau bằng harness mới (mục bên dưới).
+
+### Đã sửa (20 dòng của bảng soi)
+
+- **Hỏng:** vùng bấm dưới 24px (nút X chip lọc, xoá tìm kiếm, đóng modal; thêm utility `.gis-hit-target`); nút chỉ có icon thiếu tên truy cập; `div` bấm được không dùng được bằng bàn phím (card hộ, dòng cảnh báo, ô hộ ở Tổng quan, bộ chọn hộ, ảnh hiện trường); lỗi tải không có lối đi tiếp (thêm nút "Thử lại" ở Cơ sở, Văn bản, Đối tượng, danh mục hành chính, hub quản trị, phân quyền); class `dark` còn dính khi rời dashboard sang `/roster`.
+- **Lệch hệ:** chữ dưới 11px ở mã nguồn (nâng lên 11px, câu báo lỗi 12px; vùng đã được vá bằng CSS đổi đúng sang 12px rồi gỡ luật vá); nút chính và màu viết cứng đổi sang `var(--gis-*)` có fallback; panel bản đồ `MapLibreAreaMap.css` theo token nên có dark mode; checkbox/radio/slider lấy `accent-color` primary (class `text-*` trên checkbox trước đây không có tác dụng); `.gis-control` cho ô ngày; nút chọn tệp của roster; mẫu báo lỗi form (`useFormCheck`: tóm tắt tiếng Việt được focus, `aria-invalid`, `aria-describedby`) cho 9 form đang dựa vào bong bóng trình duyệt, cùng focus cảnh báo ở 3 form đối tượng/cơ sở; dòng "Đang tải…" ở 3 tab và route; một scrim modal `.gis-modal-scrim` không blur; bỏ blur trên panel trình soạn 3D; bo góc nút nhỏ; `transition-all` → `transition-colors`; bỏ bóng card nghỉ và pulse "Chưa lưu"; bảng dưới 640px xếp thẻ (`shared/stack-table.css`); tiêu đề Nhật ký về cỡ tiêu đề trang.
+- **Shell JHipster / Gu:** navbar nền `#122e35` (như sidebar), loading bar vàng `#d4af37`; thanh cuộn mảnh theo token (`:where()` để không đè chỗ cố ý ẩn); class chết ở Sidebar thay bằng token đúng màu đang render.
+
+### Báo nhầm đã loại khi sửa
+
+- Kích thước control header (36px) và nút trong ô tìm kiếm header: `index.css` đã ép lên 40/44px và 26×30px — không đổi.
+- `bg-blue-600` trên nút và `rounded-lg/xl/2xl` đã được remap toàn cục sang primary / 6px; các chip trạng thái, chấm, badge màu phân loại giữ nguyên.
+
+### Kiểm tra tự động
+
+- `tsc --noEmit`: PASS. Vitest toàn frontend: **561/561 PASS** (103 file; thêm 4 test: `useFormCheck`, bàn phím của bộ chọn hộ, Thử lại ở Cơ sở và danh mục hành chính).
+- ESLint trên 40 file đã đổi, so với HEAD cùng cấu hình: 0 lỗi trước và sau, không thêm loại cảnh báo.
+- Prettier: sạch trên mọi file đã đổi.
+- Taste-lint `--app` toàn `src/main/webapp/app`: **212 → 174** phát hiện (`transition-all` 23→0, `glass` 11→0, `shadow` 65→62); 2 FAIL `purple` là màu dữ liệu đã có trước (`buildingTheme.ts`, `linkQuality.ts`), không thuộc đợt này.
+- `vite build` production: PASS (cảnh báo chunk lớn / dynamic import đã có).
+
+### Kiểm tra trên Chrome bằng harness CDP mới
+
+Harness dựng lại trong `target/ui-harness/` (không commit, `/target/` đã ignore): `serve.mjs` chạy Vite bằng chính `vite.config.ts` và phục vụ fixture ở `/ui-harness/`; `main.tsx` render component thật trong shell GIS thật (Sidebar + Header) với Bootstrap + Tailwind + token; `shoot.mjs` điều khiển Chrome headless qua CDP bằng `WebSocket` sẵn có của Node, trả mọi `/api/*` bằng dữ liệu tổng hợp ngay ở tầng mạng (không gọi server thật), chụp và đo. Không thêm dependency.
+
+- 13 cảnh (Tổng quan, Sơ đồ địa bàn, lọc, Nhật ký, modal ghi nhật ký, Cài đặt, Cơ sở, Cơ sở lỗi tải, form thêm hộ, nhóm quyền, bộ chọn hộ, danh mục lỗi tải, navbar JHipster) × 375/768/1024/1440 px × sáng/tối = **104 ảnh, 0 tràn ngang, 0 chỗ bấm dưới 24px, 0 chữ dưới 11px, 0 lỗi console**. Báo cáo `target/ui-harness/report.json`, ảnh `shots/`, xem nhanh `gallery.html`.
+- Form thêm hộ bấm lưu khi trống: tóm tắt 6 trường bắt buộc nhận focus (đo `document.activeElement`).
+- Lỗi phát hiện nhờ harness và đã sửa: Nhật ký tràn 84px ở 375px (hai ô lọc cùng hàng → cho xuống dòng); nút "Xóa tất cả bộ lọc" cao 21px; checkbox Cài đặt bị bóp còn 13px; logo sidebar dạng dải (768–1279px) bị ép còn 15px và icon "Về trang chủ" bị cắt nửa (Bootstrap `.px-3 { padding: 1rem !important }` trùng tên class Tailwind); đầu modal thêm hộ xanh dương sáng → primary. Hai lỗi do chính đợt này gây ra cũng bắt được và đã sửa: `useFormCheck` dùng `checkValidity()` làm bộ chọn ấp tự mở và cướp focus (đổi sang `validity.valid`), và `.gis-hit-target` (CSS ngoài layer) đè `absolute` của Tailwind làm lệch nút xoá ô tìm kiếm (chuyển vào `@layer base`).
+
+### Ghi nhận, chưa sửa
+
+- **Trùng tên utility Bootstrap/Tailwind:** các utility spacing của Bootstrap có `!important` (`p-*`, `px-*`, `m-*`, `gap-*`…) thắng Tailwind cùng tên trên toàn app (vd. `px-3` ra 16px thay vì 12px, `p-5` ra 48px). Bố cục hiện tại đã được chỉnh trên nền đó; sửa toàn cục cần một đợt riêng có so ảnh trước/sau.
+- Chưa chạy smoke bản đồ MapLibre/Three.js (chọn nhà, vẽ, bật/tắt hiệu ứng) và chưa xem panel bản đồ (giờ theo dark mode) trên bản đồ thật — harness hiện không dựng bản đồ để tránh dùng dữ liệu công trình thật.

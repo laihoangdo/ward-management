@@ -8,6 +8,7 @@ import { fetchRbacAreas } from '../services/rbacApiService';
 import { isCoordinateInBaDiem3dBoundary } from '../utils/household3dEligibility';
 import { useUnsavedPageGuard } from '../utils/useUnsavedPageGuard';
 import { RESIDENCE_TYPE_CONFIG } from '../utils/residenceUtils';
+import { FormCheckSummary, useFormCheck } from './useFormCheck';
 
 const BADIEM_STREETS = [
   'Đường Phan Văn Hớn',
@@ -43,6 +44,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
   initialCoordinates,
   allowedHamletIds,
 }) => {
+  const addHouseholdCheck = useFormCheck('add-household-form-errors');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [coordinateError, setCoordinateError] = useState<string | null>(null);
@@ -245,17 +247,17 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
       aria-modal="true"
       aria-label="Thêm hộ dân hoặc cơ sở"
       tabIndex={-1}
-      className="gis-household-create-dialog fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto"
+      className="gis-household-create-dialog fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-3 sm:p-4 overflow-y-auto"
     >
       <div className="bg-white w-full max-w-xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[92vh] flex flex-col">
-        <div className="p-4 sm:p-5 bg-blue-600 text-white flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 bg-[var(--gis-primary,#1c4e3a)] text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-blue-700 flex items-center justify-center font-bold text-white shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[var(--gis-primary-hover,#153c2c)] flex items-center justify-center font-bold text-white shrink-0">
               <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-bold">Thêm hộ dân / Cơ sở mới</h3>
-              <p className="text-[11px] sm:text-xs text-blue-100">Bổ sung vị trí quản lý thực địa trên địa bàn</p>
+              <p className="text-[11px] sm:text-xs text-white/80">Bổ sung vị trí quản lý thực địa trên địa bàn</p>
             </div>
           </div>
           <button
@@ -278,7 +280,17 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
             onClose();
           }}
         />
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 text-xs overflow-y-auto flex-1">
+        <form
+          noValidate
+          onSubmit={addHouseholdCheck.guard(handleSubmit)}
+          onChange={addHouseholdCheck.onFieldChange}
+          className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 text-xs overflow-y-auto flex-1"
+        >
+          <FormCheckSummary
+            id="add-household-form-errors"
+            problems={addHouseholdCheck.problems}
+            summaryRef={addHouseholdCheck.summaryRef}
+          />
           <fieldset disabled={isSubmitting} className="contents">
             <p className="text-sm text-slate-600">Các trường có dấu * là bắt buộc. Thông tin chưa xác định có thể để trống.</p>
             {submitError && (
@@ -526,7 +538,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
                   : 'Kiểm tra vị trí thiết bị có trùng vị trí hộ dân trước khi lưu. Có thể nhập GPS hoặc mở form từ điểm chọn trên bản đồ 3D.'}
               </p>
               {coordinateError && (
-                <p role="alert" className="mt-1 text-[10px] text-red-600">
+                <p role="alert" className="mt-1 text-[12px] text-red-600">
                   {coordinateError}
                 </p>
               )}
@@ -537,9 +549,9 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setResidenceType('Thường trú')}
-                  className={`py-2 px-2.5 rounded-xl font-bold border text-xs transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-2.5 rounded-xl font-bold border text-xs transition-colors flex items-center justify-center gap-1.5 ${
                     residenceType === 'Thường trú'
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
+                      ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-500/20'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -549,7 +561,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setResidenceType('Tạm trú')}
-                  className={`py-2 px-2.5 rounded-xl font-bold border text-xs transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-2.5 rounded-xl font-bold border text-xs transition-colors flex items-center justify-center gap-1.5 ${
                     residenceType === 'Tạm trú'
                       ? 'bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-500/20'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -561,7 +573,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setResidenceType('Lưu trú')}
-                  className={`py-2 px-2.5 rounded-xl font-bold border text-xs transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2 px-2.5 rounded-xl font-bold border text-xs transition-colors flex items-center justify-center gap-1.5 ${
                     residenceType === 'Lưu trú'
                       ? 'bg-purple-600 text-white border-purple-600 shadow-xs ring-2 ring-purple-500/20' // taste-skill-ignore: màu phân loại Lưu trú đồng bộ residenceUtils
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -710,7 +722,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting || locating}
-                className="flex-1 sm:flex-initial px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-xs min-h-[40px]"
+                className="flex-1 sm:flex-initial px-5 py-2 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-bold rounded-xl transition-colors shadow-xs min-h-[40px]"
               >
                 {isSubmitting ? 'Đang lưu...' : 'Lưu hồ sơ'}
               </button>

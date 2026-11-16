@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import ResidentPhotos from '../roster/ResidentPhotos';
 import SubjectForm from './SubjectForm';
@@ -41,9 +41,15 @@ export function EntryDialog({
 }) {
   const [data, setData] = useState(initial);
   const [error, setError] = useState('');
+  const [missingKeys, setMissingKeys] = useState<string[]>([]);
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
   const [busy, setBusy] = useState(false);
   const save = async () => {
     const missing = fields.filter(f => f.required && !String(data[f.key] ?? '').trim());
+    setMissingKeys(missing.map(f => f.key));
     if (missing.length) {
       setError(`Nhập: ${missing.map(f => f.label.toLowerCase()).join(', ')}`);
       return;
@@ -64,7 +70,7 @@ export function EntryDialog({
       <section role="dialog" aria-modal="true" aria-label={title} className="roster-dialog">
         <h2>{title}</h2>
         {error && (
-          <div role="alert" className="roster-error">
+          <div ref={errorRef} tabIndex={-1} role="alert" className="roster-error">
             {error}
           </div>
         )}
@@ -92,6 +98,7 @@ export function EntryDialog({
                   ) : f.type === 'textarea' ? (
                     <textarea
                       autoFocus={index === 0}
+                      aria-invalid={missingKeys.includes(f.key) || undefined}
                       rows={3}
                       maxLength={f.max ?? 2000}
                       value={data[f.key] ?? ''}
@@ -100,6 +107,7 @@ export function EntryDialog({
                   ) : (
                     <input
                       autoFocus={index === 0}
+                      aria-invalid={missingKeys.includes(f.key) || undefined}
                       type={f.type ?? 'text'}
                       max={f.type === 'date' ? todayIso() : undefined}
                       maxLength={f.max ?? 1000}

@@ -16,6 +16,7 @@ import ResidentTags from './ResidentTags';
 import { facilityTypes, householdEditFields, householdEditInitial, householdFields, licenseTypes } from './householdForm';
 import { fetchRbacMe } from '../gis/services/rbacApiService';
 import type { AppUser } from '../gis/types';
+import '../shared/stack-table.css';
 
 type Row = Record<string, any>;
 type Field = {
@@ -282,7 +283,7 @@ function Editor({
           ) : (
             <div>
               <h3>Kiểm tra trước khi lưu</h3>
-              <table>
+              <table className="gis-stack-table">
                 <thead>
                   <tr>
                     <th>Thông tin</th>
@@ -293,9 +294,9 @@ function Editor({
                 <tbody>
                   {shown.map(f => (
                     <tr key={f.key}>
-                      <td>{f.label}</td>
-                      <td>{(f.type === 'date' ? displayDate(initial[f.key]) : text(initial[f.key])) || 'Chưa có'}</td>
-                      <td>
+                      <td data-label="Thông tin">{f.label}</td>
+                      <td data-label="Trước">{(f.type === 'date' ? displayDate(initial[f.key]) : text(initial[f.key])) || 'Chưa có'}</td>
+                      <td data-label="Sau">
                         {f.type === 'checkbox'
                           ? data[f.key]
                             ? 'Có'
@@ -2174,7 +2175,7 @@ function RosterWorkspace({
                 Hộ đầu kỳ {report.householdOpening} → cuối kỳ {report.householdClosing}; cá nhân đầu kỳ {report.residentOpening} → cuối kỳ{' '}
                 {report.residentClosing}.
               </p>
-              <table>
+              <table className="gis-stack-table">
                 <thead>
                   <tr>
                     <th>Loại thay đổi</th>
@@ -2186,10 +2187,10 @@ function RosterWorkspace({
                 <tbody>
                   {report.changes.map((c: Row) => (
                     <tr key={c.change_kind + c.entity_type + c.operation}>
-                      <td>{labels[c.change_kind] || c.change_kind}</td>
-                      <td>{labels[c.entity_type] || c.entity_type}</td>
-                      <td>{labels[c.operation] || c.operation}</td>
-                      <td>{c.amount}</td>
+                      <td data-label="Loại thay đổi">{labels[c.change_kind] || c.change_kind}</td>
+                      <td data-label="Hồ sơ">{labels[c.entity_type] || c.entity_type}</td>
+                      <td data-label="Thao tác">{labels[c.operation] || c.operation}</td>
+                      <td data-label="Số lượt">{c.amount}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2206,7 +2207,7 @@ function RosterWorkspace({
                 {e.reason} · Ngày hiệu lực {e.effective_date || 'chưa biết'}
               </p>
               <div className="roster-table">
-                <table>
+                <table className="gis-stack-table">
                   <thead>
                     <tr>
                       <th>Thông tin</th>
@@ -2219,9 +2220,9 @@ function RosterWorkspace({
                       .filter(k => !/ciphertext|lookup/.test(k) && text(e.before_data?.[k]) !== text(e.after_data?.[k]))
                       .map(k => (
                         <tr key={k}>
-                          <td>{k}</td>
-                          <td>{text(e.before_data?.[k])}</td>
-                          <td>{text(e.after_data?.[k])}</td>
+                          <td data-label="Thông tin">{k}</td>
+                          <td data-label="Trước">{text(e.before_data?.[k])}</td>
+                          <td data-label="Sau">{text(e.after_data?.[k])}</td>
                         </tr>
                       ))}
                   </tbody>

@@ -239,14 +239,14 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-3 sm:p-4 animate-in fade-in duration-150">
       <div className="gis-voice-dialog bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-3.5 sm:p-4 bg-slate-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div
               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                isListening ? 'bg-rose-600 text-white' : 'bg-emerald-800 text-white'
+                isListening ? 'bg-rose-600 text-white' : 'bg-[var(--gis-primary,#1c4e3a)] text-white'
               }`}
             >
               <Mic className="w-4 h-4" />

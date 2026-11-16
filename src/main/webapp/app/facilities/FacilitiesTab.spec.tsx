@@ -77,6 +77,22 @@ describe('Facilities tab', () => {
     expect(within(groups).getByText('Cơ sở, DN địa bàn')).toBeTruthy();
   });
 
+  it('shows a load error with a retry that loads the list again', async () => {
+    let failList = true;
+    vi.mocked(axios.get).mockImplementation(url => {
+      const u = String(url);
+      if (u.endsWith('/summary')) return Promise.resolve({ data: summary });
+      if (failList) return Promise.reject(new Error('offline'));
+      return Promise.resolve({ data: { items: [facility], total: 1, page: 0, pageSize: 30 } });
+    });
+    renderTab();
+    const alert = await screen.findByRole('alert');
+    failList = false;
+    fireEvent.click(within(alert).getByRole('button', { name: 'Thử lại' }));
+    expect(await screen.findByText('Nhà trọ Bình An')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('switches to other establishments and the licence due filter', async () => {
     renderTab();
     await screen.findByText('Nhà trọ Bình An');

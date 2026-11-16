@@ -41,6 +41,10 @@ export default function SubjectForm({
     notes: subject?.notes ?? '',
   });
   const [error, setError] = useState('');
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
   const [busy, setBusy] = useState(false);
   const firstFieldRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
 
@@ -104,7 +108,7 @@ export default function SubjectForm({
           Thông tin cá nhân, ảnh và địa chỉ lấy từ hồ sơ nhân khẩu; ở đây chỉ ghi diện quản lý. Mọi thay đổi đều được ghi nhật ký.
         </p>
         {error && (
-          <div role="alert" className="roster-error">
+          <div ref={errorRef} tabIndex={-1} role="alert" className="roster-error">
             {error}
           </div>
         )}

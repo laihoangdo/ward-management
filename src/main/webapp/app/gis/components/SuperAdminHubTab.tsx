@@ -52,6 +52,8 @@ import { SecurityAlertsChart } from './SecurityAlertsChart';
 import { fetchAccessPolicy, saveAccessPolicy, fetchPermissionGroups } from '../services/rbacApiService';
 import { PermissionGroupsPanel } from './PermissionGroupsPanel';
 import type { PermissionGroup } from '../types';
+import { FormCheckSummary, useFormCheck } from './useFormCheck';
+import '../../shared/stack-table.css';
 
 interface SuperAdminHubTabProps {
   currentUser: AppUser;
@@ -81,8 +83,14 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   securityAlertsList,
   onShowToast = () => {},
 }) => {
+  const blacklistCheck = useFormCheck('blacklist-form-errors');
+  const newUserCheck = useFormCheck('new-user-form-errors');
+  const allowedEmailCheck = useFormCheck('allowed-email-form-errors');
+  const newUnitCheck = useFormCheck('new-unit-form-errors');
   const [rbacAreas, setRbacAreas] = useState<{ id: number; name: string; hamletName: string }[]>([]);
   const [whitelistEnabled, setWhitelistEnabled] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
   const [serverAudit, setServerAudit] = useState<{ id: number; actor: string; action: string; target: string; occurred_at: string }[]>([]);
   const refreshServerAudit = async () => {
     try {
@@ -94,13 +102,23 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
   React.useEffect(() => {
     void fetchAccessPolicy()
       .then(p => setWhitelistEnabled(p.emailWhitelistEnabled))
-      .catch(() => onShowToast('Không thể tải chính sách truy cập'));
-  }, []);
+      .catch(() => {
+        onShowToast('Không thể tải chính sách truy cập');
+        setLoadError('Không thể tải chính sách truy cập hoặc danh mục địa bàn. Kiểm tra quyền và kết nối.');
+      });
+  }, [reloadKey]);
   React.useEffect(() => {
     void fetchRbacAreas()
       .then(setRbacAreas)
-      .catch(() => onShowToast('Cannot load areas'));
-  }, []);
+      .catch(() => {
+        onShowToast('Không thể tải danh mục địa bàn');
+        setLoadError('Không thể tải chính sách truy cập hoặc danh mục địa bàn. Kiểm tra quyền và kết nối.');
+      });
+  }, [reloadKey]);
+  const retryInitialLoad = () => {
+    setLoadError('');
+    setReloadKey(key => key + 1);
+  };
   const effectiveMenusList = dynamicMenusList || dynamicMenus || [];
   const effectiveUnitsList = hcmUnitsList || hcmUnits || [];
   const effectiveEmailsList = allowedEmailsList || allowedEmails || [];
@@ -494,7 +512,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             Tải nhật ký phân quyền từ máy chủ
           </button>
           <div className="max-h-72 overflow-auto">
-            <table className="w-full text-xs">
+            <table className="gis-stack-table w-full text-xs">
               <thead>
                 <tr>
                   <th>Thời gian</th>
@@ -506,10 +524,10 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               <tbody>
                 {serverAudit.map(row => (
                   <tr key={row.id}>
-                    <td>{String(row.occurred_at)}</td>
-                    <td>{row.actor}</td>
-                    <td>{row.action}</td>
-                    <td>{row.target}</td>
+                    <td data-label="Thời gian">{String(row.occurred_at)}</td>
+                    <td data-label="Chủ thể Keycloak">{row.actor}</td>
+                    <td data-label="Thao tác">{row.action}</td>
+                    <td data-label="Đối tượng">{row.target}</td>
                   </tr>
                 ))}
               </tbody>
@@ -554,6 +572,21 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               Toàn quyền cấu hình menu động theo vai trò, quản lý mạng lưới đơn vị hành chính và tuyến hẻm mới nhất TP.HCM, phân quyền tài
               khoản và giám sát an ninh dữ liệu.
             </p>
+            {loadError && (
+              <div
+                role="alert"
+                className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-rose-800 bg-rose-950/60 px-3 py-2 text-sm text-rose-100"
+              >
+                <span>{loadError}</span>
+                <button
+                  type="button"
+                  onClick={retryInitialLoad}
+                  className="rounded-md border border-rose-700 px-2.5 py-1 text-xs font-semibold text-white hover:bg-rose-900"
+                >
+                  Thử lại
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -672,7 +705,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="gis-stack-table w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
                   <th className="py-3 px-4">Menu & Tính Năng</th>
@@ -685,16 +718,16 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               <tbody className="divide-y divide-slate-800 text-xs">
                 {menus.map(item => (
                   <tr key={item.id} className="hover:bg-slate-850/50 transition">
-                    <td className="py-3.5 px-4">
+                    <td data-label="Menu & Tính Năng" className="py-3.5 px-4">
                       <div className="font-semibold text-slate-200">{item.label}</div>
                       <div className="text-[11px] text-slate-400 mt-0.5">{item.description}</div>
-                      <span className="inline-block mt-1 font-mono text-[10px] text-slate-500 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                      <span className="inline-block mt-1 font-mono text-[12px] text-slate-500 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
                         tabId: {item.id}
                       </span>
                     </td>
 
                     {/* Role: superadmin */}
-                    <td className="py-3.5 px-4 text-center">
+                    <td data-label="Super Admin" className="py-3.5 px-4 text-center">
                       <input
                         type="checkbox"
                         checked={item.visibleRoles.includes('superadmin')}
@@ -704,7 +737,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     </td>
 
                     {/* Role: admin */}
-                    <td className="py-3.5 px-4 text-center">
+                    <td data-label="Admin (Trưởng CAX)" className="py-3.5 px-4 text-center">
                       <input
                         type="checkbox"
                         checked={item.visibleRoles.includes('admin')}
@@ -714,7 +747,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     </td>
 
                     {/* Role: sub-admin */}
-                    <td className="py-3.5 px-4 text-center">
+                    <td data-label="Sub-admin (CA Phụ trách Ấp)" className="py-3.5 px-4 text-center">
                       <input
                         type="checkbox"
                         checked={item.visibleRoles.includes('sub-admin')}
@@ -724,7 +757,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     </td>
 
                     {/* Role: officer */}
-                    <td className="py-3.5 px-4 text-center">
+                    <td data-label="Công an viên" className="py-3.5 px-4 text-center">
                       <input
                         type="checkbox"
                         checked={item.visibleRoles.includes('officer')}
@@ -820,7 +853,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div>
-                        <span className="px-2 py-0.5 rounded bg-blue-900/40 text-blue-300 border border-blue-800/40 text-[10px] font-mono font-bold uppercase">
+                        <span className="px-2 py-0.5 rounded bg-blue-900/40 text-blue-300 border border-blue-800/40 text-[12px] font-mono font-bold uppercase">
                           {unit.district}
                         </span>
                         <h3 className="text-sm font-bold text-white mt-1">
@@ -862,7 +895,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-2 border-t border-slate-850 text-[10px] text-slate-500 flex justify-between">
+                  <div className="mt-4 pt-2 border-t border-slate-850 text-[12px] text-slate-500 flex justify-between">
                     <span>Mã dữ liệu: {unit.id}</span>
                     <span>Cập nhật: {unit.updatedAt}</span>
                   </div>
@@ -923,7 +956,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
           {/* Users Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="gis-stack-table w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
                   <th className="py-3 px-4">Cán Bộ & Số Hiệu</th>
@@ -948,7 +981,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   })
                   .map(u => (
                     <tr key={u.id} className="hover:bg-slate-850/50 transition">
-                      <td className="py-3 px-4">
+                      <td data-label="Cán Bộ & Số Hiệu" className="py-3 px-4">
                         <div className="font-semibold text-white flex items-center gap-1.5">
                           {u.rank} {u.fullName}
                           {u.isOnline && <span className="w-2 h-2 rounded-full bg-emerald-400" title="Đang trực tuyến" />}
@@ -956,12 +989,12 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                         <div className="text-[11px] text-slate-400 font-mono">
                           Số hiệu: <strong className="text-amber-400">{u.badgeNumber}</strong> | User: {u.username}
                         </div>
-                        {u.email && <div className="text-[10px] text-slate-500">{u.email}</div>}
+                        {u.email && <div className="text-[12px] text-slate-500">{u.email}</div>}
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td data-label="Vai Trò RBAC" className="py-3 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${
+                          className={`px-2 py-0.5 rounded text-[12px] uppercase font-bold border ${
                             u.role === 'superadmin'
                               ? 'bg-red-950 text-red-300 border-red-700/60'
                               : u.role === 'admin'
@@ -975,19 +1008,19 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                         </span>
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td data-label="Chức Vụ & Đơn Vị" className="py-3 px-4">
                         <div className="text-slate-200 font-medium">{u.position}</div>
                         <div className="text-[11px] text-slate-400">{u.unit}</div>
                       </td>
 
-                      <td className="py-3 px-4">
+                      <td data-label="Địa Bàn Phụ Trách" className="py-3 px-4">
                         <div className="text-slate-300">{u.assignedWard}</div>
                         <div className="text-[11px] text-slate-400">{u.assignedHamlets?.join(', ') || 'Chưa phân công'}</div>
                       </td>
 
-                      <td className="py-3 px-4 text-center">
+                      <td data-label="Trạng Thái" className="py-3 px-4 text-center">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                          className={`px-2 py-0.5 rounded-full text-[12px] font-semibold ${
                             u.status === 'active'
                               ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-800/50'
                               : 'bg-red-900/40 text-red-300 border border-red-800/50'
@@ -997,7 +1030,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                         </span>
                       </td>
 
-                      <td className="py-3 px-4 text-right space-x-2">
+                      <td data-label="Thao Tác" className="py-3 px-4 text-right space-x-2">
                         {u.id !== currentUser.id && (
                           <button
                             type="button"
@@ -1084,7 +1117,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-amber-900/40 text-amber-300 border border-amber-700/40">
+                      <span className="px-2 py-0.5 rounded text-[12px] uppercase font-bold bg-amber-900/40 text-amber-300 border border-amber-700/40">
                         {item.role}
                       </span>
                       {
@@ -1108,7 +1141,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   </div>
                 </div>
 
-                <div className="mt-3 pt-2 border-t border-slate-850 text-[10px] text-slate-500 flex justify-between">
+                <div className="mt-3 pt-2 border-t border-slate-850 text-[12px] text-slate-500 flex justify-between">
                   <span>Thêm bởi: {item.addedBy}</span>
                   <span>{item.addedAt}</span>
                 </div>
@@ -1149,7 +1182,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               {effectiveAlertsList.map(alert => (
                 <div
                   key={alert.id}
-                  className={`p-4 rounded-xl border flex flex-col justify-between gap-3 transition-all ${
+                  className={`p-4 rounded-xl border flex flex-col justify-between gap-3 transition-colors ${
                     alert.resolved
                       ? 'bg-slate-950/70 border-slate-800 opacity-90'
                       : alert.severity === 'critical'
@@ -1163,7 +1196,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     <div className="space-y-1.5 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
+                          className={`px-2 py-0.5 rounded text-[12px] uppercase font-bold ${
                             alert.severity === 'critical'
                               ? 'bg-red-900 text-red-200'
                               : alert.severity === 'high'
@@ -1230,7 +1263,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                           )}
                         </div>
                       </div>
-                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-900/50 text-emerald-200 border border-emerald-700/50 shrink-0">
+                      <span className="text-[12px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-900/50 text-emerald-200 border border-emerald-700/50 shrink-0">
                         Audit Log: Đã Lưu
                       </span>
                     </div>
@@ -1293,7 +1326,13 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             </div>
 
             {/* Form Add Suspicious IP */}
-            <form onSubmit={handleAddBlacklistIp} className="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3">
+            <form
+              noValidate
+              onSubmit={blacklistCheck.guard(handleAddBlacklistIp)}
+              onChange={blacklistCheck.onFieldChange}
+              className="bg-slate-950/70 p-4 rounded-xl border border-slate-800 space-y-3"
+            >
+              <FormCheckSummary id="blacklist-form-errors" problems={blacklistCheck.problems} summaryRef={blacklistCheck.summaryRef} />
               <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5 text-rose-400" />
                 Thêm Địa Chỉ IP Nghi Vấn Vào Danh Sách Đen
@@ -1373,7 +1412,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                           </span>
                           <div>
                             <div className="font-mono text-sm font-bold text-rose-300">{entry.ipAddress}</div>
-                            <span className="text-[10px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-800/40">
+                            <span className="text-[12px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.2 rounded border border-rose-800/40">
                               Chặn truy cập API & web
                             </span>
                           </div>
@@ -1402,7 +1441,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
                       {entry.notes && <div className="text-[11px] text-slate-500 italic">"{entry.notes}"</div>}
 
-                      <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-[10px] text-slate-500">
+                      <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-[12px] text-slate-500">
                         <span>
                           Chặn bởi: <strong className="text-slate-400">{entry.blockedBy}</strong>
                         </span>
@@ -1419,19 +1458,30 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
       {/* MODAL: ADD NEW USER */}
       {isAddUserOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 gis-modal-scrim flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-slate-750 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-400" />
                 Tạo Mới Tài Khoản Cán Bộ & Phân Quyền
               </h3>
-              <button type="button" onClick={() => setIsAddUserOpen(false)} className="text-slate-400 hover:text-white">
-                <XCircle className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={() => setIsAddUserOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                aria-label="Đóng"
+              >
+                <XCircle className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveNewUser} className="space-y-3 text-xs">
+            <form
+              noValidate
+              onSubmit={newUserCheck.guard(handleSaveNewUser)}
+              onChange={newUserCheck.onFieldChange}
+              className="space-y-3 text-xs"
+            >
+              <FormCheckSummary id="new-user-form-errors" problems={newUserCheck.problems} summaryRef={newUserCheck.summaryRef} />
               <div>
                 <label className="block text-slate-300 mb-1">Mật khẩu tạm (ít nhất 12 ký tự; tài khoản mới phải đổi khi đăng nhập)</label>
                 <input
@@ -1612,19 +1662,34 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
       {/* MODAL: ADD WHITELIST EMAIL */}
       {isAddEmailOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 gis-modal-scrim flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-slate-900 border border-slate-750 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Mail className="w-4 h-4 text-amber-400" />
                 Thêm email vào danh sách cấp phép
               </h3>
-              <button type="button" onClick={() => setIsAddEmailOpen(false)} className="text-slate-400 hover:text-white">
-                <XCircle className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={() => setIsAddEmailOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                aria-label="Đóng"
+              >
+                <XCircle className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
-            <form onSubmit={handleAddAllowedEmail} className="space-y-3 text-xs">
+            <form
+              noValidate
+              onSubmit={allowedEmailCheck.guard(handleAddAllowedEmail)}
+              onChange={allowedEmailCheck.onFieldChange}
+              className="space-y-3 text-xs"
+            >
+              <FormCheckSummary
+                id="allowed-email-form-errors"
+                problems={allowedEmailCheck.problems}
+                summaryRef={allowedEmailCheck.summaryRef}
+              />
               <div>
                 <label className="block text-slate-300 mb-1">Địa chỉ Gmail (*)</label>
                 <input
@@ -1717,19 +1782,30 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
       {/* MODAL: ADD HCM ADMIN UNIT & ALLEYS */}
       {isAddUnitOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 gis-modal-scrim flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-slate-750 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-red-400" />
                 Thêm Đơn Vị Hành Chính & Tuyến Hẻm Mới Ở TP.HCM
               </h3>
-              <button type="button" onClick={() => setIsAddUnitOpen(false)} className="text-slate-400 hover:text-white">
-                <XCircle className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={() => setIsAddUnitOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                aria-label="Đóng"
+              >
+                <XCircle className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveNewHcmUnit} className="space-y-3 text-xs">
+            <form
+              noValidate
+              onSubmit={newUnitCheck.guard(handleSaveNewHcmUnit)}
+              onChange={newUnitCheck.onFieldChange}
+              className="space-y-3 text-xs"
+            >
+              <FormCheckSummary id="new-unit-form-errors" problems={newUnitCheck.problems} summaryRef={newUnitCheck.summaryRef} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-300 mb-1">Quận / Huyện / TP thuộc TP.HCM*</label>
@@ -1820,15 +1896,20 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
       {/* MODAL: IMPORT JSON DATA */}
       {showImportModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 gis-modal-scrim flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-slate-750 rounded-2xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Upload className="w-4 h-4 text-blue-400" />
                 Import Dữ Liệu Đơn Vị Hành Chính & Tuyến Hẻm Mới TP.HCM
               </h3>
-              <button type="button" onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-white">
-                <XCircle className="w-5 h-5" />
+              <button
+                type="button"
+                onClick={() => setShowImportModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                aria-label="Đóng"
+              >
+                <XCircle className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 

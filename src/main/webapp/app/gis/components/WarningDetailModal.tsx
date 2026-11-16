@@ -149,7 +149,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/75 p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl border border-slate-200 overflow-hidden animate-in fade-in duration-150 my-auto max-h-[94vh] flex flex-col">
         {/* Header */}
         <div className="p-4 sm:p-5 bg-red-800 text-white flex items-center justify-between shrink-0">
@@ -334,7 +334,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                         type="button"
                         onClick={() => handleConfirmResolve(alert)}
                         disabled={resolvingId === alert.id}
-                        className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
+                        className="px-3.5 py-1.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>{resolvingId === alert.id ? 'Đang ghi nhận...' : 'Đã xác minh & Xử lý xong'}</span>
