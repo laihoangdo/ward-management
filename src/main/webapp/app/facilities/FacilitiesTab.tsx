@@ -16,12 +16,24 @@ import {
   type FacilitySummary,
   type Row,
 } from './facilityModel';
+import { useHamletScope } from '../roster/HamletScopePicker';
 
 /**
  * "Cơ sở kinh doanh & DN": conditional business lines (CSKD có điều kiện về ANTT) and the other businesses and enterprises of
  * the selected hamlet, with licence deadlines, employees, violations, papers and photos.
  */
+/** Facilities of the hamlet view picked above (one hamlet, the commune or all hamlets). */
 export default function FacilitiesTab() {
+  const scope = useHamletScope();
+  return (
+    <>
+      {scope.picker}
+      <FacilitiesList key={scope.key} allHamlets={scope.all} />
+    </>
+  );
+}
+
+function FacilitiesList({ allHamlets }: { allHamlets: boolean }) {
   const { updateQuery } = useRouteQuery();
   const [summary, setSummary] = useState<FacilitySummary | null>(null);
   const [group, setGroup] = useState<'' | 'CONDITIONAL' | 'OTHER'>('CONDITIONAL');
@@ -229,6 +241,7 @@ export default function FacilitiesTab() {
                       </td>
                       <td data-label="Địa chỉ" className="roster-cell-address">
                         {f.raw_address}
+                        {allHamlets && f.hamlet_name ? <span className="roster-hamlet-tag"> · {f.hamlet_name}</span> : null}
                       </td>
                       <td data-label="Chủ / đại diện">{f.representative_name || '—'}</td>
                       <td data-label="Số giấy phép">{f.license_number || '—'}</td>

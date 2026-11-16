@@ -394,6 +394,7 @@ public class ListExportService {
     }
 
     private String hamletName() {
+        if (roster.allHamlets()) return "Toàn bộ " + roster.scopeHamlets().size() + " ấp được xem";
         return db.queryForObject("select coalesce(full_name, name) from public.hamlet where id=?", String.class, roster.hamlet());
     }
 
@@ -401,7 +402,7 @@ public class ListExportService {
         var names = db.queryForList(
             "select coalesce(c.full_name, 'Xã ' || c.name) from public.hamlet h join public.admin_commune c on c.id=h.commune_id where h.id=?",
             String.class,
-            roster.hamlet()
+            roster.scopeHamlets().getFirst()
         );
         return names.isEmpty() ? "" : names.getFirst();
     }

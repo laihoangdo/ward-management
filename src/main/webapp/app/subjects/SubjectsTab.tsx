@@ -19,11 +19,23 @@ import {
   type Row,
   type SubjectSummary,
 } from './subjectModel';
+import { useHamletScope } from '../roster/HamletScopePicker';
 
 type Due = '' | 'MANAGEMENT' | 'SUMMON';
 
 /** "Quản lý đối tượng": subjects of the selected hamlet by category, with management and interview deadlines. */
+/** Subjects of the hamlet view picked above (one hamlet, the commune or all hamlets). */
 export default function SubjectsTab({ currentUser }: { currentUser: AppUser }) {
+  const scope = useHamletScope();
+  return (
+    <>
+      {scope.picker}
+      <SubjectsList key={scope.key} currentUser={currentUser} allHamlets={scope.all} />
+    </>
+  );
+}
+
+function SubjectsList({ currentUser, allHamlets }: { currentUser: AppUser; allHamlets: boolean }) {
   const access = subjectAccess(currentUser);
   const [summary, setSummary] = useState<SubjectSummary | null>(null);
   const [category, setCategory] = useState('');
@@ -240,6 +252,7 @@ export default function SubjectsTab({ currentUser }: { currentUser: AppUser }) {
                       </td>
                       <td data-label="Địa chỉ" className="roster-cell-address">
                         {s.address || 'Chưa gắn hộ'}
+                        {allHamlets && s.hamlet_name ? <span className="roster-hamlet-tag"> · {s.hamlet_name}</span> : null}
                       </td>
                       <td data-label="Đưa vào QL">{displayDay(s.managed_from)}</td>
                       <td data-label="Hạn QL">{s.managed_until ? displayDay(s.managed_until) : '—'}</td>

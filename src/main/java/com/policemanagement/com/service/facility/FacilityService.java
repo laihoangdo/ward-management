@@ -67,7 +67,7 @@ public class FacilityService {
 
     private static final String COLUMNS =
         "h.id, h.code, h.raw_address, h.type, h.business_name, h.business_category, h.is_conditional, h.license_type," +
-        " h.license_number, h.license_expiry, " +
+        " h.license_number, h.license_expiry, (select name from public.hamlet x where x.id=h.hamlet_id) hamlet_name, " +
         EXPIRY +
         " license_expiry_on, h.representative_name, h.phone, h.source_case_number, h.version," +
         " (select count(*) from facility_employee e where e.household_id=h.id and e.ended_on is null) employee_count," +
@@ -77,8 +77,8 @@ public class FacilityService {
     private record Where(String text, List<Object> args) {}
 
     private Where where(Map<String, String> filter) {
-        var text = new StringBuilder("h.hamlet_id=? and " + TYPE_SQL);
-        var args = new ArrayList<Object>(List.of(roster.hamlet()));
+        var text = new StringBuilder("h.hamlet_id=any(?::bigint[]) and " + TYPE_SQL);
+        var args = new ArrayList<Object>(List.of(RosterService.idArray(roster.scopeHamlets())));
         switch (filter.getOrDefault("group", "")) {
             case "" -> {
             }
@@ -145,12 +145,12 @@ public class FacilityService {
     @Transactional(readOnly = true)
     public Map<String, Object> summary() {
         roster.authorize(null);
-        long hamlet = roster.hamlet();
+        String hamlet = RosterService.idArray(roster.scopeHamlets());
         var counts = db.queryForMap(
             "select count(*) filter (where h.is_conditional) conditional, count(*) filter (where not h.is_conditional) other," +
                 " count(*) filter (where " +
                 EXPIRY +
-                "<=?) license_due from tc2_roster.household h where h.hamlet_id=? and " +
+                "<=?) license_due from tc2_roster.household h where h.hamlet_id=any(?::bigint[]) and " +
                 TYPE_SQL,
             LocalDate.now().plusDays(LICENSE_WARNING_DAYS),
             hamlet
@@ -158,7 +158,7 @@ public class FacilityService {
         var byType = new LinkedHashMap<String, Long>();
         for (String t : TYPES) byType.put(t, 0L);
         db.query(
-            "select h.type, count(*) from tc2_roster.household h where h.hamlet_id=? and " + TYPE_SQL + " group by 1",
+            "select h.type, count(*) from tc2_roster.household h where h.hamlet_id=any(?::bigint[]) and " + TYPE_SQL + " group by 1",
             rs -> {
                 byType.put(rs.getString(1), rs.getLong(2));
             },

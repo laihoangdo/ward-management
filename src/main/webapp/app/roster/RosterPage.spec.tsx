@@ -54,6 +54,44 @@ describe('Real roster workflows', () => {
     expect(await screen.findByRole('dialog', { name: 'Xuất / in danh sách nhân khẩu' })).toBeTruthy();
     expect((screen.getByLabelText('Tạm trú') as HTMLInputElement).checked).toBe(true);
   });
+  it.each([
+    [
+      'households',
+      'Danh sách hộ dân',
+      '/households',
+      { id: 'h9', code: 'TC2-ROW', raw_address: 'Số 1 Đường thử', member_count: 1 },
+      'Số 1 Đường thử',
+    ],
+    [
+      'residents',
+      'Quản lý nhân khẩu',
+      '/residents',
+      { id: 'r9', full_name: 'Nguyễn Thị Phương Thảo', household_count: 1 },
+      'Nguyễn Thị Phương Thảo',
+    ],
+  ])('keeps the %s list when the open tab is clicked again', async (tab, label, path, row, text) => {
+    vi.mocked(axios.get).mockImplementation(async url => {
+      await Promise.resolve();
+      if (String(url).endsWith('/overview')) return { data: { hamlet_name: 'Trung Chánh 2', households: 1, residents: 1 } };
+      if (String(url).endsWith(path)) return { data: { items: [row], total: 1 } };
+      if (String(url).endsWith('/households') || String(url).endsWith('/residents')) return { data: { items: [], total: 0 } };
+      return { data: [] };
+    });
+    render(
+      <MemoryRouter>
+        <RosterPage initialTab={tab} />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(text)).toBeTruthy();
+    const nav = screen.getByRole('navigation', { name: 'Chức năng hồ sơ dân cư' });
+    const active = Array.from(nav.querySelectorAll('button')).find(b => b.textContent === label)!;
+    expect(active.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(active);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByText(text)).toBeTruthy();
+  });
   const open = () =>
     render(
       <MemoryRouter>

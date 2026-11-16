@@ -84,7 +84,11 @@ public class SubjectService {
 
     /** The subject row in the current hamlet; political subjects look absent without the permission. */
     private Map<String, Object> subject(UUID id, boolean political) {
-        var rows = db.queryForList("select * from subject where id=? and hamlet_id=?", id, roster.hamlet());
+        var rows = roster.allHamlets()
+            ? db.queryForList("select * from subject where id=?", id)
+            : db.queryForList("select * from subject where id=? and hamlet_id=?", id, roster.hamlet());
+        // All-hamlets view: the subject's own hamlet must be in the caller's view; later writes then use it.
+        if (!rows.isEmpty()) roster.pinHamlet(((Number) rows.getFirst().get("hamlet_id")).longValue());
         if (rows.isEmpty() || ("CT".equals(rows.getFirst().get("category")) && !political)) throw new ResponseStatusException(
             HttpStatus.NOT_FOUND,
             "Không tìm thấy đối tượng trong địa bàn"
@@ -97,6 +101,7 @@ public class SubjectService {
     /** Resident summary columns shared by list and detail; alias {@code r} is tc2_roster.resident. */
     private static final String PERSON =
         "r.full_name, r.birth_date, r.birth_year, r.birth_date_precision, r.gender, r.occupation," +
+        " (select x.name from public.hamlet x where x.id=r.hamlet_id) hamlet_name," +
         " (select i.number_ciphertext from tc2_roster.resident_identity i where i.resident_id=r.id and i.active" +
         "  order by i.verified desc, i.valid_from desc nulls last limit 1) identity_ciphertext," +
         " (select h.raw_address from tc2_roster.household_membership m join tc2_roster.household h on h.id=m.household_id" +
@@ -139,8 +144,8 @@ public class SubjectService {
     private record Where(String text, List<Object> args) {}
 
     private Where where(Map<String, String> filter, boolean political) {
-        var text = new StringBuilder("s.hamlet_id=?");
-        var args = new ArrayList<Object>(List.of(roster.hamlet()));
+        var text = new StringBuilder("s.hamlet_id=any(?::bigint[])");
+        var args = new ArrayList<Object>(List.of(RosterService.idArray(roster.scopeHamlets())));
         if (!political) text.append(" and s.category<>'CT'");
         String category = filter.getOrDefault("category", "");
         if (!category.isBlank()) {
@@ -240,12 +245,12 @@ public class SubjectService {
     @Transactional(readOnly = true)
     public Map<String, Object> summary() {
         boolean political = authorizeView();
-        long hamlet = roster.hamlet();
+        String hamlet = RosterService.idArray(roster.scopeHamlets());
         String visible = political ? "" : " and s.category<>'CT'";
         var byCategory = new LinkedHashMap<String, Long>();
         for (String c : CATEGORIES) if (political || !c.equals("CT")) byCategory.put(c, 0L);
         db.query(
-            "select s.category, count(*) from subject s where s.hamlet_id=? and s.status='ACTIVE'" + visible + " group by 1",
+            "select s.category, count(*) from subject s where s.hamlet_id=any(?::bigint[]) and s.status='ACTIVE'" + visible + " group by 1",
             rs -> {
                 byCategory.put(rs.getString(1), rs.getLong(2));
             },
@@ -253,13 +258,13 @@ public class SubjectService {
         );
         LocalDate today = LocalDate.now();
         long managementDue = db.queryForObject(
-            "select count(*) from subject s where s.hamlet_id=? and s.status='ACTIVE' and s.managed_until<=?" + visible,
+            "select count(*) from subject s where s.hamlet_id=any(?::bigint[]) and s.status='ACTIVE' and s.managed_until<=?" + visible,
             Long.class,
             hamlet,
             today.plusDays(MANAGEMENT_WARNING_DAYS)
         );
         long summonDue = db.queryForObject(
-            "select count(*) from subject s where s.hamlet_id=? and s.status='ACTIVE' and " + NEXT_SUMMON + "<=?" + visible,
+            "select count(*) from subject s where s.hamlet_id=any(?::bigint[]) and s.status='ACTIVE' and " + NEXT_SUMMON + "<=?" + visible,
             Long.class,
             hamlet,
             today.plusDays(SUMMON_WARNING_DAYS)

@@ -163,16 +163,9 @@ public class ResidentExportService {
      */
     List<Long> hamlets(ResidentFilter filter) {
         roster.authorize("canExportReports");
-        if (!filter.commune()) return List.of(roster.hamlet());
-        if (!rbac.global() && !"admin".equals(rbac.current().get("role"))) throw new AccessDeniedException(
-            "Chỉ trưởng công an xã hoặc Super Admin được xuất toàn xã"
-        );
-        List<Long> ids = rbac.global()
-            ? db.queryForList("select id from public.hamlet order by sort_order nulls last, id", Long.class)
-            : rbac.areas();
-        if (ids.isEmpty()) throw new AccessDeniedException("Chưa được giao địa bàn");
-        for (Long id : ids) rbac.area(id);
-        return ids;
+        // The all-hamlets view exports what it shows: the commune view, under the same rule as an explicit commune export.
+        if (!filter.commune() && !roster.allHamlets()) return List.of(roster.hamlet());
+        return roster.communeHamlets();
     }
 
     private String marks(int n) {
@@ -363,7 +356,7 @@ public class ResidentExportService {
     }
 
     private String scope(ResidentFilter filter, List<Long> hamlets, String commune) {
-        if (filter.commune()) {
+        if (filter.commune() || hamlets.size() > 1) {
             String name = commune.isEmpty() ? "xã" : Character.toLowerCase(commune.charAt(0)) + commune.substring(1);
             return "Toàn " + name + " (" + hamlets.size() + " ấp)";
         }
@@ -451,7 +444,7 @@ public class ResidentExportService {
             unevaluable(filter, hamlets),
             tallies,
             disclosed,
-            filter.commune(),
+            filter.commune() || hamlets.size() > 1,
             String.valueOf(rbac.current().getOrDefault("fullName", "")),
             LocalDateTime.now(ZONE).format(DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"))
         );
@@ -496,9 +489,9 @@ public class ResidentExportService {
         result.put(
             "classifications",
             db.queryForList(
-                "select distinct classification_raw from tc2_roster.residence_record where hamlet_id=? and classification_raw is not null and classification_raw<>'' order by 1 limit 50",
+                "select distinct classification_raw from tc2_roster.residence_record where hamlet_id=any(?::bigint[]) and classification_raw is not null and classification_raw<>'' order by 1 limit 50",
                 String.class,
-                roster.hamlet()
+                RosterService.idArray(roster.scopeHamlets())
             )
         );
         result.put("canExportCommune", rbac.global() || "admin".equals(rbac.current().get("role")));

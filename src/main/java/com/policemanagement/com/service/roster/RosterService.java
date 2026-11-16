@@ -66,6 +66,29 @@ public class RosterService {
     public static final String DEFAULT_HAMLET_CODE = "27592-TRUNGCHANH-2";
 
     private static final String HAMLET_ATTRIBUTE = "roster.hamlet";
+    private static final String SCOPE_ATTRIBUTE = "roster.scope";
+
+    /**
+     * {@code hamletId} value asking for every hamlet the caller may open: all hamlets for the super admin, the assigned hamlets
+     * (the commune) for the commune chief. Lists and summaries then cover that set; an operation on one record works in the
+     * record's own hamlet ({@link #get}); anything that needs one hamlet and has no record asks the user to pick one.
+     */
+    public static final String ALL_HAMLETS = "all";
+
+    private static String requestedHamlet() {
+        return RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes web
+            ? web.getRequest().getParameter("hamletId")
+            : null;
+    }
+
+    /** The request asks for the all-hamlets view and no record has pinned a single hamlet yet. */
+    public boolean allHamlets() {
+        var request = RequestContextHolder.getRequestAttributes();
+        return (
+            ALL_HAMLETS.equals(requestedHamlet()) &&
+            !(request != null && request.getAttribute(HAMLET_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof Long)
+        );
+    }
 
     /**
      * Hamlet the current request works on: the {@code hamletId} request parameter when given, otherwise the default
@@ -77,7 +100,8 @@ public class RosterService {
         if (
             request != null && request.getAttribute(HAMLET_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof Long cached
         ) return cached;
-        String requested = request instanceof ServletRequestAttributes web ? web.getRequest().getParameter("hamletId") : null;
+        String requested = requestedHamlet();
+        if (ALL_HAMLETS.equals(requested)) throw bad("Chọn một ấp cụ thể để dùng chức năng này");
         long id = resolveHamlet(requested, request != null);
         if (request != null) request.setAttribute(HAMLET_ATTRIBUTE, id, RequestAttributes.SCOPE_REQUEST);
         return id;
@@ -130,10 +154,73 @@ public class RosterService {
         return result;
     }
 
+    /**
+     * Every hamlet of the commune view: all hamlets for the super admin, the assigned hamlets for the commune chief (role
+     * {@code admin}). Each one is checked against the caller's territory. Shared with the commune-wide resident export.
+     */
+    public List<Long> communeHamlets() {
+        if (!rbac.global() && !"admin".equals(rbac.current().get("role"))) throw new AccessDeniedException(
+            "Chỉ trưởng công an xã hoặc Super Admin được xem toàn xã"
+        );
+        List<Long> ids = rbac.global()
+            ? db.queryForList("select id from public.hamlet order by sort_order nulls last, id", Long.class)
+            : rbac.areas();
+        if (ids.isEmpty()) throw new AccessDeniedException("Chưa được giao địa bàn");
+        for (Long id : ids) rbac.area(id);
+        return ids;
+    }
+
+    /**
+     * The all-hamlets view the picker offers: "Tất cả ấp" for the super admin, "Toàn xã" for a commune chief with assigned
+     * hamlets, none for other roles. It is also their default view.
+     */
+    public Map<String, Object> scopeOptions() {
+        rbac.current();
+        boolean global = rbac.global();
+        boolean chief = "admin".equals(rbac.current().get("role")) && !rbac.areas().isEmpty();
+        var result = new LinkedHashMap<String, Object>();
+        result.put("all", global || chief);
+        result.put("label", global ? "Tất cả ấp" : chief ? "Toàn xã" : "");
+        return result;
+    }
+
+    /** Hamlets a list or summary covers: the commune view for {@link #ALL_HAMLETS}, otherwise the current hamlet. */
+    @SuppressWarnings("unchecked")
+    public List<Long> scopeHamlets() {
+        if (!allHamlets()) return List.of(hamlet());
+        var request = RequestContextHolder.getRequestAttributes();
+        if (
+            request != null && request.getAttribute(SCOPE_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof List<?> cached
+        ) return (List<Long>) cached;
+        var ids = List.copyOf(communeHamlets());
+        if (request != null) request.setAttribute(SCOPE_ATTRIBUTE, ids, RequestAttributes.SCOPE_REQUEST);
+        return ids;
+    }
+
+    /** SQL array literal of hamlet ids, bound as {@code column = any(?::bigint[])}. */
+    public static String idArray(List<Long> ids) {
+        return "{" + String.join(",", ids.stream().map(String::valueOf).toList()) + "}";
+    }
+
+    /**
+     * In the all-hamlets view, fixes the request to the hamlet of the record it opens, after checking that hamlet is in the
+     * caller's view; later {@link #hamlet()} calls (writes, audit, second records) then use it. A second record of another
+     * hamlet in the same request is reported as not found. Outside that view it only checks the record's hamlet is current.
+     */
+    public void pinHamlet(long recordHamlet) {
+        var request = RequestContextHolder.getRequestAttributes();
+        if (allHamlets()) {
+            if (!scopeHamlets().contains(recordHamlet)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hồ sơ");
+            rbac.area(recordHamlet);
+            if (request != null) request.setAttribute(HAMLET_ATTRIBUTE, recordHamlet, RequestAttributes.SCOPE_REQUEST);
+        } else if (recordHamlet != hamlet()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hồ sơ");
+    }
+
     public void authorize(String permission) {
         db.execute("set local time zone 'Asia/Ho_Chi_Minh'");
         rbac.current();
-        rbac.area(hamlet());
+        if (allHamlets()) scopeHamlets();
+        else rbac.area(hamlet());
         if (permission != null) rbac.permission(permission);
         if (
             !rbac.global() && !((List<?>) rbac.current().getOrDefault("assignedStreets", List.of())).isEmpty()
@@ -168,6 +255,12 @@ public class RosterService {
 
     private Map<String, Object> get(String table, UUID id) {
         if (!Set.of("household", "resident", "residence_record", "household_membership").contains(table)) throw bad("Invalid entity");
+        if (allHamlets()) {
+            var any = db.queryForList("select * from tc2_roster." + table + " where id=?", id);
+            if (any.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hồ sơ");
+            pinHamlet(((Number) any.getFirst().get("hamlet_id")).longValue());
+            return any.getFirst();
+        }
         var rows = db.queryForList("select * from tc2_roster." + table + " where id=? and hamlet_id=?", id, hamlet());
         if (rows.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy hồ sơ");
         return rows.getFirst();
@@ -663,14 +756,27 @@ public class RosterService {
 
     public Map<String, Object> overview() {
         authorize(null);
-        return db.queryForMap(
-            "select (select name from public.hamlet where id=?) hamlet_name,(select count(*) from tc2_roster.household where hamlet_id=?) households,(select count(*) from tc2_roster.resident where hamlet_id=?) residents,(select count(*) from tc2_roster.residence_record where hamlet_id=?) records,(select count(*) from tc2_roster.import_row r join tc2_roster.import_batch b on b.id=r.batch_id join tc2_roster.import_collection c on c.id=b.collection_id where c.hamlet_id=? and r.status='REVIEW') review_rows",
-            hamlet(),
-            hamlet(),
-            hamlet(),
-            hamlet(),
-            hamlet()
+        boolean all = allHamlets();
+        String ids = idArray(scopeHamlets());
+        var result = new LinkedHashMap<String, Object>(
+            db.queryForMap(
+                "select (select count(*) from tc2_roster.household where hamlet_id=any(?::bigint[])) households,(select count(*) from tc2_roster.resident where hamlet_id=any(?::bigint[])) residents,(select count(*) from tc2_roster.residence_record where hamlet_id=any(?::bigint[])) records,(select count(*) from tc2_roster.import_row r join tc2_roster.import_batch b on b.id=r.batch_id join tc2_roster.import_collection c on c.id=b.collection_id where c.hamlet_id=any(?::bigint[]) and r.status='REVIEW') review_rows",
+                ids,
+                ids,
+                ids,
+                ids
+            )
         );
+        result.put(
+            "hamlet_name",
+            all
+                ? rbac.global()
+                    ? "Tất cả ấp"
+                    : "Toàn xã"
+                : db.queryForObject("select name from public.hamlet where id=?", String.class, hamlet())
+        );
+        result.put("all_hamlets", all);
+        return result;
     }
 
     public Map<String, Object> households(String search, int page) {
@@ -689,17 +795,28 @@ public class RosterService {
         // "120/45" is an address path: match whole segments from the start (120/45, 120/45/8/2A) instead of any substring.
         var addressRegex = RosterCampaign.addressPathRegex(search);
         String where =
-            " from tc2_roster.household h where hamlet_id=? and (" +
+            " from tc2_roster.household h where hamlet_id=any(?::bigint[]) and (" +
             (addressRegex.isPresent() ? "raw_address ~* ?" : "raw_address ilike ?") +
             " or coalesce(representative_name,'') ilike ? or code ilike ? or coalesce(source_case_number,'') ilike ?)" +
             " and (?='' or origin=?) and (?='' or (?='HSCT' and source_case_number is not null) or (?='PROVISIONAL' and source_case_number is null))";
         var args = new ArrayList<Object>(
-            Arrays.asList(hamlet(), addressRegex.orElse(pattern), pattern, pattern, pattern, origin, origin, category, category, category)
+            Arrays.asList(
+                idArray(scopeHamlets()),
+                addressRegex.orElse(pattern),
+                pattern,
+                pattern,
+                pattern,
+                origin,
+                origin,
+                category,
+                category,
+                category
+            )
         );
         long total = db.queryForObject("select count(*)" + where, Long.class, args.toArray());
         args.add((long) page * 30);
         var rows = db.queryForList(
-            "select h.*,(select count(*) from tc2_roster.household_membership m where m.household_id=h.id and m.valid_to is null) member_count" +
+            "select h.*,(select count(*) from tc2_roster.household_membership m where m.household_id=h.id and m.valid_to is null) member_count,(select name from public.hamlet x where x.id=h.hamlet_id) hamlet_name" +
                 where +
                 " order by code limit 30 offset ?",
             args.toArray()
@@ -715,11 +832,11 @@ public class RosterService {
         return residents(ResidentFilter.legacy(search, kind, origin, campaign), page);
     }
 
-    /** One page of the hamlet's residents for the roster list; a commune scope is ignored here. */
+    /** One page of the residents of the current view (one hamlet, or every hamlet for {@link #ALL_HAMLETS}). */
     public Map<String, Object> residents(ResidentFilter filter, int page) {
         authorize(null);
         if (page < 0) throw bad("Bộ lọc không hợp lệ");
-        var hamlets = List.of(hamlet());
+        var hamlets = scopeHamlets();
         var where = filter.where(hamlets, crypto.lookup(filter.search()));
         String from = " from tc2_roster.resident r where " + where.text();
         long total = db.queryForObject("select count(*)" + from, Long.class, where.args().toArray());
@@ -739,7 +856,7 @@ public class RosterService {
      * Correlated subqueries run only for the 30 rows of the page.
      */
     private static final String LIST_COLUMNS =
-        "select r.*,(select count(*) from tc2_roster.residence_record rr where rr.resident_id=r.id) record_count," +
+        "select r.*,(select name from public.hamlet x where x.id=r.hamlet_id) hamlet_name,(select count(*) from tc2_roster.residence_record rr where rr.resident_id=r.id) record_count," +
         "(select count(*) from tc2_roster.household_membership m where m.resident_id=r.id and m.valid_to is null) household_count," +
         "(select i.number_ciphertext from tc2_roster.resident_identity i where i.resident_id=r.id and i.active" +
         " order by i.verified desc, i.valid_from desc nulls last limit 1) identity_ciphertext," +
@@ -959,8 +1076,8 @@ public class RosterService {
         authorize(null);
         if (search.length() < 2 || search.length() > 100) throw bad("Nhập từ 2 đến 100 ký tự");
         return db.queryForList(
-            "select distinct r.id,r.full_name,r.birth_date,r.birth_year,r.gender,r.version from tc2_roster.resident r left join tc2_roster.resident_identity i on i.resident_id=r.id and i.active where r.hamlet_id=? and (i.number_lookup=? or position(lower(?) in lower(r.full_name))>0) order by r.full_name limit 30",
-            hamlet(),
+            "select distinct r.id,r.full_name,r.birth_date,r.birth_year,r.gender,r.version from tc2_roster.resident r left join tc2_roster.resident_identity i on i.resident_id=r.id and i.active where r.hamlet_id=any(?::bigint[]) and (i.number_lookup=? or position(lower(?) in lower(r.full_name))>0) order by r.full_name limit 30",
+            idArray(scopeHamlets()),
             crypto.lookup(search),
             search
         );

@@ -23,6 +23,12 @@ public class RosterResource {
         return service.hamlets();
     }
 
+    /** Whether the caller has the all-hamlets view (hamletId=all) and how the picker names it. */
+    @GetMapping("/scope")
+    public Map<String, Object> scope() {
+        return service.scopeOptions();
+    }
+
     @GetMapping("/overview")
     public Map<String, Object> overview() {
         return service.overview();

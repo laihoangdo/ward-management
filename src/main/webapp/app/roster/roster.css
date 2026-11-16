@@ -1340,3 +1340,10 @@
   outline: 2px solid var(--roster-primary);
   outline-offset: 2px;
 }
+
+/* Hamlet of a row in the all-hamlets / commune view. */
+.roster-hamlet-tag {
+  color: var(--roster-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}

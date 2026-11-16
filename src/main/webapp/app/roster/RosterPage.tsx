@@ -10,7 +10,8 @@ import RosterPatrol from './RosterPatrol';
 import HouseholdSplitDialog from './HouseholdSplitDialog';
 import ResidentExportDialog from './ResidentExportDialog';
 import ResidentPhotos from './ResidentPhotos';
-import { activeHamlet, setActiveHamlet } from './hamletScope';
+import { activeHamlet } from './hamletScope';
+import { useHamletScope } from './HamletScopePicker';
 import ResidentSubjects from '../subjects/ResidentSubjects';
 import ResidentTags from './ResidentTags';
 import { facilityTypes, householdEditFields, householdEditInitial, householdFields, licenseTypes } from './householdForm';
@@ -372,6 +373,7 @@ function RosterWorkspace({
   householdTarget,
   currentUser,
   hamletName,
+  allHamlets = false,
 }: {
   initialTab?: string;
   embedded?: boolean;
@@ -382,6 +384,8 @@ function RosterWorkspace({
   /** Signed-in user, when the host already has it; otherwise it is loaded once for the export button. */
   currentUser?: Pick<AppUser, 'role' | 'subAdminPermissions'> | null;
   hamletName?: string;
+  /** Viewing every hamlet the user may open: lists and records only; tools that work on one hamlet are hidden. */
+  allHamlets?: boolean;
 }) {
   const { params: urlParams, updateQuery } = useRouteQuery();
   const [exportOpen, setExportOpen] = useState(false);
@@ -404,7 +408,7 @@ function RosterWorkspace({
   const [listTick, setListTick] = useState(0);
   const rosterTabs = ['households', 'residents', 'import', 'history', 'patrol'];
   const tabParam = embedded ? (urlParams.get('rosterTab') ?? urlParams.get('tab')) : urlParams.get('tab');
-  const routeTab = rosterTabs.includes(tabParam ?? '') ? tabParam! : initialTab;
+  const routeTab = rosterTabs.includes(tabParam ?? '') && !(allHamlets && SINGLE_HAMLET_TABS.includes(tabParam!)) ? tabParam! : initialTab;
   const tab = routeTab;
   const setTab = (value: string) =>
     updateQuery({
@@ -1502,8 +1506,12 @@ function RosterWorkspace({
             {overview.hamlet_name ? ` · ${text(overview.hamlet_name)}` : ''}
           </Title>
           <p>
-            {overview.hamlet_name ? `Dữ liệu gốc từ ấp ${text(overview.hamlet_name)}` : 'Dữ liệu gốc theo ấp'} · Có nguồn và lịch sử thay
-            đổi
+            {overview.all_hamlets
+              ? 'Dữ liệu của mọi ấp trong phạm vi được xem'
+              : overview.hamlet_name
+                ? `Dữ liệu gốc từ ấp ${text(overview.hamlet_name)}`
+                : 'Dữ liệu gốc theo ấp'}{' '}
+            · Có nguồn và lịch sử thay đổi
           </p>
         </div>
       </div>
@@ -1514,22 +1522,28 @@ function RosterWorkspace({
           ['import', 'Nhập Excel / đối soát'],
           ['patrol', 'Tuần tra'],
           ['history', 'Lịch sử & báo cáo'],
-        ].map(([v, l]) => (
-          <button
-            key={v}
-            aria-pressed={tab === v}
-            onClick={() => {
-              setTab(v);
-              setSearch('');
-              setList({ tab: '', items: [], total: 0 });
-              setPerson(null);
-              setHousehold(null);
-              setHistoryTarget(null);
-            }}
-          >
-            {l}
-          </button>
-        ))}
+        ]
+          .filter(([v]) => !(allHamlets && SINGLE_HAMLET_TABS.includes(v)))
+          .map(([v, l]) => (
+            <button
+              key={v}
+              aria-pressed={tab === v}
+              onClick={() => {
+                // Only a real tab change empties the list: the load effect then refetches for the new tab. Clicking the
+                // open tab changes none of its inputs, so an emptied list would never come back.
+                if (v !== tab) {
+                  setTab(v);
+                  setList({ tab: '', items: [], total: 0 });
+                }
+                setSearch('');
+                setPerson(null);
+                setHousehold(null);
+                setHistoryTarget(null);
+              }}
+            >
+              {l}
+            </button>
+          ))}
       </nav>
       {error && (
         <div className="roster-error" role="alert">
@@ -1545,8 +1559,14 @@ function RosterWorkspace({
         {overview.households ?? '…'} hộ/nhóm địa chỉ · {overview.residents ?? '…'} cá nhân · {overview.records ?? '…'} hồ sơ cư trú ·{' '}
         {overview.review_rows ?? '…'} dòng chờ đối soát. Số này chưa phải dân số thực tế đã xác minh.
       </p>
+      {allHamlets && (
+        <p className="roster-empty-hint" role="note">
+          Đang xem {hamletName ?? 'tất cả ấp'}. Chọn một ấp ở ô &quot;Ấp&quot; để thêm hộ, nhập Excel, xem bản đồ vị trí, tuần tra hoặc lịch
+          sử & báo cáo.
+        </p>
+      )}
       {tab === 'patrol' && <RosterPatrol />}
-      {tab === 'households' && (
+      {tab === 'households' && !allHamlets && (
         <div className="roster-view-toggle">
           <button type="button" aria-pressed={mapOn} onClick={() => setMapOn(on => !on)}>
             {mapOn ? 'Ẩn bản đồ' : 'Hiện bản đồ vị trí'}
@@ -1734,6 +1754,7 @@ function RosterWorkspace({
                           <td data-label="Diện NK">{kinds.find(([v]) => v === r.record_kind)?.[1] ?? '—'}</td>
                           <td data-label="Địa chỉ" className="roster-cell-address">
                             {r.address || (Number(r.household_count) === 0 ? 'Chưa gắn hộ' : '—')}
+                            {allHamlets && r.hamlet_name ? <span className="roster-hamlet-tag"> · {text(r.hamlet_name)}</span> : null}
                           </td>
                           <td data-label="Nguồn">
                             <span className={`roster-badge ${r.origin === 'EXCEL' ? 'roster-badge--muted' : 'roster-badge--ok'}`}>
@@ -1822,9 +1843,11 @@ function RosterWorkspace({
                         Xóa lọc
                       </button>
                     )}
-                    <button className="roster-primary" onClick={openNewHousehold}>
-                      + Thêm hộ
-                    </button>
+                    {!allHamlets && (
+                      <button className="roster-primary" onClick={openNewHousehold}>
+                        + Thêm hộ
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="roster-table">
@@ -1872,6 +1895,7 @@ function RosterWorkspace({
                           </td>
                           <td data-label="Địa chỉ" className="roster-cell-address">
                             {h.raw_address}
+                            {allHamlets && h.hamlet_name ? <span className="roster-hamlet-tag"> · {text(h.hamlet_name)}</span> : null}
                           </td>
                           <td data-label="Thành viên đã nhập" className="roster-num">
                             {h.member_count}
@@ -2275,59 +2299,15 @@ function RosterWorkspace({
   );
 }
 
-type HamletOption = { id: number; name: string; full_name?: string; is_default?: boolean };
+/** Roster tools that work on one hamlet; hidden in the all-hamlets view. */
+const SINGLE_HAMLET_TABS = ['import', 'patrol', 'history'];
 
-export default function RosterPage(props: React.ComponentProps<typeof RosterWorkspace>) {
-  const [hamlets, setHamlets] = useState<HamletOption[]>([]);
-  const [hamlet, setHamlet] = useState(activeHamlet());
-  const [epoch, setEpoch] = useState(0);
-  useEffect(() => {
-    let cancelled = false;
-    Promise.resolve(axios.get(`${api}/hamlets`))
-      .then(response => {
-        const list = response?.data;
-        if (cancelled || !Array.isArray(list)) return;
-        setHamlets(list as HamletOption[]);
-        if (activeHamlet() && !list.some(h => String(h.id) === activeHamlet())) {
-          // A remembered hamlet the user can no longer open: fall back to the server default and reload.
-          setActiveHamlet('', false);
-          setHamlet('');
-          setEpoch(n => n + 1);
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  const selected = hamlets.some(h => String(h.id) === hamlet) ? hamlet : '';
-  const effective = selected || String(hamlets.find(h => h.is_default)?.id ?? '');
-  const choose = (value: string) => {
-    setActiveHamlet(value);
-    setHamlet(value);
-  };
+export default function RosterPage(props: Omit<React.ComponentProps<typeof RosterWorkspace>, 'allHamlets' | 'hamletName'>) {
+  const scope = useHamletScope();
   return (
     <>
-      {hamlets.length > 1 && (
-        <label className="roster-hamlet-picker">
-          Ấp{' '}
-          <select value={effective} onChange={event => choose(event.target.value)} aria-label="Chọn ấp">
-            {hamlets.map(h => (
-              <option key={h.id} value={String(h.id)}>
-                {h.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-      <RosterWorkspace
-        key={`${selected || 'default'}:${epoch}`}
-        hamletName={(() => {
-          const current = hamlets.find(h => String(h.id) === effective);
-          return current ? current.full_name || current.name : undefined;
-        })()}
-        {...props}
-      />
+      {scope.picker}
+      <RosterWorkspace key={scope.key} allHamlets={scope.all} hamletName={scope.label} {...props} />
     </>
   );
 }

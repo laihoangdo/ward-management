@@ -79,6 +79,7 @@ import { SuperAdminHubTab } from './components/SuperAdminHubTab';
 import { SuperAdminAccessGuard } from './components/SuperAdminAccessGuard';
 import { SubAdminDelegationTab } from './components/SubAdminDelegationTab';
 import { FeatureGuideModal, ActiveMenuGuideBanner } from './components/FeatureGuideModal';
+import { bindHamletScope } from '../roster/hamletScope';
 
 /** Menus temporarily hidden from navigation and direct URL access; code is kept for later reuse. */
 const HIDDEN_MENU_IDS: NavigationTab[] = ['advanced-map'];
@@ -115,6 +116,9 @@ export default function App() {
       resetRbacEventSession();
     };
   }, [isAuthenticated, account.login]);
+  // During render, not in an effect: child screens fire their first scoped request in their own effects, which run first.
+  if (currentUser)
+    bindHamletScope({ login: account.login, username: currentUser.username, role: currentUser.role, hamletIds: currentUser.hamletIds });
   if (!sessionHasBeenFetched)
     return (
       <div role="status" className="p-8">
