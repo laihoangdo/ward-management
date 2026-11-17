@@ -823,7 +823,7 @@ public class RosterService {
                           SearchText.foldedSql("representative_name") +
                           " like ? or lower(code) like ? or lower(coalesce(source_case_number,'')) like ?)"
             );
-            if (addressRegex.isPresent()) args.add(addressRegex.get());
+            if (addressRegex.isPresent()) args.add(addressRegex.orElseThrow());
             else args.addAll(List.of(pattern, pattern, pattern, pattern));
         }
         where.append(
