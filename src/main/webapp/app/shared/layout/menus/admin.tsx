@@ -28,9 +28,11 @@ const openAPIItem = () => (
   </MenuItem>
 );
 
-export const AdminMenu = ({ showOpenAPI }) => (
-  <NavDropdown icon="users-cog" name="Quản trị" id="admin-menu" data-cy="adminMenu">
-    {adminMenuItems()}
-    {showOpenAPI && openAPIItem()}
-  </NavDropdown>
-);
+/** `showMonitoring` is false where the server closes /management/* (production); an empty dropdown is left out. */
+export const AdminMenu = ({ showOpenAPI, showMonitoring = true }: { showOpenAPI: boolean; showMonitoring?: boolean }) =>
+  showMonitoring || showOpenAPI ? (
+    <NavDropdown icon="users-cog" name="Quản trị" id="admin-menu" data-cy="adminMenu">
+      {showMonitoring && adminMenuItems()}
+      {showOpenAPI && openAPIItem()}
+    </NavDropdown>
+  ) : null;
