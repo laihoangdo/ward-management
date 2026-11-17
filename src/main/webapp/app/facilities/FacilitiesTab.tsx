@@ -147,6 +147,7 @@ function FacilitiesList({ allHamlets }: { allHamlets: boolean }) {
       <div className="subject-summary subject-summary--due" role="group" aria-label="Lọc theo hạn giấy phép">
         <button
           aria-pressed={due}
+          data-has-due={(summary?.license_due ?? 0) > 0 ? 'true' : undefined}
           onClick={() => {
             setDue(!due);
             setPage(0);

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Home, Check, ChevronDown, X, MapPin, User } from 'lucide-react';
 import { HouseholdFacility } from '../types';
+import { matchesWords } from '../utils/householdSearch';
 
 export interface HouseholdSearchSelectProps {
   households: HouseholdFacility[];
@@ -42,31 +43,14 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
     return households.find(h => h.id === selectedId) || null;
   }, [households, selectedId]);
 
-  // Filter households by code, ownerName, houseNumber, street, hamlet, phone
-  const filteredHouseholds = useMemo(() => {
-    if (!searchTerm.trim()) return households;
-    const q = searchTerm.toLowerCase().trim();
-
-    return households.filter(h => {
-      const code = (h.code || '').toLowerCase();
-      const owner = (h.ownerName || '').toLowerCase();
-      const house = (h.houseNumber || '').toLowerCase();
-      const street = (h.street || '').toLowerCase();
-      const hamlet = (h.hamlet || '').toLowerCase();
-      const phone = (h.ownerPhone || '').toLowerCase();
-      const business = (h.businessName || '').toLowerCase();
-
-      return (
-        code.includes(q) ||
-        owner.includes(q) ||
-        house.includes(q) ||
-        street.includes(q) ||
-        hamlet.includes(q) ||
-        phone.includes(q) ||
-        business.includes(q)
-      );
-    });
-  }, [households, searchTerm]);
+  // Same rule as every other search box: each word, any order, accents and case ignored.
+  const filteredHouseholds = useMemo(
+    () =>
+      households.filter(h =>
+        matchesWords(searchTerm, [h.code, h.ownerName, h.houseNumber, h.street, h.rawAddress, h.hamlet, h.ownerPhone, h.businessName]),
+      ),
+    [households, searchTerm],
+  );
 
   const handleToggle = () => {
     setIsOpen(prev => {

@@ -1991,14 +1991,6 @@ export default function FieldHouseMap({
               {categories?.subjectsVisible === false ? ' Nhà đối tượng chỉ hiện với cán bộ được cấp quyền xem đối tượng.' : ''}
             </small>
           )}
-          {theme === 'status' && (
-            <small>Tường nhà nhiều hộ chia dải màu theo tỷ lệ hộ mỗi trạng thái, không phải vị trí tầng của từng hộ.</small>
-          )}
-          <small>Khi lọc trạng thái, nhà không khớp được làm mờ và hạ thấp. Chiều cao nhập từ dữ liệu nguồn là giả lập.</small>
-          <small>Ranh giới {hamletBoundaries.features.length} ấp: nét vàng. Phạm vi được giao: nét xanh.</small>
-          {hamletBoundaries.features.some(feature => feature.properties?.provisional) && (
-            <small>Ranh giới ấp tạm dựng từ PDF, dùng cho phân quyền và sẽ được cập nhật khi có tọa độ chuẩn.</small>
-          )}
         </details>
         {mode === 'draw' && (
           <aside className="field-panel">

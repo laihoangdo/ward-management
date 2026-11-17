@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { matchesHouseholdSearch, parseCoordinateQuery } from './householdSearch';
+import { matchesHouseholdSearch, matchesWords, parseCoordinateQuery } from './householdSearch';
 import { HouseholdFacility } from '../types';
 
 describe('Shared household lookup', () => {
@@ -22,6 +22,28 @@ describe('Shared household lookup', () => {
     expect(matchesHouseholdSearch(home, '14 duong so 3')).toBe(false);
     const raw = { street: '144/2, Ấp 61, Xã Bà Điểm' } as HouseholdFacility;
     expect(matchesHouseholdSearch(raw, '144/2 ấp 61')).toBe(true);
+  });
+
+  it('matches every word of the full address in any order, and only when every word is there', () => {
+    const roster = {
+      rawAddress: 'Số 26/3 Hẻm 12 Tiền Lân, Ấp Tiền Lân 4',
+      street: 'Số 26/3 Hẻm 12 Tiền Lân, Ấp Tiền Lân 4',
+    } as HouseholdFacility;
+    expect(matchesHouseholdSearch(roster, '26/3 ấp tiền lân 4')).toBe(true);
+    expect(matchesHouseholdSearch(roster, 'tien lan 4, 26/3')).toBe(true);
+    expect(matchesHouseholdSearch(roster, '26/3 trung chanh')).toBe(false);
+    // A member's name together with an address word.
+    const family = { rawAddress: 'Số 8 Hẻm 3, Ấp Trung Chánh 2', residentsList: [{ fullName: 'Trần Thị Bình' }] } as HouseholdFacility;
+    expect(matchesHouseholdSearch(family, 'binh trung chanh')).toBe(true);
+  });
+
+  it('applies one rule to every search box: each word, any order, accents and case ignored', () => {
+    const fields = ['Nguyễn Văn Đạt', 'Công an phụ trách ấp', 'CA-123'];
+    expect(matchesWords('nguyen dat', fields)).toBe(true);
+    expect(matchesWords('ca-123 NGUYỄN', fields)).toBe(true);
+    expect(matchesWords('nguyen binh', fields)).toBe(false);
+    expect(matchesWords('   ', fields)).toBe(true);
+    expect(matchesWords('dat', [undefined, null, ''])).toBe(false);
   });
 
   it('reads lat, lng coordinates and swaps a pasted lng, lat pair', () => {

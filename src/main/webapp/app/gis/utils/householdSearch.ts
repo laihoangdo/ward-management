@@ -16,6 +16,21 @@ export function normalizeSearch(value: string) {
   );
 }
 
+/**
+ * The app's search rule, shared by every client-side search box: every word of the query appears in at least one of the
+ * fields, in any order; accents, case, commas and semicolons are ignored. An empty query matches.
+ */
+export function matchesWords(query: string, fields: (string | null | undefined)[]): boolean {
+  const words = normalizeSearch(query).split(' ').filter(Boolean);
+  if (!words.length) return true;
+  const values = fields.filter((value): value is string => !!value).map(normalizeSearch);
+  return words.every(word => values.some(value => value.includes(word)));
+}
+
+/**
+ * Word by word, like the roster list and the server search: "26/3 tien lan 4" matches a household when every word appears
+ * in one of its fields, in any order ("Số 26/3 Hẻm 12 Tiền Lân, Ấp Tiền Lân 4"). Accents and case are ignored.
+ */
 export function matchesHouseholdSearch(household: HouseholdFacility, query: string) {
   const q = normalizeSearch(query);
   if (!q) return true;
@@ -23,6 +38,7 @@ export function matchesHouseholdSearch(household: HouseholdFacility, query: stri
     household.ownerName,
     household.houseNumber,
     household.street,
+    household.rawAddress,
     // "12 Đường số 3": house number and street typed together.
     household.houseNumber && household.street ? `${household.houseNumber} ${household.street}` : undefined,
     household.hamlet,
@@ -36,7 +52,7 @@ export function matchesHouseholdSearch(household: HouseholdFacility, query: stri
     ...(household.residentsList || []).flatMap(resident => [resident.fullName, resident.idCardNumber, resident.phone]),
   ];
   return (
-    fields.some(value => value && normalizeSearch(value).includes(q)) ||
+    matchesWords(q, fields) ||
     (q === 'canh bao' && household.status === 'warning') ||
     (q === 'kinh doanh' && household.type === 'business') ||
     (q === 'ho gia dinh' && household.type === 'household')

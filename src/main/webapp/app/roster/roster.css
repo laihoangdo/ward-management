@@ -709,6 +709,10 @@
   }
 }
 @media (max-width: 767px) {
+  .roster-page :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
+  .roster-filter-bar :is(input:not([type='checkbox']):not([type='radio']), select) {
+    font-size: 16px;
+  }
   .roster-workspace.has-selection .roster-detail-pane {
     top: 56px;
     bottom: calc(56px + env(safe-area-inset-bottom));
@@ -760,8 +764,9 @@
 }
 @media (max-width: 640px) {
   /* Phone: search first, list visible early, no sideways page scroll. */
-  .roster-page :is(input, select) {
-    font-size: 15px;
+  .roster-page :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
+  .roster-filter-bar :is(input:not([type='checkbox']):not([type='radio']), select) {
+    font-size: 16px;
   }
   .roster-heading {
     padding: 8px 10px;
@@ -1163,30 +1168,38 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  border-radius: 4px;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-  background: #fff;
+  border-radius: 6px;
+  border: 1px solid var(--roster-border);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.14); /* taste-skill-ignore: thanh công cụ nổi trên bản đồ là overlay thật */
+  background: var(--roster-surface);
   overflow: hidden;
 }
 .roster-page .roster-map-tools button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 29px;
-  min-height: 29px;
-  height: 29px;
+  width: 34px;
+  min-height: 34px;
+  height: 34px;
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: #fff;
-  color: #333;
+  background: var(--roster-surface);
+  color: var(--roster-text);
 }
 .roster-page .roster-map-tools button + button {
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--roster-border);
 }
 .roster-page .roster-map-tools button[aria-pressed='true'] {
   background: var(--roster-selected);
-  color: var(--roster-primary);
+  color: var(--roster-accent);
+}
+@media (max-width: 1023px), (pointer: coarse) {
+  .roster-page .roster-map-tools button {
+    width: 40px;
+    min-height: 40px;
+    height: 40px;
+  }
 }
 @media (max-width: 640px) {
   /* Narrow screens keep only the colour dots and counts; the toggle opens the labels. */
@@ -1198,8 +1211,8 @@
     align-items: center;
     justify-content: center;
     align-self: flex-start;
-    min-height: 28px;
-    width: 28px;
+    min-height: 36px;
+    width: 36px;
     margin-bottom: 4px;
     padding: 0;
     pointer-events: auto;

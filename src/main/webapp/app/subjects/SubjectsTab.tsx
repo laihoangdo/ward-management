@@ -53,6 +53,8 @@ function SubjectsList({ currentUser, allHamlets }: { currentUser: AppUser; allHa
   const political = summary?.canViewPolitical ?? access.political;
   const canManage = summary?.canManage ?? access.manage;
   const canExport = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canExportReports === true;
+  // Hides controls the user could not use; the server checks canRevealIdentity again and logs every full number shown.
+  const canReveal = currentUser?.role === 'superadmin' || currentUser?.subAdminPermissions?.canRevealIdentity === true;
 
   const loadSummary = useCallback(() => {
     fetchSummary()
@@ -155,10 +157,18 @@ function SubjectsList({ currentUser, allHamlets }: { currentUser: AppUser; allHa
         ))}
       </div>
       <div className="subject-summary subject-summary--due" role="group" aria-label="Lọc theo hạn">
-        <button aria-pressed={due === 'MANAGEMENT'} onClick={() => pick({ due: due === 'MANAGEMENT' ? '' : 'MANAGEMENT' })}>
+        <button
+          aria-pressed={due === 'MANAGEMENT'}
+          data-has-due={(summary?.managementDue ?? 0) > 0 ? 'true' : undefined}
+          onClick={() => pick({ due: due === 'MANAGEMENT' ? '' : 'MANAGEMENT' })}
+        >
           <span className="subject-count">{summary?.managementDue ?? 0}</span> Hết / sắp hết hạn quản lý
         </button>
-        <button aria-pressed={due === 'SUMMON'} onClick={() => pick({ due: due === 'SUMMON' ? '' : 'SUMMON' })}>
+        <button
+          aria-pressed={due === 'SUMMON'}
+          data-has-due={(summary?.summonDue ?? 0) > 0 ? 'true' : undefined}
+          onClick={() => pick({ due: due === 'SUMMON' ? '' : 'SUMMON' })}
+        >
           <span className="subject-count">{summary?.summonDue ?? 0}</span> Đến hạn gọi hỏi, răn đe
         </button>
       </div>
@@ -173,7 +183,7 @@ function SubjectsList({ currentUser, allHamlets }: { currentUser: AppUser; allHa
                   type="search"
                   value={search}
                   maxLength={100}
-                  placeholder="Họ tên hoặc số giấy tờ"
+                  placeholder="Họ tên, hoặc số giấy tờ (4 số trở lên)"
                   onChange={e => {
                     setSearch(e.target.value);
                     setPage(0);
@@ -199,6 +209,7 @@ function SubjectsList({ currentUser, allHamlets }: { currentUser: AppUser; allHa
                   <ListExportActions
                     base="/api/subjects"
                     fallbackName="danh-sach-doi-tuong.xlsx"
+                    fullIdentityOption={canReveal}
                     params={{
                       status,
                       ...(category ? { category } : {}),
@@ -291,6 +302,7 @@ function SubjectsList({ currentUser, allHamlets }: { currentUser: AppUser; allHa
             <SubjectDetail
               subject={selected}
               canManage={canManage}
+              canRevealIdentity={canReveal}
               political={political}
               onChanged={changed}
               onClose={() => setSelected(null)}

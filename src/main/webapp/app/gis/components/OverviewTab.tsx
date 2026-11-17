@@ -291,8 +291,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 : 'text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
             }`}
           >
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
-            <span className="truncate">Cần kiểm tra gia hạn</span>
+            <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${warningCount > 0 ? 'bg-amber-500' : 'bg-slate-400'}`}></span>
+            <span className="truncate">{warningCount > 0 ? 'Cần kiểm tra gia hạn' : 'Không có hồ sơ sắp hết hạn'}</span>
           </div>
         </div>
 

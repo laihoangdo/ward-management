@@ -24,7 +24,8 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Printable and Excel lists by category (trích danh sách theo hệ loại để in, nộp): subjects under management by category,
  * establishments, and the guidance documents register. The rows come from the same queries and scope checks as the screens;
- * identity numbers stay masked. Subject and establishment lists need canExportReports; every list is written to the audit log.
+ * identity numbers stay masked unless a subject list asks for them in full (fullIdentity=true, needs canRevealIdentity). Subject
+ * and establishment lists need canExportReports; every list is written to the audit log, with the full-identity flag.
  */
 @Service
 @Transactional
@@ -126,6 +127,7 @@ public class ListExportService {
         details.put("mode", mode);
         details.put("rows", sheet.rows().size());
         details.put("filter", sheet.summary());
+        if ("subjects".equals(kind) && fullIdentity(filter)) details.put("fullIdentity", true);
         rbac.audit("list-export", "list:" + kind, details);
         return sheet;
     }
@@ -146,8 +148,13 @@ public class ListExportService {
 
     // ---- lists ----------------------------------------------------------------------------------------------------
 
+    static boolean fullIdentity(Map<String, String> filter) {
+        return "true".equals(filter.get("fullIdentity"));
+    }
+
     ListSheet subjects(Map<String, String> filter) {
-        var rows = subjects.all(filter);
+        boolean full = fullIdentity(filter);
+        var rows = subjects.all(filter, full);
         String category = s(filter, "category");
         String status = filter.getOrDefault("status", "ACTIVE");
         var columns = List.of(
@@ -182,7 +189,7 @@ public class ListExportService {
                 str(row.get("full_name")),
                 birth(row),
                 gender(row.get("gender")),
-                str(row.get("identity_masked")),
+                str(row.get(full ? "identity_full" : "identity_masked")),
                 str(row.get("case_number")),
                 str(row.get("address")),
                 CATEGORY.getOrDefault(str(row.get("category")), str(row.get("category"))),
@@ -207,6 +214,7 @@ public class ListExportService {
         if ("MANAGEMENT".equals(s(filter, "due"))) summary.add("hết / sắp hết hạn quản lý");
         if ("SUMMON".equals(s(filter, "due"))) summary.add("đến hạn gọi hỏi");
         if (!s(filter, "search").isEmpty()) summary.add("tìm \"" + s(filter, "search") + "\"");
+        if (full) summary.add("số ĐDCN đầy đủ (đã ghi nhật ký)");
         String byCategory =
             counts.size() > 1
                 ? " (" +

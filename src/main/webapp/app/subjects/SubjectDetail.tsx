@@ -149,17 +149,40 @@ export function DueBadges({ subject }: { subject: Row }) {
 export default function SubjectDetail({
   subject,
   canManage,
+  canRevealIdentity = false,
   political,
   onChanged,
   onClose,
 }: {
   subject: Row;
   canManage: boolean;
+  /** May show the full identity number (canRevealIdentity); each reveal goes through the audited roster endpoint. */
+  canRevealIdentity?: boolean;
   political: boolean;
   onChanged: (subject: Row) => void;
   onClose?: () => void;
 }) {
   const [dialog, setDialog] = useState<'' | 'edit' | 'record' | 'summon' | 'end'>('');
+  const [revealed, setRevealed] = useState<{ id: string; number: string } | null>(null);
+  const [revealError, setRevealError] = useState('');
+  const shownNumber = revealed && revealed.id === subject.identity_id ? revealed.number : null;
+  // Full numbers are only disclosed by the audited roster endpoint, which also checks the person's hamlet.
+  const toggleIdentity = async () => {
+    setRevealError('');
+    if (shownNumber) {
+      setRevealed(null);
+      return;
+    }
+    try {
+      const { data } = await axios.post<{ number: string }>(
+        `/api/roster/residents/${subject.resident_id}/identities/${subject.identity_id}/reveal`,
+        {},
+      );
+      setRevealed({ id: String(subject.identity_id), number: data.number });
+    } catch (e) {
+      setRevealError(errorText(e));
+    }
+  };
   const active = subject.status === 'ACTIVE';
   const kinds = RECORD_KINDS.filter(k => !violationsOnly(subject.category) || k.code === 'VI_PHAM');
   const records: Row[] = subject.records ?? [];
@@ -211,7 +234,19 @@ export default function SubjectDetail({
         </div>
         <div>
           <dt>Số ĐDCN</dt>
-          <dd className="roster-mono">{subject.identity_masked || 'Chưa có'}</dd>
+          <dd>
+            <span className="roster-mono">{shownNumber ?? (subject.identity_masked || 'Chưa có')}</span>
+            {canRevealIdentity && subject.identity_id && (
+              <button type="button" className="roster-btn-sm" onClick={() => void toggleIdentity()}>
+                {shownNumber ? 'Ẩn số' : 'Xem số đầy đủ (ghi nhật ký)'}
+              </button>
+            )}
+            {revealError && (
+              <span role="alert" className="roster-field-error">
+                {revealError}
+              </span>
+            )}
+          </dd>
         </div>
         <div>
           <dt>Số HSCT</dt>

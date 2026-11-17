@@ -174,7 +174,7 @@ public class ResidentExportService {
 
     /** Counts per hamlet and gender, keyed by hamlet id. */
     private Map<Long, long[]> counts(ResidentFilter filter, List<Long> hamlets) {
-        var where = filter.where(hamlets, crypto.lookup(filter.search()));
+        var where = filter.where(hamlets, roster.identityMatch(filter.search(), hamlets));
         var result = new LinkedHashMap<Long, long[]>();
         db.query(
             "select r.hamlet_id, r.gender, count(*) n from tc2_roster.resident r where " + where.text() + " group by 1,2",
@@ -192,7 +192,7 @@ public class ResidentExportService {
 
     private Long unevaluable(ResidentFilter filter, List<Long> hamlets) {
         if (!filter.hasAge()) return null;
-        var where = filter.withoutAge().where(hamlets, crypto.lookup(filter.search()));
+        var where = filter.withoutAge().where(hamlets, roster.identityMatch(filter.search(), hamlets));
         return db.queryForObject(
             "select count(*) from tc2_roster.resident r where " + where.text() + " and (" + RosterCampaign.UNEVALUABLE + ")",
             Long.class,
@@ -275,7 +275,7 @@ public class ResidentExportService {
         int limit,
         List<Raw> raw
     ) {
-        var where = filter.where(hamlets, crypto.lookup(filter.search()));
+        var where = filter.where(hamlets, roster.identityMatch(filter.search(), hamlets));
         var record = filter.record("rr");
         var args = new ArrayList<Object>(record.args());
         args.addAll(where.args());

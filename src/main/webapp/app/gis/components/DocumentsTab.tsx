@@ -1,4 +1,4 @@
-import { normalizeSearch } from '../utils/householdSearch';
+import { matchesWords } from '../utils/householdSearch';
 import React, { useState, useEffect, useMemo } from 'react';
 import { FileText, AlertTriangle, Clock, Send, Search, FileCheck } from 'lucide-react';
 import { DocumentRecord } from '../types';
@@ -55,16 +55,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
   const filteredDocs = useMemo(() => {
     return documents.filter(doc => {
       if (filterStatus !== 'all' && doc.status !== filterStatus) return false;
-      if (search.trim()) {
-        const q = normalizeSearch(search);
-        return (
-          normalizeSearch(doc.title).includes(q) ||
-          normalizeSearch(doc.targetName).includes(q) ||
-          normalizeSearch(doc.docCode).includes(q) ||
-          normalizeSearch(doc.address).includes(q)
-        );
-      }
-      return true;
+      return matchesWords(search, [doc.title, doc.targetName, doc.docCode, doc.address]);
     });
   }, [documents, filterStatus, search]);
 

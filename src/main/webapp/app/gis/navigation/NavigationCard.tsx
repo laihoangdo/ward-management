@@ -1,5 +1,5 @@
 import React, { useDeferredValue, useEffect, useState } from 'react';
-import { Bike, Crosshair, Footprints, LocateFixed, MapPin, Navigation, X } from 'lucide-react';
+import { Bike, ChevronDown, ChevronUp, Crosshair, Footprints, LocateFixed, MapPin, Navigation, X } from 'lucide-react';
 import { formatDistance, formatDuration } from './navigationProgress';
 import { POOR_ACCURACY_METRES } from './useLiveLocation';
 import type { FieldNavigation } from './useFieldNavigation';
@@ -69,6 +69,8 @@ function OriginPicker({ nav, findPlaces }: { nav: FieldNavigation; findPlaces: (
 export function NavigationCard({ nav, findPlaces }: { nav: FieldNavigation; findPlaces: (query: string) => Place[] }) {
   const { target, status, progress, route, fix } = nav;
   const [choosing, setChoosing] = useState(false);
+  // Collapsed, the card keeps only the next instruction and distance so the route stays visible; phones start collapsed.
+  const [collapsed, setCollapsed] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 767px)').matches);
   // A start outside the road data opens the start-point picker by itself.
   useEffect(() => {
     if (nav.farStart) setChoosing(true);
@@ -77,6 +79,8 @@ export function NavigationCard({ nav, findPlaces }: { nav: FieldNavigation; find
   if (!target && !(nav.locating && nav.locationError)) return null;
   const live = nav.origin.kind === 'gps';
   const poorFix = live && fix && fix.accuracy > POOR_ACCURACY_METRES;
+  // Choosing a start point needs the full card.
+  const compact = collapsed && !choosing && !nav.pickingOrigin;
   const instruction =
     status === 'loading-roads'
       ? 'Đang tải dữ liệu đường…'
@@ -92,20 +96,41 @@ export function NavigationCard({ nav, findPlaces }: { nav: FieldNavigation; find
                 ? (progress?.nextManeuver?.text ?? 'Đi tiếp tới đích')
                 : (route?.maneuvers[0]?.text ?? 'Đi thẳng tới đích');
   return (
-    <section className="field-nav-card" aria-label="Chỉ đường">
+    <section className={compact ? 'field-nav-card is-collapsed' : 'field-nav-card'} aria-label="Chỉ đường">
       {target && (
         <div className="field-nav-head">
           <Navigation aria-hidden="true" className="field-nav-icon" />
           <div className="field-nav-title">
-            <span>Đi tới</span>
-            <strong>{target.label}</strong>
+            <span>{compact ? target.label : 'Đi tới'}</span>
+            <strong aria-live={compact ? 'polite' : undefined}>{compact ? instruction : target.label}</strong>
+            {compact && status === 'navigating' && progress && (
+              <span className="field-nav-compact-summary">
+                {formatDistance(progress.remaining)} · {formatDuration(progress.seconds)}
+              </span>
+            )}
           </div>
+          <button
+            type="button"
+            className="field-nav-toggle"
+            aria-expanded={!compact}
+            aria-label={compact ? 'Mở rộng chỉ đường' : 'Thu gọn chỉ đường'}
+            title={compact ? 'Mở rộng' : 'Thu gọn'}
+            onClick={() => {
+              setCollapsed(!compact);
+              if (!compact) {
+                setChoosing(false);
+                nav.setPickingOrigin(false);
+              }
+            }}
+          >
+            {compact ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
+          </button>
           <button type="button" className="field-nav-close" aria-label="Kết thúc chỉ đường" title="Kết thúc chỉ đường" onClick={nav.stop}>
             <X aria-hidden="true" />
           </button>
         </div>
       )}
-      {target && (
+      {target && !compact && (
         <>
           <div className="field-nav-origin">
             <MapPin aria-hidden="true" className={live ? 'field-nav-origin-icon' : 'field-nav-origin-icon is-place'} />
@@ -141,13 +166,11 @@ export function NavigationCard({ nav, findPlaces }: { nav: FieldNavigation; find
             </p>
           )}
           {!live && status === 'navigating' && (
-            <p className="field-nav-note field-nav-hint">
-              Lộ trình cố định từ điểm đã chọn. Bấm "Đổi" → "Dùng vị trí GPS" để dẫn đường theo vị trí thật.
-            </p>
+            <p className="field-nav-note field-nav-hint">Lộ trình cố định. Bấm "Đổi" để dẫn đường bằng GPS.</p>
           )}
-          {target.provisional && <p className="field-nav-note">Đích là vị trí tạm của hộ, chưa xác minh trên thực địa.</p>}
+          {target.provisional && <p className="field-nav-note">Đích là vị trí tạm, chưa xác minh.</p>}
           {route?.endConnector && status === 'navigating' && (
-            <p className="field-nav-note field-nav-hint">Đoạn nét đứt cuối là lối vào nhà chưa có trong dữ liệu đường.</p>
+            <p className="field-nav-note field-nav-hint">Nét đứt cuối: lối vào chưa có trong dữ liệu đường.</p>
           )}
           <div className="field-nav-actions">
             <div className="field-nav-modes" role="group" aria-label="Phương tiện">
@@ -176,7 +199,7 @@ export function NavigationCard({ nav, findPlaces }: { nav: FieldNavigation; find
           {nav.message || `GPS đang sai số khoảng ${Math.round(fix!.accuracy)} m; vị trí và lộ trình có thể lệch.`}
         </p>
       )}
-      {target && <small className="field-nav-credit">Dữ liệu đường © OpenStreetMap contributors</small>}
+      {target && !compact && <small className="field-nav-credit">Dữ liệu đường © OpenStreetMap contributors</small>}
     </section>
   );
 }

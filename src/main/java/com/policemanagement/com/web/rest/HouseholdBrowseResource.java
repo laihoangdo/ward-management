@@ -3,7 +3,6 @@ package com.policemanagement.com.web.rest;
 import com.policemanagement.com.repository.HouseholdRepository;
 import com.policemanagement.com.service.mapper.HouseholdMapper;
 import com.policemanagement.com.service.rbac.RbacService;
-import java.text.Normalizer;
 import java.util.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -39,12 +38,49 @@ public class HouseholdBrowseResource {
     else 'unknown' end
     """;
 
-    static String folded(String expression) {
-        return (
-            "translate(lower(coalesce(" +
-            expression +
-            ",'')), 'àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ', 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd')"
+    /** Words of a folded (lower-case, unaccented) search, split on spaces, commas and semicolons; at most 10. */
+    static List<String> searchWords(String folded) {
+        return java.util.Arrays.stream(folded.split("[\\s,;]+"))
+            .filter(w -> !w.isBlank())
+            .limit(10)
+            .toList();
+    }
+
+    /** Conditions for one search word bound as {@code :name}: any stored household field, its residence label or a member. */
+    static List<String> wordMatches(String name) {
+        String like = " like :" + name + " escape '!'";
+        var matches = new ArrayList<String>();
+        for (String expression : List.of(
+            "h.owner_name",
+            "h.raw_address",
+            "h.house_number",
+            "h.street",
+            "h.browse_hamlet",
+            "h.code",
+            "h.owner_phone",
+            "h.business_name",
+            "h.business_category",
+            "h.alley",
+            "h.notes"
+        ))
+            matches.add(folded(expression) + like);
+        matches.add(
+            folded("case h.browse_residence when 'stay' then 'Lưu trú' when 'temporary' then 'Tạm trú' else 'Thường trú' end") + like
         );
+        matches.add(
+            "exists(select 1 from resident r where r.household_id=h.id and (" +
+                folded("r.full_name") +
+                like +
+                " or " +
+                folded("r.id_card_number") +
+                like +
+                "))"
+        );
+        return matches;
+    }
+
+    static String folded(String expression) {
+        return com.policemanagement.com.service.SearchText.foldedSql(expression);
     }
 
     @GetMapping("/browse")
@@ -247,51 +283,25 @@ public class HouseholdBrowseResource {
             filter += " and h.browse_residence=:residence";
             params.put("residence", residence);
         }
-        String q = Normalizer.normalize(search.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
-            .replaceAll("\\p{M}", "")
-            .replace('đ', 'd');
+        String q = com.policemanagement.com.service.SearchText.fold(search);
         if (!q.isEmpty()) {
-            params.put("search", "%" + q.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%");
-            var matches = new ArrayList<String>();
-            for (String field : List.of(
-                "owner_name",
-                "house_number",
-                "street",
-                "browse_hamlet",
-                "code",
-                "owner_phone",
-                "business_name",
-                "business_category",
-                "alley",
-                "notes"
-            )) {
-                // Match the existing DTO mapper's display defaults as well as stored values.
-                String expression = switch (field) {
-                    case "owner_name" -> "coalesce(nullif(h.owner_name,''),'Chưa cập nhật')";
-                    case "house_number" -> "coalesce(nullif(h.house_number,''),'1')";
-                    case "street" -> "coalesce(nullif(h.street,''),'Đường Phan Văn Hớn')";
-                    case "alley" -> "coalesce(nullif(h.alley,''),'Mặt tiền đường')";
-                    case "notes" -> "coalesce(nullif(h.notes,''),'Hồ sơ quản lý địa bàn Xã Bà Điểm.')";
-                    case "code" -> "coalesce(nullif(h.code,''),'HK-BD-' || lpad(cast(h.id as varchar),greatest(3,length(cast(h.id as varchar))),'0'))";
-                    default -> "h." + field;
-                };
-                matches.add(folded(expression) + " like :search escape '!' ");
+            // Word by word, like the roster list: "26/3 tien lan 4" finds a household holding every word in any of its fields,
+            // in any order. Stored values only: the old display defaults ("1", "Đường Phan Văn Hớn" for an empty house number
+            // or street) made "1" or "Phan Văn Hớn" match every household, and the full address (raw_address) was not searched.
+            var words = searchWords(q);
+            var perWord = new ArrayList<String>();
+            for (int i = 0; i < words.size(); i++) {
+                String name = "search" + i;
+                params.put(name, "%" + words.get(i).replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%");
+                perWord.add("(" + String.join(" or ", wordMatches(name)) + ")");
             }
-            matches.add(
-                folded("case h.browse_residence when 'stay' then 'Lưu trú' when 'temporary' then 'Tạm trú' else 'Thường trú' end") +
-                    " like :search escape '!' "
-            );
-            matches.add(
-                "exists(select 1 from resident r where r.household_id=h.id and (" +
-                    folded("coalesce(nullif(r.full_name,''),'Chưa đặt tên')") +
-                    " like :search escape '!' or " +
-                    folded("r.id_card_number") +
-                    " like :search escape '!'))"
-            );
-            if (q.equals("canh bao")) matches.add("h.status='WARNING'");
-            if (q.equals("kinh doanh")) matches.add("h.browse_type='business'");
-            if (q.equals("ho gia dinh")) matches.add("h.browse_type='household'");
-            filter += " and (" + String.join(" or ", matches) + ")";
+            String special = switch (q) {
+                case "canh bao" -> "h.status='WARNING'";
+                case "kinh doanh" -> "h.browse_type='business'";
+                case "ho gia dinh" -> "h.browse_type='household'";
+                default -> null;
+            };
+            filter += " and ((" + String.join(" and ", perWord) + ")" + (special == null ? "" : " or " + special) + ")";
         }
         return new BrowseQuery(base, filter, params);
     }

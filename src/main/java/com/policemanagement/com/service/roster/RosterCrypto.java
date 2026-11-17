@@ -88,6 +88,16 @@ public class RosterCrypto {
         }
     }
 
+    /**
+     * Lookup for a search box: an identity number typed with spaces, dots or dashes ("079 085 000 001", "079.085.000.001")
+     * is reduced to its digits first, so it finds the stored number; any other text is looked up as typed.
+     */
+    public String searchLookup(String search) {
+        String text = search == null ? "" : search.trim();
+        String digits = text.replaceAll("[\\s.\\-]", "");
+        return lookup(digits.matches("[0-9]{9,12}") ? digits : text);
+    }
+
     public String lookup(String value) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");

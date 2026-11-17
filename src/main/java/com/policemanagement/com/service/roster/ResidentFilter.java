@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -226,10 +227,11 @@ public record ResidentFilter(
     }
 
     /**
-     * Where clause over {@code tc2_roster.resident r} for the given hamlets. {@code lookup} is the keyed hash of the search
-     * text, so an identity number can be matched without decrypting anything.
+     * Where clause over {@code tc2_roster.resident r} for the given hamlets. The search matches a name, a full identity number
+     * (by its keyed hash, {@code identity.lookup()}) or part of one ({@code identity.residents()}, found by
+     * {@link RosterService#identityMatch}).
      */
-    Sql where(List<Long> hamlets, String lookup) {
+    Sql where(List<Long> hamlets, RosterService.IdentityMatch identity) {
         if (hamlets.isEmpty()) throw new IllegalStateException("No hamlet in scope");
         var parts = new ArrayList<String>();
         var args = new ArrayList<Object>();
@@ -241,10 +243,12 @@ public record ResidentFilter(
         }
         if (!search.isEmpty()) {
             parts.add(
-                "(position(lower(?) in lower(r.full_name))>0 or exists(select 1 from tc2_roster.resident_identity i where i.resident_id=r.id and i.active and i.number_lookup=?))"
+                "(position(lower(?) in lower(r.full_name))>0 or exists(select 1 from tc2_roster.resident_identity i where i.resident_id=r.id and i.active and i.number_lookup=?)" +
+                    " or r.id=any(?::uuid[]))"
             );
             args.add(search);
-            args.add(lookup);
+            args.add(identity.lookup());
+            args.add("{" + String.join(",", identity.residents().stream().map(UUID::toString).toList()) + "}");
         }
         if (hasRecordCondition()) {
             var record = record("rr");

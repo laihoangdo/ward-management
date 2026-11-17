@@ -22,6 +22,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { HouseholdFacility, NavigationTab } from '../types';
+import { matchesWords } from '../utils/householdSearch';
 
 interface AreaMapTabProps {
   households: HouseholdFacility[];
@@ -77,19 +78,23 @@ export const getHouseholdAlley = (h: HouseholdFacility): string => {
   return UNKNOWN_LOCATION;
 };
 
-/** Tìm theo số nhà, chủ hộ, địa chỉ, cơ sở, ấp cũ, tổ, hẻm, mã hộ và ghi chú (query đã chuẩn hóa chữ thường). */
+/**
+ * Tìm theo số nhà, chủ hộ, địa chỉ, cơ sở, ấp cũ, tổ, hẻm, mã hộ và ghi chú — từng từ, không phân biệt dấu và hoa/thường,
+ * cùng cách với ô tìm trên header và danh sách hộ: "26/3 tien lan" khớp "Số 26/3 Hẻm 12 Tiền Lân".
+ */
 const matchesSearch = (h: HouseholdFacility, query: string): boolean =>
-  [
+  matchesWords(query, [
     h.houseNumber,
     h.ownerName,
     h.street,
+    h.rawAddress,
     h.businessName,
     h.legacyHamlet ? getHouseholdLegacyHamlet(h) : '',
     h.neighborhoodGroup,
     getHouseholdAlley(h),
     h.code,
     h.notes,
-  ].some(value => !!value && value.toLowerCase().includes(query));
+  ]);
 
 /** Đếm số hộ theo nhãn, giữ nhãn "chưa có dữ liệu" ở cuối danh sách. */
 const countBy = (items: HouseholdFacility[], label: (h: HouseholdFacility) => string, unknown: string) => {
@@ -162,7 +167,11 @@ const LegacyHamletFilter: React.FC<{
       </span>
     </div>
 
-    <div role="group" aria-label="Lọc theo ấp cũ" className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1">
+    <div
+      role="group"
+      aria-label="Lọc theo ấp cũ"
+      className="gis-scroll-fade-x flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1"
+    >
       <button
         id="filter-legacy-all"
         aria-pressed={selected === 'all'}
@@ -348,7 +357,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
       }
 
       // Tìm kiếm từ khóa (số nhà, chủ hộ, địa chỉ, ấp cũ, tổ, hẻm, ghi chú)
-      if (searchQuery.trim() && !matchesSearch(h, searchQuery.trim().toLowerCase())) return false;
+      if (searchQuery.trim() && !matchesSearch(h, searchQuery)) return false;
 
       return true;
     });
@@ -584,7 +593,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
           <div
             role="group"
             aria-label="Chế độ lọc"
-            className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl w-fit max-w-full overflow-x-auto"
+            className="gis-scroll-fade-x flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl w-fit max-w-full overflow-x-auto"
           >
             <button
               id="mode-filter-all"
@@ -709,7 +718,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               Chưa có dữ liệu tổ dân phố — cập nhật trường Tổ trên hồ sơ hộ khi có danh sách tổ chính thức.
             </p>
           ) : (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1">
+            <div className="gis-scroll-fade-x flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1">
               <button
                 id="filter-group-all"
                 onClick={() => setSelectedGroup('all')}
@@ -755,7 +764,7 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
             <span className="text-xs font-bold text-slate-700">Tuyến Hẻm:</span>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1">
+          <div className="gis-scroll-fade-x flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none flex-1">
             <button
               id="filter-alley-all"
               onClick={() => setSelectedAlley('all')}
@@ -1143,6 +1152,12 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <a
+                href="#map-inspector-drawer"
+                className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition-colors no-underline"
+              >
+                Chi tiết
+              </a>
               <button
                 type="button"
                 onClick={() => onSelectHousehold(inspectedHousehold)}
@@ -1156,7 +1171,10 @@ export const AreaMapTab: React.FC<AreaMapTabProps> = ({ households, onSelectHous
         )}
 
         {/* Selected House Inspector Drawer */}
-        <div className="lg:col-span-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 space-y-4 sticky top-20">
+        <div
+          id="map-inspector-drawer"
+          className="lg:col-span-4 bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 space-y-4 lg:sticky lg:top-20"
+        >
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
             <h3 id="map-summary-title" className="gis-panel-title text-slate-900 flex items-center gap-2 whitespace-nowrap">
               <Building className="w-4 h-4 text-slate-500" aria-hidden="true" />

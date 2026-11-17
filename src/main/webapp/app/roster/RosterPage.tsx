@@ -1602,7 +1602,7 @@ function RosterWorkspace({
                     Tìm họ tên hoặc ĐDCN / CCCD / CMND
                     <input
                       type="search"
-                      placeholder="Họ tên hoặc số giấy tờ"
+                      placeholder="Họ tên, hoặc số giấy tờ (4 số trở lên)"
                       value={search}
                       onChange={e => {
                         setSearch(e.target.value);
@@ -1792,7 +1792,7 @@ function RosterWorkspace({
                     Tìm hộ theo địa chỉ, tên đại diện, mã hoặc HSCT
                     <input
                       type="search"
-                      placeholder="Ví dụ: 34/6 ấp 62 hoặc tên chủ hộ"
+                      placeholder="Ví dụ: 34/6 Trung Chánh 2 hoặc tên chủ hộ"
                       value={search}
                       onChange={e => {
                         setPage(0);

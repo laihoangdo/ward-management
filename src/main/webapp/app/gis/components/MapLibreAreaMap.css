@@ -49,10 +49,17 @@
   font-weight: 600;
 }
 .tc2-household-panel-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
   border: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--gis-muted, #526170);
   font-size: 1.4rem;
+  cursor: pointer;
 }
 .tc2-household-panel-body {
   display: grid;
@@ -261,7 +268,7 @@
   width: 100%;
   min-width: 0;
   border: none;
-  background: white;
+  background: var(--gis-surface, #fff);
   color: var(--gis-text, #172c35);
   font:
     600 11px system-ui,
@@ -331,7 +338,8 @@
   padding: 0.3rem;
   border: 1px solid var(--gis-border, #cbd2d9);
   border-radius: 0.3rem;
-  background: white;
+  background: var(--gis-surface, #fff);
+  color: var(--gis-text, #172c35);
 }
 .tc2-map-layer-grid {
   display: grid;
@@ -416,7 +424,8 @@
   padding: 0.35rem 0.55rem;
   border: 1px solid var(--gis-border, #cbd2d9);
   border-radius: 0.4rem;
-  background: white;
+  background: var(--gis-surface, #fff);
+  color: var(--gis-text, #172c35);
   text-align: left;
 }
 .tc2-map-search-results-list button:hover,
@@ -492,7 +501,8 @@
   overflow: hidden;
   border: 1px solid var(--gis-border, #cbd2d9);
   border-radius: 1rem;
-  background: white;
+  background: var(--gis-surface, #fff);
+  color: var(--gis-text, #172c35);
   box-shadow: 0 20px 60px #0008;
 }
 .tc2-capture-header {
@@ -542,6 +552,11 @@
   color: white;
 }
 .tc2-capture-modal .tc2-capture-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
   border: none;
   background: transparent;
   color: var(--gis-muted, #526170);

@@ -763,14 +763,14 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
   return (
     <div className="relative w-full h-full flex flex-col bg-slate-950 text-slate-100 select-none overflow-hidden font-sans">
       {/* 1. TOP HEADER TOOLBAR */}
-      <div className="h-14 px-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 flex items-center justify-center text-amber-400">
+      <div className="min-h-14 px-2.5 sm:px-4 py-1.5 bg-slate-900/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+        <div className="flex items-center space-x-2.5 sm:space-x-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-amber-400 shrink-0">
             <Boxes className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-slate-100 text-sm tracking-wide">BẢN ĐỒ 3D VỆ TINH</span>
+            <div className="flex items-center flex-wrap gap-1.5 sm:space-x-2">
+              <span className="font-bold text-slate-100 text-xs sm:text-sm tracking-wide">BẢN ĐỒ 3D VỆ TINH</span>
               <span className="px-2 py-0.5 text-[11px] uppercase font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full">
                 Xã Bà Điểm Mới
               </span>
@@ -781,7 +781,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="hidden xl:block text-[11px] text-slate-400">
               960 công trình 3D thực địa • Khớp chính xác ảnh vệ tinh • Đồng bộ Blender & Three.js
             </p>
           </div>
@@ -910,9 +910,9 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
         />
 
         {/* Floating Controls (Top-Left): Layer & Lighting Settings */}
-        <div className="absolute top-4 left-4 z-10 flex flex-col space-y-2 pointer-events-auto">
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex flex-col space-y-2 pointer-events-auto max-w-[calc(100vw-1rem)]">
           {/* Layer toggles panel */}
-          <div className="bg-slate-900/85 border border-slate-800 rounded-xl p-3 shadow-xl w-60 text-xs">
+          <div className="bg-slate-900/85 border border-slate-800 rounded-xl p-2.5 sm:p-3 shadow-xl w-56 sm:w-60 text-xs">
             <div className="flex items-center justify-between font-semibold text-slate-200 mb-2.5 pb-1.5 border-b border-slate-800">
               <span className="flex items-center space-x-1.5">
                 <Layers className="w-3.5 h-3.5 text-blue-400" />
@@ -1082,7 +1082,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
         {/* 3. RIGHT INSPECTOR / EDITING PANEL (When Building Selected) */}
         {currentSelected && (
-          <div className="absolute top-4 right-4 bottom-4 w-80 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl z-20 flex flex-col overflow-hidden text-xs">
+          <div className="absolute inset-x-2 bottom-2 top-auto max-h-[52vh] w-auto md:top-4 md:right-4 md:bottom-4 md:left-auto md:max-h-none md:w-80 bg-slate-900/95 border border-slate-800 rounded-2xl shadow-2xl z-20 flex flex-col overflow-hidden text-xs">
             {/* Panel Header */}
             <div className="px-4 py-3 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -1213,8 +1213,10 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                       <button
                         key={pal.c}
                         onClick={() => updateBuilding(currentSelected.id, { roofColor: pal.c }, 'Đổi màu mái')}
-                        className={`w-6 h-6 rounded-full border-2 transition-transform ${
-                          currentSelected.roofColor === pal.c ? 'scale-125 border-white shadow-md' : 'border-transparent hover:scale-110'
+                        className={`w-7 h-7 rounded-full border-2 transition-colors ${
+                          currentSelected.roofColor === pal.c
+                            ? 'border-white ring-2 ring-amber-400 shadow-md'
+                            : 'border-slate-700 hover:border-slate-300'
                         }`}
                         style={{ backgroundColor: pal.c }}
                         title={pal.label}
@@ -1242,8 +1244,10 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                       <button
                         key={pal.c}
                         onClick={() => updateBuilding(currentSelected.id, { wallColor: pal.c }, 'Đổi màu tường')}
-                        className={`w-6 h-6 rounded-full border-2 transition-transform ${
-                          currentSelected.wallColor === pal.c ? 'scale-125 border-white shadow-md' : 'border-transparent hover:scale-110'
+                        className={`w-7 h-7 rounded-full border-2 transition-colors ${
+                          currentSelected.wallColor === pal.c
+                            ? 'border-white ring-2 ring-amber-400 shadow-md'
+                            : 'border-slate-700 hover:border-slate-300'
                         }`}
                         style={{ backgroundColor: pal.c }}
                         title={pal.label}

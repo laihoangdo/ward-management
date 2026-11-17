@@ -1,6 +1,7 @@
 package com.policemanagement.com.service.roster;
 
 import com.policemanagement.com.service.CccdProtection;
+import com.policemanagement.com.service.SearchText;
 import com.policemanagement.com.service.rbac.RbacService;
 import com.policemanagement.com.service.rbac.TerritoryGeometry;
 import java.nio.charset.StandardCharsets;
@@ -783,6 +784,19 @@ public class RosterService {
         return households(search, page, "", "");
     }
 
+    /**
+     * Words of a household search: Unicode-normalised (NFC) so text typed or pasted in either form matches, split on spaces,
+     * commas and semicolons ("144/2, Ấp 61" = "144/2 Ấp 61"), at most 10.
+     */
+    static List<String> searchWords(String search) {
+        String text = java.text.Normalizer.normalize(search, java.text.Normalizer.Form.NFC).strip();
+        if (text.isEmpty()) return List.of();
+        return Arrays.stream(text.split("[\\s,;]+"))
+            .filter(w -> !w.isBlank())
+            .limit(10)
+            .toList();
+    }
+
     public Map<String, Object> households(String search, int page, String origin, String category) {
         authorize(null);
         if (
@@ -791,28 +805,31 @@ public class RosterService {
             !Set.of("", "EXCEL", "MANUAL").contains(origin) ||
             !Set.of("", "HSCT", "PROVISIONAL").contains(category)
         ) throw bad("Bộ lọc hộ không hợp lệ");
-        String pattern = "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
-        // "120/45" is an address path: match whole segments from the start (120/45, 120/45/8/2A) instead of any substring.
-        var addressRegex = RosterCampaign.addressPathRegex(search);
-        String where =
-            " from tc2_roster.household h where hamlet_id=any(?::bigint[]) and (" +
-            (addressRegex.isPresent() ? "raw_address ~* ?" : "raw_address ilike ?") +
-            " or coalesce(representative_name,'') ilike ? or code ilike ? or coalesce(source_case_number,'') ilike ?)" +
-            " and (?='' or origin=?) and (?='' or (?='HSCT' and source_case_number is not null) or (?='PROVISIONAL' and source_case_number is null))";
-        var args = new ArrayList<Object>(
-            Arrays.asList(
-                idArray(scopeHamlets()),
-                addressRegex.orElse(pattern),
-                pattern,
-                pattern,
-                pattern,
-                origin,
-                origin,
-                category,
-                category,
-                category
-            )
+        // Word by word: "12/3A ấp trung chánh 2" finds a household whose code, file number, representative or address holds
+        // every word, in any order; accents and case are ignored ("trung chanh" = "Trung Chánh"), like the other search boxes.
+        // An address path ("120/45") matches whole segments from the start (120/45, 120/45/8/2A).
+        var where = new StringBuilder(" from tc2_roster.household h where hamlet_id=any(?::bigint[])");
+        var args = new ArrayList<Object>(List.of(idArray(scopeHamlets())));
+        for (String word : searchWords(search)) {
+            var addressRegex = RosterCampaign.addressPathRegex(word);
+            String folded = SearchText.fold(word);
+            String pattern = "%" + folded.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+            where.append(
+                addressRegex.isPresent()
+                    ? " and normalize(raw_address,NFC) ~* ?"
+                    : " and (" +
+                          SearchText.foldedSql("normalize(raw_address,NFC)") +
+                          " like ? or " +
+                          SearchText.foldedSql("representative_name") +
+                          " like ? or lower(code) like ? or lower(coalesce(source_case_number,'')) like ?)"
+            );
+            if (addressRegex.isPresent()) args.add(addressRegex.get());
+            else args.addAll(List.of(pattern, pattern, pattern, pattern));
+        }
+        where.append(
+            " and (?='' or origin=?) and (?='' or (?='HSCT' and source_case_number is not null) or (?='PROVISIONAL' and source_case_number is null))"
         );
+        args.addAll(List.of(origin, origin, category, category, category));
         long total = db.queryForObject("select count(*)" + where, Long.class, args.toArray());
         args.add((long) page * 30);
         var rows = db.queryForList(
@@ -832,12 +849,65 @@ public class RosterService {
         return residents(ResidentFilter.legacy(search, kind, origin, campaign), page);
     }
 
+    /** Fewest digits for a partial identity search ("không nhớ hết số"); fewer would match most of a commune. */
+    public static final int MIN_IDENTITY_DIGITS = 4;
+    private static final String IDENTITY_MATCH_ATTRIBUTE = "roster.identityMatch";
+
+    /**
+     * How a search box finds people by identity number: {@code lookup} is the keyed hash of the full number (spaces, dots and
+     * dashes ignored), {@code residents} are the residents of {@code hamlets} whose active number contains the digits typed
+     * (at least {@link #MIN_IDENTITY_DIGITS}). Numbers stay encrypted at rest: they are decrypted in memory for this request
+     * only, never stored or cached beyond it, and each partial search is audited (digit count and result count, not digits).
+     */
+    public record IdentityMatch(String lookup, List<UUID> residents) {}
+
+    @SuppressWarnings("unchecked")
+    public IdentityMatch identityMatch(String search, List<Long> hamlets) {
+        String lookup = crypto.searchLookup(search);
+        String digits = search == null ? "" : search.replaceAll("[\\s.\\-]", "");
+        if (!digits.matches("[0-9]{" + MIN_IDENTITY_DIGITS + ",12}") || hamlets.isEmpty()) return new IdentityMatch(lookup, List.of());
+        // One decryption pass per request: an export asks for the same filter several times (counts, rows, unevaluable).
+        var request = RequestContextHolder.getRequestAttributes();
+        String key = digits + "|" + hamlets;
+        if (
+            request != null &&
+            request.getAttribute(IDENTITY_MATCH_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof Map<?, ?> cached &&
+            cached.get(key) instanceof IdentityMatch hit
+        ) return hit;
+        var residents = new LinkedHashSet<UUID>();
+        db.query(
+            "select i.resident_id, i.number_ciphertext from tc2_roster.resident_identity i join tc2_roster.resident r on r.id=i.resident_id" +
+                " where i.active and r.hamlet_id=any(?::bigint[])",
+            rs -> {
+                String number = crypto.decrypt(rs.getString(2));
+                if (number != null && number.contains(digits)) residents.add(rs.getObject(1, UUID.class));
+            },
+            idArray(hamlets)
+        );
+        // Own transaction: list endpoints run read-only (subjects list, resident export).
+        rbac.auditIndependent(
+            "identity-partial-search",
+            "roster-residents",
+            Map.of("digits", digits.length(), "matches", residents.size())
+        );
+        var match = new IdentityMatch(lookup, List.copyOf(residents));
+        if (request != null) {
+            var cache =
+                request.getAttribute(IDENTITY_MATCH_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof Map<?, ?> m
+                    ? (Map<String, IdentityMatch>) m
+                    : new HashMap<String, IdentityMatch>();
+            cache.put(key, match);
+            request.setAttribute(IDENTITY_MATCH_ATTRIBUTE, cache, RequestAttributes.SCOPE_REQUEST);
+        }
+        return match;
+    }
+
     /** One page of the residents of the current view (one hamlet, or every hamlet for {@link #ALL_HAMLETS}). */
     public Map<String, Object> residents(ResidentFilter filter, int page) {
         authorize(null);
         if (page < 0) throw bad("Bộ lọc không hợp lệ");
         var hamlets = scopeHamlets();
-        var where = filter.where(hamlets, crypto.lookup(filter.search()));
+        var where = filter.where(hamlets, identityMatch(filter.search(), hamlets));
         String from = " from tc2_roster.resident r where " + where.text();
         long total = db.queryForObject("select count(*)" + from, Long.class, where.args().toArray());
         var params = new ArrayList<>(where.args());
@@ -890,7 +960,7 @@ public class RosterService {
      */
     private Long unevaluable(ResidentFilter filter, List<Long> hamlets) {
         if (filter.hasAge()) {
-            var where = filter.withoutAge().where(hamlets, crypto.lookup(filter.search()));
+            var where = filter.withoutAge().where(hamlets, identityMatch(filter.search(), hamlets));
             return db.queryForObject(
                 "select count(*) from tc2_roster.resident r where " + where.text() + " and (" + RosterCampaign.UNEVALUABLE + ")",
                 Long.class,
@@ -1075,11 +1145,14 @@ public class RosterService {
     public List<Map<String, Object>> findPeople(String search) {
         authorize(null);
         if (search.length() < 2 || search.length() > 100) throw bad("Nhập từ 2 đến 100 ký tự");
+        var hamlets = scopeHamlets();
+        var identity = identityMatch(search, hamlets);
         return db.queryForList(
-            "select distinct r.id,r.full_name,r.birth_date,r.birth_year,r.gender,r.version from tc2_roster.resident r left join tc2_roster.resident_identity i on i.resident_id=r.id and i.active where r.hamlet_id=any(?::bigint[]) and (i.number_lookup=? or position(lower(?) in lower(r.full_name))>0) order by r.full_name limit 30",
-            idArray(scopeHamlets()),
-            crypto.lookup(search),
-            search
+            "select distinct r.id,r.full_name,r.birth_date,r.birth_year,r.gender,r.version from tc2_roster.resident r left join tc2_roster.resident_identity i on i.resident_id=r.id and i.active where r.hamlet_id=any(?::bigint[]) and (i.number_lookup=? or position(lower(?) in lower(r.full_name))>0 or r.id=any(?::uuid[])) order by r.full_name limit 30",
+            idArray(hamlets),
+            identity.lookup(),
+            search,
+            "{" + String.join(",", identity.residents().stream().map(UUID::toString).toList()) + "}"
         );
     }
 
@@ -1516,6 +1589,9 @@ public class RosterService {
     /** Audited, permission-gated disclosure of one full identity number. */
     public Map<String, Object> revealIdentity(UUID resident, UUID identityId) {
         authorize("canRevealIdentity");
+        // The resident must be in the caller's hamlet (or view): without this, knowing two ids was enough to decrypt the
+        // number of a person in another hamlet.
+        get("resident", resident);
         var rows = db.queryForList(
             "select id,document_type,verified,active,number_ciphertext from tc2_roster.resident_identity where id=? and resident_id=?",
             identityId,

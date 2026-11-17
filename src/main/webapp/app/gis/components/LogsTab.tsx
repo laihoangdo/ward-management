@@ -19,6 +19,7 @@ import {
 import { AuditLogEntry, AuditActionType, HouseholdFacility } from '../types';
 import { Pagination } from './Pagination';
 import { FormCheckSummary, useFormCheck } from './useFormCheck';
+import { matchesWords } from '../utils/householdSearch';
 
 interface LogsTabProps {
   logs: AuditLogEntry[];
@@ -124,17 +125,9 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
       }
 
       // Search Query
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const matchTitle = log.targetTitle?.toLowerCase().includes(query);
-        const matchDetails = log.details?.toLowerCase().includes(query);
-        const matchOfficer = log.officerName?.toLowerCase().includes(query);
-        const matchCode = log.targetCode?.toLowerCase().includes(query);
-        const matchHash = log.integrityHash?.toLowerCase().includes(query);
-        const matchAction = log.actionLabel?.toLowerCase().includes(query);
-        if (!matchTitle && !matchDetails && !matchOfficer && !matchCode && !matchHash && !matchAction) {
-          return false;
-        }
+      // Same rule as every other search box: each word, any order, accents and case ignored.
+      if (!matchesWords(searchQuery, [log.targetTitle, log.details, log.officerName, log.targetCode, log.integrityHash, log.actionLabel])) {
+        return false;
       }
 
       return true;

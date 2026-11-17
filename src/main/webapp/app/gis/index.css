@@ -1472,7 +1472,8 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
   }
 }
 @media (max-width: 767px) {
-  #__page-root [role='dialog'] :is(input, select, textarea) {
+  #__page-root :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
+  [role='dialog'] :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
     font-size: 16px;
   }
 }
@@ -1545,7 +1546,7 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
     white-space: nowrap;
     border: 0;
   }
-  #__page-root .gis-sidebar--rail-tablet :is(.gis-nav-item, .gis-nav-home) {
+  #__page-root .gis-sidebar--rail-tablet :is(.gis-nav-item, .gis-nav-home, .gis-nav-guide) {
     justify-content: center;
     /* !important: Bootstrap's own `.px-3 { padding: 1rem !important }` shares the Tailwind class name and
        otherwise leaves ~9px for a 16px icon in the 72px rail, clipping it. */
@@ -1656,4 +1657,12 @@ html.dark .gis-form-summary {
 }
 :where(#__page-root .gis-sidebar, #__page-root .gis-sidebar *) {
   scrollbar-color: color-mix(in srgb, var(--gis-sidebar-muted) 40%, transparent) transparent;
+}
+
+/* Horizontal filter/chip strips with hidden scrollbars: subtle right-edge fade hints that more items follow,
+   and end padding lets the last item clear the fade when scrolled to the end. */
+.gis-scroll-fade-x {
+  padding-inline-end: 16px;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%); /* taste-skill-ignore */
+  mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%); /* taste-skill-ignore */
 }

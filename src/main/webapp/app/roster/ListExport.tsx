@@ -43,18 +43,23 @@ async function exportError(e: unknown): Promise<string> {
 
 /**
  * "In danh sách" and "Xuất Excel" for a screen's current filter. The server re-checks scope and permission and writes every
- * list to the audit log; identity numbers stay masked.
+ * list to the audit log; identity numbers stay masked unless the user may reveal them and ticks the full-number option.
  */
 export function ListExportActions({
   base,
-  params,
+  params: filterParams,
   fallbackName,
+  fullIdentityOption = false,
 }: {
   /** Screen API, e.g. /api/subjects; the lists live at {base}/export/print and {base}/export/xlsx. */
   base: string;
   params: Record<string, string | number>;
   fallbackName: string;
+  /** Offer "In số ĐDCN đầy đủ" (only for users with canRevealIdentity; the server checks again and logs it). */
+  fullIdentityOption?: boolean;
 }) {
+  const [fullIdentity, setFullIdentity] = useState(false);
+  const params = fullIdentityOption && fullIdentity ? { ...filterParams, fullIdentity: 'true' } : filterParams;
   const [busy, setBusy] = useState<'' | 'print' | 'xlsx'>('');
   const [sheet, setSheet] = useState<ListSheet | null>(null);
   const [error, setError] = useState('');
@@ -93,6 +98,12 @@ export function ListExportActions({
 
   return (
     <>
+      {fullIdentityOption && (
+        <label className="roster-check" title="Mỗi lần in hoặc xuất số đầy đủ đều được ghi nhật ký">
+          <input type="checkbox" checked={fullIdentity} onChange={event => setFullIdentity(event.target.checked)} />
+          In số ĐDCN đầy đủ
+        </label>
+      )}
       <button type="button" disabled={busy !== ''} onClick={() => void print()}>
         <Printer size={16} aria-hidden="true" /> {busy === 'print' ? 'Đang chuẩn bị…' : 'In danh sách'}
       </button>

@@ -607,7 +607,7 @@ describe('field map controls', () => {
     expect(screen.queryByLabelText('Thông tin công trình')).toBeNull();
   });
 
-  it('shows all hamlet outlines, highlights only assigned territory and marks provisional boundaries', async () => {
+  it('shows all hamlet outlines and highlights only assigned territory', async () => {
     const outlines = {
       type: 'FeatureCollection',
       features: [{ ...house, properties: { hamletId: 1, name: 'Bắc Lân', provisional: true } }],
@@ -622,7 +622,6 @@ describe('field map controls', () => {
       }),
     );
     await mount([]);
-    expect(await screen.findByText(/Ranh giới ấp tạm dựng từ PDF/)).toBeTruthy();
     await waitFor(() => expect(mocks.setHamletData).toHaveBeenCalledWith(outlines));
     expect(mocks.setTerritoryData.mock.calls.at(-1)[0].features).toEqual([{ type: 'Feature', properties: {}, geometry: house.geometry }]);
     fireEvent.click(screen.getByLabelText('Ranh giới ấp / phạm vi được giao'));
@@ -956,7 +955,13 @@ describe('officer location and route to a building', () => {
     });
     expect(await screen.findByText(/^Điểm chọn trên bản đồ/)).toBeDefined();
     expect(await screen.findByText(/^Quãng đường/)).toBeDefined();
-    expect(screen.getByText(/Lộ trình cố định từ điểm đã chọn/)).toBeDefined();
+    expect(screen.getByText(/Lộ trình cố định/)).toBeDefined();
+    // Collapsed, the card keeps only the next instruction and the distance left.
+    fireEvent.click(screen.getByRole('button', { name: 'Thu gọn chỉ đường' }));
+    expect(screen.queryByText(/Lộ trình cố định/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Đổi' })).toBeNull();
+    expect(screen.getByText(/ · \d/)).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: 'Mở rộng chỉ đường' }));
     expect(mocks.fitBounds).toHaveBeenCalled();
     // Following a chosen start needs no GPS.
     expect(geolocation.watchPosition).toHaveBeenCalledTimes(1);

@@ -64,7 +64,7 @@ class ResidentFilterTest {
             "facilityTypes",
             "BOARDING_HOUSE"
         );
-        var sql = filter.where(List.of(28L, 29L), "lookup");
+        var sql = filter.where(List.of(28L, 29L), new RosterService.IdentityMatch("lookup", List.of()));
         assertFalse(sql.text().contains("Nguyễn"));
         assertFalse(sql.text().contains("Trưng"));
         assertFalse(sql.text().contains("Diện A"));
@@ -83,7 +83,7 @@ class ResidentFilterTest {
 
     @Test
     void addressPathUsesTheAnchoredRegexAndRecordConditionsShareOneRecord() {
-        var path = parse("address", "36/4").where(List.of(28L), "x");
+        var path = parse("address", "36/4").where(List.of(28L), new RosterService.IdentityMatch("x", List.of()));
         assertTrue(path.args().contains("(^|[^0-9A-Za-z/])36/4"));
         assertTrue(path.text().contains("~* ?"));
         var record = parse("kinds", "TEMPORARY", "status", "ACTIVE", "expiringDays", "15").record("rr");

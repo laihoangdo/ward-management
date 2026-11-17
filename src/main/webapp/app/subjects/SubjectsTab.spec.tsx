@@ -90,6 +90,28 @@ describe('Subjects tab', () => {
     );
   });
 
+  it('prints full identity numbers only when allowed and asked for', async () => {
+    const { unmount } = render(<SubjectsTab currentUser={user({ canViewSubjects: true, canExportReports: true })} />);
+    await screen.findByRole('button', { name: 'Nguyễn Văn Mẫu' });
+    expect(screen.queryByLabelText('In số ĐDCN đầy đủ')).toBeNull();
+    unmount();
+
+    const listMock = vi.mocked(axios.get).getMockImplementation()!;
+    const sheet = { kind: 'subjects', commune: '', title: 'Danh sách', scope: '', summary: '', totalLine: '', columns: [], rows: [] };
+    vi.mocked(axios.get).mockImplementation((url, config) =>
+      String(url).endsWith('/export/print') ? Promise.resolve({ data: sheet }) : listMock(url, config),
+    );
+    render(<SubjectsTab currentUser={user({ canViewSubjects: true, canExportReports: true, canRevealIdentity: true })} />);
+    await screen.findByRole('button', { name: 'Nguyễn Văn Mẫu' });
+    fireEvent.click(screen.getByLabelText('In số ĐDCN đầy đủ'));
+    fireEvent.click(screen.getByRole('button', { name: /In danh sách/ }));
+    await waitFor(() =>
+      expect(axios.get).toHaveBeenCalledWith('/api/subjects/export/print', {
+        params: expect.objectContaining({ fullIdentity: 'true' }),
+      }),
+    );
+  });
+
   it('opens the detail with resident facts and photos', async () => {
     render(<SubjectsTab currentUser={user({ canViewSubjects: true, canManageSubjects: true })} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Nguyễn Văn Mẫu' }));
@@ -102,6 +124,30 @@ describe('Subjects tab', () => {
 describe('Subject detail', () => {
   afterEach(cleanup);
   beforeEach(() => vi.mocked(axios.get).mockResolvedValue({ data: [] }));
+
+  it('shows the full identity number only through the audited roster endpoint and hides it again', async () => {
+    vi.mocked(axios.post).mockResolvedValue({ data: { number: '079085000001' } });
+    render(
+      <SubjectDetail
+        subject={{ ...subject, identity_id: 'i1' }}
+        canManage={false}
+        canRevealIdentity
+        political={false}
+        onChanged={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Xem số đầy đủ (ghi nhật ký)' }));
+    expect(await screen.findByText('079085000001')).toBeTruthy();
+    expect(vi.mocked(axios.post).mock.calls[0][0]).toBe('/api/roster/residents/r1/identities/i1/reveal');
+    fireEvent.click(screen.getByRole('button', { name: 'Ẩn số' }));
+    expect(screen.queryByText('079085000001')).toBeNull();
+    expect(screen.getByText('079••••••001')).toBeTruthy();
+  });
+
+  it('offers no reveal without the permission', () => {
+    render(<SubjectDetail subject={{ ...subject, identity_id: 'i1' }} canManage={false} political={false} onChanged={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Xem số đầy đủ/ })).toBeNull();
+  });
 
   it('offers only violations for the security category', () => {
     render(<SubjectDetail subject={{ ...subject, category: 'AN' }} canManage political={false} onChanged={vi.fn()} />);

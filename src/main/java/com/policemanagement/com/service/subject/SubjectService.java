@@ -104,6 +104,8 @@ public class SubjectService {
         " (select x.name from public.hamlet x where x.id=r.hamlet_id) hamlet_name," +
         " (select i.number_ciphertext from tc2_roster.resident_identity i where i.resident_id=r.id and i.active" +
         "  order by i.verified desc, i.valid_from desc nulls last limit 1) identity_ciphertext," +
+        " (select i.id from tc2_roster.resident_identity i where i.resident_id=r.id and i.active" +
+        "  order by i.verified desc, i.valid_from desc nulls last limit 1) identity_id," +
         " (select h.raw_address from tc2_roster.household_membership m join tc2_roster.household h on h.id=m.household_id" +
         "  where m.resident_id=r.id and m.valid_to is null order by m.is_head desc, m.valid_from desc nulls last, m.id limit 1) address," +
         " (select h.source_case_number from tc2_roster.household_membership m join tc2_roster.household h on h.id=m.household_id" +
@@ -115,8 +117,15 @@ public class SubjectService {
         " (select count(*) from subject_record sr where sr.subject_id=s.id) record_count";
 
     private void person(Map<String, Object> row) {
+        person(row, false);
+    }
+
+    /** Masked identity for screens; the full number only for an export the caller asked for and may reveal. */
+    private void person(Map<String, Object> row, boolean full) {
         Object cipher = row.remove("identity_ciphertext");
-        row.put("identity_masked", cipher == null ? null : CccdProtection.mask(crypto.decrypt(cipher.toString())));
+        String number = cipher == null ? null : crypto.decrypt(cipher.toString());
+        row.put("identity_masked", number == null ? null : CccdProtection.mask(number));
+        if (full) row.put("identity_full", number);
     }
 
     /** Adds the due flags the list and detail show (computed in Java so they are tested without a database). */
@@ -182,12 +191,15 @@ public class SubjectService {
         String search = filter.getOrDefault("search", "").strip();
         if (!search.isEmpty()) {
             if (search.length() > 100) throw bad("Từ khóa tối đa 100 ký tự");
+            // Name, full identity number, or part of one (at least 4 digits; see RosterService.identityMatch).
+            var identity = roster.identityMatch(search, roster.scopeHamlets());
             text.append(
                 " and (position(lower(?) in lower(r.full_name))>0 or exists(select 1 from tc2_roster.resident_identity i" +
-                    " where i.resident_id=r.id and i.active and i.number_lookup=?))"
+                    " where i.resident_id=r.id and i.active and i.number_lookup=?) or r.id=any(?::uuid[]))"
             );
             args.add(search);
-            args.add(crypto.lookup(search));
+            args.add(identity.lookup());
+            args.add("{" + String.join(",", identity.residents().stream().map(java.util.UUID::toString).toList()) + "}");
         }
         return new Where(text.toString(), args);
     }
@@ -208,10 +220,19 @@ public class SubjectService {
     /** Every subject matching the filter (up to {@link #EXPORT_LIMIT}), in list order, for the printed list. */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> all(Map<String, String> filter) {
+        return all(filter, false);
+    }
+
+    /**
+     * Same list with full identity numbers when {@code fullIdentity}: needs canRevealIdentity, and the export that asks for it
+     * records the disclosure in its audit entry.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> all(Map<String, String> filter, boolean fullIdentity) {
         boolean political = authorizeView();
+        if (fullIdentity) rbac.permission("canRevealIdentity");
         var where = where(filter, political);
-        var items = rows(where, EXPORT_LIMIT, 0);
-        return items;
+        return rows(where, EXPORT_LIMIT, 0, fullIdentity);
     }
 
     private static String from(Where where) {
@@ -219,6 +240,10 @@ public class SubjectService {
     }
 
     private List<Map<String, Object>> rows(Where where, int limit, long offset) {
+        return rows(where, limit, offset, false);
+    }
+
+    private List<Map<String, Object>> rows(Where where, int limit, long offset, boolean fullIdentity) {
         var args = new ArrayList<>(where.args());
         args.add(offset);
         var items = db.queryForList(
@@ -235,7 +260,7 @@ public class SubjectService {
         );
         LocalDate today = LocalDate.now();
         for (var row : items) {
-            person(row);
+            person(row, fullIdentity);
             flags(row, today);
         }
         return items;

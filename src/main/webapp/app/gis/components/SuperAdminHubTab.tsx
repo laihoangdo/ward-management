@@ -54,6 +54,7 @@ import { PermissionGroupsPanel } from './PermissionGroupsPanel';
 import type { PermissionGroup } from '../types';
 import { FormCheckSummary, useFormCheck } from './useFormCheck';
 import '../../shared/stack-table.css';
+import { matchesWords } from '../utils/householdSearch';
 
 interface SuperAdminHubTabProps {
   currentUser: AppUser;
@@ -837,12 +838,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             {effectiveUnitsList
               .filter(u => {
                 const matchDist = selectedDistrict === 'all' || u.district === selectedDistrict;
-                const matchSearch =
-                  !hcmSearch ||
-                  u.district.toLowerCase().includes(hcmSearch.toLowerCase()) ||
-                  u.ward.toLowerCase().includes(hcmSearch.toLowerCase()) ||
-                  u.hamlet.toLowerCase().includes(hcmSearch.toLowerCase()) ||
-                  u.streetsAndAlleys.some(s => s.toLowerCase().includes(hcmSearch.toLowerCase()));
+                const matchSearch = matchesWords(hcmSearch, [u.district, u.ward, u.hamlet, ...u.streetsAndAlleys]);
                 return matchDist && matchSearch;
               })
               .map(unit => (
@@ -970,14 +966,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               <tbody className="divide-y divide-slate-800 text-xs">
                 {effectiveUsersList
                   .filter(u => {
-                    if (!userSearch) return true;
-                    const q = userSearch.toLowerCase();
-                    return (
-                      u.fullName.toLowerCase().includes(q) ||
-                      u.username.toLowerCase().includes(q) ||
-                      u.badgeNumber.toLowerCase().includes(q) ||
-                      u.position.toLowerCase().includes(q)
-                    );
+                    return matchesWords(userSearch, [u.fullName, u.username, u.badgeNumber, u.position]);
                   })
                   .map(u => (
                     <tr key={u.id} className="hover:bg-slate-850/50 transition">

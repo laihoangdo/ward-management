@@ -1314,7 +1314,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               onClick={() => setActiveTab('overview')}
               style={{ display: canOpenMenu('overview') ? undefined : 'none' }}
               aria-current={activeTab === 'overview' ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] min-h-[44px] ${
                 activeTab === 'overview'
                   ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1331,7 +1331,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               onClick={() => setActiveTab('area-map')}
               style={{ display: canOpenMenu('area-map') ? undefined : 'none' }}
               aria-current={activeTab === 'area-map' ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] min-h-[44px] ${
                 activeTab === 'area-map'
                   ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1348,7 +1348,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               onClick={() => setActiveTab('households')}
               style={{ display: canOpenMenu('households') ? undefined : 'none' }}
               aria-current={activeTab === 'households' ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] min-h-[44px] ${
                 activeTab === 'households'
                   ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1365,7 +1365,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               onClick={() => setActiveTab('residents')}
               style={{ display: canOpenMenu('residents') ? undefined : 'none' }}
               aria-current={activeTab === 'residents' ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] min-h-[44px] ${
                 activeTab === 'residents'
                   ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1382,7 +1382,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               onClick={() => setActiveTab('documents')}
               style={{ display: canOpenMenu('documents') ? undefined : 'none' }}
               aria-current={activeTab === 'documents' ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] relative ${
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] min-h-[44px] relative ${
                 activeTab === 'documents'
                   ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -1395,14 +1395,31 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               {warningCount > 0 && <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />}
             </button>
 
-            <button
-              type="button"
-              onClick={() => setIsMobileSidebarOpen(true)}
-              className="flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
-            >
-              <Menu className="w-4.5 h-4.5 text-slate-400" />
-              <span className="text-[11px] mt-0.5 leading-tight">Thêm</span>
-            </button>
+            {(() => {
+              const isSecondaryTabActive = !['overview', 'area-map', 'households', 'residents', 'documents'].includes(activeTab);
+              return (
+                <button
+                  type="button"
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                  aria-expanded={isMobileSidebarOpen}
+                  aria-current={isSecondaryTabActive ? 'page' : undefined}
+                  className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors min-w-[54px] min-h-[44px] ${
+                    isSecondaryTabActive || isMobileSidebarOpen
+                      ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 font-bold bg-emerald-50/70 dark:bg-emerald-950/40'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Menu
+                    className={`w-4.5 h-4.5 ${
+                      isSecondaryTabActive || isMobileSidebarOpen
+                        ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300'
+                        : 'text-slate-400'
+                    }`}
+                  />
+                  <span className="text-[11px] mt-0.5 leading-tight">Thêm</span>
+                </button>
+              );
+            })()}
           </nav>
         )}
       </div>

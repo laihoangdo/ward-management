@@ -36,7 +36,7 @@ class HouseholdBrowseResourceTest {
             )
         );
         db.execute(
-            "create table household(id bigint primary key, hamlet_id bigint,hamlet varchar,street varchar,alley varchar,type varchar,status varchar,notes varchar,owner_name varchar,house_number varchar,code varchar,owner_phone varchar,business_name varchar,business_category varchar)"
+            "create table household(id bigint primary key, hamlet_id bigint,hamlet varchar,street varchar,alley varchar,type varchar,status varchar,notes varchar,owner_name varchar,house_number varchar,code varchar,owner_phone varchar,business_name varchar,business_category varchar,raw_address varchar)"
         );
         db.execute(
             "create table resident(id bigint,household_id bigint,residence_type varchar,full_name varchar,id_card_number varchar,gender varchar,birth_year int)"
@@ -233,16 +233,24 @@ class HouseholdBrowseResourceTest {
     }
 
     @Test
-    void overviewSearchKeepsMapperDefaultsAndResidentNameMatches() {
-        add(1, 28, "Allowed");
-        add(2, 28, "Allowed");
-        db.update("update household set owner_name=null where id=1");
+    void overviewSearchesTheFullAddressWordByWordAndNoLongerMatchesOldDisplayDefaults() {
+        add(1, 28, "");
+        add(2, 28, "");
+        db.update("update household set owner_name=null, raw_address='Số 26/3 Hẻm 12 Tiền Lân, Ấp Tiền Lân 4' where id=1");
+        db.update("update household set raw_address='Số 8 Hẻm 3, Ấp Trung Chánh 2' where id=2");
         db.update(
             "insert into resident(id,household_id,residence_type,full_name,id_card_number,gender,birth_year) values(1,2,'PERMANENT','Trần Thị Bình','ID','FEMALE',2015)"
         );
-        assertEquals(1L, ((Number) overview("chua cap nhat", 0, 10).get("total")).longValue());
-        assertEquals(1L, ((Number) overview("hk-bd-001", 0, 10).get("total")).longValue());
+        // Every word, in any order, accents and case ignored.
+        assertEquals(1L, ((Number) overview("26/3 tien lan 4", 0, 10).get("total")).longValue());
+        assertEquals(1L, ((Number) overview("Tiền Lân, 26/3", 0, 10).get("total")).longValue());
+        assertEquals(0L, ((Number) overview("26/3 trung chanh", 0, 10).get("total")).longValue());
+        // Members still match, alone or with an address word.
         assertEquals(1L, ((Number) overview("tran thi binh", 0, 10).get("total")).longValue());
         assertEquals(1L, overview("tran thi binh", 0, 10).get("residents"));
+        assertEquals(1L, ((Number) overview("binh trung chanh", 0, 10).get("total")).longValue());
+        // Values the screens no longer show never match ("1" / "Phan Văn Hớn" used to match every household).
+        assertEquals(0L, ((Number) overview("chua cap nhat", 0, 10).get("total")).longValue());
+        assertEquals(0L, ((Number) overview("phan van hon", 0, 10).get("total")).longValue());
     }
 }

@@ -22,10 +22,11 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.subject-summary--due button[aria-pressed='false'] .subject-count {
+/* Warning colour only when at least one record is actually due (MASTER: neutral when count = 0). */
+.subject-summary--due button[aria-pressed='false'][data-has-due='true'] .subject-count {
   color: #b45309;
 }
-.dark .subject-summary--due button[aria-pressed='false'] .subject-count {
+.dark .subject-summary--due button[aria-pressed='false'][data-has-due='true'] .subject-count {
   color: #fcd34d;
 }
 .subject-badges {
