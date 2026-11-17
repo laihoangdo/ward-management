@@ -17,26 +17,21 @@ afterEach(() => {
 });
 
 describe('Backend health', () => {
+  // Production closes /management/*, so reachability comes from /api/authenticate (204 signed in, 401 session ended).
   it.each([
-    [true, { status: 'UP' }, 'ok'],
-    [true, { status: 'DOWN' }, 'offline'],
-    [false, { status: 'DOWN' }, 'offline'],
-  ])('reports HTTP ok=%s, body=%o as %s', async (ok, body, status) => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok, json: async () => body }));
+    [204, 'ok'],
+    [401, 'ok'],
+    [404, 'offline'],
+    [502, 'offline'],
+    [503, 'offline'],
+  ])('reports HTTP %s as %s', async (code, status) => {
+    const fetchMock = vi.fn().mockResolvedValue({ status: code });
+    vi.stubGlobal('fetch', fetchMock);
     expect((await checkBackendHealth()).status).toBe(status);
+    expect(fetchMock).toHaveBeenCalledWith('/api/authenticate', expect.objectContaining({ cache: 'no-store' }));
   });
-  it('reports network errors and non-JSON responses as offline', async () => {
+  it('reports network errors as offline', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
-    expect((await checkBackendHealth()).status).toBe('offline');
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        async json() {
-          throw new SyntaxError('HTML');
-        },
-      }),
-    );
     expect((await checkBackendHealth()).status).toBe('offline');
   });
 });

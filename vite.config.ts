@@ -64,6 +64,14 @@ const config = defineConfig({
           src: normalizePath(fileURLToPath(new URL('./src/main/webapp/content/assets/badiem_map', import.meta.url))),
           dest: '.',
         },
+        // App icons named by manifest.webapp; served from the root, where static images are public (/*.png).
+        {
+          src: normalizePath(
+            fileURLToPath(new URL('./src/main/webapp/content/images/jhipster_family_member_2_head-*.png', import.meta.url)),
+          ),
+          dest: '.',
+          rename: { stripBase: true },
+        },
         {
           src: normalizePath(fileURLToPath(new URL('./node_modules/tesseract.js/dist/worker.min.js', import.meta.url))),
           dest: 'ocr',

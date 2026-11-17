@@ -46,10 +46,15 @@ export async function sendDocumentReminder(id: string): Promise<void> {
   await axios.post(`/api/rbac/documents/${id}/reminder`);
 }
 
+/**
+ * Server reachability for the header badge. Production closes /management/* (only an internal health check remains),
+ * so this asks the lightweight /api/authenticate instead: 204 (signed in) or 401 (session ended) both prove the
+ * application answered; a proxy error (502/503/504) or a network failure means it did not.
+ */
 export async function checkBackendHealth(): Promise<{ status: string; projectId: string; service: string }> {
   try {
-    const res = await fetch('/management/health', { cache: 'no-store', signal: AbortSignal.timeout(10000) });
-    if (res.ok && (await res.json()).status === 'UP')
+    const res = await fetch('/api/authenticate', { cache: 'no-store', credentials: 'same-origin', signal: AbortSignal.timeout(10000) });
+    if (res.status === 204 || res.status === 401)
       return {
         status: 'ok',
         projectId: 'police-jhip-postgresql',
