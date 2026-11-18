@@ -117,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
           id="btn-header-home"
           title="Về trang chủ (Tổng quan)"
           className="gis-header-home hidden sm:flex items-center gap-1.5 h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-colors shrink-0 no-underline"
-          style={{ textDecoration: 'none' }}
+          style={{ textDecoration: 'none', color: 'var(--gis-text, #172c35)' }}
         >
           <Home aria-hidden="true" className="w-4 h-4 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-400 shrink-0" />
           <span>Trang chủ</span>
@@ -228,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         <div
-          className="gis-clock hidden md:flex flex-col items-end justify-center shrink-0 px-1 leading-tight text-right select-none"
+          className="gis-clock flex-col items-end justify-center shrink-0 px-1 leading-tight text-right select-none"
           aria-label={`${clockTime}, ${clockDate}`}
           role="timer"
         >

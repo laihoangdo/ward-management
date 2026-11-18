@@ -276,9 +276,18 @@ html.dark .text-purple-600 { /* taste-skill-ignore */
 .gis-pagination {
   flex-wrap: wrap;
 }
-@media (min-width: 1600px) {
+/* The header has room for the clock from 1024px (time) and 1440px (weekday + date) since the 11/2026 cleanup. */
+@media (min-width: 1024px) {
   .gis-header .gis-clock {
     display: flex;
+  }
+}
+.gis-header .gis-clock-date {
+  display: none;
+}
+@media (min-width: 1440px) {
+  .gis-header .gis-clock-date {
+    display: block;
   }
 }
 @media (max-width: 767px) {
@@ -1421,9 +1430,13 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
 #__page-root .gis-household-dialog :is(input, select, textarea) {
   border-color: var(--gis-control-border);
 }
+@container gis-workspace (max-width: 1000px) {
+  .gis-header-home span {
+    display: none;
+  }
+}
 @container gis-workspace (max-width: 1280px) {
   .gis-header-user-detail,
-  .gis-header-home span,
   .gis-header-emblem {
     display: none;
   }
