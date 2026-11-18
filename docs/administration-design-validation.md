@@ -153,3 +153,27 @@ Harness dựng lại trong `target/ui-harness/` (không commit, `/target/` đã 
 
 - **Trùng tên utility Bootstrap/Tailwind:** các utility spacing của Bootstrap có `!important` (`p-*`, `px-*`, `m-*`, `gap-*`…) thắng Tailwind cùng tên trên toàn app (vd. `px-3` ra 16px thay vì 12px, `p-5` ra 48px). Bố cục hiện tại đã được chỉnh trên nền đó; sửa toàn cục cần một đợt riêng có so ảnh trước/sau.
 - Chưa chạy smoke bản đồ MapLibre/Three.js (chọn nhà, vẽ, bật/tắt hiệu ứng) và chưa xem panel bản đồ (giờ theo dark mode) trên bản đồ thật — harness hiện không dựng bản đồ để tránh dùng dữ liệu công trình thật.
+
+## Đợt cải thiện UI/UX 11/2026 — nghiệm thu một lần
+
+Thực hiện đủ 5 giai đoạn của kế hoạch rút từ đánh giá Playwright độc lập (quy ước mới ghi tại MASTER.md, mục "Đợt cải thiện 11/2026"). Nghiệm thu một lần sau khi làm xong, trên hai nguồn:
+
+- **Dữ liệu giả, cùng kịch bản cho bản cũ (HEAD trước đợt, git worktree) và bản mới**: 19 route × 1440/820/390 px = 57 lượt mỗi bản.
+- **Backend thật trong container** (Spring Boot dev + PostGIS 18 + Keycloak 26.7.4, DB mới: 51 ấp, 0 hộ), đăng nhập form Keycloak bằng `cskv_thanh` (sub-admin, giao 1 ấp) và `admin` (superadmin): 114 lượt bằng `tools/e2e/ui-audit.cjs`. So với lượt đo cùng môi trường trước đợt.
+
+| Chỉ số                                                 | Trước                                  | Sau                             | Chỉ tiêu          | Đạt                                             |
+| ------------------------------------------------------ | -------------------------------------- | ------------------------------- | ----------------- | ----------------------------------------------- |
+| Chữ < 12px (giả / thật)                                | 12,7% / 11,7%                          | 0,5% / 0,3%                     | ≤ 3%              | Đạt                                             |
+| Điều khiển < 44px, mobile (giả / thật)                 | 56% / 54%                              | 13% / 23%                       | ≤ 10%             | Chưa (còn `/roster` độc lập, bản đồ)            |
+| Tràn ngang toàn trang                                  | 0                                      | 0                               | 0                 | Đạt                                             |
+| Lỗi JS / lỗi API (backend thật)                        | 0 / 0                                  | 0 / 0                           | 0                 | Đạt                                             |
+| Điều khiển trên header (tối đa)                        | 10                                     | 7                               | ≤ 6               | Gần đạt (ô tìm kiếm + nút giọng nói tính riêng) |
+| Dòng đầu danh sách hộ, desktop / tablet / mobile (giả) | 484 / 554 / 535 px                     | 385 / 436 / 470 px              | ≤ 260 / – / ≤ 340 | Chưa                                            |
+| Menu thiếu quyền chuyển hướng ngầm (`cskv_thanh`)      | 3 menu, đích khác nhau theo kích thước | Có thông báo, luôn về Tổng quan | Không chuyển ngầm | Đạt                                             |
+| Font online (Google Fonts)                             | Lato + Inter                           | Không                           | Không             | Đạt                                             |
+
+Kiểm tra tự động: `tsc --noEmit` sạch; Vitest **579/579** (trước đợt cũng 579/579; 3 test cập nhật theo hành vi mới, thêm kiểm tra ẩn hướng dẫn và trang thiếu quyền); ESLint trên file đã đổi 0 lỗi, cảnh báo 15 → 13; `vite build` đạt, không còn tham chiếu `fonts.googleapis`.
+
+Lỗi tìm thấy khi nghiệm thu và đã sửa trong đợt: bảng rỗng giữ chiều cao 177px đẩy thông báo "Chưa có hộ…" xuống dưới thanh điều hướng đáy (ẩn bảng khi `tbody:empty`); dải hướng dẫn trên điện thoại cao 3 dòng (gộp còn 1 dòng); tab Hộ dân/Nhân khẩu trùng sidebar khi nhúng trong dashboard.
+
+Chưa đạt / chưa đo, để đợt sau: dòng dữ liệu đầu còn cao hơn chỉ tiêu (còn bộ chọn ấp, dải hướng dẫn, dòng tóm tắt, khung bộ lọc 2 hàng trước bảng); `/roster` độc lập chưa áp kích thước điều khiển mới (ngoài `#__page-root`); checkbox lớp/ô nhập trong panel bản đồ vẫn < 24px; tỷ lệ bản đồ chiếm màn hình mobile, số lần Tab tới nội dung và chế độ tối chưa đo lại; danh sách có dữ liệu thật chỉ đo được trên máy local (`tools/e2e/ui-audit.cjs`).

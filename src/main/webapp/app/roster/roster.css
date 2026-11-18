@@ -1394,3 +1394,7 @@
 .roster-summary-note {
   color: var(--roster-muted);
 }
+/* An empty table keeps its min-height and pushed the empty-state message below the fold on phones. */
+.roster-list-pane .roster-table:has(tbody:empty) {
+  display: none;
+}
