@@ -556,6 +556,11 @@ public class RbacService {
 
     @org.springframework.transaction.annotation.Transactional
     public Map<String, Object> saveProfile(String id, Map<String, Object> incoming) {
+        return saveProfile(id, incoming, null);
+    }
+
+    /** @param fullName the name to store, or {@code null} to keep the account's current name. */
+    private Map<String, Object> saveProfile(String id, Map<String, Object> incoming, String fullName) {
         var existing = profile(kc.user(id));
         manage(existing);
         if (
@@ -596,7 +601,8 @@ public class RbacService {
             permissions.put(key, value);
         }
         Map<String, Object> data = new LinkedHashMap<>();
-        if (existing.containsKey("fullName")) data.put("fullName", existing.get("fullName"));
+        if (fullName != null) data.put("fullName", fullName);
+        else if (existing.containsKey("fullName")) data.put("fullName", existing.get("fullName"));
         for (String key : List.of("rank", "position", "unit", "badgeNumber", "phone", "assignedWard", "assignedStreets"))
             data.put(key, incoming.getOrDefault(key, key.equals("assignedStreets") ? List.of() : ""));
         data.put("status", "active");
@@ -655,21 +661,11 @@ public class RbacService {
                 HttpStatus.BAD_REQUEST,
                 "Tên đăng nhập không hợp lệ"
             );
-            kc.request(
-                HttpMethod.POST,
-                "/users",
-                Map.of(
-                    "username",
-                    username,
-                    "enabled",
-                    false,
-                    "email",
-                    incoming.getOrDefault("email", ""),
-                    "firstName",
-                    incoming.getOrDefault("fullName", username)
-                ),
-                Void.class
-            );
+            Map<String, Object> identity = new LinkedHashMap<>(KeycloakAdminClient.names(fullName(incoming, username)));
+            identity.put("username", username);
+            identity.put("enabled", false);
+            identity.put("email", incoming.getOrDefault("email", ""));
+            kc.request(HttpMethod.POST, "/users", identity, Void.class);
             id = (String) kc
                 .users()
                 .stream()
@@ -695,18 +691,11 @@ public class RbacService {
             kc.enabled(id, false);
             kc.logout(id);
             kc.setRole(id, role);
-            kc.request(
-                HttpMethod.PUT,
-                "/users/" + id,
-                Map.of(
-                    "email",
-                    incoming.getOrDefault("email", ""),
-                    "firstName",
-                    incoming.getOrDefault("fullName", incoming.get("username"))
-                ),
-                Void.class
-            );
-            saveProfile(id, incoming);
+            String fullName = fullName(incoming, before.get("username"));
+            Map<String, Object> identity = new LinkedHashMap<>(KeycloakAdminClient.names(fullName));
+            identity.put("email", incoming.getOrDefault("email", ""));
+            kc.request(HttpMethod.PUT, "/users/" + id, identity, Void.class);
+            saveProfile(id, incoming, fullName);
             if (creating) {
                 String password = String.valueOf(incoming.getOrDefault("temporaryPassword", ""));
                 if (password.length() < 12) throw new ResponseStatusException(
@@ -738,6 +727,12 @@ public class RbacService {
             failureAudit.record(subject(), "identity-sync-failed-disabled", id);
             throw ex;
         }
+    }
+
+    /** The requested display name with whitespace normalized; the username when none is given. */
+    static String fullName(Map<String, Object> incoming, Object username) {
+        String name = incoming.get("fullName") instanceof String value ? value.trim().replaceAll("\\s+", " ") : "";
+        return name.isEmpty() ? String.valueOf(username) : name;
     }
 
     @org.springframework.transaction.annotation.Transactional

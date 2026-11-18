@@ -129,6 +129,19 @@ public class KeycloakAdminClient {
         );
     }
 
+    /**
+     * Splits a display name into Keycloak's firstName/lastName so that {@code (firstName + " " + lastName).trim()},
+     * which is how the profile and the frontend compose it back, returns exactly the normalized name. Both fields are
+     * always returned so an update overwrites a stale lastName instead of leaving it to be appended again.
+     */
+    public static Map<String, String> names(String fullName) {
+        String name = fullName == null ? "" : fullName.trim().replaceAll("\\s+", " ");
+        int cut = name.lastIndexOf(' ');
+        return cut < 0
+            ? Map.of("firstName", name, "lastName", "")
+            : Map.of("firstName", name.substring(0, cut), "lastName", name.substring(cut + 1));
+    }
+
     public void enabled(String id, boolean enabled) {
         request(HttpMethod.PUT, "/users/" + id, Map.of("enabled", enabled), Void.class);
     }

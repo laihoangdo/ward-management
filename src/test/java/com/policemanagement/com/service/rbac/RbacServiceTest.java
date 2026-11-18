@@ -425,4 +425,54 @@ class RbacServiceTest {
         );
         verify(db, never()).update(startsWith("delete from rbac_assignment"), any(Object[].class));
     }
+
+    @Test
+    void savingAUserKeepsTheFullNameWhenItsLastWordIsTheKeycloakLastName() {
+        doReturn(Map.of("id", actor, "role", "superadmin", "assignedStreets", List.of())).when(rbac).current();
+        // Keycloak's PUT /users/{id} only changes the fields it is sent; mimic that so a stale lastName would survive.
+        Map<String, Object> identity = new HashMap<>(
+            Map.of("id", target, "username", "cskv_thanh", "firstName", "Thành", "lastName", "CSKV", "enabled", true)
+        );
+        when(kc.user(target)).thenAnswer(i -> new HashMap<>(identity));
+        doAnswer(i -> {
+            identity.putAll(i.getArgument(2));
+            return null;
+        })
+            .when(kc)
+            .request(eq(org.springframework.http.HttpMethod.PUT), eq("/users/" + target), anyMap(), eq(Void.class));
+        List<String> stored = new ArrayList<>();
+        when(db.queryForList("select data from rbac_profile where subject=?", String.class, target)).thenAnswer(i -> List.copyOf(stored));
+        doAnswer(i -> {
+            stored.clear();
+            stored.add(i.getArgument(2));
+            return 1;
+        })
+            .when(db)
+            .update(eq("insert into rbac_profile(subject,data) values (?,?)"), eq(target), anyString());
+        when(db.queryForObject("select count(*) from hamlet where id=? and valid_to is null", Long.class, 1L)).thenReturn(1L);
+        when(db.queryForObject("select full_name from hamlet where id=?", String.class, 1L)).thenReturn("Hamlet");
+
+        var user = new LinkedHashMap<>(rbac.profile(kc.user(target)));
+        assertEquals("Thành CSKV", user.get("fullName"));
+        user.put("fullName", "Thành CSKV");
+        user.put("hamletIds", List.of(1L));
+        var saved = rbac.saveUser(user);
+
+        assertEquals("Thành CSKV", saved.get("fullName"));
+        assertEquals("Thành", identity.get("firstName"));
+        assertEquals("CSKV", identity.get("lastName"));
+        // A second save of the returned object must not grow the name either.
+        assertEquals("Thành CSKV", rbac.saveUser(new LinkedHashMap<>(saved)).get("fullName"));
+        assertEquals("Thành CSKV", (identity.get("firstName") + " " + identity.get("lastName")).trim());
+    }
+
+    @Test
+    void keycloakNamesComposeBackToTheNormalizedFullName() {
+        for (String name : List.of("Thành CSKV", "Nguyễn  Văn   An ", "Admin", "")) {
+            var parts = KeycloakAdminClient.names(name);
+            assertEquals(name.trim().replaceAll("\\s+", " "), (parts.get("firstName") + " " + parts.get("lastName")).trim());
+        }
+        assertEquals(Map.of("firstName", "Nguyễn Văn", "lastName", "An"), KeycloakAdminClient.names("Nguyễn Văn An"));
+        assertEquals("cskv_thanh", RbacService.fullName(Map.of("fullName", "   "), "cskv_thanh"));
+    }
 }
