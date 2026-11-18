@@ -3,6 +3,7 @@
 //   AUDIT_USERS="cskv_thanh:user,admin:admin" node ui-audit.cjs
 // Optional: AUDIT_BASE_URL (default http://localhost:9000, must be loopback).
 // Output: target/ui-audit/ (gitignored). Screenshots may contain real household data: keep them local.
+/* global window, document, getComputedStyle -- measure() runs inside the page via page.evaluate */
 let chromium;
 try {
   ({ chromium } = require('@playwright/test'));
