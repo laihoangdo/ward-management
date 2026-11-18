@@ -25,6 +25,9 @@ import tech.jhipster.service.QueryService;
 @Transactional(readOnly = true)
 public class DocumentRecordQueryService extends QueryService<DocumentRecord> {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private static final Logger LOG = LoggerFactory.getLogger(DocumentRecordQueryService.class);
 
     private final DocumentRecordRepository documentRecordRepository;
@@ -86,6 +89,6 @@ public class DocumentRecordQueryService extends QueryService<DocumentRecord> {
                 )
             );
         }
-        return specification;
+        return specification.and(rbac.recordScope("document"));
     }
 }

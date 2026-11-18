@@ -1,0 +1,15 @@
+# Production issuer/database overrides layered on the vps profile.
+# Same restricted secret tree; the candidate container name is the explicit database host.
+spring:
+  datasource:
+    url: jdbc:postgresql://police-production-candidate-db-20261105:5432/Monolithic
+  security:
+    oauth2:
+      client:
+        provider:
+          oidc:
+            issuer-uri: https://sunnytech.cloud/realms/jhipster
+
+rbac:
+  keycloak:
+    issuer-uri: https://sunnytech.cloud:18443/realms/jhipster

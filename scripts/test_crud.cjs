@@ -19,12 +19,12 @@ async function testCrud() {
     ownerPhone: '0988888888',
     type: 'RESIDENTIAL',
     status: 'NORMAL',
-    latitude: 10.8540,
-    longitude: 106.6120,
+    latitude: 10.854,
+    longitude: 106.612,
     residentsCount: 3,
     maleCount: 2,
     femaleCount: 1,
-    notes: 'Hộ test tạo mới qua API'
+    notes: 'Hộ test tạo mới qua API',
   };
   const postRes = await axios.post(`${baseURL}/api/households`, newH);
   console.log('POST status:', postRes.status, 'Created ID:', postRes.data.id, 'Code:', postRes.data.code);
@@ -34,7 +34,7 @@ async function testCrud() {
   const updateH = {
     ...postRes.data,
     ownerName: 'Nguyễn Văn Test Đã Sửa',
-    notes: 'Ghi chú sau khi sửa'
+    notes: 'Ghi chú sau khi sửa',
   };
   const putRes = await axios.put(`${baseURL}/api/households/${createdId}`, updateH);
   console.log('PUT status:', putRes.status, 'Updated ownerName:', putRes.data.ownerName);
@@ -43,7 +43,7 @@ async function testCrud() {
   const patchRes = await axios.patch(
     `${baseURL}/api/households/${createdId}`,
     { id: createdId, notes: 'Ghi chú cập nhật qua PATCH' },
-    { headers: { 'Content-Type': 'application/merge-patch+json' } }
+    { headers: { 'Content-Type': 'application/merge-patch+json' } },
   );
   console.log('PATCH status:', patchRes.status, 'Patched notes:', patchRes.data.notes);
 
@@ -62,7 +62,7 @@ async function testCrud() {
   console.log('\n>>> ALL CRUD TESTS PASSED SUCCESSFULLY! <<<');
 }
 
-testCrud().catch((e) => {
+testCrud().catch(e => {
   console.error('Test failed:', e.response ? { status: e.response.status, data: e.response.data } : e.message);
   process.exit(1);
 });

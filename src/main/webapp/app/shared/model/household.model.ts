@@ -4,6 +4,14 @@ import { SecurityStatus } from 'app/shared/model/enumerations/security-status.mo
 
 export interface IHousehold {
   id?: number;
+  rosterId?: string;
+  rawAddress?: string;
+  /** Read-only: pre-merger hamlet ("ấp cũ") from import provenance, e.g. "62". */
+  legacyHamlet?: string | null;
+  coordinateMethod?: string;
+  origin?: string;
+  verificationStatus?: string;
+  sourceCaseNumber?: string;
   code?: string;
   houseNumber?: string;
   street?: string;
@@ -29,7 +37,9 @@ export interface IHousehold {
   notes?: string | null;
   lastCheckedDate?: string | null;
   officerInCharge?: string | null;
-  areaZone?: IAreaZone | null;
+  administrativeHamlet?: IAreaZone | null;
+  hamletId?: number | null;
+  legacyAddress?: string | null;
 }
 
 export const defaultValue: Readonly<IHousehold> = {};

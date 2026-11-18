@@ -9,6 +9,7 @@ describe('Profile reducer tests', () => {
     ribbonEnv: '',
     inProduction: true,
     isOpenAPIEnabled: false,
+    monitoring: 'checking',
   };
   describe('Common tests', () => {
     it('should return the initial state', () => {
@@ -28,6 +29,7 @@ describe('Profile reducer tests', () => {
         ribbonEnv: 'awesome ribbon stuff',
         inProduction: true,
         isOpenAPIEnabled: false,
+        monitoring: 'available',
       });
     });
 
@@ -43,8 +45,13 @@ describe('Profile reducer tests', () => {
         ribbonEnv: 'awesome ribbon stuff',
         inProduction: false,
         isOpenAPIEnabled: true,
+        monitoring: 'available',
       });
     });
+  });
+
+  it('marks monitoring unavailable when the server closes /management/info', () => {
+    expect(profile(undefined, { type: getProfile.rejected.type, error: { message: '404' } }).monitoring).toBe('unavailable');
   });
 
   describe('Actions', () => {

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261115010000-1" author="claude">
+        <comment>Subjects under management (đối tượng): one row per resident and category while active, with management period,
+            summon interval, criminal/administrative records and the warning-interview log. Personal data and photos stay on the
+            resident record and are never copied here.</comment>
+        <sql splitStatements="false">
+            CREATE TABLE subject (
+              id uuid PRIMARY KEY,
+              resident_id uuid NOT NULL REFERENCES resident(roster_id),
+              hamlet_id bigint NOT NULL REFERENCES hamlet(id),
+              category varchar(10) NOT NULL CHECK (category IN ('AN','CT','HS','MT','TNXH','NV')),
+              subgroup varchar(200) NOT NULL DEFAULT '',
+              managed_from date NOT NULL,
+              managed_until date,
+              summon_interval_months smallint NOT NULL DEFAULT 1 CHECK (summon_interval_months BETWEEN 1 AND 12),
+              suspicious_signs varchar(2000) NOT NULL DEFAULT '',
+              tb136_scope varchar(200) NOT NULL DEFAULT '',
+              notes varchar(2000) NOT NULL DEFAULT '',
+              status varchar(10) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','ENDED')),
+              ended_on date,
+              end_reason varchar(500) NOT NULL DEFAULT '',
+              version bigint NOT NULL DEFAULT 0,
+              created_at timestamptz NOT NULL DEFAULT now(),
+              created_by varchar(255) NOT NULL,
+              updated_at timestamptz NOT NULL DEFAULT now(),
+              updated_by varchar(255) NOT NULL,
+              CONSTRAINT ck_subject_period CHECK (managed_until IS NULL OR managed_until &gt;= managed_from),
+              CONSTRAINT ck_subject_ended CHECK ((status = 'ENDED') = (ended_on IS NOT NULL))
+            );
+            CREATE UNIQUE INDEX ux_subject_active ON subject(resident_id, category) WHERE status = 'ACTIVE';
+            CREATE INDEX ix_subject_hamlet ON subject(hamlet_id, status, category);
+            CREATE INDEX ix_subject_resident ON subject(resident_id);
+            COMMENT ON TABLE subject IS 'Subject under management (đối tượng); personal data lives on resident';
+
+            CREATE TABLE subject_record (
+              id uuid PRIMARY KEY,
+              subject_id uuid NOT NULL REFERENCES subject(id),
+              kind varchar(10) NOT NULL CHECK (kind IN ('TIEN_AN','TIEN_SU','VI_PHAM')),
+              occurred_on date,
+              decision_no varchar(100) NOT NULL DEFAULT '',
+              authority varchar(200) NOT NULL DEFAULT '',
+              offense varchar(1000) NOT NULL,
+              penalty varchar(1000) NOT NULL DEFAULT '',
+              notes varchar(2000) NOT NULL DEFAULT '',
+              created_at timestamptz NOT NULL DEFAULT now(),
+              created_by varchar(255) NOT NULL
+            );
+            CREATE INDEX ix_subject_record_subject ON subject_record(subject_id, occurred_on DESC NULLS LAST);
+            COMMENT ON TABLE subject_record IS 'Convictions (tiền án), administrative sanctions (tiền sự) and violations of a subject';
+
+            CREATE TABLE subject_summon (
+              id uuid PRIMARY KEY,
+              subject_id uuid NOT NULL REFERENCES subject(id),
+              summoned_on date NOT NULL,
+              officer varchar(255) NOT NULL,
+              content varchar(2000) NOT NULL,
+              result varchar(2000) NOT NULL DEFAULT '',
+              created_at timestamptz NOT NULL DEFAULT now(),
+              created_by varchar(255) NOT NULL
+            );
+            CREATE INDEX ix_subject_summon_subject ON subject_summon(subject_id, summoned_on DESC);
+            COMMENT ON TABLE subject_summon IS 'Warning interviews (gọi hỏi răn đe) of a subject';
+        </sql>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT,INSERT,UPDATE ON subject TO police_runtime;
+                GRANT SELECT,INSERT ON subject_record, subject_summon TO police_runtime;
+            END IF;
+        END $$;</sql>
+        <rollback>
+            <sql>DROP TABLE subject_summon; DROP TABLE subject_record; DROP TABLE subject;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

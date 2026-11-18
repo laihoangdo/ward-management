@@ -6,9 +6,8 @@ import PageNotFound from 'app/shared/error/page-not-found';
 
 import AreaZone from './area-zone';
 import DocumentRecord from './document-record';
-import Household from './household';
+import RosterPage from 'app/roster/RosterPage';
 import PatrolLog from './patrol-log';
-import Resident from './resident';
 import SecurityAlert from './security-alert';
 /* jhipster-needle-add-route-import - JHipster will add routes here */
 
@@ -17,8 +16,8 @@ export default () => {
     <div>
       <ErrorBoundaryRoutes>
         {/* prettier-ignore */}
-        <Route path="/household/*" element={<Household />} />
-        <Route path="/resident/*" element={<Resident />} />
+        <Route path="/household/*" element={<RosterPage initialTab="households" />} />
+        <Route path="/resident/*" element={<RosterPage initialTab="residents" />} />
         <Route path="/area-zone/*" element={<AreaZone />} />
         <Route path="/document-record/*" element={<DocumentRecord />} />
         <Route path="/security-alert/*" element={<SecurityAlert />} />

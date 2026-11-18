@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="20261020010000-1" author="codex" dbms="postgresql">
+ <sql splitStatements="false"><![CDATA[
+ ALTER TABLE tc2_roster.import_row ADD COLUMN resolution_ciphertext text, ADD COLUMN resolution_action text, ADD COLUMN resolution_resident_id uuid REFERENCES tc2_roster.resident(id);
+ CREATE TABLE tc2_roster.review_event(id uuid PRIMARY KEY, source_row_id uuid NOT NULL REFERENCES tc2_roster.import_row(id), actor text NOT NULL, reason text NOT NULL, action text NOT NULL, recorded_at timestamptz NOT NULL DEFAULT now());
+ CREATE TRIGGER immutable_review BEFORE UPDATE OR DELETE ON tc2_roster.review_event FOR EACH ROW EXECUTE FUNCTION tc2_roster.immutable_event();
+ CREATE TABLE tc2_roster.request_receipt(id uuid PRIMARY KEY, actor text NOT NULL, operation text NOT NULL, request_hash text NOT NULL, entity_id uuid NOT NULL);
+ ]]></sql>
+ </changeSet>
+</databaseChangeLog>

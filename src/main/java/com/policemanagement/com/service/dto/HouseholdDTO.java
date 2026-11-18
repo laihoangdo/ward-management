@@ -17,13 +17,71 @@ public class HouseholdDTO implements Serializable {
 
     private Long id;
 
+    private java.util.UUID rosterId;
+
+    public java.util.UUID getRosterId() {
+        return rosterId;
+    }
+
+    public void setRosterId(java.util.UUID value) {
+        this.rosterId = value;
+    }
+
+    private String rawAddress;
+
+    public String getRawAddress() {
+        return rawAddress;
+    }
+
+    public void setRawAddress(String value) {
+        this.rawAddress = value;
+    }
+
+    private String coordinateMethod;
+
+    public String getCoordinateMethod() {
+        return coordinateMethod;
+    }
+
+    public void setCoordinateMethod(String value) {
+        this.coordinateMethod = value;
+    }
+
+    private String origin;
+
+    public String getOrigin() {
+        return origin;
+    }
+
+    public void setOrigin(String value) {
+        this.origin = value;
+    }
+
+    private String verificationStatus;
+
+    public String getVerificationStatus() {
+        return verificationStatus;
+    }
+
+    public void setVerificationStatus(String value) {
+        this.verificationStatus = value;
+    }
+
+    private String sourceCaseNumber;
+
+    public String getSourceCaseNumber() {
+        return sourceCaseNumber;
+    }
+
+    public void setSourceCaseNumber(String value) {
+        this.sourceCaseNumber = value;
+    }
+
     @NotNull
     private String code;
 
-    @NotNull
     private String houseNumber;
 
-    @NotNull
     private String street;
 
     @NotNull
@@ -33,10 +91,8 @@ public class HouseholdDTO implements Serializable {
 
     private String alley;
 
-    @NotNull
     private String ownerName;
 
-    @NotNull
     private String ownerPhone;
 
     @NotNull
@@ -75,7 +131,38 @@ public class HouseholdDTO implements Serializable {
 
     private String officerInCharge;
 
-    private AreaZoneDTO areaZone;
+    private HamletDTO administrativeHamlet;
+
+    private Long hamletId;
+
+    private String legacyAddress;
+
+    /** Read-only: pre-merger hamlet from import provenance; filled for list responses, ignored on writes. */
+    private String legacyHamlet;
+
+    public String getLegacyHamlet() {
+        return legacyHamlet;
+    }
+
+    public void setLegacyHamlet(String legacyHamlet) {
+        this.legacyHamlet = legacyHamlet;
+    }
+
+    public Long getHamletId() {
+        return hamletId;
+    }
+
+    public void setHamletId(Long hamletId) {
+        this.hamletId = hamletId;
+    }
+
+    public String getLegacyAddress() {
+        return legacyAddress;
+    }
+
+    public void setLegacyAddress(String legacyAddress) {
+        this.legacyAddress = legacyAddress;
+    }
 
     public Long getId() {
         return id;
@@ -285,12 +372,12 @@ public class HouseholdDTO implements Serializable {
         this.officerInCharge = officerInCharge;
     }
 
-    public AreaZoneDTO getAreaZone() {
-        return areaZone;
+    public HamletDTO getAdministrativeHamlet() {
+        return administrativeHamlet;
     }
 
-    public void setAreaZone(AreaZoneDTO areaZone) {
-        this.areaZone = areaZone;
+    public void setAdministrativeHamlet(HamletDTO administrativeHamlet) {
+        this.administrativeHamlet = administrativeHamlet;
     }
 
     @Override
@@ -344,7 +431,7 @@ public class HouseholdDTO implements Serializable {
             ", notes='" + getNotes() + "'" +
             ", lastCheckedDate='" + getLastCheckedDate() + "'" +
             ", officerInCharge='" + getOfficerInCharge() + "'" +
-            ", areaZone=" + getAreaZone() +
+            ", administrativeHamlet=" + getHamlet() +
             "}";
     }
 }

@@ -34,6 +34,15 @@ class AccountResourceIT {
     @Autowired
     private MockMvc restAccountMockMvc;
 
+    /** Every /api, /management and /v3/api-docs request passes RbacWebConfiguration, which needs an RBAC identity. */
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
+    @org.junit.jupiter.api.BeforeEach
+    void grantRbacIdentity() {
+        com.policemanagement.com.web.rest.RbacTestSupport.communeWide(rbac);
+    }
+
     @Autowired
     OAuth2AuthorizedClientService authorizedClientService;
 

@@ -26,6 +26,9 @@ import tech.jhipster.service.QueryService;
 @Transactional(readOnly = true)
 public class HouseholdQueryService extends QueryService<Household> {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private static final Logger LOG = LoggerFactory.getLogger(HouseholdQueryService.class);
 
     private final HouseholdRepository householdRepository;
@@ -71,7 +74,7 @@ public class HouseholdQueryService extends QueryService<Household> {
         Specification<Household> specification = Specification.unrestricted();
         specification = specification.and((root, query, builder) -> {
             if (Long.class != query.getResultType()) {
-                root.fetch(Household_.areaZone, JoinType.LEFT);
+                root.fetch(Household_.administrativeHamlet, JoinType.LEFT);
             }
             return null;
         });
@@ -108,10 +111,12 @@ public class HouseholdQueryService extends QueryService<Household> {
                     buildSpecification(criteria.getResidentsId(), root ->
                         root.join(Household_.residentses, JoinType.LEFT).get(Resident_.id)
                     ),
-                    buildSpecification(criteria.getAreaZoneId(), root -> root.join(Household_.areaZone, JoinType.LEFT).get(AreaZone_.id))
+                    buildSpecification(criteria.getHamletId(), root ->
+                        root.join(Household_.administrativeHamlet, JoinType.LEFT).get(Hamlet_.id)
+                    )
                 )
             );
         }
-        return specification;
+        return specification.and(rbac.householdScope(false));
     }
 }

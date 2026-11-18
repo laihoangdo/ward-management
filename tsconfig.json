@@ -12,7 +12,7 @@
     "rootDir": "./src/main/webapp/app",
     "outDir": "target/classes/static/app",
     "lib": ["dom", "es2024"],
-    "types": ["vite/client", "node"],
+    "types": ["vite/client", "node", "geojson"],
     "allowJs": true,
     "checkJs": false,
     "paths": {

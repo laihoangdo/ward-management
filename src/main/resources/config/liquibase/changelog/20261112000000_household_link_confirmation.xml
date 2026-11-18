@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261112000000-1" author="opencode">
+        <comment>Append-only log of officers confirming at the door that a household really belongs to its linked building. A confirmation only counts while the household is still linked to the same building.</comment>
+        <sql splitStatements="false">
+            CREATE TABLE household_link_confirmation (
+              id uuid PRIMARY KEY,
+              request_id uuid NOT NULL UNIQUE,
+              household_id bigint NOT NULL REFERENCES household(id),
+              hamlet_id bigint NOT NULL REFERENCES hamlet(id),
+              building_id varchar(120) NOT NULL,
+              confirmed_at timestamptz NOT NULL DEFAULT now(),
+              officer varchar(255) NOT NULL,
+              officer_subject varchar(255) NOT NULL,
+              latitude double precision,
+              longitude double precision,
+              accuracy_m double precision CHECK (accuracy_m IS NULL OR accuracy_m >= 0),
+              CONSTRAINT ck_link_confirmation_position_pair CHECK ((latitude IS NULL) = (longitude IS NULL)),
+              CONSTRAINT ck_link_confirmation_position_range CHECK (latitude IS NULL OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))
+            );
+            CREATE INDEX ix_link_confirmation_household ON household_link_confirmation(household_id, building_id);
+            CREATE FUNCTION household_link_confirmation_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN RAISE EXCEPTION 'household_link_confirmation is an append-only log'; END $$;
+            CREATE TRIGGER trg_household_link_confirmation_immutable BEFORE UPDATE OR DELETE ON household_link_confirmation
+              FOR EACH ROW EXECUTE FUNCTION household_link_confirmation_immutable();
+            COMMENT ON TABLE household_link_confirmation IS 'Append-only: officer confirmations of household-to-building links';
+        </sql>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT,INSERT ON household_link_confirmation TO police_runtime;
+            END IF;
+        END $$;</sql>
+    </changeSet>
+</databaseChangeLog>

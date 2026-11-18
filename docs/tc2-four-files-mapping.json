@@ -1,0 +1,371 @@
+{
+  "version": "tc2-four-files-v1",
+  "as_of": "2026-10-19",
+  "purpose": "Design mapping only; not an import execution configuration",
+  "target": {
+    "hamlet_id": 28,
+    "hamlet_code": "27592-TRUNGCHANH-2",
+    "name": "Trung Chánh 2",
+    "basis": "User confirmed source consolidation of Ap 61/62/63/69; partial 61/63/69 files only"
+  },
+  "rules": {
+    "person_key": "verified identity; never source hamlet + identity",
+    "row_key": [
+      "file_sha256",
+      "sheet",
+      "row_number"
+    ],
+    "missing_field": "unknown; do not fill from another source without verified person/record match",
+    "age": "do not persist as current age",
+    "legacy_hamlet": "source metadata; not a new RBAC unit",
+    "unknown_columns": "preserve protected raw source and review",
+    "identity": "preserve raw text/type; no automatic zero padding"
+  },
+  "files": [
+    {
+      "source_file": "DSNK - TC2 - Ấp 62.xlsx",
+      "sha256": "8410b6ce0233aa08cbd3514ecf2df7b4a6f8a3b4945347505fa02cd06397f23a",
+      "legacy_hamlet_number": 62,
+      "source_extent": "whole supplied Ap62 file",
+      "expected_business_rows": 2039,
+      "sheets": [
+        {
+          "sheet": "Thường trú",
+          "action": "stage_and_review",
+          "range": "A1:Q1376",
+          "expected_records": 1375,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Tuổi",
+            "E": "Giới tính",
+            "F": "Số ĐDCN/CCCD/\nCMND",
+            "G": "Họ và tên chủ hộ",
+            "H": "Số HSCT",
+            "I": "Nơi thường trú",
+            "J": "Ngày ĐKTT",
+            "K": "Nơi ở hiện tại",
+            "L": "Họ tên cha",
+            "M": "Họ tên mẹ",
+            "N": "Trạng thái",
+            "O": "Trạng thái NK\nquản lý đặc thù",
+            "P": "Phân loại nhà ở",
+            "Q": "Đánh X nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Tạm trú",
+          "action": "stage_and_review",
+          "range": "A1:P381",
+          "expected_records": 380,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Tuổi",
+            "E": "Giới tính",
+            "F": "Số ĐDCN/CCCD/CMND",
+            "G": "Họ tên chủ hộ/\nNgười đại diện",
+            "H": "Nơi tạm trú",
+            "I": "Ngày ĐKTT",
+            "J": "Thời hạn tạm trú",
+            "K": "Nơi thường trú",
+            "L": "Trạng thái",
+            "M": "Phân loại NK quản lý đặc thù",
+            "N": "Loại hình đăng ký",
+            "O": "Tình trạng hết hạn tạm trú",
+            "P": "Đánh X nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Khai báo NOHT",
+          "action": "stage_and_review",
+          "range": "A1:K281",
+          "expected_records": 280,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Tuổi",
+            "E": "Giới tính",
+            "F": "Định danh",
+            "G": "Ngày đăng ký",
+            "H": "Địa chỉ khai báo",
+            "I": "Column1",
+            "J": "Column2",
+            "K": "Đánh X nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "NK Đ19",
+          "action": "stage_and_review",
+          "range": "A1:M5",
+          "expected_records": 4,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Số ĐDCN/CCCD/CMND",
+            "F": "Họ tên cha",
+            "G": "Họ tên mẹ",
+            "H": "Nơi cư trú trước khi chuyển đến",
+            "I": "Nơi ở hiện nay",
+            "J": "Thời gian cư trú",
+            "K": "Tình trạng cư trú",
+            "L": "Phân loại NK quản lý đặc thù",
+            "M": "Đánh X nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Sheet1",
+          "action": "cross_check_only",
+          "physical_rows": 671,
+          "matched_business_rows": 671
+        },
+        {
+          "sheet": "Sheet2",
+          "action": "cross_check_only",
+          "physical_rows": 224,
+          "matched_business_rows": 224
+        }
+      ]
+    },
+    {
+      "source_file": "DSNK - TC2 - một phần Ấp 61.xlsx",
+      "sha256": "58684990783b11da3787ad7d81b1a118c28a0ef2a9cc04b963b62392d48adfcd",
+      "legacy_hamlet_number": 61,
+      "source_extent": "supplied partial file only",
+      "expected_business_rows": 2050,
+      "sheets": [
+        {
+          "sheet": "Thường trú",
+          "action": "stage_and_review",
+          "range": "A1:M1649",
+          "expected_records": 1648,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Tuổi",
+            "E": "Giới tính",
+            "F": "Số ĐDCN/CCCD/\nCMND",
+            "G": "Họ và tên chủ hộ",
+            "H": "Số HSCT",
+            "I": "Nơi thường trú",
+            "J": "Nơi ở hiện tại",
+            "K": "Đánh x nếu thực tế cư trú",
+            "L": "Column1",
+            "M": "Column2"
+          }
+        },
+        {
+          "sheet": "Tạm trú",
+          "action": "stage_and_review",
+          "range": "A1:N58",
+          "expected_records": 57,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Số ĐDCN/CCCD/CMND",
+            "F": "Họ tên chủ hộ/\nNgười đại diện",
+            "G": "Nơi tạm trú",
+            "H": "Ngày ĐKTT",
+            "I": "Thời hạn tạm trú",
+            "J": "Nơi thường trú",
+            "K": "Trạng thái",
+            "L": "Phân loại NK quản lý đặc thù",
+            "M": "Loại hình đăng ký",
+            "N": "Đánh x nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Khai báo NOHT",
+          "action": "stage_and_review",
+          "range": "A1:H346",
+          "expected_records": 345,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Định danh",
+            "F": "Ngày đăng ký",
+            "G": "Địa chỉ khai báo",
+            "H": "Đánh X nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Sheet2",
+          "action": "cross_check_only",
+          "physical_rows": 246,
+          "matched_business_rows": 246
+        },
+        {
+          "sheet": "Sheet1",
+          "action": "cross_check_only",
+          "physical_rows": 783,
+          "matched_business_rows": 783
+        }
+      ]
+    },
+    {
+      "source_file": "DSNK - TC2 - một phần Ấp 63.xlsx",
+      "sha256": "0c047785e35220af5aa1882bbfc4d6c323e27a957e5278141d156aebbf689f87",
+      "legacy_hamlet_number": 63,
+      "source_extent": "supplied partial file only",
+      "expected_business_rows": 383,
+      "sheets": [
+        {
+          "sheet": "Thường trú",
+          "action": "stage_and_review",
+          "range": "A1:J338",
+          "expected_records": 337,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Số ĐDCN/CCCD/\nCMND",
+            "F": "Họ và tên chủ hộ",
+            "G": "Số HSCT",
+            "H": "Nơi thường trú",
+            "I": "Nơi ở hiện tại",
+            "J": "Đánh X nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Tạm trú",
+          "action": "stage_and_review",
+          "range": "A1:I37",
+          "expected_records": 36,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Số ĐDCN/CCCD/CMND",
+            "F": "Họ tên chủ hộ/\nNgười đại diện",
+            "G": "Nơi tạm trú",
+            "H": "Địa chỉ nơi thường trú",
+            "I": "Đánh x nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Khai báo NOHT",
+          "action": "stage_and_review",
+          "range": "A1:H11",
+          "expected_records": 10,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Định danh",
+            "F": "Ngày đăng ký",
+            "G": "Địa chỉ khai báo",
+            "H": "Đánh x nếu thực tế cư trú"
+          }
+        }
+      ],
+      "cell_overrides": [
+        {
+          "sheet": "Thường trú",
+          "cell": "C280",
+          "parse_as": "birth_year",
+          "value": 1979,
+          "precision": "YEAR",
+          "birth_date": null
+        }
+      ]
+    },
+    {
+      "source_file": "DSNK - TC2 - một phần Ấp 69.xlsx",
+      "sha256": "1a3094852122dc109f15e2509aef08a0ea0ceac2c71d8025cd74734c15319ff8",
+      "legacy_hamlet_number": 69,
+      "source_extent": "supplied partial file only",
+      "expected_business_rows": 741,
+      "sheets": [
+        {
+          "sheet": "Thường trú",
+          "action": "stage_and_review",
+          "range": "A1:J501",
+          "expected_records": 499,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Số ĐDCN/CCCD/\nCMND",
+            "F": "Họ và tên chủ hộ",
+            "G": "Số HSCT",
+            "H": "Nơi thường trú",
+            "I": "Nơi ở hiện tại",
+            "J": "Đánh x nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Tạm trú",
+          "action": "stage_and_review",
+          "range": "A1:I122",
+          "expected_records": 121,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Số ĐDCN/CCCD/CMND",
+            "F": "Họ tên chủ hộ/\nNgười đại diện",
+            "G": "Nơi tạm trú",
+            "H": "Nơi thường trú",
+            "I": "Đánh x nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Khai báo NOHT",
+          "action": "stage_and_review",
+          "range": "A1:I122",
+          "expected_records": 121,
+          "columns": {
+            "A": "STT",
+            "B": "Họ và tên",
+            "C": "Ngày sinh",
+            "D": "Giới tính",
+            "E": "Định danh",
+            "F": "Thời gian cư trú",
+            "G": "Nơi ở hiện tại",
+            "H": "Trạng thái",
+            "I": "Đánh x nếu thực tế cư trú"
+          }
+        },
+        {
+          "sheet": "Nam",
+          "action": "cross_check_only",
+          "physical_rows": 245,
+          "matched_business_rows": 245
+        },
+        {
+          "sheet": "Sheet1",
+          "action": "cross_check_only",
+          "physical_rows": 501,
+          "matched_business_rows": 499
+        }
+      ],
+      "row_exclusions": [
+        {
+          "sheet": "Thường trú",
+          "row": 501,
+          "reason": "summary annotation, not a person"
+        },
+        {
+          "sheet": "Sheet1",
+          "row": 2,
+          "reason": "embedded column header; entire sheet is cross-check only"
+        }
+      ]
+    }
+  ]
+}

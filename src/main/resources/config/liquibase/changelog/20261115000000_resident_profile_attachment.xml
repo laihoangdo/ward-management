@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261115000000-1" author="claude">
+        <comment>Resident profile for the field officer: occupation and workplace columns, and the existing notes column exposed through
+            the tc2_roster.resident view (appended columns, so existing readers and the audit trigger keep working).</comment>
+        <sql>
+            ALTER TABLE public.resident ADD COLUMN occupation varchar(200);
+            ALTER TABLE public.resident ADD COLUMN workplace varchar(300);
+            CREATE OR REPLACE VIEW tc2_roster.resident AS SELECT roster_id id,hamlet_id,full_name,birth_date,birth_year,birth_date_precision,
+                gender,father_name,mother_name,origin,verification_status,version,created_at,updated_at,
+                notes,occupation,workplace FROM public.resident;
+        </sql>
+        <rollback>
+            <sql>
+                DROP VIEW tc2_roster.resident;
+                CREATE VIEW tc2_roster.resident AS SELECT roster_id id,hamlet_id,full_name,birth_date,birth_year,birth_date_precision,
+                    gender,father_name,mother_name,origin,verification_status,version,created_at,updated_at FROM public.resident;
+                COMMENT ON VIEW tc2_roster.resident IS 'Updatable UUID projection of public.resident; no duplicated storage';
+                GRANT SELECT,INSERT,UPDATE,DELETE ON tc2_roster.resident TO police_runtime;
+                ALTER TABLE public.resident DROP COLUMN workplace;
+                ALTER TABLE public.resident DROP COLUMN occupation;
+            </sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="20261115000000-2" author="claude">
+        <comment>Shared attachment metadata. File bytes live in the server attachment folder (application.attachments.root) under a
+            random storage key; they are only served through the API after the owner's territory check. Starts with resident
+            portraits; later stages add owner kinds.</comment>
+        <sql splitStatements="false">
+            CREATE TABLE attachment (
+              id uuid PRIMARY KEY,
+              owner_kind varchar(30) NOT NULL CHECK (owner_kind IN ('RESIDENT')),
+              owner_id uuid NOT NULL,
+              hamlet_id bigint NOT NULL REFERENCES hamlet(id),
+              category varchar(30) NOT NULL,
+              mime varchar(50) NOT NULL CHECK (mime IN ('image/jpeg','image/png','application/pdf')),
+              storage_key varchar(64) NOT NULL UNIQUE,
+              size_bytes bigint NOT NULL CHECK (size_bytes &gt; 0),
+              sha256 char(64) NOT NULL,
+              caption varchar(500) NOT NULL DEFAULT '',
+              is_primary boolean NOT NULL DEFAULT false,
+              created_at timestamptz NOT NULL DEFAULT now(),
+              created_by varchar(255) NOT NULL,
+              created_by_subject varchar(255) NOT NULL
+            );
+            CREATE INDEX ix_attachment_owner ON attachment(owner_kind, owner_id, created_at DESC);
+            CREATE UNIQUE INDEX ux_attachment_primary ON attachment(owner_kind, owner_id) WHERE is_primary;
+            COMMENT ON TABLE attachment IS 'Attachment metadata; bytes stored on the server filesystem under storage_key';
+        </sql>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT,INSERT,UPDATE,DELETE ON attachment TO police_runtime;
+            END IF;
+        END $$;</sql>
+        <rollback>
+            <sql>DROP TABLE attachment;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

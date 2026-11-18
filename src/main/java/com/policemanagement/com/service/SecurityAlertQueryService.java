@@ -25,6 +25,9 @@ import tech.jhipster.service.QueryService;
 @Transactional(readOnly = true)
 public class SecurityAlertQueryService extends QueryService<SecurityAlert> {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private static final Logger LOG = LoggerFactory.getLogger(SecurityAlertQueryService.class);
 
     private final SecurityAlertRepository securityAlertRepository;
@@ -84,6 +87,6 @@ public class SecurityAlertQueryService extends QueryService<SecurityAlert> {
                 )
             );
         }
-        return specification;
+        return specification.and(rbac.recordScope("alert"));
     }
 }

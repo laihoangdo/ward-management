@@ -38,6 +38,12 @@ Development Ribbon
 /* ==========================================================================
 Navbar styles
 ========================================================================== */
+/* Same surface and accent as the dashboard sidebar (--gis-sidebar-background / --gis-gold in gis/index.css),
+   so the roster and system pages do not look like a different product. */
+.jh-navbar-surface {
+  background-color: #122e35;
+}
+
 .navbar-brand {
   overflow: hidden;
 }

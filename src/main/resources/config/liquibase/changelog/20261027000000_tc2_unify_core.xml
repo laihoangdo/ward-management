@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+  <changeSet id="20261027000000-1" author="codex" dbms="postgresql">
+    <!-- Exact first revision already applied by the local devtools restart; follow-up projections are a separate changeset. -->
+    <validCheckSum>9:4ced9ae3be91275affdf92c6fc7dcd50</validCheckSum>
+    <sqlFile path="../sql/tc2_unify_core.sql" relativeToChangelogFile="true" splitStatements="false"/>
+  </changeSet>
+</databaseChangeLog>

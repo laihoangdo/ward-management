@@ -21,6 +21,7 @@ export interface IHeaderProps {
 const Header = (props: IHeaderProps) => {
   const loadingBarRef = useRef<LoadingBarRef>(null);
   const loadingCount = useAppSelector(state => state.loadingBar.count);
+  const monitoring = useAppSelector(state => state.applicationProfile.monitoring);
 
   useEffect(() => {
     if (loadingCount > 0) {
@@ -42,8 +43,8 @@ const Header = (props: IHeaderProps) => {
   return (
     <div id="app-header">
       {renderDevRibbon()}
-      <LoadingBar ref={loadingBarRef} className="loading-bar" color="#009cd8" />
-      <Navbar data-cy="navbar" data-bs-theme="dark" expand="md" fixed="top" className="bg-primary" collapseOnSelect>
+      <LoadingBar ref={loadingBarRef} className="loading-bar" color="#d4af37" />
+      <Navbar data-cy="navbar" data-bs-theme="dark" expand="md" fixed="top" className="jh-navbar-surface" collapseOnSelect>
         <Navbar.Toggle aria-controls="header-tabs" aria-label="Menu" />
         <Brand />
         <Navbar.Collapse id="header-tabs">
@@ -51,7 +52,9 @@ const Header = (props: IHeaderProps) => {
             <Home />
             <GisDashboardNav />
             {props.isAuthenticated && <EntitiesMenu />}
-            {props.isAuthenticated && props.isAdmin && <AdminMenu showOpenAPI={props.isOpenAPIEnabled} />}
+            {props.isAuthenticated && props.isAdmin && (
+              <AdminMenu showOpenAPI={props.isOpenAPIEnabled} showMonitoring={monitoring !== 'unavailable'} />
+            )}
             <AccountMenu isAuthenticated={props.isAuthenticated} />
           </Nav>
         </Navbar.Collapse>

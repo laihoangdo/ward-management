@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+  <changeSet id="20261014010000-1" author="codex" dbms="postgresql">
+    <sql>
+      UPDATE rbac_setting
+      SET data = jsonb_set(data::jsonb, '{visibleRoles}', (data::jsonb -&gt; 'visibleRoles') || '"officer"'::jsonb)::text
+      WHERE kind = 'menus' AND id = 'advanced-map'
+        AND jsonb_typeof(data::jsonb -&gt; 'visibleRoles') = 'array'
+        AND NOT EXISTS (
+          SELECT 1 FROM jsonb_array_elements_text(data::jsonb -&gt; 'visibleRoles') AS role(value)
+          WHERE role.value = 'officer'
+        );
+    </sql>
+  </changeSet>
+</databaseChangeLog>

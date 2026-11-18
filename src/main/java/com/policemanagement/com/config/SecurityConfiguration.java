@@ -16,6 +16,7 @@ import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -56,6 +57,14 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) {
         http.cors(withDefaults())
+            .exceptionHandling(exceptions ->
+                exceptions.defaultAuthenticationEntryPointFor(
+                    new org.springframework.security.web.authentication.HttpStatusEntryPoint(
+                        org.springframework.http.HttpStatus.UNAUTHORIZED
+                    ),
+                    request -> request.getRequestURI().equals(request.getContextPath() + "/api/rbac/events")
+                )
+            )
             .csrf(csrf ->
                 csrf
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -76,10 +85,14 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(authz ->
                 // prettier-ignore
                 authz
+                    .requestMatchers(request -> request.getDispatcherType() == jakarta.servlet.DispatcherType.ASYNC && request.getServletPath().equals("/api/rbac/events")).permitAll()
                     .requestMatchers("/index.html", "/*.js", "/*.txt", "/*.json", "/*.map", "/*.css").permitAll()
                     .requestMatchers("/*.ico", "/*.png", "/*.svg", "/*.webapp").permitAll()
                     .requestMatchers("/assets/**").permitAll()
                     .requestMatchers("/ocr/**").permitAll()
+                    // Shared reference geometry/raster only; operational household data stay behind scoped APIs.
+                    .requestMatchers(HttpMethod.GET, "/content/data/badiem-houses.geojson", "/content/assets/badiem_satellite/**", "/content/assets/badiem_map/**").authenticated()
+                    .requestMatchers(HttpMethod.HEAD, "/content/data/badiem-houses.geojson", "/content/assets/badiem_satellite/**", "/content/assets/badiem_map/**").authenticated()
                     .requestMatchers("/swagger-ui/**").permitAll()
                     .requestMatchers("/api/authenticate").permitAll()
                     .requestMatchers("/api/auth-info").permitAll()

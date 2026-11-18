@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261111000000-1" author="opencode">
+        <comment>Append-only log of field visits to a household (door check-ins) with the officer and the reported position.</comment>
+        <sql splitStatements="false">
+            CREATE TABLE household_visit (
+              id uuid PRIMARY KEY,
+              request_id uuid NOT NULL UNIQUE,
+              household_id bigint NOT NULL REFERENCES household(id),
+              hamlet_id bigint NOT NULL REFERENCES hamlet(id),
+              outcome varchar(16) NOT NULL CHECK (outcome IN ('PRESENT','ABSENT')),
+              observed_at timestamptz NOT NULL DEFAULT now(),
+              officer varchar(255) NOT NULL,
+              officer_subject varchar(255) NOT NULL,
+              latitude double precision,
+              longitude double precision,
+              accuracy_m double precision CHECK (accuracy_m IS NULL OR accuracy_m >= 0),
+              note varchar(500) NOT NULL DEFAULT '',
+              CONSTRAINT ck_household_visit_position_pair CHECK ((latitude IS NULL) = (longitude IS NULL)),
+              CONSTRAINT ck_household_visit_position_range CHECK (latitude IS NULL OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))
+            );
+            CREATE INDEX ix_household_visit_household ON household_visit(household_id, observed_at DESC);
+            CREATE FUNCTION household_visit_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN RAISE EXCEPTION 'household_visit is an append-only log'; END $$;
+            CREATE TRIGGER trg_household_visit_immutable BEFORE UPDATE OR DELETE ON household_visit
+              FOR EACH ROW EXECUTE FUNCTION household_visit_immutable();
+            COMMENT ON TABLE household_visit IS 'Append-only field visit log; one row per door check-in';
+        </sql>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT,INSERT ON household_visit TO police_runtime;
+            END IF;
+        END $$;</sql>
+    </changeSet>
+</databaseChangeLog>

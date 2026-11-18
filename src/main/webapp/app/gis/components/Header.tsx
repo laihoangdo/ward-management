@@ -1,329 +1,314 @@
-import React, { useState } from 'react';
-import { Search, RefreshCw, Shield, AlertTriangle, Menu, X, Sun, Moon, Mic, LogOut, ShieldCheck, UserCheck, Home } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router';
+import { Search, RefreshCw, Menu, X, Sun, Moon, Mic, Bell, PanelLeftClose, PanelLeftOpen, HelpCircle, Home } from 'lucide-react';
 import { NavigationTab, AppUser } from '../types';
 import { VoiceSearchModal } from './VoiceSearchModal';
 
 interface HeaderProps {
   activeTab: NavigationTab;
+  /** Label of the open menu, as the sidebar shows it. */
+  title?: string;
   warningCount: number;
   onOpenWarnings: () => void;
   onRefresh: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onToggleMobileSidebar?: () => void;
+  onToggleDesktopSidebar?: () => void;
+  isDesktopSidebarOpen?: boolean;
   backendStatus?: 'checking' | 'online' | 'offline';
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   onTabChange?: (tab: NavigationTab) => void;
   currentUser?: AppUser;
+  /** Kept for callers; sign-out lives in the sidebar account block. */
   onLogout?: () => void;
+  isRefreshing?: boolean;
+  onOpenGuide?: () => void;
 }
+
+const FALLBACK_TITLES: Partial<Record<NavigationTab, string>> = {
+  overview: 'Tổng quan & thống kê',
+  'area-map': 'Bản đồ số hóa khu vực',
+  'field-3d-map': 'Bản đồ 3D',
+  'bando-3d': 'Bản đồ 3D',
+  households: 'Danh sách hộ dân',
+  residents: 'Quản lý nhân khẩu',
+  subjects: 'Quản lý đối tượng',
+  facilities: 'Cơ sở kinh doanh & DN',
+  guidance: 'Văn bản hướng dẫn CSKV',
+  documents: 'Quản lý giấy tờ & ANTT',
+  areas: 'Quản lý khu vực & tuyến',
+  logs: 'Nhật ký thao tác',
+  'subadmin-delegation': 'Phân quyền cán bộ & CAV',
+  'superadmin-hub': 'Trung tâm quản trị tối cao',
+  settings: 'Cài đặt & tài khoản',
+};
+
+const iconButton =
+  'h-10 w-10 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center shrink-0 cursor-pointer';
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
+  title,
   warningCount,
   onOpenWarnings,
   onRefresh,
   searchQuery,
   onSearchChange,
   onToggleMobileSidebar,
+  onToggleDesktopSidebar,
+  isDesktopSidebarOpen = true,
   backendStatus = 'checking',
   theme = 'light',
   onToggleTheme,
   onTabChange,
   currentUser,
-  onLogout,
+  isRefreshing = false,
+  onOpenGuide,
 }) => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
-
-  const getTabTitle = () => {
-    switch (activeTab) {
-      case 'overview':
-        return 'Tổng Quan An Ninh Địa Bàn';
-      case 'area-map':
-        return 'Sơ Đồ Địa Bàn Tương Tác';
-      case 'advanced-map':
-        return currentUser?.assignedWard ? `Bản Đồ Nâng Cao ${currentUser.assignedWard}` : 'Bản Đồ Nâng Cao Địa Bàn';
-      case 'households':
-        return 'Dữ Liệu Hộ Dân & Cơ Sở';
-      case 'residents':
-        return 'Quản Lý Nhân Khẩu & Định Danh';
-      case 'documents':
-        return 'Hồ Sơ & Giấy Tờ An Ninh';
-      case 'areas':
-        return 'Phân Quyền & Tuyến Quản Lý';
-      case 'logs':
-        return 'Nhật Ký Thao Tác & Minh Bạch Quản Lý';
-      case 'subadmin-delegation':
-        return 'Phân Quyền Tính Năng Cho Công An Viên';
-      case 'superadmin-hub':
-        return 'Trung Tâm Quản Trị Hệ Thống Tối Cao';
-      case 'settings':
-        return 'Cài Đặt & Tài Khoản CSKV';
-      default:
-        return 'Hệ Thống Quản Lý Địa Bàn';
-    }
-  };
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const pad = (n: number) => String(n).padStart(2, '0'); // taste-skill-ignore: đồng hồ thời gian thực
+  const clockTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const dayNames = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+  const clockDate = `${dayNames[now.getDay()]}, ${now.getDate()} tháng ${now.getMonth() + 1}, ${now.getFullYear()}`;
+  const statusText =
+    backendStatus === 'online' ? 'Máy chủ trực tuyến' : backendStatus === 'offline' ? 'Mất kết nối máy chủ' : 'Đang kiểm tra máy chủ';
 
   return (
-    <header className="h-14 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-800 px-2.5 sm:px-4 lg:px-5 flex items-center justify-between sticky top-0 z-20 shadow-xs shrink-0 w-full transition-colors select-none">
-      {/* Title / Hamburger menu / Home button */}
-      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 shrink-0">
-        {/* Mobile/Tablet Hamburger Toggle Button */}
+    <header className="gis-header h-14 bg-white dark:bg-slate-900 border-b border-slate-200/90 dark:border-slate-800 px-2 sm:px-4 lg:px-5 flex items-center justify-between gap-2 sticky top-0 z-20 shrink-0 w-full transition-colors select-none">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
+        {onToggleDesktopSidebar && (
+          <button
+            type="button"
+            onClick={onToggleDesktopSidebar}
+            aria-label={isDesktopSidebarOpen ? 'Ẩn menu bên trái' : 'Hiện menu bên trái'}
+            title={isDesktopSidebarOpen ? 'Ẩn menu bên trái' : 'Hiện menu bên trái'}
+            aria-expanded={isDesktopSidebarOpen}
+            aria-controls="gis-desktop-sidebar"
+            className={`${iconButton} hidden md:flex`}
+          >
+            {isDesktopSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
+          </button>
+        )}
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
-            className="lg:hidden h-9 w-9 text-slate-700 dark:text-slate-200 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors relative flex items-center justify-center shrink-0 cursor-pointer"
+            type="button"
+            aria-label="Mở menu điều hành"
+            className={`${iconButton} md:hidden relative h-11 w-11`}
             title="Mở menu điều hành"
           >
-            <Menu className="w-4 h-4 text-slate-700 dark:text-slate-200" />
+            <Menu className="w-5 h-5" />
             {warningCount > 0 && (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900" />
             )}
           </button>
         )}
 
-        {/* Nút Về Trang Chủ (Home Portal) */}
         <Link
           to="/"
           id="btn-header-home"
-          title="Quay về Trang chủ Cổng thông tin Monolithic"
-          className="flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border border-slate-200/90 dark:border-slate-700 bg-slate-50 hover:bg-blue-50/80 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 hover:text-blue-600 dark:text-slate-200 dark:hover:text-blue-300 font-semibold text-xs transition-colors shadow-xs shrink-0 cursor-pointer no-underline"
-          style={{ textDecoration: 'none' }}
+          title="Quay về Trang chủ Cổng thông tin"
+          className="gis-header-home hidden sm:flex items-center gap-1.5 h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-colors shrink-0 no-underline"
+          style={{ textDecoration: 'none', color: 'var(--gis-text, #172c35)' }}
         >
-          <Home className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-          <span className="hidden sm:inline">Trang chủ</span>
+          <Home aria-hidden="true" className="w-4 h-4 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-400 shrink-0" />
+          <span>Trang chủ</span>
         </Link>
 
-        {/* Shield Icon */}
-        <div className="hidden sm:flex w-8 h-8 rounded-lg bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 items-center justify-center border border-blue-500/20 shrink-0">
-          <Shield className="w-4 h-4" />
-        </div>
-
-        {/* Module Title & Breadcrumb */}
-        <div className="min-w-0 pr-1">
+        <div className="min-w-0 flex-1 flex items-center gap-2">
           <h1
-            className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight truncate m-0 p-0"
-            style={{ fontSize: '13.5px', lineHeight: '18px', margin: 0, fontWeight: 700 }}
+            className="gis-header-title text-base sm:text-lg font-bold text-slate-800 dark:text-white leading-tight truncate m-0 p-0"
+            style={{ margin: 0, fontWeight: 700 }}
+            title={title || FALLBACK_TITLES[activeTab] || 'Quản lý địa bàn'}
           >
-            {getTabTitle()}
+            {title || FALLBACK_TITLES[activeTab] || 'Quản lý địa bàn'}
           </h1>
-          <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 hidden xs:flex items-center gap-1.5 truncate leading-tight mt-0.5">
-            <span className="hidden md:inline font-medium">
-              {currentUser?.unit || (currentUser?.assignedWard ? `TP.HCM • ${currentUser.assignedWard}` : 'TP.HCM • Quản lý địa bàn')}
+          <span
+            role="img"
+            aria-label={statusText}
+            title={statusText}
+            className={`gis-header-connection w-2 h-2 rounded-full shrink-0 ${backendStatus === 'online' ? 'bg-emerald-500' : 'bg-amber-400'}`}
+          />
+          {currentUser && (
+            <span className="hidden 2xl:inline text-xs text-slate-500 dark:text-slate-400 truncate">
+              {currentUser.unit || currentUser.assignedWard}
             </span>
-            <span className="hidden md:inline text-slate-300 dark:text-slate-600">•</span>
-            <span className="text-blue-600 dark:text-blue-400 font-semibold">{new Date().toLocaleDateString('vi-VN')}</span>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Action shortcuts & Search */}
-      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        {/* Desktop & Tablet Quick Search with Voice Search trigger */}
-        <div className="relative hidden md:block w-36 lg:w-56 xl:w-64 shrink-0">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <div className="gis-header-actions flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="gis-header-search relative hidden md:block w-48 lg:w-64 xl:w-80 shrink-0">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            type="text"
-            placeholder="Tìm tên, số nhà, SĐT..."
+            type="search"
+            aria-label="Tìm hộ dân, số nhà hoặc số điện thoại"
+            placeholder="Tìm hộ dân: tên, số nhà, SĐT…"
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            className="w-full h-9 pl-8 pr-14 text-xs bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-400 transition-colors"
+            onKeyDown={e => {
+              if (e.key === 'Escape' && searchQuery) {
+                e.preventDefault();
+                onSearchChange('');
+              }
+            }}
+            className="w-full h-10 pl-9 pr-16 text-sm bg-slate-50/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-emerald-700 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-white placeholder-slate-500 transition-colors"
           />
-          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => onSearchChange('')}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors cursor-pointer"
+                aria-label="Xóa tìm kiếm"
+                className="h-8 w-8 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-md transition-colors cursor-pointer"
                 title="Xóa tìm kiếm"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
             <button
               type="button"
               id="btn-header-voice-search-desktop"
               onClick={() => setIsVoiceModalOpen(true)}
+              aria-label="Tìm kiếm bằng giọng nói"
               title="Tìm kiếm bằng giọng nói Tiếng Việt"
-              className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-all cursor-pointer group flex items-center justify-center"
+              className="h-8 w-8 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 rounded-md transition-colors cursor-pointer"
             >
-              <Mic className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 group-hover:text-rose-600 transition-colors" />
+              <Mic className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Mobile Dedicated Voice Search Quick Button */}
         <button
-          id="btn-header-voice-search-mobile"
-          onClick={() => setIsVoiceModalOpen(true)}
-          className="md:hidden h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center justify-center cursor-pointer shrink-0"
-          title="Tìm kiếm bằng giọng nói Tiếng Việt"
-        >
-          <Mic className="w-4 h-4 text-rose-600" />
-        </button>
-
-        {/* Mobile Search Toggle Icon */}
-        <button
+          type="button"
+          aria-expanded={isMobileSearchOpen}
+          aria-controls="gis-mobile-search"
+          aria-label="Tìm kiếm nhanh"
           onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-          className={`md:hidden h-9 w-9 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
+          className={`gis-header-mobile-search-toggle md:hidden h-11 w-11 rounded-lg border transition-colors flex items-center justify-center cursor-pointer shrink-0 ${
             isMobileSearchOpen || searchQuery
-              ? 'bg-blue-50 dark:bg-blue-950/50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300'
-              : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
+              ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700'
           }`}
           title="Tìm kiếm nhanh"
         >
-          <Search className="w-4 h-4" />
+          <Search className="w-5 h-5" />
         </button>
 
-        {/* Database & Cloud status badge - ALWAYS single line */}
-        <div className="hidden xl:flex items-center gap-1.5 h-9 px-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-[11px] font-medium whitespace-nowrap shrink-0">
-          <span
-            className={`w-2 h-2 rounded-full ${backendStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'} shrink-0`}
-          />
-          <span className="whitespace-nowrap">
-            {backendStatus === 'online'
-              ? 'Máy chủ trực tuyến'
-              : backendStatus === 'offline'
-                ? 'Mất kết nối máy chủ'
-                : 'Đang kiểm tra máy chủ'}
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          aria-label="Cập nhật dữ liệu"
+          title="Làm mới dữ liệu địa bàn"
+          className={`${iconButton} hidden sm:flex`}
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'opacity-50' : ''}`} />
+        </button>
+
+        {onOpenGuide && (
+          <button
+            type="button"
+            id="btn-header-feature-guide"
+            onClick={onOpenGuide}
+            aria-label="Hướng dẫn sử dụng"
+            title="Cẩm nang hướng dẫn sử dụng các chức năng"
+            className={`${iconButton} hidden sm:flex`}
+          >
+            <HelpCircle className="w-4 h-4" />
+          </button>
+        )}
+
+        <div
+          className="gis-clock flex-col items-end justify-center shrink-0 px-1 leading-tight text-right select-none"
+          aria-label={`${clockTime}, ${clockDate}`}
+          role="timer"
+        >
+          <span className="font-semibold tabular-nums text-base leading-none text-slate-900 dark:text-white">{clockTime}</span>
+          <span className="hidden lg:block text-xs font-medium text-slate-600 dark:text-slate-400 mt-0.5 whitespace-nowrap">
+            {clockDate}
           </span>
         </div>
 
-        {/* Quick Nav: Residents Shortcut */}
-        {onTabChange && (
-          <button
-            onClick={() => onTabChange('residents')}
-            title="Mở nhanh module Quản lý nhân khẩu & Định danh"
-            className={`hidden sm:flex items-center gap-1.5 h-9 px-2.5 sm:px-3 rounded-lg border text-xs font-semibold whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
-              activeTab === 'residents'
-                ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-500/20'
-                : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60'
-            }`}
-          >
-            <UserCheck className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline whitespace-nowrap">Nhân khẩu</span>
-          </button>
-        )}
-
-        {/* Refresh button */}
-        <button
-          onClick={onRefresh}
-          title="Làm mới dữ liệu địa bàn"
-          className="h-9 px-2 sm:px-3 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
-        >
-          <RefreshCw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
-          <span className="hidden md:inline whitespace-nowrap">Cập nhật</span>
-        </button>
-
-        {/* Dark/Light Mode Toggle Switch */}
         {onToggleTheme && (
           <button
+            type="button"
             id="btn-toggle-dark-mode"
             onClick={onToggleTheme}
-            title={theme === 'dark' ? 'Chuyển sang Chế độ Sáng (Ban ngày)' : 'Chuyển sang Chế độ Tối (Ban đêm / Thiếu sáng)'}
-            className={`h-9 px-2 sm:px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
-              theme === 'dark'
-                ? 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-200 hover:text-amber-300'
-                : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700 hover:text-indigo-600'
-            }`}
+            aria-label={theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
+            title={theme === 'dark' ? 'Chuyển sang Chế độ Sáng (Ban ngày)' : 'Chuyển sang Chế độ Tối (Ban đêm)'}
+            className={`${iconButton} hidden sm:flex`}
           >
-            {theme === 'dark' ? (
-              <>
-                <Sun className="w-4 h-4 text-amber-400 shrink-0 animate-in spin-in-180 duration-300" />
-                <span className="hidden md:inline whitespace-nowrap">Chế độ Sáng</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span className="hidden md:inline whitespace-nowrap">Chế độ Tối</span>
-              </>
-            )}
+            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
           </button>
         )}
 
-        {/* Urgent Warning notification button */}
         <button
+          type="button"
           onClick={onOpenWarnings}
-          className={`h-9 px-2 sm:px-3 rounded-lg border text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all shadow-xs cursor-pointer ${
-            warningCount > 0
-              ? 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/40 text-amber-700 dark:text-amber-300'
-              : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-750'
-          }`}
+          aria-label={`Thông báo và cảnh báo (${warningCount})`}
+          title={`Thông báo & Cảnh báo an ninh địa bàn (${warningCount})`}
+          className={`${iconButton} relative h-11 w-11 sm:h-10 sm:w-10`}
         >
-          <AlertTriangle
-            className={`w-4 h-4 shrink-0 ${warningCount > 0 ? 'text-amber-600 dark:text-amber-400 animate-bounce' : 'text-slate-400'}`}
-          />
-          <span className="hidden xs:inline whitespace-nowrap">Cảnh báo</span>
+          <Bell className={`w-4 h-4 shrink-0 ${warningCount > 0 ? 'text-amber-600 dark:text-amber-300' : ''}`} />
           {warningCount > 0 && (
-            <span className="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold leading-none">
-              {warningCount}
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-600 text-white text-xs font-bold tabular-nums rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 leading-none">
+              {warningCount > 99 ? '99+' : warningCount}
             </span>
           )}
         </button>
-
-        {/* Current User Quick Badge & Logout */}
-        {currentUser && (
-          <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800 shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30 flex items-center justify-center font-bold text-xs shrink-0">
-              {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : 'A'}
-            </div>
-            <div className="text-right leading-tight min-w-0">
-              <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate whitespace-nowrap max-w-[120px]">
-                {currentUser.fullName || currentUser.username}
-              </div>
-              <div className="text-[10px] text-blue-600 dark:text-blue-400 font-mono font-semibold uppercase truncate whitespace-nowrap">
-                {currentUser.role === 'superadmin'
-                  ? 'Super Admin'
-                  : currentUser.role === 'admin'
-                    ? 'Trưởng CAX'
-                    : currentUser.role === 'sub-admin'
-                      ? 'CA Phụ trách Ấp'
-                      : 'Công an viên'}
-              </div>
-            </div>
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors flex items-center justify-center shrink-0 cursor-pointer"
-                title="Đăng xuất"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Mobile Expandable Search Dropdown */}
       {isMobileSearchOpen && (
-        <div className="absolute top-14 sm:top-16 left-0 right-0 bg-white dark:bg-slate-900 p-3 border-b border-slate-200 dark:border-slate-800 shadow-md md:hidden z-30 animate-in slide-in-from-top-2 duration-150">
+        <div
+          id="gis-mobile-search"
+          className="absolute top-full left-0 right-0 bg-white dark:bg-slate-900 p-3 border-b border-slate-200 dark:border-slate-800 md:hidden z-30 animate-in slide-in-from-top-2 duration-150"
+        >
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              type="text"
+              type="search"
+              aria-label="Tìm hộ dân, số nhà hoặc số điện thoại"
               autoFocus
               placeholder="Tìm theo tên chủ hộ, số nhà, SĐT..."
               value={searchQuery}
               onChange={e => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-16 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 focus:bg-white text-slate-800 dark:text-white"
+              onKeyDown={e => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setIsMobileSearchOpen(false);
+                }
+              }}
+              className="w-full h-11 pl-9 pr-20 text-base bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:border-emerald-700 focus:bg-white text-slate-800 dark:text-white"
             />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {searchQuery && (
-                <button type="button" onClick={() => onSearchChange('')} className="text-slate-400 hover:text-slate-600 p-1">
+                <button
+                  type="button"
+                  aria-label="Xóa tìm kiếm"
+                  onClick={() => onSearchChange('')}
+                  className="h-9 w-9 flex items-center justify-center text-slate-500 hover:text-slate-700"
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => setIsVoiceModalOpen(true)}
-                className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-slate-700 rounded-md transition-colors"
+                className="h-9 w-9 flex items-center justify-center text-slate-500 hover:text-slate-800 rounded-md transition-colors"
                 title="Bấm để nói"
+                aria-label="Tìm kiếm bằng giọng nói"
               >
-                <Mic className="w-4 h-4 text-rose-600" />
+                <Mic className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </div>

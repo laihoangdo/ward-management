@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20261012000000-1" author="antigravity">
+        <!-- 1. Tỉnh / Thành phố trực thuộc Trung ương -->
+        <createTable tableName="admin_province">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="varchar(10)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_admin_province_code"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit_type" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="full_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="short_name" type="varchar(50)"/>
+            <column name="valid_from" type="date"/>
+            <column name="valid_to" type="date"/>
+        </createTable>
+
+        <!-- 2. Xã / Phường / Thị trấn (Đơn vị hành chính cấp cơ sở) -->
+        <createTable tableName="admin_commune">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit_type" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="full_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="province_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_admin_commune_province" references="admin_province(id)"/>
+            </column>
+            <column name="area_km2" type="numeric(10,2)"/>
+            <column name="population" type="integer"/>
+            <column name="population_as_of" type="date"/>
+            <column name="hamlet_count" type="integer"/>
+            <column name="hq_address" type="varchar(500)"/>
+            <column name="police_hq_address" type="varchar(500)"/>
+            <column name="website" type="varchar(255)"/>
+            <column name="valid_from" type="date"/>
+            <column name="valid_to" type="date"/>
+        </createTable>
+
+        <!-- 3. Ấp / Khu phố (Đơn vị dưới xã) -->
+        <createTable tableName="hamlet">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="code" type="varchar(50)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="ux_hamlet_code"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit_type" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="full_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="commune_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_hamlet_commune" references="admin_commune(id)"/>
+            </column>
+            <column name="sort_order" type="integer"/>
+            <column name="name_normalized" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valid_from" type="date"/>
+            <column name="valid_to" type="date"/>
+        </createTable>
+        <createIndex tableName="hamlet" indexName="ix_hamlet_commune_normalized">
+            <column name="commune_id"/>
+            <column name="name_normalized"/>
+        </createIndex>
+
+        <!-- 4. Tổ dân cư / Tổ tự quản -->
+        <createTable tableName="residential_group">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="hamlet_id" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_res_group_hamlet" references="hamlet(id)"/>
+            </column>
+            <column name="name" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="leader_name" type="varchar(255)"/>
+            <column name="leader_phone" type="varchar(50)"/>
+        </createTable>
+
+        <!-- 5. Lịch sử kế thừa / Sáp nhập đơn vị hành chính -->
+        <createTable tableName="admin_unit_lineage">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="level" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="predecessor_name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="successor_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="change_type" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="effective_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="note" type="varchar(500)"/>
+        </createTable>
+
+        <!-- 6. Bổ sung trường hamlet_id và legacy_address vào bảng household -->
+        <addColumn tableName="household">
+            <column name="hamlet_id" type="bigint"/>
+            <column name="legacy_address" type="varchar(500)"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="household"
+                                 baseColumnNames="hamlet_id"
+                                 constraintName="fk_household_hamlet"
+                                 referencedTableName="hamlet"
+                                 referencedColumnNames="id"/>
+        <createIndex tableName="household" indexName="ix_household_hamlet_id">
+            <column name="hamlet_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Seed dữ liệu hành chính cho TP.HCM, Xã Bà Điểm mới và 51 Ấp -->
+    <changeSet id="20261012000000-2" author="antigravity">
+        <!-- Seed TP.HCM -->
+        <insert tableName="admin_province">
+            <column name="id" valueNumeric="1"/>
+            <column name="code" value="79"/>
+            <column name="name" value="Hồ Chí Minh"/>
+            <column name="unit_type" value="CENTRAL_CITY"/>
+            <column name="full_name" value="Thành phố Hồ Chí Minh"/>
+            <column name="short_name" value="TP.HCM"/>
+            <column name="valid_from" valueDate="2025-07-01"/>
+        </insert>
+
+        <!-- Seed Xã Bà Điểm sau sáp nhập (hiệu lực từ 01/07/2025) -->
+        <insert tableName="admin_commune">
+            <column name="id" valueNumeric="1"/>
+            <column name="code" value="27592"/>
+            <column name="name" value="Bà Điểm"/>
+            <column name="unit_type" value="COMMUNE"/>
+            <column name="full_name" value="Xã Bà Điểm"/>
+            <column name="province_id" valueNumeric="1"/>
+            <column name="area_km2" valueNumeric="27.36"/>
+            <column name="population" valueNumeric="204289"/>
+            <column name="population_as_of" valueDate="2024-12-31"/>
+            <column name="hamlet_count" valueNumeric="51"/>
+            <column name="hq_address" value="Số 345 đường Phan Văn Hớn, Xã Bà Điểm"/>
+            <column name="police_hq_address" value="Số 1403 đường Phan Văn Hớn, Xã Bà Điểm"/>
+            <column name="website" value="xabadiem.gov.vn"/>
+            <column name="valid_from" valueDate="2025-07-01"/>
+        </insert>
+
+        <!-- Seed 3 xã cũ (lịch sử lưu trữ, kết thúc hiệu lực 2025-06-30) -->
+        <insert tableName="admin_commune">
+            <column name="id" valueNumeric="2"/>
+            <column name="code" value="27592-OLD"/>
+            <column name="name" value="Bà Điểm (cũ)"/>
+            <column name="unit_type" value="COMMUNE"/>
+            <column name="full_name" value="Xã Bà Điểm (cũ)"/>
+            <column name="province_id" valueNumeric="1"/>
+            <column name="valid_to" valueDate="2025-06-30"/>
+        </insert>
+        <insert tableName="admin_commune">
+            <column name="id" valueNumeric="3"/>
+            <column name="code" value="27595-OLD"/>
+            <column name="name" value="Xuân Thới Thượng (cũ)"/>
+            <column name="unit_type" value="COMMUNE"/>
+            <column name="full_name" value="Xã Xuân Thới Thượng (cũ)"/>
+            <column name="province_id" valueNumeric="1"/>
+            <column name="valid_to" valueDate="2025-06-30"/>
+        </insert>
+        <insert tableName="admin_commune">
+            <column name="id" valueNumeric="4"/>
+            <column name="code" value="27598-OLD"/>
+            <column name="name" value="Trung Chánh (cũ)"/>
+            <column name="unit_type" value="COMMUNE"/>
+            <column name="full_name" value="Xã Trung Chánh (cũ)"/>
+            <column name="province_id" valueNumeric="1"/>
+            <column name="valid_to" valueDate="2025-06-30"/>
+        </insert>
+
+        <!-- Seed lịch sử sáp nhập cấp xã -->
+        <insert tableName="admin_unit_lineage">
+            <column name="level" value="COMMUNE"/>
+            <column name="predecessor_name" value="Xã Bà Điểm (cũ)"/>
+            <column name="successor_id" valueNumeric="1"/>
+            <column name="change_type" value="MERGE_FULL"/>
+            <column name="effective_date" valueDate="2025-07-01"/>
+            <column name="note" value="Sáp nhập toàn bộ diện tích và dân số theo NQ 1685/NQ-UBTVQH15"/>
+        </insert>
+        <insert tableName="admin_unit_lineage">
+            <column name="level" value="COMMUNE"/>
+            <column name="predecessor_name" value="Xã Xuân Thới Thượng (cũ)"/>
+            <column name="successor_id" valueNumeric="1"/>
+            <column name="change_type" value="MERGE_FULL"/>
+            <column name="effective_date" valueDate="2025-07-01"/>
+            <column name="note" value="Sáp nhập toàn bộ diện tích và dân số theo NQ 1685/NQ-UBTVQH15"/>
+        </insert>
+        <insert tableName="admin_unit_lineage">
+            <column name="level" value="COMMUNE"/>
+            <column name="predecessor_name" value="Xã Trung Chánh (cũ)"/>
+            <column name="successor_id" valueNumeric="1"/>
+            <column name="change_type" value="MERGE_FULL"/>
+            <column name="effective_date" valueDate="2025-07-01"/>
+            <column name="note" value="Sáp nhập toàn bộ diện tích và dân số theo NQ 1685/NQ-UBTVQH15"/>
+        </insert>
+    </changeSet>
+
+    <!-- Seed danh sách đầy đủ 51 ấp của Xã Bà Điểm -->
+    <changeSet id="20261012000000-3" author="antigravity">
+        <!-- Nhóm các ấp Lân (gốc Bà Điểm cũ) -->
+        <sql>
+            INSERT INTO hamlet (code, name, unit_type, full_name, commune_id, sort_order, name_normalized, valid_from) VALUES
+            ('27592-BACLAN', 'Bắc Lân', 'HAMLET', 'Ấp Bắc Lân', 1, 1, 'bac lan', '2025-07-01'),
+            ('27592-BACLAN-1', 'Bắc Lân 1', 'HAMLET', 'Ấp Bắc Lân 1', 1, 2, 'bac lan 1', '2025-07-01'),
+            ('27592-BACLAN-2', 'Bắc Lân 2', 'HAMLET', 'Ấp Bắc Lân 2', 1, 3, 'bac lan 2', '2025-07-01'),
+            ('27592-DONGLAN', 'Đông Lân', 'HAMLET', 'Ấp Đông Lân', 1, 4, 'dong lan', '2025-07-01'),
+            ('27592-DONGLAN-1', 'Đông Lân 1', 'HAMLET', 'Ấp Đông Lân 1', 1, 5, 'dong lan 1', '2025-07-01'),
+            ('27592-DONGLAN-2', 'Đông Lân 2', 'HAMLET', 'Ấp Đông Lân 2', 1, 6, 'dong lan 2', '2025-07-01'),
+            ('27592-DONGLAN-3', 'Đông Lân 3', 'HAMLET', 'Ấp Đông Lân 3', 1, 7, 'dong lan 3', '2025-07-01'),
+            ('27592-HAULAN', 'Hậu Lân', 'HAMLET', 'Ấp Hậu Lân', 1, 8, 'hau lan', '2025-07-01'),
+            ('27592-HAULAN-1', 'Hậu Lân 1', 'HAMLET', 'Ấp Hậu Lân 1', 1, 9, 'hau lan 1', '2025-07-01'),
+            ('27592-HUNGLAN', 'Hưng Lân', 'HAMLET', 'Ấp Hưng Lân', 1, 10, 'hung lan', '2025-07-01'),
+            ('27592-HUNGLAN-1', 'Hưng Lân 1', 'HAMLET', 'Ấp Hưng Lân 1', 1, 11, 'hung lan 1', '2025-07-01'),
+            ('27592-HUNGLAN-2', 'Hưng Lân 2', 'HAMLET', 'Ấp Hưng Lân 2', 1, 12, 'hung lan 2', '2025-07-01'),
+            ('27592-NAMLAN', 'Nam Lân', 'HAMLET', 'Ấp Nam Lân', 1, 13, 'nam lan', '2025-07-01'),
+            ('27592-NAMLAN-1', 'Nam Lân 1', 'HAMLET', 'Ấp Nam Lân 1', 1, 14, 'nam lan 1', '2025-07-01'),
+            ('27592-NAMLAN-2', 'Nam Lân 2', 'HAMLET', 'Ấp Nam Lân 2', 1, 15, 'nam lan 2', '2025-07-01'),
+            ('27592-TAYLAN', 'Tây Lân', 'HAMLET', 'Ấp Tây Lân', 1, 16, 'tay lan', '2025-07-01'),
+            ('27592-TAYLAN-1', 'Tây Lân 1', 'HAMLET', 'Ấp Tây Lân 1', 1, 17, 'tay lan 1', '2025-07-01'),
+            ('27592-TAYLAN-2', 'Tây Lân 2', 'HAMLET', 'Ấp Tây Lân 2', 1, 18, 'tay lan 2', '2025-07-01'),
+            ('27592-TIENLAN', 'Tiền Lân', 'HAMLET', 'Ấp Tiền Lân', 1, 19, 'tien lan', '2025-07-01'),
+            ('27592-TIENLAN-1', 'Tiền Lân 1', 'HAMLET', 'Ấp Tiền Lân 1', 1, 20, 'tien lan 1', '2025-07-01'),
+            ('27592-TIENLAN-2', 'Tiền Lân 2', 'HAMLET', 'Ấp Tiền Lân 2', 1, 21, 'tien lan 2', '2025-07-01'),
+            ('27592-TIENLAN-3', 'Tiền Lân 3', 'HAMLET', 'Ấp Tiền Lân 3', 1, 22, 'tien lan 3', '2025-07-01'),
+            ('27592-TIENLAN-4', 'Tiền Lân 4', 'HAMLET', 'Ấp Tiền Lân 4', 1, 23, 'tien lan 4', '2025-07-01'),
+            ('27592-TRUNGLAN', 'Trung Lân', 'HAMLET', 'Ấp Trung Lân', 1, 24, 'trung lan', '2025-07-01'),
+            ('27592-TRUNGLAN-1', 'Trung Lân 1', 'HAMLET', 'Ấp Trung Lân 1', 1, 25, 'trung lan 1', '2025-07-01'),
+
+            -- Nhóm các ấp gốc Trung Chánh
+            ('27592-TRUNGCHANH', 'Trung Chánh', 'HAMLET', 'Ấp Trung Chánh', 1, 26, 'trung chanh', '2025-07-01'),
+            ('27592-TRUNGCHANH-1', 'Trung Chánh 1', 'HAMLET', 'Ấp Trung Chánh 1', 1, 27, 'trung chanh 1', '2025-07-01'),
+            ('27592-TRUNGCHANH-2', 'Trung Chánh 2', 'HAMLET', 'Ấp Trung Chánh 2', 1, 28, 'trung chanh 2', '2025-07-01'),
+            ('27592-MOI', 'Mới', 'HAMLET', 'Ấp Mới', 1, 29, 'moi', '2025-07-01'),
+            ('27592-MYHOA', 'Mỹ Hòa', 'HAMLET', 'Ấp Mỹ Hòa', 1, 30, 'my hoa', '2025-07-01'),
+            ('27592-MYHOA-1', 'Mỹ Hòa 1', 'HAMLET', 'Ấp Mỹ Hòa 1', 1, 31, 'my hoa 1', '2025-07-01'),
+            ('27592-MYHUE', 'Mỹ Huề', 'HAMLET', 'Ấp Mỹ Huề', 1, 32, 'my hue', '2025-07-01'),
+            ('27592-VANHANH', 'Vạn Hạnh', 'HAMLET', 'Ấp Vạn Hạnh', 1, 33, 'van hanh', '2025-07-01'),
+
+            -- Nhóm các ấp gốc Xuân Thới Thượng
+            ('27592-XUANTHOITAY', 'Xuân Thới Tây', 'HAMLET', 'Ấp Xuân Thới Tây', 1, 34, 'xuan thoi tay', '2025-07-01'),
+            ('27592-TANTHOITHUONG', 'Tân Thới Thượng', 'HAMLET', 'Ấp Tân Thới Thượng', 1, 35, 'tan thoi thuong', '2025-07-01'),
+            ('27592-NGABAGIONG', 'Ngã Ba Giồng', 'HAMLET', 'Ấp Ngã Ba Giồng', 1, 36, 'nga ba giong', '2025-07-01'),
+            ('27592-XTT', 'Xuân Thới Thượng', 'HAMLET', 'Ấp Xuân Thới Thượng', 1, 37, 'xuan thoi thuong', '2025-07-01'),
+            ('27592-XTT-1', 'Xuân Thới Thượng 1', 'HAMLET', 'Ấp Xuân Thới Thượng 1', 1, 38, 'xuan thoi thuong 1', '2025-07-01'),
+            ('27592-XTT-2', 'Xuân Thới Thượng 2', 'HAMLET', 'Ấp Xuân Thới Thượng 2', 1, 39, 'xuan thoi thuong 2', '2025-07-01'),
+            ('27592-XTT-3', 'Xuân Thới Thượng 3', 'HAMLET', 'Ấp Xuân Thới Thượng 3', 1, 40, 'xuan thoi thuong 3', '2025-07-01'),
+            ('27592-XTT-4', 'Xuân Thới Thượng 4', 'HAMLET', 'Ấp Xuân Thới Thượng 4', 1, 41, 'xuan thoi thuong 4', '2025-07-01'),
+            ('27592-XTT-5', 'Xuân Thới Thượng 5', 'HAMLET', 'Ấp Xuân Thới Thượng 5', 1, 42, 'xuan thoi thuong 5', '2025-07-01'),
+            ('27592-XTT-6', 'Xuân Thới Thượng 6', 'HAMLET', 'Ấp Xuân Thới Thượng 6', 1, 43, 'xuan thoi thuong 6', '2025-07-01'),
+            ('27592-XTT-7', 'Xuân Thới Thượng 7', 'HAMLET', 'Ấp Xuân Thới Thượng 7', 1, 44, 'xuan thoi thuong 7', '2025-07-01'),
+            ('27592-XTT-8', 'Xuân Thới Thượng 8', 'HAMLET', 'Ấp Xuân Thới Thượng 8', 1, 45, 'xuan thoi thuong 8', '2025-07-01'),
+            ('27592-XTT-9', 'Xuân Thới Thượng 9', 'HAMLET', 'Ấp Xuân Thới Thượng 9', 1, 46, 'xuan thoi thuong 9', '2025-07-01'),
+            ('27592-XTT-10', 'Xuân Thới Thượng 10', 'HAMLET', 'Ấp Xuân Thới Thượng 10', 1, 47, 'xuan thoi thuong 10', '2025-07-01'),
+            ('27592-XTT-11', 'Xuân Thới Thượng 11', 'HAMLET', 'Ấp Xuân Thới Thượng 11', 1, 48, 'xuan thoi thuong 11', '2025-07-01'),
+            ('27592-XTT-12', 'Xuân Thới Thượng 12', 'HAMLET', 'Ấp Xuân Thới Thượng 12', 1, 49, 'xuan thoi thuong 12', '2025-07-01'),
+            ('27592-XTT-13', 'Xuân Thới Thượng 13', 'HAMLET', 'Ấp Xuân Thới Thượng 13', 1, 50, 'xuan thoi thuong 13', '2025-07-01'),
+            ('27592-XTT-14', 'Xuân Thới Thượng 14', 'HAMLET', 'Ấp Xuân Thới Thượng 14', 1, 51, 'xuan thoi thuong 14', '2025-07-01');
+        </sql>
+    </changeSet>
+
+    <!-- 4. Backfill liên kết hamlet_id cho các bản ghi household hiện hữu và tạo View địa chỉ chuẩn -->
+    <changeSet id="20261012000000-4" author="antigravity">
+        <sql>
+            -- Lưu địa chỉ cũ trước sáp nhập vào legacy_address
+            UPDATE household
+            SET legacy_address = concat_ws(', ',
+                nullif(trim(concat_ws(' ', house_number, alley, street)), ''),
+                hamlet,
+                'Huyện Hóc Môn, TP.HCM'
+            )
+            WHERE legacy_address IS NULL;
+
+            -- Khớp tự động hamlet_id theo tên ấp hiện có
+            UPDATE household h
+            SET hamlet_id = hm.id
+            FROM hamlet hm
+            WHERE h.hamlet_id IS NULL
+              AND (
+                  lower(trim(h.hamlet)) = lower(trim(hm.full_name))
+                  OR lower(trim(replace(h.hamlet, 'Ấp ', ''))) = lower(trim(hm.name))
+                  OR lower(trim(replace(h.hamlet, 'ấp ', ''))) = lower(trim(hm.name))
+              );
+
+            -- Dự phòng: Nếu bản ghi nào chưa khớp (ví dụ dữ liệu mẫu cũ), gán vào Ấp Bắc Lân (id=1)
+            UPDATE household
+            SET hamlet_id = 1
+            WHERE hamlet_id IS NULL;
+
+            -- Tạo View địa chỉ chuẩn hóa cho hộ dân
+            CREATE OR REPLACE VIEW v_household_address AS
+            SELECT
+                h.id AS household_id,
+                h.code AS household_code,
+                h.house_number,
+                h.street,
+                h.alley,
+                h.neighborhood_group,
+                h.legacy_address,
+                hm.id AS hamlet_id,
+                hm.code AS hamlet_code,
+                hm.name AS hamlet_name,
+                hm.full_name AS hamlet_full_name,
+                c.id AS commune_id,
+                c.code AS commune_code,
+                c.name AS commune_name,
+                c.full_name AS commune_full_name,
+                p.id AS province_id,
+                p.code AS province_code,
+                p.name AS province_name,
+                p.full_name AS province_full_name,
+                concat_ws(', ',
+                    nullif(trim(concat_ws(' ', h.house_number, h.alley, h.street)), ''),
+                    nullif(trim(h.neighborhood_group), ''),
+                    hm.full_name,
+                    c.full_name,
+                    p.full_name
+                ) AS full_address_standard
+            FROM household h
+            LEFT JOIN hamlet hm ON hm.id = h.hamlet_id
+            LEFT JOIN admin_commune c ON c.id = hm.commune_id
+            LEFT JOIN admin_province p ON p.id = c.province_id;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

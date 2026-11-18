@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.policemanagement.com.IntegrationTest;
-import com.policemanagement.com.domain.AreaZone;
+import com.policemanagement.com.domain.Hamlet;
 import com.policemanagement.com.domain.Household;
 import com.policemanagement.com.domain.enumeration.FacilityType;
 import com.policemanagement.com.domain.enumeration.SecurityStatus;
@@ -156,6 +156,10 @@ class HouseholdResourceIT {
     @Autowired
     private MockMvc restHouseholdMockMvc;
 
+    /** Territory scoping is covered by the RBAC tests; this suite exercises the entity API as a commune-wide reader. */
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private Household household;
 
     private Household insertedHousehold;
@@ -196,6 +200,34 @@ class HouseholdResourceIT {
     }
 
     /**
+     * A household that the unified roster schema accepts: public.household writes need an audited actor (audit_core
+     * trigger), a roster id with its required defaults, and a real hamlet from which the sync_legacy trigger derives
+     * household.hamlet. Writes it the way RosterService does, inside the caller's transaction; not persisted here.
+     */
+    public static Household createRosterEntity(EntityManager em) {
+        em.createNativeQuery("select set_config('tc2.actor', 'integration-test', true)").getSingleResult();
+        // hamlet.code is unique: reuse the test hamlet when the calling suite already created it.
+        Hamlet hamlet = em
+            .createQuery("select h from Hamlet h where h.code = :code", Hamlet.class)
+            .setParameter("code", HamletResourceIT.createEntity().getCode())
+            .getResultStream()
+            .findFirst()
+            .orElseGet(HamletResourceIT::createEntity);
+        hamlet.setHamletName(DEFAULT_HAMLET);
+        if (hamlet.getId() == null) em.persist(hamlet);
+        em.flush();
+        Household household = createEntity();
+        household.setAdministrativeHamlet(hamlet);
+        household.setHamletId(hamlet.getId());
+        household.setRosterId(java.util.UUID.randomUUID());
+        household.setRawAddress("");
+        household.setOrigin("MANUAL");
+        household.setVerificationStatus("UNVERIFIED");
+        household.setCoordinateMethod("UNLOCATED");
+        return household;
+    }
+
+    /**
      * Create an updated entity for this test.
      *
      * This is a static method, as tests for other entities might also need it,
@@ -232,178 +264,78 @@ class HouseholdResourceIT {
 
     @BeforeEach
     void initTest() {
-        household = createEntity();
+        RbacTestSupport.communeWide(rbac);
+        household = createRosterEntity(em);
     }
 
     @AfterEach
     void cleanup() {
-        if (insertedHousehold != null) {
-            householdRepository.delete(insertedHousehold);
-            insertedHousehold = null;
-        }
+        // Households are never deleted (audit_core trigger); every test is @Transactional and rolls back.
+        insertedHousehold = null;
     }
 
+    /*
+     * The legacy household API is read-only: UnifiedRosterWebConfiguration answers 409 to every POST, PUT, PATCH and
+     * DELETE, so changes go through the audited roster workflow (/api/roster) with actor, reason and history.
+     */
     @Test
     @Transactional
-    void createHousehold() throws Exception {
+    void legacyCreateIsRejected() throws Exception {
         long databaseSizeBeforeCreate = getRepositoryCount();
-        // Create the Household
         HouseholdDTO householdDTO = householdMapper.toDto(household);
-        var returnedHouseholdDTO = om.readValue(
-            restHouseholdMockMvc
-                .perform(
-                    post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString(),
-            HouseholdDTO.class
-        );
-
-        // Validate the Household in the database
-        assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
-        var returnedHousehold = householdMapper.toEntity(returnedHouseholdDTO);
-        assertHouseholdUpdatableFieldsEquals(returnedHousehold, getPersistedHousehold(returnedHousehold));
-
-        insertedHousehold = returnedHousehold;
-    }
-
-    @Test
-    @Transactional
-    void createHouseholdWithExistingId() throws Exception {
-        // Create the Household with an existing ID
-        household.setId(1L);
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        long databaseSizeBeforeCreate = getRepositoryCount();
-
-        // An entity with an existing ID cannot be created, so this API call must fail
         restHouseholdMockMvc
             .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isBadRequest());
-
-        // Validate the Household in the database
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Danh sách hộ dân")));
         assertSameRepositoryCount(databaseSizeBeforeCreate);
     }
 
     @Test
     @Transactional
-    void checkCodeIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        household.setCode(null);
-
-        // Create the Household, which fails.
+    void legacyUpdateIsRejected() throws Exception {
+        insertedHousehold = householdRepository.saveAndFlush(household);
+        long databaseSizeBeforeUpdate = getRepositoryCount();
         HouseholdDTO householdDTO = householdMapper.toDto(household);
-
+        householdDTO.setOwnerName(UPDATED_OWNER_NAME);
         restHouseholdMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
+            .perform(
+                put(ENTITY_API_URL_ID, household.getId())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(om.writeValueAsBytes(householdDTO))
+            )
+            .andExpect(status().isConflict());
+        assertSameRepositoryCount(databaseSizeBeforeUpdate);
+        assertThat(getPersistedHousehold(household).getOwnerName()).isEqualTo(DEFAULT_OWNER_NAME);
     }
 
     @Test
     @Transactional
-    void checkHouseNumberIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        household.setHouseNumber(null);
-
-        // Create the Household, which fails.
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
+    void legacyPatchIsRejected() throws Exception {
+        insertedHousehold = householdRepository.saveAndFlush(household);
+        HouseholdDTO patch = new HouseholdDTO();
+        patch.setId(household.getId());
+        patch.setNotes(UPDATED_NOTES);
         restHouseholdMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
+            .perform(
+                patch(ENTITY_API_URL_ID, household.getId())
+                    .with(csrf())
+                    .contentType("application/merge-patch+json")
+                    .content(om.writeValueAsBytes(patch))
+            )
+            .andExpect(status().isConflict());
+        assertThat(getPersistedHousehold(household).getNotes()).isEqualTo(DEFAULT_NOTES);
     }
 
     @Test
     @Transactional
-    void checkStreetIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        household.setStreet(null);
-
-        // Create the Household, which fails.
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
+    void legacyDeleteIsRejected() throws Exception {
+        insertedHousehold = householdRepository.saveAndFlush(household);
+        long databaseSizeBeforeDelete = getRepositoryCount();
         restHouseholdMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkHamletIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        household.setHamlet(null);
-
-        // Create the Household, which fails.
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        restHouseholdMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkOwnerNameIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        household.setOwnerName(null);
-
-        // Create the Household, which fails.
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        restHouseholdMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkOwnerPhoneIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        household.setOwnerPhone(null);
-
-        // Create the Household, which fails.
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        restHouseholdMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkTypeIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        household.setType(null);
-
-        // Create the Household, which fails.
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        restHouseholdMockMvc
-            .perform(post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
+            .perform(delete(ENTITY_API_URL_ID, household.getId()).with(csrf()).accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict());
+        assertSameRepositoryCount(databaseSizeBeforeDelete);
     }
 
     @Test
@@ -1953,24 +1885,25 @@ class HouseholdResourceIT {
 
     @Test
     @Transactional
-    void getAllHouseholdsByAreaZoneIsEqualToSomething() throws Exception {
-        AreaZone areaZone;
-        if (TestUtil.findAll(em, AreaZone.class).isEmpty()) {
+    void getAllHouseholdsByAdministrativeHamletIdIsEqualToSomething() throws Exception {
+        Hamlet administrativeHamlet;
+        if (TestUtil.findAll(em, Hamlet.class).isEmpty()) {
             householdRepository.saveAndFlush(household);
-            areaZone = AreaZoneResourceIT.createEntity();
+            administrativeHamlet = HamletResourceIT.createEntity();
         } else {
-            areaZone = TestUtil.findAll(em, AreaZone.class).getFirst();
+            administrativeHamlet = TestUtil.findAll(em, Hamlet.class).getFirst();
         }
-        em.persist(areaZone);
+        em.persist(administrativeHamlet);
         em.flush();
-        household.setAreaZone(areaZone);
+        household.setAdministrativeHamlet(administrativeHamlet);
+        household.setHamletId(administrativeHamlet.getId());
         householdRepository.saveAndFlush(household);
-        Long areaZoneId = areaZone.getId();
-        // Get all the householdList where areaZone equals to areaZoneId
-        defaultHouseholdShouldBeFound("areaZoneId.equals=" + areaZoneId);
+        Long administrativeHamletId = administrativeHamlet.getId();
+        // Get all the householdList where administrativeHamlet equals to administrativeHamletId
+        defaultHouseholdShouldBeFound("hamletId.equals=" + administrativeHamletId);
 
-        // Get all the householdList where areaZone equals to (areaZoneId + 1)
-        defaultHouseholdShouldNotBeFound("areaZoneId.equals=" + (areaZoneId + 1));
+        // Get all the householdList where administrativeHamlet equals to (administrativeHamletId + 1)
+        defaultHouseholdShouldNotBeFound("hamletId.equals=" + (administrativeHamletId + 1));
     }
 
     private void defaultHouseholdFiltering(String shouldBeFound, String shouldNotBeFound) throws Exception {
@@ -2045,306 +1978,6 @@ class HouseholdResourceIT {
     void getNonExistingHousehold() throws Exception {
         // Get the household
         restHouseholdMockMvc.perform(get(ENTITY_API_URL_ID, Long.MAX_VALUE)).andExpect(status().isNotFound());
-    }
-
-    @Test
-    @Transactional
-    void putExistingHousehold() throws Exception {
-        // Initialize the database
-        insertedHousehold = householdRepository.saveAndFlush(household);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the household
-        Household updatedHousehold = householdRepository.findById(household.getId()).orElseThrow();
-        // Disconnect from session so that the updates on updatedHousehold are not directly saved in db
-        em.detach(updatedHousehold);
-        updatedHousehold
-            .code(UPDATED_CODE)
-            .houseNumber(UPDATED_HOUSE_NUMBER)
-            .street(UPDATED_STREET)
-            .hamlet(UPDATED_HAMLET)
-            .neighborhoodGroup(UPDATED_NEIGHBORHOOD_GROUP)
-            .alley(UPDATED_ALLEY)
-            .ownerName(UPDATED_OWNER_NAME)
-            .ownerPhone(UPDATED_OWNER_PHONE)
-            .type(UPDATED_TYPE)
-            .businessName(UPDATED_BUSINESS_NAME)
-            .businessCategory(UPDATED_BUSINESS_CATEGORY)
-            .residentsCount(UPDATED_RESIDENTS_COUNT)
-            .maleCount(UPDATED_MALE_COUNT)
-            .femaleCount(UPDATED_FEMALE_COUNT)
-            .under18Count(UPDATED_UNDER_18_COUNT)
-            .above18Count(UPDATED_ABOVE_18_COUNT)
-            .status(UPDATED_STATUS)
-            .warningMessage(UPDATED_WARNING_MESSAGE)
-            .licenseExpiry(UPDATED_LICENSE_EXPIRY)
-            .licenseType(UPDATED_LICENSE_TYPE)
-            .latitude(UPDATED_LATITUDE)
-            .longitude(UPDATED_LONGITUDE)
-            .notes(UPDATED_NOTES)
-            .lastCheckedDate(UPDATED_LAST_CHECKED_DATE)
-            .officerInCharge(UPDATED_OFFICER_IN_CHARGE);
-        HouseholdDTO householdDTO = householdMapper.toDto(updatedHousehold);
-
-        restHouseholdMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, householdDTO.getId())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(householdDTO))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the Household in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertPersistedHouseholdToMatchAllProperties(updatedHousehold);
-    }
-
-    @Test
-    @Transactional
-    void putNonExistingHousehold() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        household.setId(longCount.incrementAndGet());
-
-        // Create the Household
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException
-        restHouseholdMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, householdDTO.getId())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(householdDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the Household in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void putWithIdMismatchHousehold() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        household.setId(longCount.incrementAndGet());
-
-        // Create the Household
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restHouseholdMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, longCount.incrementAndGet())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(householdDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the Household in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void putWithMissingIdPathParamHousehold() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        household.setId(longCount.incrementAndGet());
-
-        // Create the Household
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restHouseholdMockMvc
-            .perform(put(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(householdDTO)))
-            .andExpect(status().isMethodNotAllowed());
-
-        // Validate the Household in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void partialUpdateHouseholdWithPatch() throws Exception {
-        // Initialize the database
-        insertedHousehold = householdRepository.saveAndFlush(household);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the household using partial update
-        Household partialUpdatedHousehold = new Household();
-        partialUpdatedHousehold.setId(household.getId());
-
-        partialUpdatedHousehold
-            .houseNumber(UPDATED_HOUSE_NUMBER)
-            .street(UPDATED_STREET)
-            .neighborhoodGroup(UPDATED_NEIGHBORHOOD_GROUP)
-            .ownerName(UPDATED_OWNER_NAME)
-            .residentsCount(UPDATED_RESIDENTS_COUNT)
-            .under18Count(UPDATED_UNDER_18_COUNT)
-            .above18Count(UPDATED_ABOVE_18_COUNT)
-            .status(UPDATED_STATUS)
-            .latitude(UPDATED_LATITUDE)
-            .longitude(UPDATED_LONGITUDE)
-            .notes(UPDATED_NOTES)
-            .lastCheckedDate(UPDATED_LAST_CHECKED_DATE)
-            .officerInCharge(UPDATED_OFFICER_IN_CHARGE);
-
-        restHouseholdMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, partialUpdatedHousehold.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(partialUpdatedHousehold))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the Household in the database
-
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertHouseholdUpdatableFieldsEquals(
-            createUpdateProxyForBean(partialUpdatedHousehold, household),
-            getPersistedHousehold(household)
-        );
-    }
-
-    @Test
-    @Transactional
-    void fullUpdateHouseholdWithPatch() throws Exception {
-        // Initialize the database
-        insertedHousehold = householdRepository.saveAndFlush(household);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the household using partial update
-        Household partialUpdatedHousehold = new Household();
-        partialUpdatedHousehold.setId(household.getId());
-
-        partialUpdatedHousehold
-            .code(UPDATED_CODE)
-            .houseNumber(UPDATED_HOUSE_NUMBER)
-            .street(UPDATED_STREET)
-            .hamlet(UPDATED_HAMLET)
-            .neighborhoodGroup(UPDATED_NEIGHBORHOOD_GROUP)
-            .alley(UPDATED_ALLEY)
-            .ownerName(UPDATED_OWNER_NAME)
-            .ownerPhone(UPDATED_OWNER_PHONE)
-            .type(UPDATED_TYPE)
-            .businessName(UPDATED_BUSINESS_NAME)
-            .businessCategory(UPDATED_BUSINESS_CATEGORY)
-            .residentsCount(UPDATED_RESIDENTS_COUNT)
-            .maleCount(UPDATED_MALE_COUNT)
-            .femaleCount(UPDATED_FEMALE_COUNT)
-            .under18Count(UPDATED_UNDER_18_COUNT)
-            .above18Count(UPDATED_ABOVE_18_COUNT)
-            .status(UPDATED_STATUS)
-            .warningMessage(UPDATED_WARNING_MESSAGE)
-            .licenseExpiry(UPDATED_LICENSE_EXPIRY)
-            .licenseType(UPDATED_LICENSE_TYPE)
-            .latitude(UPDATED_LATITUDE)
-            .longitude(UPDATED_LONGITUDE)
-            .notes(UPDATED_NOTES)
-            .lastCheckedDate(UPDATED_LAST_CHECKED_DATE)
-            .officerInCharge(UPDATED_OFFICER_IN_CHARGE);
-
-        restHouseholdMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, partialUpdatedHousehold.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(partialUpdatedHousehold))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the Household in the database
-
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertHouseholdUpdatableFieldsEquals(partialUpdatedHousehold, getPersistedHousehold(partialUpdatedHousehold));
-    }
-
-    @Test
-    @Transactional
-    void patchNonExistingHousehold() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        household.setId(longCount.incrementAndGet());
-
-        // Create the Household
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException
-        restHouseholdMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, householdDTO.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(householdDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the Household in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void patchWithIdMismatchHousehold() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        household.setId(longCount.incrementAndGet());
-
-        // Create the Household
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restHouseholdMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, longCount.incrementAndGet())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(householdDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the Household in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void patchWithMissingIdPathParamHousehold() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        household.setId(longCount.incrementAndGet());
-
-        // Create the Household
-        HouseholdDTO householdDTO = householdMapper.toDto(household);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restHouseholdMockMvc
-            .perform(
-                patch(ENTITY_API_URL).with(csrf()).contentType("application/merge-patch+json").content(om.writeValueAsBytes(householdDTO))
-            )
-            .andExpect(status().isMethodNotAllowed());
-
-        // Validate the Household in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void deleteHousehold() throws Exception {
-        // Initialize the database
-        insertedHousehold = householdRepository.saveAndFlush(household);
-
-        long databaseSizeBeforeDelete = getRepositoryCount();
-
-        // Delete the household
-        restHouseholdMockMvc
-            .perform(delete(ENTITY_API_URL_ID, household.getId()).with(csrf()).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNoContent());
-
-        // Validate the database contains one less item
-        assertDecrementedRepositoryCount(databaseSizeBeforeDelete);
     }
 
     protected long getRepositoryCount() {

@@ -1,0 +1,106 @@
+{
+  "annotations": {
+    "changelogDate": "20260919110518"
+  },
+  "applications": [
+    "Monolithic"
+  ],
+  "documentation": "Khu vực / Khu phố / Địa bàn quản lý",
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "code",
+      "fieldType": "String",
+      "fieldValidateRules": [
+        "required",
+        "unique"
+      ]
+    },
+    {
+      "fieldName": "name",
+      "fieldType": "String",
+      "fieldValidateRules": [
+        "required"
+      ]
+    },
+    {
+      "fieldName": "hamletName",
+      "fieldType": "String",
+      "fieldValidateRules": [
+        "required"
+      ]
+    },
+    {
+      "fieldName": "officerInCharge",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "officerPhone",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "populationCount",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "householdCount",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "boundaryGeoJson",
+      "fieldType": "TextBlob"
+    },
+    {
+      "fieldName": "communeId",
+      "fieldType": "Long",
+      "fieldValidateRules": [
+        "required"
+      ]
+    },
+    {
+      "fieldName": "unitType",
+      "fieldType": "String",
+      "fieldValidateRules": [
+        "required"
+      ]
+    },
+    {
+      "fieldName": "nameNormalized",
+      "fieldType": "String",
+      "fieldValidateRules": [
+        "required"
+      ]
+    },
+    {
+      "fieldName": "fullName",
+      "fieldType": "String",
+      "fieldValidateRules": [
+        "required"
+      ]
+    },
+    {
+      "fieldName": "sortOrder",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "validFrom",
+      "fieldType": "LocalDate"
+    },
+    {
+      "fieldName": "validTo",
+      "fieldType": "LocalDate"
+    }
+  ],
+  "name": "Hamlet",
+  "relationships": [
+    {
+      "otherEntityName": "household",
+      "otherEntityRelationshipName": "administrativeHamlet",
+      "relationshipName": "households",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-many"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

@@ -39,11 +39,15 @@ class PublicUserResourceIT {
     @Autowired
     private MockMvc restUserMockMvc;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private User user;
     private Long numberOfUsers;
 
     @BeforeEach
     void initTest() {
+        RbacTestSupport.communeWide(rbac);
         numberOfUsers = userRepository.count();
         user = UserResourceIT.initTestUser();
     }

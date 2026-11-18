@@ -84,7 +84,15 @@ class DocumentRecordResourceIT {
     private EntityManager em;
 
     @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    private Long householdId;
+
+    @Autowired
     private MockMvc restDocumentRecordMockMvc;
+
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
 
     private DocumentRecord documentRecord;
 
@@ -130,111 +138,136 @@ class DocumentRecordResourceIT {
             .reminderSent(UPDATED_REMINDER_SENT);
     }
 
+    /**
+     * Registers the fixture through the audited document workflow contract (actor, reason, request ID, REGISTER at
+     * version 0, confirmed expiry, household, verifier = actor), then clears the workflow settings so REST calls in the
+     * same transaction meet the database exactly as production legacy clients do.
+     */
+    private DocumentRecord persistDocument(DocumentRecord d) {
+        em.flush();
+        workflow("integration-test", "Integration test fixture", "REGISTER", java.util.UUID.randomUUID().toString(), "fixture");
+        Long id = jdbc.queryForObject(
+            "insert into document_record (id, doc_name, doc_type, household_name, address, status, expiry_date, officer, phone, notes," +
+                " reminder_sent, household_id, expiry_on, verified_by, verified_at, version)" +
+                " values (nextval('sequence_generator'),?,?,?,?,?,?,?,?,?,?,?,?,?,now(),0) returning id",
+            Long.class,
+            d.getDocName(),
+            d.getDocType(),
+            d.getHouseholdName(),
+            d.getAddress(),
+            d.getStatus(),
+            d.getExpiryDate(),
+            d.getOfficer(),
+            d.getPhone(),
+            d.getNotes(),
+            d.getReminderSent(),
+            d.getHouseholdId() == null ? householdId : d.getHouseholdId(),
+            java.time.LocalDate.now().plusYears(1),
+            "integration-test"
+        );
+        workflow("", "", "", "", "");
+        d.setId(id);
+        return em.find(DocumentRecord.class, id);
+    }
+
+    private void workflow(String actor, String reason, String operation, String requestId, String requestHash) {
+        for (String[] entry : new String[][] {
+            { "documents.actor", actor },
+            { "documents.reason", reason },
+            { "documents.operation", operation },
+            { "documents.request_id", requestId },
+            { "documents.request_hash", requestHash },
+        })
+            jdbc.queryForObject("select set_config(?, ?, true)", String.class, entry[0], entry[1]);
+    }
+
     @BeforeEach
     void initTest() {
+        RbacTestSupport.communeWide(rbac);
+        // Documents always belong to a household (audit_document_lifecycle trigger).
+        com.policemanagement.com.domain.Household household = HouseholdResourceIT.createRosterEntity(em);
+        em.persist(household);
+        em.flush();
+        householdId = household.getId();
         documentRecord = createEntity();
     }
 
     @AfterEach
     void cleanup() {
-        if (insertedDocumentRecord != null) {
-            documentRecordRepository.delete(insertedDocumentRecord);
-            insertedDocumentRecord = null;
-        }
+        // Document history is never deleted (audit_document_lifecycle trigger); every test is @Transactional and rolls back.
+        insertedDocumentRecord = null;
     }
 
+    /*
+     * Documents change only through the audited lifecycle (/api/document-lifecycle: register, confirm, renew) that sets
+     * actor, reason and request ID; the database refuses legacy entity writes, which must leave the data unchanged.
+     */
     @Test
     @Transactional
-    void createDocumentRecord() throws Exception {
+    void legacyCreateIsRejected() throws Exception {
         long databaseSizeBeforeCreate = getRepositoryCount();
-        // Create the DocumentRecord
         DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-        var returnedDocumentRecordDTO = om.readValue(
-            restDocumentRecordMockMvc
-                .perform(
-                    post(ENTITY_API_URL)
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(om.writeValueAsBytes(documentRecordDTO))
-                )
-                .andExpect(status().isCreated())
-                .andReturn()
-                .getResponse()
-                .getContentAsString(),
-            DocumentRecordDTO.class
-        );
-
-        // Validate the DocumentRecord in the database
-        assertIncrementedRepositoryCount(databaseSizeBeforeCreate);
-        var returnedDocumentRecord = documentRecordMapper.toEntity(returnedDocumentRecordDTO);
-        assertDocumentRecordUpdatableFieldsEquals(returnedDocumentRecord, getPersistedDocumentRecord(returnedDocumentRecord));
-
-        insertedDocumentRecord = returnedDocumentRecord;
-    }
-
-    @Test
-    @Transactional
-    void createDocumentRecordWithExistingId() throws Exception {
-        // Create the DocumentRecord with an existing ID
-        documentRecord.setId(1L);
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
-        long databaseSizeBeforeCreate = getRepositoryCount();
-
-        // An entity with an existing ID cannot be created, so this API call must fail
         restDocumentRecordMockMvc
             .perform(
                 post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(documentRecordDTO))
             )
-            .andExpect(status().isBadRequest());
-
-        // Validate the DocumentRecord in the database
+            .andExpect(status().isConflict());
         assertSameRepositoryCount(databaseSizeBeforeCreate);
     }
 
     @Test
     @Transactional
-    void checkDocNameIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        documentRecord.setDocName(null);
-
-        // Create the DocumentRecord, which fails.
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
+    void legacyUpdateIsRejected() throws Exception {
+        insertedDocumentRecord = persistDocument(documentRecord);
+        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(insertedDocumentRecord);
+        documentRecordDTO.setNotes(UPDATED_NOTES);
         restDocumentRecordMockMvc
             .perform(
-                post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(documentRecordDTO))
+                put(ENTITY_API_URL_ID, insertedDocumentRecord.getId())
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(om.writeValueAsBytes(documentRecordDTO))
             )
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
+            .andExpect(status().isConflict());
+        em.clear();
+        assertThat(getPersistedDocumentRecord(insertedDocumentRecord).getNotes()).isEqualTo(DEFAULT_NOTES);
     }
 
     @Test
     @Transactional
-    void checkDocTypeIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        documentRecord.setDocType(null);
-
-        // Create the DocumentRecord, which fails.
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
+    void legacyPatchIsRejected() throws Exception {
+        insertedDocumentRecord = persistDocument(documentRecord);
+        DocumentRecordDTO patch = new DocumentRecordDTO();
+        patch.setId(insertedDocumentRecord.getId());
+        patch.setNotes(UPDATED_NOTES);
         restDocumentRecordMockMvc
             .perform(
-                post(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(documentRecordDTO))
+                patch(ENTITY_API_URL_ID, insertedDocumentRecord.getId())
+                    .with(csrf())
+                    .contentType("application/merge-patch+json")
+                    .content(om.writeValueAsBytes(patch))
             )
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isConflict());
+        em.clear();
+        assertThat(getPersistedDocumentRecord(insertedDocumentRecord).getNotes()).isEqualTo(DEFAULT_NOTES);
+    }
 
-        assertSameRepositoryCount(databaseSizeBeforeTest);
+    @Test
+    @Transactional
+    void legacyDeleteIsRejected() throws Exception {
+        insertedDocumentRecord = persistDocument(documentRecord);
+        long databaseSizeBeforeDelete = getRepositoryCount();
+        restDocumentRecordMockMvc
+            .perform(delete(ENTITY_API_URL_ID, insertedDocumentRecord.getId()).with(csrf()).accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict());
+        assertSameRepositoryCount(databaseSizeBeforeDelete);
     }
 
     @Test
     @Transactional
     void getAllDocumentRecords() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList
         restDocumentRecordMockMvc
@@ -258,7 +291,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getDocumentRecord() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get the documentRecord
         restDocumentRecordMockMvc
@@ -282,7 +315,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getDocumentRecordsByIdFiltering() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         Long id = documentRecord.getId();
 
@@ -297,7 +330,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocNameIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docName equals to
         defaultDocumentRecordFiltering("docName.equals=" + DEFAULT_DOC_NAME, "docName.equals=" + UPDATED_DOC_NAME);
@@ -307,7 +340,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocNameIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docName in
         defaultDocumentRecordFiltering("docName.in=" + DEFAULT_DOC_NAME + "," + UPDATED_DOC_NAME, "docName.in=" + UPDATED_DOC_NAME);
@@ -317,7 +350,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocNameIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docName is not null
         defaultDocumentRecordFiltering("docName.specified=true", "docName.specified=false");
@@ -327,7 +360,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocNameContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docName contains
         defaultDocumentRecordFiltering("docName.contains=" + DEFAULT_DOC_NAME, "docName.contains=" + UPDATED_DOC_NAME);
@@ -337,7 +370,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocNameNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docName does not contain
         defaultDocumentRecordFiltering("docName.doesNotContain=" + UPDATED_DOC_NAME, "docName.doesNotContain=" + DEFAULT_DOC_NAME);
@@ -347,7 +380,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocTypeIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docType equals to
         defaultDocumentRecordFiltering("docType.equals=" + DEFAULT_DOC_TYPE, "docType.equals=" + UPDATED_DOC_TYPE);
@@ -357,7 +390,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocTypeIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docType in
         defaultDocumentRecordFiltering("docType.in=" + DEFAULT_DOC_TYPE + "," + UPDATED_DOC_TYPE, "docType.in=" + UPDATED_DOC_TYPE);
@@ -367,7 +400,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocTypeIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docType is not null
         defaultDocumentRecordFiltering("docType.specified=true", "docType.specified=false");
@@ -377,7 +410,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocTypeContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docType contains
         defaultDocumentRecordFiltering("docType.contains=" + DEFAULT_DOC_TYPE, "docType.contains=" + UPDATED_DOC_TYPE);
@@ -387,7 +420,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByDocTypeNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where docType does not contain
         defaultDocumentRecordFiltering("docType.doesNotContain=" + UPDATED_DOC_TYPE, "docType.doesNotContain=" + DEFAULT_DOC_TYPE);
@@ -397,7 +430,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByHouseholdNameIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where householdName equals to
         defaultDocumentRecordFiltering("householdName.equals=" + DEFAULT_HOUSEHOLD_NAME, "householdName.equals=" + UPDATED_HOUSEHOLD_NAME);
@@ -407,7 +440,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByHouseholdNameIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where householdName in
         defaultDocumentRecordFiltering(
@@ -420,7 +453,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByHouseholdNameIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where householdName is not null
         defaultDocumentRecordFiltering("householdName.specified=true", "householdName.specified=false");
@@ -430,7 +463,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByHouseholdNameContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where householdName contains
         defaultDocumentRecordFiltering(
@@ -443,7 +476,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByHouseholdNameNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where householdName does not contain
         defaultDocumentRecordFiltering(
@@ -456,7 +489,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByAddressIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where address equals to
         defaultDocumentRecordFiltering("address.equals=" + DEFAULT_ADDRESS, "address.equals=" + UPDATED_ADDRESS);
@@ -466,7 +499,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByAddressIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where address in
         defaultDocumentRecordFiltering("address.in=" + DEFAULT_ADDRESS + "," + UPDATED_ADDRESS, "address.in=" + UPDATED_ADDRESS);
@@ -476,7 +509,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByAddressIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where address is not null
         defaultDocumentRecordFiltering("address.specified=true", "address.specified=false");
@@ -486,7 +519,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByAddressContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where address contains
         defaultDocumentRecordFiltering("address.contains=" + DEFAULT_ADDRESS, "address.contains=" + UPDATED_ADDRESS);
@@ -496,7 +529,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByAddressNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where address does not contain
         defaultDocumentRecordFiltering("address.doesNotContain=" + UPDATED_ADDRESS, "address.doesNotContain=" + DEFAULT_ADDRESS);
@@ -506,7 +539,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByStatusIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where status equals to
         defaultDocumentRecordFiltering("status.equals=" + DEFAULT_STATUS, "status.equals=" + UPDATED_STATUS);
@@ -516,7 +549,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByStatusIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where status in
         defaultDocumentRecordFiltering("status.in=" + DEFAULT_STATUS + "," + UPDATED_STATUS, "status.in=" + UPDATED_STATUS);
@@ -526,7 +559,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByStatusIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where status is not null
         defaultDocumentRecordFiltering("status.specified=true", "status.specified=false");
@@ -536,7 +569,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByStatusContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where status contains
         defaultDocumentRecordFiltering("status.contains=" + DEFAULT_STATUS, "status.contains=" + UPDATED_STATUS);
@@ -546,7 +579,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByStatusNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where status does not contain
         defaultDocumentRecordFiltering("status.doesNotContain=" + UPDATED_STATUS, "status.doesNotContain=" + DEFAULT_STATUS);
@@ -556,7 +589,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByExpiryDateIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where expiryDate equals to
         defaultDocumentRecordFiltering("expiryDate.equals=" + DEFAULT_EXPIRY_DATE, "expiryDate.equals=" + UPDATED_EXPIRY_DATE);
@@ -566,7 +599,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByExpiryDateIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where expiryDate in
         defaultDocumentRecordFiltering(
@@ -579,7 +612,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByExpiryDateIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where expiryDate is not null
         defaultDocumentRecordFiltering("expiryDate.specified=true", "expiryDate.specified=false");
@@ -589,7 +622,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByExpiryDateContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where expiryDate contains
         defaultDocumentRecordFiltering("expiryDate.contains=" + DEFAULT_EXPIRY_DATE, "expiryDate.contains=" + UPDATED_EXPIRY_DATE);
@@ -599,7 +632,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByExpiryDateNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where expiryDate does not contain
         defaultDocumentRecordFiltering(
@@ -612,7 +645,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByOfficerIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where officer equals to
         defaultDocumentRecordFiltering("officer.equals=" + DEFAULT_OFFICER, "officer.equals=" + UPDATED_OFFICER);
@@ -622,7 +655,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByOfficerIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where officer in
         defaultDocumentRecordFiltering("officer.in=" + DEFAULT_OFFICER + "," + UPDATED_OFFICER, "officer.in=" + UPDATED_OFFICER);
@@ -632,7 +665,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByOfficerIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where officer is not null
         defaultDocumentRecordFiltering("officer.specified=true", "officer.specified=false");
@@ -642,7 +675,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByOfficerContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where officer contains
         defaultDocumentRecordFiltering("officer.contains=" + DEFAULT_OFFICER, "officer.contains=" + UPDATED_OFFICER);
@@ -652,7 +685,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByOfficerNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where officer does not contain
         defaultDocumentRecordFiltering("officer.doesNotContain=" + UPDATED_OFFICER, "officer.doesNotContain=" + DEFAULT_OFFICER);
@@ -662,7 +695,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByPhoneIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where phone equals to
         defaultDocumentRecordFiltering("phone.equals=" + DEFAULT_PHONE, "phone.equals=" + UPDATED_PHONE);
@@ -672,7 +705,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByPhoneIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where phone in
         defaultDocumentRecordFiltering("phone.in=" + DEFAULT_PHONE + "," + UPDATED_PHONE, "phone.in=" + UPDATED_PHONE);
@@ -682,7 +715,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByPhoneIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where phone is not null
         defaultDocumentRecordFiltering("phone.specified=true", "phone.specified=false");
@@ -692,7 +725,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByPhoneContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where phone contains
         defaultDocumentRecordFiltering("phone.contains=" + DEFAULT_PHONE, "phone.contains=" + UPDATED_PHONE);
@@ -702,7 +735,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByPhoneNotContainsSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where phone does not contain
         defaultDocumentRecordFiltering("phone.doesNotContain=" + UPDATED_PHONE, "phone.doesNotContain=" + DEFAULT_PHONE);
@@ -712,7 +745,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByReminderSentIsEqualToSomething() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where reminderSent equals to
         defaultDocumentRecordFiltering("reminderSent.equals=" + DEFAULT_REMINDER_SENT, "reminderSent.equals=" + UPDATED_REMINDER_SENT);
@@ -722,7 +755,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByReminderSentIsInShouldWork() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where reminderSent in
         defaultDocumentRecordFiltering(
@@ -735,7 +768,7 @@ class DocumentRecordResourceIT {
     @Transactional
     void getAllDocumentRecordsByReminderSentIsNullOrNotNull() throws Exception {
         // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
+        insertedDocumentRecord = persistDocument(documentRecord);
 
         // Get all the documentRecordList where reminderSent is not null
         defaultDocumentRecordFiltering("reminderSent.specified=true", "reminderSent.specified=false");
@@ -798,268 +831,6 @@ class DocumentRecordResourceIT {
     void getNonExistingDocumentRecord() throws Exception {
         // Get the documentRecord
         restDocumentRecordMockMvc.perform(get(ENTITY_API_URL_ID, Long.MAX_VALUE)).andExpect(status().isNotFound());
-    }
-
-    @Test
-    @Transactional
-    void putExistingDocumentRecord() throws Exception {
-        // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the documentRecord
-        DocumentRecord updatedDocumentRecord = documentRecordRepository.findById(documentRecord.getId()).orElseThrow();
-        // Disconnect from session so that the updates on updatedDocumentRecord are not directly saved in db
-        em.detach(updatedDocumentRecord);
-        updatedDocumentRecord
-            .docName(UPDATED_DOC_NAME)
-            .docType(UPDATED_DOC_TYPE)
-            .householdName(UPDATED_HOUSEHOLD_NAME)
-            .address(UPDATED_ADDRESS)
-            .status(UPDATED_STATUS)
-            .expiryDate(UPDATED_EXPIRY_DATE)
-            .officer(UPDATED_OFFICER)
-            .phone(UPDATED_PHONE)
-            .notes(UPDATED_NOTES)
-            .reminderSent(UPDATED_REMINDER_SENT);
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(updatedDocumentRecord);
-
-        restDocumentRecordMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, documentRecordDTO.getId())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(documentRecordDTO))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the DocumentRecord in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertPersistedDocumentRecordToMatchAllProperties(updatedDocumentRecord);
-    }
-
-    @Test
-    @Transactional
-    void putNonExistingDocumentRecord() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        documentRecord.setId(longCount.incrementAndGet());
-
-        // Create the DocumentRecord
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException
-        restDocumentRecordMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, documentRecordDTO.getId())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(documentRecordDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the DocumentRecord in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void putWithIdMismatchDocumentRecord() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        documentRecord.setId(longCount.incrementAndGet());
-
-        // Create the DocumentRecord
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restDocumentRecordMockMvc
-            .perform(
-                put(ENTITY_API_URL_ID, longCount.incrementAndGet())
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(om.writeValueAsBytes(documentRecordDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the DocumentRecord in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void putWithMissingIdPathParamDocumentRecord() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        documentRecord.setId(longCount.incrementAndGet());
-
-        // Create the DocumentRecord
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restDocumentRecordMockMvc
-            .perform(
-                put(ENTITY_API_URL).with(csrf()).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(documentRecordDTO))
-            )
-            .andExpect(status().isMethodNotAllowed());
-
-        // Validate the DocumentRecord in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void partialUpdateDocumentRecordWithPatch() throws Exception {
-        // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the documentRecord using partial update
-        DocumentRecord partialUpdatedDocumentRecord = new DocumentRecord();
-        partialUpdatedDocumentRecord.setId(documentRecord.getId());
-
-        partialUpdatedDocumentRecord.docType(UPDATED_DOC_TYPE).householdName(UPDATED_HOUSEHOLD_NAME).status(UPDATED_STATUS);
-
-        restDocumentRecordMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, partialUpdatedDocumentRecord.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(partialUpdatedDocumentRecord))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the DocumentRecord in the database
-
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertDocumentRecordUpdatableFieldsEquals(
-            createUpdateProxyForBean(partialUpdatedDocumentRecord, documentRecord),
-            getPersistedDocumentRecord(documentRecord)
-        );
-    }
-
-    @Test
-    @Transactional
-    void fullUpdateDocumentRecordWithPatch() throws Exception {
-        // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
-
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-
-        // Update the documentRecord using partial update
-        DocumentRecord partialUpdatedDocumentRecord = new DocumentRecord();
-        partialUpdatedDocumentRecord.setId(documentRecord.getId());
-
-        partialUpdatedDocumentRecord
-            .docName(UPDATED_DOC_NAME)
-            .docType(UPDATED_DOC_TYPE)
-            .householdName(UPDATED_HOUSEHOLD_NAME)
-            .address(UPDATED_ADDRESS)
-            .status(UPDATED_STATUS)
-            .expiryDate(UPDATED_EXPIRY_DATE)
-            .officer(UPDATED_OFFICER)
-            .phone(UPDATED_PHONE)
-            .notes(UPDATED_NOTES)
-            .reminderSent(UPDATED_REMINDER_SENT);
-
-        restDocumentRecordMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, partialUpdatedDocumentRecord.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(partialUpdatedDocumentRecord))
-            )
-            .andExpect(status().isOk());
-
-        // Validate the DocumentRecord in the database
-
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-        assertDocumentRecordUpdatableFieldsEquals(partialUpdatedDocumentRecord, getPersistedDocumentRecord(partialUpdatedDocumentRecord));
-    }
-
-    @Test
-    @Transactional
-    void patchNonExistingDocumentRecord() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        documentRecord.setId(longCount.incrementAndGet());
-
-        // Create the DocumentRecord
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
-        // If the entity doesn't have an ID, it will throw BadRequestAlertException
-        restDocumentRecordMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, documentRecordDTO.getId())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(documentRecordDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the DocumentRecord in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void patchWithIdMismatchDocumentRecord() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        documentRecord.setId(longCount.incrementAndGet());
-
-        // Create the DocumentRecord
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restDocumentRecordMockMvc
-            .perform(
-                patch(ENTITY_API_URL_ID, longCount.incrementAndGet())
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(documentRecordDTO))
-            )
-            .andExpect(status().isBadRequest());
-
-        // Validate the DocumentRecord in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void patchWithMissingIdPathParamDocumentRecord() throws Exception {
-        long databaseSizeBeforeUpdate = getRepositoryCount();
-        documentRecord.setId(longCount.incrementAndGet());
-
-        // Create the DocumentRecord
-        DocumentRecordDTO documentRecordDTO = documentRecordMapper.toDto(documentRecord);
-
-        // If url ID doesn't match entity ID, it will throw BadRequestAlertException
-        restDocumentRecordMockMvc
-            .perform(
-                patch(ENTITY_API_URL)
-                    .with(csrf())
-                    .contentType("application/merge-patch+json")
-                    .content(om.writeValueAsBytes(documentRecordDTO))
-            )
-            .andExpect(status().isMethodNotAllowed());
-
-        // Validate the DocumentRecord in the database
-        assertSameRepositoryCount(databaseSizeBeforeUpdate);
-    }
-
-    @Test
-    @Transactional
-    void deleteDocumentRecord() throws Exception {
-        // Initialize the database
-        insertedDocumentRecord = documentRecordRepository.saveAndFlush(documentRecord);
-
-        long databaseSizeBeforeDelete = getRepositoryCount();
-
-        // Delete the documentRecord
-        restDocumentRecordMockMvc
-            .perform(delete(ENTITY_API_URL_ID, documentRecord.getId()).with(csrf()).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNoContent());
-
-        // Validate the database contains one less item
-        assertDecrementedRepositoryCount(databaseSizeBeforeDelete);
     }
 
     protected long getRepositoryCount() {

@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily police production backup
+
+[Timer]
+OnCalendar=18:31
+Persistent=true
+
+[Install]
+WantedBy=timers.target

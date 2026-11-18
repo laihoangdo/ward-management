@@ -79,7 +79,7 @@ export const AuthenticationSlice = createSlice({
           account: action.payload.data,
         };
       })
-      .addCase(logoutServer.fulfilled, (state, action) => ({
+      .addCase(logoutServer.fulfilled, (_state, action) => ({
         ...initialState,
         logoutUrl: action.payload.data.logoutUrl,
       }))

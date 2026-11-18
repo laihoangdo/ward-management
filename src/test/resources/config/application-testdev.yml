@@ -14,7 +14,8 @@ spring:
     hikari:
       auto-commit: false
       poolName: Hikari
-      maximum-pool-size: 1
+      # Denials are audited in a separate (REQUIRES_NEW) transaction, so a request needs a second connection.
+      maximum-pool-size: 2
   jpa:
     open-in-view: false
     hibernate:

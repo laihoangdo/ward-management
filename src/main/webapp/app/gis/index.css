@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
-@import 'leaflet/dist/leaflet.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -11,12 +9,13 @@ input,
 select,
 textarea {
   font-family:
-    'Inter',
+    Roboto,
+    Inter,
+    Arial,
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
-    Roboto,
     sans-serif !important;
 }
 
@@ -67,12 +66,12 @@ html.dark body {
 
 /* Dark mode surface mappings */
 html.dark .bg-white:not(.keep-white) {
-  background-color: #0f172a !important;
+  background-color: var(--gis-surface, #0f172a) !important;
 }
 
 html.dark .bg-slate-50,
 html.dark [class*='bg-slate-50/'] {
-  background-color: #162032 !important;
+  background-color: var(--gis-surface-soft, #162032) !important;
 }
 
 html.dark .bg-slate-100,
@@ -95,7 +94,8 @@ html.dark .bg-white\/80 {
 html.dark .hover\:to-white:hover {
   --tw-gradient-to: #0f172a !important;
 }
-html.dark [class*='hover:from-blue-50']:hover {
+/* prettier-ignore */
+html.dark [class*='hover:from-blue-50']:hover { /* taste-skill-ignore: remap hover dark mode, tránh nháy trắng */
   --tw-gradient-from: rgba(30, 58, 138, 0.25) !important;
 }
 
@@ -104,7 +104,7 @@ html.dark .border-slate-100,
 html.dark .border-slate-200,
 html.dark .border-slate-300,
 html.dark [class*='border-slate-'] {
-  border-color: #334155 !important;
+  border-color: var(--gis-border, #334155) !important;
 }
 
 /* Text colors in dark mode */
@@ -119,25 +119,25 @@ html.dark .text-slate-600 {
 }
 
 html.dark .text-slate-500 {
-  color: #94a3b8 !important;
+  color: #a8b7ca !important;
 }
 
 html.dark .text-slate-400 {
-  color: #64748b !important;
+  color: #a8b7ca !important;
 }
 
 /* Input fields in dark mode */
 html.dark input:not([type='checkbox']):not([type='radio']),
 html.dark select,
 html.dark textarea {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
-  color: #f8fafc !important;
+  background-color: var(--gis-surface-soft, #1e293b) !important;
+  border-color: var(--gis-control-border, #334155) !important;
+  color: var(--gis-text, #f8fafc) !important;
 }
 
 html.dark input::placeholder,
 html.dark textarea::placeholder {
-  color: #64748b !important;
+  color: var(--gis-muted, #64748b) !important;
 }
 
 /* Tables in dark mode */
@@ -190,10 +190,11 @@ html.dark [class*='bg-rose-100/'] {
   border-color: rgba(244, 63, 94, 0.45) !important;
 }
 
-html.dark .bg-purple-50,
-html.dark [class*='bg-purple-50/'],
-html.dark .bg-purple-100,
-html.dark [class*='bg-purple-100/'] {
+/* prettier-ignore */
+html.dark .bg-purple-50, /* taste-skill-ignore: remap badge dark mode có sẵn */
+html.dark [class*='bg-purple-50/'], /* taste-skill-ignore */
+html.dark .bg-purple-100, /* taste-skill-ignore */
+html.dark [class*='bg-purple-100/'] { /* taste-skill-ignore */
   background-color: rgba(88, 28, 135, 0.4) !important;
   border-color: rgba(168, 85, 247, 0.45) !important;
 }
@@ -203,7 +204,7 @@ html.dark .text-blue-900,
 html.dark .text-blue-800,
 html.dark .text-blue-700,
 html.dark .text-blue-600 {
-  color: #60a5fa !important;
+  color: #60a5fa !important; /* taste-skill-ignore: remap chữ blue dark mode */
 }
 
 html.dark .text-amber-900,
@@ -227,50 +228,1716 @@ html.dark .text-rose-600 {
   color: #f87171 !important;
 }
 
-html.dark .text-purple-900,
-html.dark .text-purple-800,
-html.dark .text-purple-700,
-html.dark .text-purple-600 {
-  color: #c084fc !important;
+/* prettier-ignore */
+html.dark .text-purple-900, /* taste-skill-ignore: remap badge dark mode có sẵn */
+html.dark .text-purple-800, /* taste-skill-ignore */
+html.dark .text-purple-700, /* taste-skill-ignore */
+html.dark .text-purple-600 { /* taste-skill-ignore */
+  color: #c084fc !important; /* taste-skill-ignore */
 }
 
-/* Map tiles slight dark mode treatment for nighttime patrol */
-html.dark .leaflet-tile-pane {
-  filter: brightness(0.85) contrast(1.1) invert(0.05);
+/* Operational workspace: scoped to GIS so generated administration pages keep their styling. */
+#__page-root {
+  --gis-focus: #2563eb; /* taste-skill-ignore: focus ring chức năng */
+}
+#__page-root :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--gis-focus);
+  outline-offset: 3px;
+}
+#__page-root button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.gis-header {
+  min-height: 56px;
+  height: auto;
+  padding-block: 6px;
+  gap: 10px;
+}
+.gis-header .gis-clock {
+  display: none;
+}
+.gis-records > div {
+  border-radius: 6px;
+}
+.gis-records input {
+  min-height: 44px;
+  font-size: 14px;
+}
+.gis-records table th {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  white-space: nowrap;
+}
+.gis-records table td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.gis-pagination {
+  flex-wrap: wrap;
+}
+/* The header has room for the clock from 1024px (time) and 1440px (weekday + date) since the 11/2026 cleanup. */
+@media (min-width: 1024px) {
+  .gis-header .gis-clock {
+    display: flex;
+  }
+}
+.gis-header .gis-clock-date {
+  display: none;
+}
+@media (min-width: 1440px) {
+  .gis-header .gis-clock-date {
+    display: block;
+  }
+}
+@media (max-width: 767px) {
+  .gis-header {
+    gap: 6px;
+  }
+  .gis-header button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .gis-records button {
+    min-height: 44px;
+  }
+  .gis-pagination button {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #__page-root *,
+  #__page-root *::before,
+  #__page-root *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-/* Dark mode overrides for Leaflet popups */
-.dark .leaflet-popup-content-wrapper {
-  background-color: #1e293b;
-  color: #f1f5f9;
-  box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.5),
-    0 8px 10px -6px rgba(0, 0, 0, 0.4);
+.gis-household-dialog :is(input, select, textarea) {
+  font-size: 14px;
+}
+.gis-household-dialog button {
+  min-height: 40px;
+}
+.gis-record-sections {
+  min-height: 48px;
 }
 
-.dark .leaflet-popup-tip {
-  background-color: #1e293b;
+/* Household record (HouseholdDetailModal). Centred dialog on list screens; on the map a side panel (bottom sheet on
+   phones) that leaves the map clickable, so another building can be picked while the record stays open. */
+.gis-hh-panel {
+  --hh-warn-bg: #fff7e6;
+  --hh-warn-text: #6b4500;
+  --hh-warn-border: #e8c27a;
+  --hh-danger-bg: #fdeeed;
+  --hh-danger-text: #8a1c14;
+  --hh-danger-border: #efb8b3;
+  --hh-ok-bg: #e9f5ee;
+  --hh-ok-text: #1d5c38;
+  --hh-ok-border: #a9d4b9;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--gis-surface, #ffffff);
+  color: var(--gis-text, #172c35);
+  border: 1px solid var(--gis-border, #cbd2d9);
 }
-
-/* Leaflet custom styling */
-.leaflet-popup-content-wrapper {
-  border-radius: 14px;
-  box-shadow:
-    0 10px 25px -5px rgba(0, 0, 0, 0.15),
-    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+html.dark .gis-hh-panel {
+  --hh-warn-bg: #33270f;
+  --hh-warn-text: #f3d58f;
+  --hh-warn-border: #6f5521;
+  --hh-danger-bg: #361a1a;
+  --hh-danger-text: #f5b7b1;
+  --hh-danger-border: #74302b;
+  --hh-ok-bg: #14301f;
+  --hh-ok-text: #a7dfbd;
+  --hh-ok-border: #2d5e42;
+}
+.gis-hh-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 10px 16px;
+  border-bottom: 1px solid var(--gis-border, #cbd2d9);
+  flex-shrink: 0;
+}
+.gis-hh-heading {
+  flex: 1;
+  min-width: 0;
+}
+.gis-hh-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin: 0 0 2px;
+  font-size: 12px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-code {
+  font-weight: 600;
+  color: var(--gis-accent-text, #1c4e3a);
+  font-variant-numeric: tabular-nums;
+}
+#__page-root .gis-hh-panel .gis-hh-title {
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--gis-text, #172c35);
+  overflow-wrap: anywhere;
+}
+.gis-hh-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.gis-hh-head-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.gis-hh-panel .gis-hh-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gis-muted, #526170);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+.gis-hh-panel .gis-hh-icon-btn:hover:not(:disabled) {
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-text, #172c35);
+}
+.gis-hh-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.gis-hh-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 16px;
+  flex-shrink: 0;
+}
+.gis-hh-panel .gis-hh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 6px;
+  background: var(--gis-surface, #ffffff);
+  color: var(--gis-text, #172c35);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+.gis-hh-panel .gis-hh-btn:hover:not(:disabled) {
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-text, #172c35);
+}
+.gis-hh-panel .gis-hh-btn.is-primary {
+  background: var(--gis-primary, #1c4e3a);
+  border-color: var(--gis-primary, #1c4e3a);
+  color: var(--gis-on-primary, #ffffff);
+}
+.gis-hh-panel .gis-hh-btn.is-primary:hover:not(:disabled) {
+  background: var(--gis-primary-hover, #153c2c);
+  color: var(--gis-on-primary, #ffffff);
+}
+.gis-hh-panel .gis-hh-btn.is-active {
+  background: var(--gis-selected, #e8f1ec);
+  border-color: var(--gis-accent-text, #1c4e3a);
+  color: var(--gis-accent-text, #1c4e3a);
+}
+.gis-hh-panel .gis-hh-btn.is-danger {
+  border-color: var(--hh-danger-border);
+  color: var(--hh-danger-text);
+}
+.gis-hh-panel .gis-hh-btn.is-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--gis-accent-text, #1c4e3a);
+}
+.gis-hh-panel .gis-hh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.gis-hh-note {
+  margin: 0;
+  padding: 0 16px 10px;
+  font-size: 12px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-panel .gis-hh-tabs {
+  display: flex;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 8px;
+  overflow-x: auto;
+  border-top: 1px solid var(--gis-border, #cbd2d9);
+  border-bottom: 1px solid var(--gis-border, #cbd2d9);
+  flex-shrink: 0;
+  scrollbar-width: none;
+}
+.gis-hh-panel .gis-hh-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--gis-muted, #526170);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.gis-hh-panel .gis-hh-tab:hover {
+  color: var(--gis-text, #172c35);
+  border-bottom-color: var(--gis-border, #cbd2d9);
+}
+.gis-hh-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  font-size: 12px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.gis-hh-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  padding: 14px 16px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 14px;
+}
+.gis-hh-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--gis-border, #cbd2d9);
+  scroll-margin-top: 8px;
+}
+.gis-hh-section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.gis-hh-section:focus {
+  outline: none;
+}
+#__page-root .gis-hh-panel .gis-hh-section-title {
+  color: var(--gis-text, #172c35);
+}
+.gis-hh-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+.gis-hh-subtle {
+  font-size: 12px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+.gis-hh-facts dt {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-facts dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.gis-hh-form {
+  padding: 12px;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 8px;
+  background: var(--gis-surface-soft, #f1f5f3);
+}
+.gis-hh-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 12px;
+}
+.gis-hh-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.gis-hh-field-wide {
+  grid-column: 1 / -1;
+}
+.gis-hh-panel .gis-hh-field label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-panel .gis-hh-field :is(input, select) {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--gis-control-border, #84939c);
+  border-radius: 6px;
+  background: var(--gis-surface, #ffffff);
+  color: var(--gis-text, #172c35);
+}
+.gis-hh-panel .gis-hh-field [aria-invalid='true'] {
+  border-color: var(--hh-danger-text);
+}
+.gis-hh-field-error {
+  font-size: 12px;
+  color: var(--hh-danger-text);
+}
+.gis-hh-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.gis-hh-form > .gis-hh-alert {
+  margin-bottom: 10px;
+}
+.gis-hh-people {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 8px;
+}
+.gis-hh-people li {
+  padding: 8px 12px;
+}
+.gis-hh-people li + li {
+  border-top: 1px solid var(--gis-border, #cbd2d9);
+}
+.gis-hh-person-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.gis-hh-person-meta,
+.gis-hh-person-id {
+  font-size: 12px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-person-id {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gis-hh-panel .gis-hh-link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
   padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gis-accent-text, #1c4e3a);
+}
+.gis-hh-panel .gis-hh-link-btn:hover:not(:disabled) {
+  background: var(--gis-surface-soft, #f1f5f3);
+}
+.gis-hh-photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.gis-hh-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--gis-muted, #526170);
+}
+.gis-hh-notes {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.gis-hh-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.gis-hh-alert.is-warning {
+  background: var(--hh-warn-bg);
+  border-color: var(--hh-warn-border);
+  color: var(--hh-warn-text);
+}
+.gis-hh-alert.is-danger,
+.gis-hh-alert.is-error {
+  background: var(--hh-danger-bg);
+  border-color: var(--hh-danger-border);
+  color: var(--hh-danger-text);
+}
+.gis-hh-alert.is-success {
+  background: var(--hh-ok-bg);
+  border-color: var(--hh-ok-border);
+  color: var(--hh-ok-text);
+  font-weight: 600;
+}
+.gis-hh-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 999px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-accent-text, #1c4e3a);
+  font-size: 12px;
+  font-weight: 600;
+}
+.gis-hh-chip.is-warning {
+  background: var(--hh-warn-bg);
+  border-color: var(--hh-warn-border);
+  color: var(--hh-warn-text);
+}
+.gis-hh-chip.is-danger {
+  background: var(--hh-danger-bg);
+  border-color: var(--hh-danger-border);
+  color: var(--hh-danger-text);
+}
+.gis-hh-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 16px;
+  border-top: 1px solid var(--gis-border, #cbd2d9);
+  flex-shrink: 0;
 }
 
-.leaflet-popup-content {
-  margin: 10px 12px;
+/* Map panel: desktop 440 px and tablet 380 px on the right, under the app header; the map stays clickable. */
+.gis-household-dialog.gis-household-drawer {
+  top: 56px;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+  background: transparent;
+  pointer-events: none;
+  backdrop-filter: none; /* taste-skill-ignore: tắt blur cho drawer */
+}
+:fullscreen .gis-household-dialog.gis-household-drawer {
+  top: 0;
+}
+.gis-household-drawer > * {
+  pointer-events: auto;
+}
+/* Unsaved edit or saving: the panel is modal again so a click on the map cannot drop the edit. */
+.gis-household-dialog.gis-household-drawer.is-locked {
+  background: rgb(15 23 42 / 18%);
+  pointer-events: auto;
+}
+.gis-household-drawer > .gis-hh-panel {
+  width: min(440px, 100%);
+  max-height: none;
+  margin: 0;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  box-shadow: -6px 0 18px rgb(15 23 42 / 16%);
+}
+.gis-household-drawer.is-collapsed > .gis-hh-panel {
+  align-self: flex-start;
+  margin: 10px;
+  border-width: 1px;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgb(15 23 42 / 18%);
+}
+.gis-household-drawer.is-collapsed .gis-hh-head {
+  border-bottom: 0;
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+  .gis-household-drawer > .gis-hh-panel {
+    width: min(380px, 100%);
+  }
+  .gis-hh-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Phone: bottom sheet over the lower part of the screen; collapsing leaves only the title bar. */
+@media (max-width: 767px) {
+  .gis-household-dialog.gis-household-drawer {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .gis-household-drawer > .gis-hh-panel {
+    width: 100%;
+    height: 62dvh;
+    max-height: 62dvh;
+    border-width: 1px 0 0;
+    border-radius: 14px 14px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -6px 18px rgb(15 23 42 / 18%);
+  }
+  .gis-household-drawer.is-collapsed > .gis-hh-panel {
+    align-self: flex-end;
+    height: auto;
+    margin: 0;
+    border-width: 1px 0 0;
+    border-radius: 14px 14px 0 0;
+  }
+  .gis-household-drawer .gis-hh-head {
+    position: relative;
+    padding-top: 16px;
+  }
+  .gis-household-drawer .gis-hh-head::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: var(--gis-border, #cbd2d9);
+  }
+  /* Every action stays visible: two equal columns, labels may wrap. */
+  .gis-hh-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gis-hh-panel .gis-hh-btn {
+    min-height: 44px;
+    white-space: normal;
+    text-align: center;
+  }
+}
+[role='listbox'] [data-active='true'] {
+  outline: 2px solid #2563eb; /* taste-skill-ignore: focus ring chức năng */
+  outline-offset: -2px;
+}
+[role='combobox']:focus-visible {
+  outline: 3px solid #2563eb; /* taste-skill-ignore: focus ring chức năng */
+  outline-offset: 2px;
+}
+[role='dialog'] :is(button, input, select, textarea, a):focus-visible,
+[role='alertdialog'] button:focus-visible {
+  outline: 3px solid #2563eb; /* taste-skill-ignore: focus ring chức năng */
+  outline-offset: 2px;
+}
+@media (max-width: 767px) {
+  [role='dialog'] :is(input, select, textarea) {
+    font-size: 16px;
+  }
+  [role='dialog'] button,
+  [role='alertdialog'] button {
+    min-height: 44px;
+  }
+}
+#__page-root [role='button']:focus-visible {
+  outline: 3px solid var(--gis-focus);
+  outline-offset: 3px;
+}
+.gis-operational-map {
+  height: 65vh;
+  min-height: 360px;
+}
+
+/* Project conventions, not a claim of official identity or certification.
+   Geometry/branding changes do not recolor geographic symbols or semantic states. */
+#__page-root,
+.gis-login {
+  --gis-primary: #1c4e3a;
+  --gis-primary-hover: #153c2c;
+  --gis-on-primary: #ffffff;
+  --gis-brand-red: #c82333;
+  --gis-gold: #d4af37;
+  --gis-info: #0d47a1;
+  --gis-success: #237347;
+  --gis-warning: #855600;
+  --gis-error: #b42318;
+  --gis-incomplete: #635b73;
+  --gis-selected: #e8f1ec;
+  --gis-surface: #ffffff;
+  --gis-surface-soft: #f1f5f3;
+  --gis-background: #f8f9fa;
+  --gis-border: #cbd2d9;
+  --gis-control-border: #84939c;
+  --gis-text: #172c35;
+  --gis-muted: #526170;
+  --gis-accent-text: #1c4e3a;
+  --gis-sidebar-background: #122e35;
+  --gis-sidebar-surface: #1b3940;
+  --gis-sidebar-border: #365157;
+  --gis-sidebar-text: #f1f7f5;
+  --gis-sidebar-muted: #b9cdc9;
+  --gis-sidebar-active: #e8f1ec;
+  --gis-on-selected: #153c2c;
+  --gis-shadow: 0 1px 3px rgb(15 35 30 / 7%);
+  font-size: 14px;
+  line-height: 1.5;
+}
+html.dark :is(#__page-root, .gis-login) {
+  --gis-surface: #111f2c;
+  --gis-surface-soft: #1b2c3a;
+  --gis-background: #0b1520;
+  --gis-border: #3b4e5b;
+  --gis-control-border: #718693;
+  --gis-text: #edf3f7;
+  --gis-muted: #b0c0cb;
+  --gis-selected: #1c3c33;
+  --gis-accent-text: #a7dfbd;
+  --gis-focus: #93c5fd;
+}
+.gis-workspace {
+  container: gis-workspace / inline-size;
+}
+#__page-root,
+#gis-main-content {
+  background-color: var(--gis-background);
+  color: var(--gis-text);
+}
+#__page-root :is(button, a, summary) {
+  -webkit-tap-highlight-color: transparent;
+}
+#__page-root summary:focus-visible {
+  outline: 3px solid var(--gis-focus);
+  outline-offset: 3px;
+}
+#__page-root .gis-brand-icon {
+  background: #275c4c;
+  border: 1px solid #74978a;
+}
+#__page-root :is(button, a).bg-blue-600 {
+  background-color: var(--gis-primary) !important;
+  border-color: var(--gis-primary) !important;
+  color: var(--gis-on-primary);
+}
+#__page-root :is(button, a).bg-blue-600:hover {
+  background-color: var(--gis-primary-hover) !important;
+}
+#__page-root :is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-radius: 6px;
+}
+#__page-root .gis-sidebar button {
+  font-size: 14px;
+}
+#__page-root :is(.gis-header, .gis-records, [role='dialog']) .text-xs {
+  font-size: 14px;
+}
+#__page-root .gis-records table {
+  font-size: 14px;
+  line-height: 1.5;
+}
+#__page-root .gis-records table :is(th, td) {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+#__page-root [role='dialog'] label {
+  font-size: 14px;
+  line-height: 1.5;
+}
+#__page-root [role='dialog'] :is(input, select, textarea) {
+  font-size: 14px;
+  min-height: 40px;
+  border-radius: 6px;
+}
+#__page-root :is(.shadow-xl, .shadow-2xl) {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 16%); /* taste-skill-ignore: overlay drawer/dialog */
+}
+/* prettier-ignore */
+#__page-root :is(.animate-bounce, .animate-ping) { /* taste-skill-ignore: vô hiệu hoá animation lặp */
+  animation: none;
+}
+/* Shared administrative chrome: visual changes only; existing controls remain mounted. */
+.gis-login {
+  background: var(--gis-background);
+  color: var(--gis-text);
+}
+.gis-login-card {
+  background: var(--gis-surface);
+  border: 1px solid var(--gis-border);
+  border-top: 4px solid var(--gis-primary);
+}
+.gis-login-emblem {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 24px;
+  border: 1px solid var(--gis-border);
+  border-radius: 8px;
+  background: var(--gis-selected);
+  color: var(--gis-accent-text);
+}
+.gis-login h1 {
+  color: var(--gis-text);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.gis-login-description {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--gis-muted);
+}
+.gis-login-submit {
+  min-height: 48px;
+  background: var(--gis-primary);
+  color: var(--gis-on-primary);
+  border: 1px solid var(--gis-primary);
+  font-weight: 600;
+}
+.gis-login-submit:hover {
+  background: var(--gis-primary-hover);
+}
+.gis-login-note {
+  margin-top: 16px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--gis-muted);
+}
+.gis-login a {
+  color: var(--gis-accent-text);
+}
+.gis-login :is(a, button):focus-visible {
+  outline: 3px solid var(--gis-focus, #2563eb); /* taste-skill-ignore: focus ring chức năng */
+  outline-offset: 3px;
+}
+#__page-root .gis-header {
+  background: var(--gis-surface);
+  border-color: var(--gis-border);
+  box-shadow: var(--gis-shadow); /* taste-skill-ignore: sticky bar được phép bóng */
+  backdrop-filter: none; /* taste-skill-ignore: tắt blur cho header */
+}
+#__page-root .gis-header-title {
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+  color: var(--gis-text);
+  overflow-wrap: anywhere;
+}
+#__page-root .gis-header :is(button, a) {
+  min-height: 40px;
+  border-radius: 6px;
+}
+#__page-root .gis-header-search {
+  width: clamp(160px, 22cqw, 288px);
+}
+#__page-root .gis-header-search input {
+  height: 40px;
+  font-size: 14px;
+  border-color: var(--gis-control-border);
+  /* Room for the voice button only; the clear button appears once there is text. */
+  padding-inline-end: 40px;
+}
+#__page-root .gis-header-search input:not(:placeholder-shown) {
+  padding-inline-end: 72px;
+}
+#__page-root :is(.gis-header, .gis-records) input::placeholder {
+  color: var(--gis-muted);
+  opacity: 1;
+}
+#gis-mobile-search input {
+  padding-inline-end: 100px;
+}
+#__page-root .gis-header-search button {
+  min-height: 30px;
+  min-width: 26px;
+}
+#__page-root .gis-sidebar {
+  background: var(--gis-sidebar-background);
+  color: var(--gis-sidebar-text);
+}
+#__page-root .gis-sidebar :is(.gis-sidebar-brand, .gis-sidebar-footer, #account-card) {
+  background: var(--gis-sidebar-surface);
+  border-color: var(--gis-sidebar-border);
+  box-shadow: none; /* taste-skill-ignore: tắt bóng, không phải thêm bóng */
+}
+#__page-root .gis-sidebar-brand a {
+  min-width: 0;
+}
+#__page-root .gis-sidebar a {
+  color: var(--gis-sidebar-text) !important;
+  text-decoration: none !important;
+}
+#__page-root .gis-sidebar-brand a > div:last-child {
+  min-width: 0;
+}
+#__page-root .gis-sidebar :is(.text-slate-400, .text-slate-500) {
+  color: var(--gis-sidebar-muted) !important;
+}
+#__page-root .gis-sidebar .gis-role-badge {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+}
+#__page-root .gis-sidebar nav > button {
+  min-height: 44px;
+  border-inline-start: 3px solid transparent;
+  font-weight: 500;
+  gap: 8px;
+}
+#__page-root .gis-sidebar nav > button:hover {
+  background: var(--gis-sidebar-surface);
+}
+#__page-root .gis-sidebar nav > button[aria-current='page'] {
+  background: var(--gis-sidebar-active) !important;
+  color: var(--gis-on-selected) !important;
+  border-inline-start-color: var(--gis-gold);
+  font-weight: 700;
+}
+#__page-root .gis-sidebar nav > button[aria-current='page'] svg {
+  color: var(--gis-on-selected) !important;
+}
+#__page-root .gis-menu-group {
+  font-size: 12px;
+}
+#__page-root .gis-sidebar-footer {
+  font-size: 12px;
+}
+/* prettier-ignore */
+#__page-root :is(.gis-sidebar, .gis-header) .animate-pulse { /* taste-skill-ignore: vô hiệu hoá animation lặp */
+  animation: none;
+}
+#__page-root #gis-mobile-search {
+  box-shadow: 0 4px 12px rgb(15 23 42 / 12%); /* taste-skill-ignore: dropdown tìm kiếm là overlay thật */
+}
+#__page-root .gis-mobile-drawer {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 16%); /* taste-skill-ignore: drawer mobile là overlay thật */
+}
+#__page-root .gis-overview-heading {
+  border-inline-start: 4px solid var(--gis-primary);
+}
+#__page-root .gis-overview h2 {
+  font-size: 24px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+#__page-root .gis-logs button {
+  box-shadow: none !important;
+}
+/* prettier-ignore */
+#__page-root .gis-logs :is(.text-slate-400, .text-slate-500, [class*='text-indigo-600/70'], [class*='text-blue-600/70'], [class*='text-amber-600/70']) { /* taste-skill-ignore: sửa tương phản chú thích, giữ màu phân loại ở badge và số liệu */
+  color: var(--gis-muted) !important;
+}
+#__page-root .gis-logs button:disabled {
+  color: var(--gis-muted) !important;
+  opacity: 1;
+}
+#__page-root :is(#logs-title, #household-title, #area-title, #document-title, #settings-title, #map-title) {
+  font-size: clamp(20px, 1.6vw, 24px);
+  line-height: 1.35;
+  font-weight: 700;
+  margin-block: 0;
+  text-wrap: balance;
+}
+#__page-root .gis-overview h3 {
+  font-size: 20px;
   line-height: 1.4;
+  font-weight: 600;
+}
+#__page-root :is(.gis-dialog-title, #guide-title) {
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: 600;
+  margin-block: 0;
+}
+#__page-root #modal-map-quick-guide-content h3 {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+#__page-root :is(.gis-voice-status, #modal-map-quick-guide-content h4) {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+#__page-root .gis-voice-dialog {
+  max-height: 94dvh;
+}
+#__page-root .gis-voice-dialog > :not(.gis-voice-body) {
+  flex-shrink: 0;
+}
+#__page-root .gis-voice-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab, #superadmin-access-guard) h2 {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #edf3f7;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(h3, h4) {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+  color: #edf3f7;
+}
+#__page-root #subadmin-delegation-tab .gis-admin-list-heading {
+  color: var(--gis-text);
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) button {
+  box-shadow: none !important;
+}
+#__page-root #superadmin-hub-tab [class~='text-[12px]'] {
+  color: #b0c0cb;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) .gis-admin-title,
+#__page-root #superadmin-access-guard h2 {
+  font-size: 24px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+/*
+ * Admin tabs (Trung tâm Quản trị, Phân quyền CB & CAV) are authored with dark slate utilities.
+ * In light mode they follow the shared administrative surface instead of forming a dark island.
+ * Mapping only; dark mode keeps the authored classes. Status hues stay, at light-surface contrast.
+ */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) {
+  --admin-tint-red: #fef2f2;
+  --admin-tint-blue: #eff6ff;
+  --admin-tint-green: #ecfdf5;
+  --admin-tint-amber: #fffbeb;
+  color: var(--gis-text);
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-slate-900, [class*='bg-slate-900/']) {
+  background-color: var(--gis-surface) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-slate-950, [class*='bg-slate-950/'], .bg-slate-800, [class*='bg-slate-800/']) { /* taste-skill-ignore: nền phụ một bậc, không shadow */
+  background-color: var(--gis-surface-soft) !important;
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(input, textarea, select) {
+  background-color: var(--gis-surface) !important;
+  border-color: var(--gis-control-border) !important;
+  color: var(--gis-text) !important;
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(input, textarea)::placeholder {
+  color: var(--gis-muted) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='hover:bg-slate-7']:hover, [class*='hover:bg-slate-8']:hover, [class*='hover:bg-slate-9']:hover) { /* taste-skill-ignore: hover đổi tông nền */
+  background-color: var(--gis-selected) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='border-slate-7'], [class*='border-slate-8'], [class*='border-slate-9']) { /* taste-skill-ignore: viền 1px theo token */
+  border-color: var(--gis-border) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.text-white, .text-slate-100, .text-slate-200, .text-slate-300, h2, h3, h4) { /* taste-skill-ignore: chữ chính trên nền sáng */
+  color: var(--gis-text) !important;
+}
+/* Kept at the same specificity as the filled-control rule below, which follows it and wins. */
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='hover:text-white'], [class*='hover:text-slate-200']):not(.bg-blue-600):hover { /* taste-skill-ignore: hover chữ chính */
+  color: var(--gis-text) !important;
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.text-slate-400, .text-slate-500, .text-slate-600) {
+  color: var(--gis-muted) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='text-amber-2'], [class*='text-amber-3'], [class*='text-amber-4']) { /* taste-skill-ignore: giữ hue cảnh báo, đủ tương phản */
+  color: #92400e !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='text-blue-2'], [class*='text-blue-3'], [class*='text-blue-4']) { /* taste-skill-ignore: giữ hue thông tin, đủ tương phản */
+  color: var(--gis-info) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='text-red-2'], [class*='text-red-3'], [class*='text-red-4'], [class*='text-rose-2'], [class*='text-rose-3'], [class*='text-rose-4']) { /* taste-skill-ignore: giữ hue lỗi, đủ tương phản */
+  color: var(--gis-error) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='text-emerald-2'], [class*='text-emerald-3'], [class*='text-emerald-4']) { /* taste-skill-ignore: giữ hue thành công, đủ tương phản */
+  color: var(--gis-success) !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is([class*='bg-red-9'], [class*='bg-red-95'], [class*='bg-rose-9']) { /* taste-skill-ignore: pill nhạt cùng hue */
+  background-color: var(--admin-tint-red) !important;
+  border-color: #fecaca !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) [class*='bg-blue-9'] { /* taste-skill-ignore: pill nhạt cùng hue */
+  background-color: var(--admin-tint-blue) !important;
+  border-color: #bfdbfe !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) [class*='bg-emerald-9'] { /* taste-skill-ignore: pill nhạt cùng hue */
+  background-color: var(--admin-tint-green) !important;
+  border-color: #a7f3d0 !important;
+}
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) [class*='bg-amber-9'] { /* taste-skill-ignore: pill nhạt cùng hue */
+  background-color: var(--admin-tint-amber) !important;
+  border-color: #fde68a !important;
+}
+/* Filled controls keep white text over their own fill, including icons and nested labels. */
+/* prettier-ignore */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-blue-600, .bg-emerald-600, .bg-rose-600, .bg-red-600, .bg-emerald-400, .bg-amber-400, .bg-amber-500), /* taste-skill-ignore: chữ trắng trên nút đặc */
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-blue-600, .bg-emerald-600, .bg-rose-600, .bg-red-600) * {
+  color: #ffffff !important;
+}
+html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) :is(.bg-emerald-400, .bg-amber-400, .bg-amber-500) {
+  color: #172c35 !important;
+}
+/* IDs keep a monospace; labels, badges and headings use the text face in sentence case. */
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) .font-mono:not(code, kbd, [data-id]) {
+  font-family: inherit;
+}
+#__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) .uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* Bootstrap sets h3 to 1.75rem; area cards and the list title use the app scale. */
+#__page-root :is(.gis-area-card-title, .gis-area-list-title, .gis-panel-title) {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+/* Checkbox + text row inside a <label>: Bootstrap makes labels inline-block, which breaks Tailwind flex. */
+#__page-root .gis-check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+#__page-root .gis-check-row input {
+  margin: 0;
+}
+/* Title of a page section that holds several panels (e.g. "Cơ cấu nhân khẩu"). */
+#__page-root .gis-section-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+/* Title of one item inside a list card (a document, a record): one step above body text. */
+#__page-root .gis-item-title {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+#__page-root .gis-area-card :is(dt, dd) {
+  margin: 0;
+}
+#__page-root .gis-area-card dt {
+  font-weight: 400;
+}
+/* Bootstrap's unlayered label/checkbox rules outrank Tailwind utilities; the checklist states its layout here. */
+#__page-root .gis-assignment-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+}
+#__page-root .gis-assignment-option input {
+  margin: 0;
+}
+#__page-root .gis-voice-footer {
+  flex-wrap: wrap;
+}
+#__page-root .gis-voice-footer #btn-voice-confirm-search {
+  max-width: 100%;
+  min-height: 44px;
+}
+#__page-root .gis-overview #work-queue-title {
+  font-size: 18px;
+}
+#__page-root .gis-overview #overview-title {
+  color: var(--gis-accent-text) !important;
+}
+#__page-root .gis-overview #overview-description {
+  color: var(--gis-muted) !important;
+  font-size: 14px;
+  line-height: 1.6;
+}
+#__page-root .gis-overview :is(.text-slate-400, .text-slate-500) {
+  color: var(--gis-muted) !important;
+}
+#__page-root .gis-overview [id^='stat-'][id$='-label'] {
+  white-space: normal;
+  overflow: visible;
+  font-size: 12px;
+  letter-spacing: 0.025em;
+  line-height: 1.5;
+  margin-inline-end: 8px;
+}
+#__page-root .gis-overview [id^='stat-'][id$='-card'] .truncate {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+#__page-root .gis-overview [id^='stat-'][id$='-value'] {
+  font-variant-numeric: tabular-nums;
+}
+#__page-root .gis-overview [aria-disabled='true'] {
+  cursor: not-allowed;
+}
+#__page-root .gis-overview button {
+  min-height: 40px;
+}
+#__page-root .gis-records :is(input, select, textarea),
+#__page-root .gis-household-dialog :is(input, select, textarea) {
+  border-color: var(--gis-control-border);
+}
+@container gis-workspace (max-width: 1000px) {
+  .gis-header-home span {
+    display: none;
+  }
+}
+@container gis-workspace (max-width: 1280px) {
+  .gis-header-user-detail,
+  .gis-header-emblem {
+    display: none;
+  }
+  .gis-header-shortcut-label {
+    display: none;
+  }
+  .gis-header-connection > span:last-child {
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+@container gis-workspace (max-width: 820px) {
+  .gis-header-account > div:first-child {
+    display: none;
+  }
+  .gis-header-connection {
+    display: none;
+  }
+  .gis-header-search {
+    display: none;
+  }
+  .gis-header-mobile-search-toggle {
+    display: flex;
+  }
+  #gis-mobile-search {
+    display: block;
+  }
+}
+@media (max-width: 767px) {
+  #__page-root .gis-header-title {
+    font-size: 14px !important;
+  }
+  #__page-root .gis-header :is(button, a) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  #__page-root .gis-header input {
+    font-size: 16px;
+  }
+  #__page-root .gis-header-actions {
+    gap: 4px;
+  }
+  #__page-root .gis-overview button {
+    min-height: 44px;
+  }
+}
+@media (max-width: 767px) {
+  #__page-root :is(input:not([type='checkbox']):not([type='radio']), select, textarea),
+  [role='dialog'] :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+    font-size: 16px;
+  }
+}
+@media (max-width: 767px) {
+  .gis-operational-map {
+    height: 52dvh;
+    min-height: 260px;
+  }
+  :is(.gis-household-dialog, .gis-household-create-dialog) {
+    overscroll-behavior: contain;
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+  :is(.gis-household-dialog, .gis-household-create-dialog) > div {
+    min-width: 0;
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+    overflow-wrap: anywhere;
+  }
+  :is(.gis-household-dialog, .gis-household-create-dialog) :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+    font-size: 16px;
+    min-height: 44px;
+    min-width: 0;
+  }
+  :is(.gis-household-dialog, .gis-household-create-dialog) button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
 }
 
-.custom-map-marker-detailed:hover {
-  z-index: 9999 !important;
+/* Tablet Navigation Rail (768px - 1279px) when not expanded */
+@media (min-width: 768px) and (max-width: 1279px) {
+  /* The rail is ~72px wide: logo and the expand toggle stack instead of squeezing the logo link to ~15px. */
+  #__page-root .gis-sidebar--rail-tablet .gis-sidebar-brand {
+    padding-inline: 8px;
+    flex-direction: column;
+    justify-content: center;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-sidebar-brand-link {
+    flex: none;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-sidebar-brand a {
+    justify-content: center;
+  }
+  #__page-root
+    .gis-sidebar--rail-tablet
+    :is(
+      .gis-sidebar-brand-text,
+      .gis-account-details,
+      .gis-account-meta,
+      .gis-sidebar-territory,
+      .gis-sidebar-nav-header,
+      .gis-menu-group,
+      .gis-nav-item-badge,
+      .gis-sidebar-footer-label,
+      .gis-sidebar-footer-role,
+      .gis-sidebar-footer-unit
+    ) {
+    display: none !important;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-nav-item-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  #__page-root .gis-sidebar--rail-tablet :is(.gis-nav-item, .gis-nav-home, .gis-nav-guide) {
+    justify-content: center;
+    /* !important: Bootstrap's own `.px-3 { padding: 1rem !important }` shares the Tailwind class name and
+       otherwise leaves ~9px for a 16px icon in the 72px rail, clipping it. */
+    padding-inline: 0 !important;
+  }
+  /* In the 72px rail the officer card shrinks to its sign-out button: no frame, same size as a menu item. */
+  /* !important: Bootstrap's own `.p-3`/`.border` utilities share the Tailwind class names and are !important. */
+  #__page-root .gis-sidebar--rail-tablet #account-card {
+    margin: 4px 8px !important;
+    padding: 0 !important;
+    border-color: transparent !important;
+    background: transparent;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-account-header {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 0;
+  }
+  #__page-root .gis-sidebar--rail-tablet .gis-sidebar-footer {
+    padding-inline: 8px;
+  }
 }
 
-.custom-map-marker-detailed div:hover {
-  transform: translate(-50%, -50%) scale(1.08) !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+/* Household inspection photo while it loads from the permission-checked endpoint (InspectionImage). */
+.gis-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-muted, #526170);
+}
+
+/* Small inline icon buttons (filter-chip X, clear search, dialog close): the drawn icon stays small,
+   the pointer target grows to at least 24px without moving surrounding layout. */
+/* In the base layer: Tailwind utilities (@layer utilities) such as `absolute` must win over this default. */
+@layer base {
+  .gis-hit-target {
+    position: relative;
+  }
+}
+.gis-hit-target::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 28px);
+  height: max(100%, 28px);
+  transform: translate(-50%, -50%);
+}
+
+/* Native choice controls take the brand accent. Tailwind text-* colours on a checkbox have no effect
+   (no forms plugin), so without this every checkbox, radio and slider showed the browser's blue. */
+#__page-root :is(input[type='checkbox'], input[type='radio'], input[type='range']) {
+  accent-color: var(--gis-primary);
+}
+html.dark #__page-root :is(input[type='checkbox'], input[type='radio'], input[type='range']) {
+  accent-color: var(--gis-accent-text);
+}
+/* Shared look for date fields and native selects that are not inside the roster workspace. */
+#__page-root .gis-control {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--gis-control-border);
+  border-radius: 6px;
+  background: var(--gis-surface);
+  color: var(--gis-text);
+  font: inherit;
+}
+#__page-root .gis-control:disabled {
+  opacity: 0.6;
+}
+html.dark #__page-root .gis-control {
+  color-scheme: dark;
+}
+
+/* One scrim for every GIS dialog: same dimming, no backdrop blur (blur over the WebGL map is expensive). */
+.gis-modal-scrim {
+  background-color: rgb(2 6 23 / 60%);
+}
+
+/* Summary of fields still missing, shown at the top of a form (useFormCheck). */
+.gis-form-summary {
+  padding: 10px 12px;
+  border: 1px solid #fda4af;
+  border-radius: 6px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.gis-form-summary ul {
+  margin: 4px 0 0;
+  padding-inline-start: 20px;
+}
+.gis-form-summary:focus-visible {
+  outline: 3px solid var(--gis-focus);
+  outline-offset: 2px;
+}
+html.dark .gis-form-summary {
+  border-color: #9f3545;
+  background: #3b1720;
+  color: #fecdd3;
+}
+
+/* Thin scrollbars in every scroll area of the dashboard (page, sidebar, panels, wide tables).
+   :where() keeps specificity at zero so local choices such as `scrollbar-width: none` on tab rows still win. */
+:where(#__page-root, #__page-root *) {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--gis-muted) 45%, transparent) transparent;
+}
+:where(#__page-root .gis-sidebar, #__page-root .gis-sidebar *) {
+  scrollbar-color: color-mix(in srgb, var(--gis-sidebar-muted) 40%, transparent) transparent;
+}
+
+/* Horizontal filter/chip strips with hidden scrollbars: subtle right-edge fade hints that more items follow,
+   and end padding lets the last item clear the fade when scrolled to the end. */
+.gis-scroll-fade-x {
+  padding-inline-end: 16px;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%); /* taste-skill-ignore */
+  mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%); /* taste-skill-ignore */
+}
+
+/* ---------------------------------------------------------------------------------------------
+   UI/UX pass 11/2026 (see design-system/municipal-administration/MASTER.md, "Đợt cải thiện 11/2026").
+   Shared primitives for the shell and the minimum control sizes measured by tools/e2e/ui-audit.cjs.
+   --------------------------------------------------------------------------------------------- */
+.gis-skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 200;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--gis-primary, #1c4e3a);
+  color: #fff !important;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+.gis-skip-link:focus {
+  top: 8px;
+}
+#__page-root .gis-denied-notice {
+  border-color: #e7c873;
+  background: #fff8e6;
+  color: #3d2a00;
+}
+html.dark #__page-root .gis-denied-notice {
+  border-color: #7a5b12;
+  background: #2a2006;
+  color: #f6e4b5;
+}
+#__page-root :is(.gis-btn-primary, .gis-btn-secondary) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+#__page-root .gis-btn-primary {
+  border: 1px solid var(--gis-primary, #1c4e3a);
+  background: var(--gis-primary, #1c4e3a);
+  color: #fff !important;
+}
+#__page-root .gis-btn-primary:hover:not(:disabled) {
+  background: var(--gis-primary-hover, #153c2c);
+}
+#__page-root .gis-btn-secondary {
+  border: 1px solid var(--gis-border, #cbd2d9);
+  background: var(--gis-surface, #fff);
+  color: var(--gis-text, #172c35) !important;
+}
+#__page-root .gis-btn-secondary:hover:not(:disabled) {
+  background: var(--gis-surface-soft, #f1f5f3);
+}
+/* Disabled stays readable: lighter fill, full-contrast text, not a dimmed dark-on-dark block. */
+#__page-root :is(.gis-btn-primary, .gis-btn-secondary):disabled {
+  border-color: var(--gis-border, #cbd2d9);
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-muted, #526170) !important;
+  cursor: not-allowed;
+}
+
+/* Minimum control sizes in the work area. Map canvases and their floating tools keep their own sizing
+   (MASTER: do not stretch map controls until they lose function). */
+#__page-root
+  main
+  :is(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']), select):not(
+    :where(.field-house-map, .maplibregl-map, .roster-map-tools) *
+  ) {
+  min-height: 40px;
+}
+#__page-root main button:not(:where(.field-house-map, .maplibregl-map, .roster-map-tools, .gis-hit-target) *):not(.gis-hit-target) {
+  min-height: 36px;
+}
+#__page-root main :is(input[type='checkbox'], input[type='radio']):not(:where(.maplibregl-map) *) {
+  width: 20px;
+  height: 20px;
+}
+@media (pointer: coarse) {
+  #__page-root
+    main
+    :is(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']), select, button):not(
+      :where(.field-house-map, .maplibregl-map, .roster-map-tools) *
+    ) {
+    min-height: 44px;
+  }
+  #__page-root main :is(input, select, textarea):not([type='checkbox']):not([type='radio']) {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Household panel (HouseholdDetailModal), 11/2026: a calmer head, one full-width primary action, then a grid of
+   equal action tiles (icon above a short label) instead of five or six mixed-width buttons wrapping in two rows. */
+#__page-root .gis-hh-head {
+  padding: 14px 10px 12px 16px;
+}
+#__page-root .gis-hh-meta {
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+#__page-root .gis-hh-meta > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#__page-root .gis-hh-code {
+  flex: 0 1 auto;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gis-muted, #526170);
+  font-weight: 500;
+}
+#__page-root .gis-hh-panel .gis-hh-title {
+  margin-top: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+#__page-root .gis-hh-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+}
+#__page-root .gis-hh-panel .gis-hh-primary {
+  width: 100%;
+  min-height: 44px;
+  font-size: 14px;
+}
+#__page-root .gis-hh-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(56px, auto);
+  align-items: stretch;
+  gap: 6px;
+}
+#__page-root .gis-hh-panel .gis-hh-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 6px 4px;
+  border: 1px solid var(--gis-border, #cbd2d9);
+  border-radius: 8px;
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-text, #172c35);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+#__page-root .gis-hh-panel .gis-hh-action svg {
+  width: 18px;
+  height: 18px;
+  color: var(--gis-accent-text, #1c4e3a);
+}
+#__page-root .gis-hh-panel .gis-hh-action:hover:not(:disabled) {
+  border-color: var(--gis-accent-text, #1c4e3a);
+  background: var(--gis-selected, #e8f1ec);
+}
+#__page-root .gis-hh-panel .gis-hh-action.is-active {
+  border-color: var(--gis-accent-text, #1c4e3a);
+  background: var(--gis-selected, #e8f1ec);
+  color: var(--gis-accent-text, #1c4e3a);
+}
+#__page-root .gis-hh-panel .gis-hh-action.is-danger,
+#__page-root .gis-hh-panel .gis-hh-action.is-danger svg {
+  color: var(--hh-danger-text);
+}
+#__page-root .gis-hh-panel .gis-hh-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+html.dark #__page-root .gis-hh-panel .gis-hh-action:hover:not(:disabled),
+html.dark #__page-root .gis-hh-panel .gis-hh-action.is-active {
+  background: #1f3a2d;
+}
+#__page-root .gis-hh-note {
+  padding: 0 16px 12px;
+}
+#__page-root .gis-hh-panel .gis-hh-tabs {
+  padding: 0 12px;
+  gap: 4px;
+}
+#__page-root .gis-hh-panel .gis-hh-tab {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+#__page-root .gis-hh-body {
+  gap: 16px;
+  padding: 16px;
+}
+#__page-root .gis-hh-facts {
+  gap: 12px 20px;
+}
+#__page-root .gis-hh-facts dd {
+  font-size: 14px;
+}
+#__page-root .gis-hh-people li {
+  padding: 10px 12px;
+}
+#__page-root .gis-hh-person-name {
+  font-size: 14px;
+}
+/* Phone bottom sheet: taller sheet, four action tiles per row, compact head. */
+@media (max-width: 767px) {
+  #__page-root .gis-household-drawer > .gis-hh-panel {
+    height: 72dvh;
+    max-height: 72dvh;
+  }
+  #__page-root .gis-household-drawer .gis-hh-head {
+    padding: 18px 8px 10px 14px;
+  }
+  #__page-root .gis-hh-panel .gis-hh-title {
+    font-size: 16px;
+  }
+  #__page-root .gis-hh-toolbar {
+    display: flex;
+    padding: 10px 14px;
+  }
+  #__page-root .gis-hh-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  #__page-root .gis-hh-panel .gis-hh-action {
+    min-height: 56px;
+    white-space: normal;
+  }
+  #__page-root .gis-hh-body {
+    padding: 14px;
+  }
+  #__page-root .gis-hh-facts {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
 }

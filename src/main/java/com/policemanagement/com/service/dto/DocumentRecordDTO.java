@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Lob;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -37,6 +38,61 @@ public class DocumentRecordDTO implements Serializable {
     private String notes;
 
     private Boolean reminderSent;
+
+    private Long householdId;
+    private LocalDate expiryOn;
+    private LocalDate issuedOn;
+    private String documentNumber;
+    private String issuingAuthority;
+    private Long version;
+
+    public Long getHouseholdId() {
+        return householdId;
+    }
+
+    public void setHouseholdId(Long value) {
+        householdId = value;
+    }
+
+    public LocalDate getExpiryOn() {
+        return expiryOn;
+    }
+
+    public void setExpiryOn(LocalDate value) {
+        expiryOn = value;
+    }
+
+    public LocalDate getIssuedOn() {
+        return issuedOn;
+    }
+
+    public void setIssuedOn(LocalDate value) {
+        issuedOn = value;
+    }
+
+    public String getDocumentNumber() {
+        return documentNumber;
+    }
+
+    public void setDocumentNumber(String value) {
+        documentNumber = value;
+    }
+
+    public String getIssuingAuthority() {
+        return issuingAuthority;
+    }
+
+    public void setIssuingAuthority(String value) {
+        issuingAuthority = value;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long value) {
+        version = value;
+    }
 
     public Long getId() {
         return id;

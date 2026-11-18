@@ -9,15 +9,12 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 /**
  * Hộ gia đình / Cơ sở kinh doanh trên địa bàn
  */
 @Entity
 @Table(name = "household")
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Household implements Serializable {
 
@@ -30,16 +27,80 @@ public class Household implements Serializable {
     @Column(name = "id")
     private Long id;
 
+    @Column(name = "roster_id")
+    private java.util.UUID rosterId;
+
+    public java.util.UUID getRosterId() {
+        return rosterId;
+    }
+
+    public void setRosterId(java.util.UUID value) {
+        this.rosterId = value;
+    }
+
+    @Column(name = "raw_address")
+    private String rawAddress;
+
+    public String getRawAddress() {
+        return rawAddress;
+    }
+
+    public void setRawAddress(String value) {
+        this.rawAddress = value;
+    }
+
+    @Column(name = "coordinate_method")
+    private String coordinateMethod;
+
+    public String getCoordinateMethod() {
+        return coordinateMethod;
+    }
+
+    public void setCoordinateMethod(String value) {
+        this.coordinateMethod = value;
+    }
+
+    @Column(name = "origin")
+    private String origin;
+
+    public String getOrigin() {
+        return origin;
+    }
+
+    public void setOrigin(String value) {
+        this.origin = value;
+    }
+
+    @Column(name = "verification_status")
+    private String verificationStatus;
+
+    public String getVerificationStatus() {
+        return verificationStatus;
+    }
+
+    public void setVerificationStatus(String value) {
+        this.verificationStatus = value;
+    }
+
+    @Column(name = "source_case_number")
+    private String sourceCaseNumber;
+
+    public String getSourceCaseNumber() {
+        return sourceCaseNumber;
+    }
+
+    public void setSourceCaseNumber(String value) {
+        this.sourceCaseNumber = value;
+    }
+
     @NotNull
     @Column(name = "code", nullable = false, unique = true)
     private String code;
 
-    @NotNull
-    @Column(name = "house_number", nullable = false)
+    @Column(name = "house_number")
     private String houseNumber;
 
-    @NotNull
-    @Column(name = "street", nullable = false)
+    @Column(name = "street")
     private String street;
 
     @NotNull
@@ -52,12 +113,10 @@ public class Household implements Serializable {
     @Column(name = "alley")
     private String alley;
 
-    @NotNull
-    @Column(name = "owner_name", nullable = false)
+    @Column(name = "owner_name")
     private String ownerName;
 
-    @NotNull
-    @Column(name = "owner_phone", nullable = false)
+    @Column(name = "owner_phone")
     private String ownerPhone;
 
     @NotNull
@@ -117,15 +176,47 @@ public class Household implements Serializable {
     private String officerInCharge;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "household")
-    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = { "household" }, allowSetters = true)
     private Set<Resident> residentses = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hamlet_id", insertable = false, updatable = false)
     @JsonIgnoreProperties(value = { "householdses" }, allowSetters = true)
-    private AreaZone areaZone;
+    private Hamlet administrativeHamlet;
+
+    @Column(name = "hamlet_id")
+    private Long hamletId;
+
+    @Column(name = "legacy_address")
+    private String legacyAddress;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
+
+    public Long getHamletId() {
+        return this.hamletId;
+    }
+
+    public Household hamletId(Long hamletId) {
+        this.setHamletId(hamletId);
+        return this;
+    }
+
+    public void setHamletId(Long hamletId) {
+        this.hamletId = hamletId;
+    }
+
+    public String getLegacyAddress() {
+        return this.legacyAddress;
+    }
+
+    public Household legacyAddress(String legacyAddress) {
+        this.setLegacyAddress(legacyAddress);
+        return this;
+    }
+
+    public void setLegacyAddress(String legacyAddress) {
+        this.legacyAddress = legacyAddress;
+    }
 
     public Long getId() {
         return this.id;
@@ -496,16 +587,16 @@ public class Household implements Serializable {
         return this;
     }
 
-    public AreaZone getAreaZone() {
-        return this.areaZone;
+    public Hamlet getAdministrativeHamlet() {
+        return this.administrativeHamlet;
     }
 
-    public void setAreaZone(AreaZone areaZone) {
-        this.areaZone = areaZone;
+    public void setAdministrativeHamlet(Hamlet administrativeHamlet) {
+        this.administrativeHamlet = administrativeHamlet;
     }
 
-    public Household areaZone(AreaZone areaZone) {
-        this.setAreaZone(areaZone);
+    public Household administrativeHamlet(Hamlet administrativeHamlet) {
+        this.setAdministrativeHamlet(administrativeHamlet);
         return this;
     }
 

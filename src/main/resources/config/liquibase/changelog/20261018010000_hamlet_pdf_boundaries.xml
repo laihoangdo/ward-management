@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261018010000-1" author="codex" dbms="postgresql">
+        <comment>51 provisional vector PDF hamlet boundaries registered to the supplied commune outline; preserve previous values and future manual replacements.</comment>
+        <sqlFile path="config/liquibase/data/badiem-hamlet-boundaries-20261018.sql" encoding="UTF-8" splitStatements="false"/>
+        <rollback>
+            <sql>UPDATE hamlet h SET boundary_geo_json = r.previous_boundary_geo_json
+                FROM hamlet_boundary_revision r WHERE r.boundary_version = 'pdf-20261018-v1'
+                AND r.hamlet_code = h.code AND h.boundary_geo_json = r.applied_boundary_geo_json;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

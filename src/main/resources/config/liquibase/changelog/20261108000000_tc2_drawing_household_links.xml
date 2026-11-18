@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261108000000-1" author="claude">
+        <comment>Link Trung Chanh 2 households to building footprints using the hamlet drawing. Provenance is kept in gis_field_building_household_import.</comment>
+        <sqlFile path="config/liquibase/sql/tc2_drawing_household_links.sql" splitStatements="false" stripComments="false"/>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT ON public.gis_field_building_household_import TO police_runtime;
+            END IF;
+        END $$;</sql>
+        <rollback>
+            <sql splitStatements="false">
+                UPDATE public.gis_field_building b
+                SET feature_json = jsonb_set(b.feature_json::jsonb, '{properties,householdIds}',
+                    (SELECT coalesce(jsonb_agg(v), '[]'::jsonb)
+                     FROM jsonb_array_elements(b.feature_json::jsonb #> '{properties,householdIds}') v
+                     WHERE NOT EXISTS (SELECT 1 FROM public.gis_field_building_household_import i
+                                       WHERE i.building_id = b.id AND i.household_id::text = v #>> '{}')), true)::text
+                WHERE b.id IN (SELECT building_id FROM public.gis_field_building_household_import);
+                DELETE FROM public.gis_field_building b
+                USING (SELECT DISTINCT building_id, created_feature_md5 FROM public.gis_field_building_household_import WHERE building_created) i
+                WHERE b.id = i.building_id
+                  AND jsonb_array_length(b.feature_json::jsonb #> '{properties,householdIds}') = 0
+                  AND md5((b.feature_json::jsonb #- '{properties,householdIds}')::text) = i.created_feature_md5;
+                DROP TABLE public.gis_field_building_household_import;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

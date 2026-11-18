@@ -20,21 +20,46 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class HouseholdServiceImpl implements HouseholdService {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private static final Logger LOG = LoggerFactory.getLogger(HouseholdServiceImpl.class);
 
     private final HouseholdRepository householdRepository;
-
     private final HouseholdMapper householdMapper;
+    private final com.policemanagement.com.repository.HamletRepository hamletRepository;
 
-    public HouseholdServiceImpl(HouseholdRepository householdRepository, HouseholdMapper householdMapper) {
+    public HouseholdServiceImpl(
+        HouseholdRepository householdRepository,
+        HouseholdMapper householdMapper,
+        com.policemanagement.com.repository.HamletRepository hamletRepository
+    ) {
         this.householdRepository = householdRepository;
         this.householdMapper = householdMapper;
+        this.hamletRepository = hamletRepository;
+    }
+
+    private void syncHamlet(Household household, HouseholdDTO dto) {
+        if (dto.getHamletId() != null) {
+            var h = hamletRepository
+                .findById(dto.getHamletId())
+                .filter(value -> value.getValidTo() == null)
+                .orElseThrow(() ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "Invalid or retired hamlet"
+                    )
+                );
+            household.setHamletId(h.getId());
+            household.setHamlet(h.getFullName());
+        }
     }
 
     @Override
     public HouseholdDTO save(HouseholdDTO householdDTO) {
         LOG.debug("Request to save Household : {}", householdDTO);
         Household household = householdMapper.toEntity(householdDTO);
+        syncHamlet(household, householdDTO);
         household = householdRepository.save(household);
         return householdMapper.toDto(household);
     }
@@ -43,6 +68,7 @@ public class HouseholdServiceImpl implements HouseholdService {
     public HouseholdDTO update(HouseholdDTO householdDTO) {
         LOG.debug("Request to update Household : {}", householdDTO);
         Household household = householdMapper.toEntity(householdDTO);
+        syncHamlet(household, householdDTO);
         household = householdRepository.save(household);
         return householdMapper.toDto(household);
     }
@@ -55,7 +81,7 @@ public class HouseholdServiceImpl implements HouseholdService {
             .findById(householdDTO.getId())
             .map(existingHousehold -> {
                 householdMapper.partialUpdate(existingHousehold, householdDTO);
-
+                syncHamlet(existingHousehold, householdDTO);
                 return existingHousehold;
             })
             .map(householdRepository::save)
@@ -63,7 +89,7 @@ public class HouseholdServiceImpl implements HouseholdService {
     }
 
     public Page<HouseholdDTO> findAllWithEagerRelationships(Pageable pageable) {
-        return householdRepository.findAllWithEagerRelationships(pageable).map(householdMapper::toDto);
+        return householdRepository.findAll(rbac.householdScope(false), pageable).map(householdMapper::toDto);
     }
 
     @Override

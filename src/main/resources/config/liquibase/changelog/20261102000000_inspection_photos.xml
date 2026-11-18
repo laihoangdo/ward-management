@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261102000000-1" author="opencode">
+        <sql>
+            CREATE TABLE gis_inspection_photo (
+              id uuid PRIMARY KEY, household_id bigint NOT NULL REFERENCES household(id) ON DELETE CASCADE,
+              image_data text NOT NULL, caption varchar(2000) NOT NULL DEFAULT '', category varchar(32) NOT NULL,
+              captured_at timestamptz NOT NULL DEFAULT now(), taken_by varchar(255) NOT NULL, actor_subject varchar(255) NOT NULL
+            );
+            CREATE INDEX ix_inspection_photo_household ON gis_inspection_photo(household_id,captured_at DESC);
+        </sql>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT,INSERT,DELETE ON gis_inspection_photo TO police_runtime;
+            END IF;
+        END $$;</sql>
+    </changeSet>
+</databaseChangeLog>

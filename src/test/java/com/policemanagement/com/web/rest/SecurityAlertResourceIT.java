@@ -82,6 +82,9 @@ class SecurityAlertResourceIT {
     @Autowired
     private MockMvc restSecurityAlertMockMvc;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    private com.policemanagement.com.service.rbac.RbacService rbac;
+
     private SecurityAlert securityAlert;
 
     private SecurityAlert insertedSecurityAlert;
@@ -124,6 +127,7 @@ class SecurityAlertResourceIT {
 
     @BeforeEach
     void initTest() {
+        RbacTestSupport.communeWide(rbac);
         securityAlert = createEntity();
     }
 

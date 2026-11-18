@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261115020000-1" author="claude">
+        <comment>Establishments (cơ sở kinh doanh, doanh nghiệp): ENTERPRISE facility type, the "conditional business line" flag
+            (ngành nghề kinh doanh có điều kiện về ANTT; boarding houses are conditional by law) exposed through the
+            tc2_roster.household view as an appended column.</comment>
+        <sql>
+            ALTER TABLE public.household DROP CONSTRAINT ck_household_facility_type;
+            ALTER TABLE public.household ADD CONSTRAINT ck_household_facility_type
+                CHECK (type IN ('RESIDENTIAL','BUSINESS','BOARDING_HOUSE','RELIGIOUS','SPECIAL','ENTERPRISE'));
+            ALTER TABLE public.household ADD COLUMN is_conditional boolean NOT NULL DEFAULT false;
+            CREATE OR REPLACE VIEW tc2_roster.household AS SELECT roster_id id,hamlet_id,code,source_case_number,case_scope,
+                owner_name representative_name,owner_phone phone,raw_address,street,alley,origin,verification_status,
+                longitude,latitude,coordinate_method,coordinate_seed,boundary_hash,version,created_at,updated_at,
+                type,business_name,business_category,license_type,license_number,license_expiry,is_conditional FROM public.household;
+        </sql>
+        <rollback>
+            <sql>
+                DROP VIEW tc2_roster.household;
+                CREATE VIEW tc2_roster.household AS SELECT roster_id id,hamlet_id,code,source_case_number,case_scope,
+                    owner_name representative_name,owner_phone phone,raw_address,street,alley,origin,verification_status,
+                    longitude,latitude,coordinate_method,coordinate_seed,boundary_hash,version,created_at,updated_at,
+                    type,business_name,business_category,license_type,license_number,license_expiry FROM public.household;
+                COMMENT ON VIEW tc2_roster.household IS 'Updatable UUID projection of public.household; no duplicated storage';
+                GRANT SELECT,INSERT,UPDATE,DELETE ON tc2_roster.household TO police_runtime;
+                ALTER TABLE public.household DROP COLUMN is_conditional;
+                ALTER TABLE public.household DROP CONSTRAINT ck_household_facility_type;
+                ALTER TABLE public.household ADD CONSTRAINT ck_household_facility_type
+                    CHECK (type IN ('RESIDENTIAL','BUSINESS','BOARDING_HOUSE','RELIGIOUS','SPECIAL'));
+            </sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="20261115020000-2" author="claude">
+        <comment>Boarding houses already registered are conditional businesses. Direct table update outside the roster workflow,
+            so the audit trigger needs an actor and reason for this one migration step.</comment>
+        <sql splitStatements="false">
+            DO $$ BEGIN
+              PERFORM set_config('tc2.actor', 'migration:20261115020000', true);
+              PERFORM set_config('tc2.change_kind', 'CORRECTION', true);
+              PERFORM set_config('tc2.reason', 'Nhà trọ / cơ sở lưu trú là ngành nghề kinh doanh có điều kiện', true);
+              UPDATE public.household SET is_conditional = true WHERE type = 'BOARDING_HOUSE' AND NOT is_conditional;
+            END $$;
+        </sql>
+        <rollback>
+            <sql>SELECT 1</sql>
+        </rollback>
+    </changeSet>
+    <changeSet id="20261115020000-3" author="claude">
+        <comment>Employees and violation history of an establishment; papers and photos reuse attachment (owner kind FACILITY).
+            Employee identity numbers are stored encrypted with a keyed lookup, like resident identities.</comment>
+        <sql splitStatements="false">
+            CREATE TABLE facility_employee (
+              id uuid PRIMARY KEY,
+              household_id uuid NOT NULL REFERENCES household(roster_id),
+              hamlet_id bigint NOT NULL REFERENCES hamlet(id),
+              resident_id uuid REFERENCES resident(roster_id),
+              full_name varchar(255) NOT NULL,
+              birth_year integer CHECK (birth_year IS NULL OR birth_year BETWEEN 1900 AND 2100),
+              gender varchar(10) CHECK (gender IS NULL OR gender IN ('MALE','FEMALE','OTHER')),
+              identity_ciphertext text,
+              identity_lookup varchar(128),
+              phone varchar(30) NOT NULL DEFAULT '',
+              position varchar(200) NOT NULL DEFAULT '',
+              home_address varchar(500) NOT NULL DEFAULT '',
+              started_on date,
+              ended_on date,
+              notes varchar(2000) NOT NULL DEFAULT '',
+              created_at timestamptz NOT NULL DEFAULT now(),
+              created_by varchar(255) NOT NULL,
+              updated_at timestamptz NOT NULL DEFAULT now(),
+              updated_by varchar(255) NOT NULL,
+              CONSTRAINT ck_facility_employee_period CHECK (ended_on IS NULL OR started_on IS NULL OR ended_on &gt;= started_on),
+              CONSTRAINT ck_facility_employee_identity CHECK ((identity_ciphertext IS NULL) = (identity_lookup IS NULL))
+            );
+            CREATE INDEX ix_facility_employee_household ON facility_employee(household_id, ended_on NULLS FIRST);
+            CREATE INDEX ix_facility_employee_lookup ON facility_employee(identity_lookup) WHERE identity_lookup IS NOT NULL;
+            COMMENT ON TABLE facility_employee IS 'Employees of an establishment; identity number encrypted';
+
+            CREATE TABLE facility_violation (
+              id uuid PRIMARY KEY,
+              household_id uuid NOT NULL REFERENCES household(roster_id),
+              hamlet_id bigint NOT NULL REFERENCES hamlet(id),
+              occurred_on date,
+              content varchar(1000) NOT NULL,
+              decision_no varchar(100) NOT NULL DEFAULT '',
+              authority varchar(200) NOT NULL DEFAULT '',
+              penalty varchar(1000) NOT NULL DEFAULT '',
+              notes varchar(2000) NOT NULL DEFAULT '',
+              created_at timestamptz NOT NULL DEFAULT now(),
+              created_by varchar(255) NOT NULL
+            );
+            CREATE INDEX ix_facility_violation_household ON facility_violation(household_id, occurred_on DESC NULLS LAST);
+            COMMENT ON TABLE facility_violation IS 'Violation history of an establishment';
+
+            ALTER TABLE attachment DROP CONSTRAINT attachment_owner_kind_check;
+            ALTER TABLE attachment ADD CONSTRAINT attachment_owner_kind_check CHECK (owner_kind IN ('RESIDENT','FACILITY'));
+        </sql>
+        <sql splitStatements="false">DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='police_runtime') THEN
+                GRANT SELECT,INSERT,UPDATE ON facility_employee TO police_runtime;
+                GRANT SELECT,INSERT ON facility_violation TO police_runtime;
+            END IF;
+        END $$;</sql>
+        <rollback>
+            <sql>
+                DROP TABLE facility_violation;
+                DROP TABLE facility_employee;
+                DELETE FROM attachment WHERE owner_kind = 'FACILITY';
+                ALTER TABLE attachment DROP CONSTRAINT attachment_owner_kind_check;
+                ALTER TABLE attachment ADD CONSTRAINT attachment_owner_kind_check CHECK (owner_kind IN ('RESIDENT'));
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

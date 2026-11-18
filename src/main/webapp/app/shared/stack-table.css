@@ -1,0 +1,41 @@
+/* Phones (< 640px): a wide table becomes one block per row; each cell shows its column name from data-label.
+   Same pattern as the roster list (roster.css), for tables outside the roster list pane.
+   Colours are inherited so it works on light pages and on the always-dark admin panels. */
+@media (max-width: 640px) {
+  table.gis-stack-table {
+    min-width: 0;
+  }
+  table.gis-stack-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  table.gis-stack-table tbody tr {
+    display: block;
+    padding: 8px 0;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  }
+  table.gis-stack-table tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+  table.gis-stack-table tbody td[data-label='STT'] {
+    display: none;
+  }
+  table.gis-stack-table tbody td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 7.5rem;
+    opacity: 0.75;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}

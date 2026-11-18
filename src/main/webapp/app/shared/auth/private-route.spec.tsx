@@ -54,7 +54,10 @@ describe('private-route component', () => {
         },
       },
     );
-    expect(container.innerHTML).toMatch(/<div class="insufficient-authority"><div class="alert alert-danger">.*<\/div><\/div>/);
+    expect(container.querySelector('.insufficient-authority [role=alert], .insufficient-authority')?.textContent).toContain(
+      'chưa được cấp quyền',
+    );
+    expect(container.querySelector('.insufficient-authority a')?.getAttribute('href')).toBe('/dashboard');
   });
 
   it('should render a route for the component provided when authenticated', () => {

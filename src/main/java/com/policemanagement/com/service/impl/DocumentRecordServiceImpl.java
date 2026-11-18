@@ -31,33 +31,17 @@ public class DocumentRecordServiceImpl implements DocumentRecordService {
 
     @Override
     public DocumentRecordDTO save(DocumentRecordDTO documentRecordDTO) {
-        LOG.debug("Request to save DocumentRecord : {}", documentRecordDTO);
-        DocumentRecord documentRecord = documentRecordMapper.toEntity(documentRecordDTO);
-        documentRecord = documentRecordRepository.save(documentRecord);
-        return documentRecordMapper.toDto(documentRecord);
+        throw workflowRequired();
     }
 
     @Override
     public DocumentRecordDTO update(DocumentRecordDTO documentRecordDTO) {
-        LOG.debug("Request to update DocumentRecord : {}", documentRecordDTO);
-        DocumentRecord documentRecord = documentRecordMapper.toEntity(documentRecordDTO);
-        documentRecord = documentRecordRepository.save(documentRecord);
-        return documentRecordMapper.toDto(documentRecord);
+        throw workflowRequired();
     }
 
     @Override
     public Optional<DocumentRecordDTO> partialUpdate(DocumentRecordDTO documentRecordDTO) {
-        LOG.debug("Request to partially update DocumentRecord : {}", documentRecordDTO);
-
-        return documentRecordRepository
-            .findById(documentRecordDTO.getId())
-            .map(existingDocumentRecord -> {
-                documentRecordMapper.partialUpdate(existingDocumentRecord, documentRecordDTO);
-
-                return existingDocumentRecord;
-            })
-            .map(documentRecordRepository::save)
-            .map(documentRecordMapper::toDto);
+        throw workflowRequired();
     }
 
     @Override
@@ -69,7 +53,13 @@ public class DocumentRecordServiceImpl implements DocumentRecordService {
 
     @Override
     public void delete(Long id) {
-        LOG.debug("Request to delete DocumentRecord : {}", id);
-        documentRecordRepository.deleteById(id);
+        throw workflowRequired();
+    }
+
+    private org.springframework.web.server.ResponseStatusException workflowRequired() {
+        return new org.springframework.web.server.ResponseStatusException(
+            org.springframework.http.HttpStatus.CONFLICT,
+            "Dùng mục Hồ sơ & giấy phép để chọn hộ, xác nhận ngày và lưu lịch sử; API cũ chỉ phục vụ đọc"
+        );
     }
 }

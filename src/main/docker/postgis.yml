@@ -1,0 +1,25 @@
+# Separate cluster for logical restore/cutover. Never mount the legacy PostgreSQL volume here.
+name: police-spatial
+services:
+  postgis:
+    image: postgis/postgis:18-3.6@sha256:60f6ad1d21ea86a67d47780b9a0d1e1d200500f62b19293fa834d0dea80b8677
+    container_name: police-postgis-1
+    environment:
+      POSTGRES_USER: Monolithic
+      POSTGRES_DB: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+      PGDATA: /var/lib/postgresql/18/docker
+    # Local development only. Production requires SCRAM credentials and network isolation.
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - postgis18:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U Monolithic -d postgres']
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+volumes:
+  postgis18:
+    name: police_postgis18_data

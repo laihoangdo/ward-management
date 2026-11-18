@@ -1,22 +1,5 @@
 import React, { useState } from 'react';
-import {
-  X,
-  AlertTriangle,
-  Send,
-  CheckCircle2,
-  Clock,
-  MapPin,
-  Store,
-  Phone,
-  ShieldAlert,
-  ShieldCheck,
-  Ban,
-  Lock,
-  UserCheck,
-  Check,
-  AlertOctagon,
-  FileCheck,
-} from 'lucide-react';
+import { X, AlertTriangle, Send, CheckCircle2, MapPin, Store, ShieldAlert, Ban, Lock, AlertOctagon, FileCheck } from 'lucide-react';
 import { HouseholdFacility, SecurityAlert, AppUser } from '../types';
 import { resolveSecurityAlert, addIpToBlacklist } from '../services/authService';
 import { Pagination } from './Pagination';
@@ -42,8 +25,6 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
   onAlertResolved,
   onIpBlacklisted,
 }) => {
-  if (!isOpen) return null;
-
   const warningHouseholds = households.filter(h => h.status === 'warning');
   const [remindedList, setRemindedList] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'security' | 'licenses'>('security');
@@ -92,17 +73,11 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
   };
 
   const handleConfirmResolve = async (alert: SecurityAlert) => {
-    const adminUser = currentUser || {
-      id: 'USR-SUPERADMIN-01',
-      username: 'superadmin',
-      fullName: 'Đại tá Trần Quốc Huy',
-      role: 'superadmin',
-      rank: 'Đại tá',
-      position: 'Trưởng Công an Quận',
-      badgeNumber: '001-999',
-      assignedDistrict: 'Quận Bình Tân',
-      status: 'active',
-    };
+    if (!currentUser) {
+      setFeedbackMsg('Không xác định được người dùng. Vui lòng đăng nhập lại.');
+      return;
+    }
+    const adminUser = currentUser;
 
     setResolvingId(alert.id);
     try {
@@ -142,17 +117,11 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
   const handleQuickBlacklist = async (alert: SecurityAlert) => {
     if (!alert.sourceIp) return;
-    const adminUser = currentUser || {
-      id: 'USR-SUPERADMIN-01',
-      username: 'superadmin',
-      fullName: 'Đại tá Trần Quốc Huy',
-      role: 'superadmin',
-      rank: 'Đại tá',
-      position: 'Trưởng Công an Quận',
-      badgeNumber: '001-999',
-      assignedDistrict: 'Quận Bình Tân',
-      status: 'active',
-    };
+    if (!currentUser) {
+      setFeedbackMsg('Không xác định được người dùng. Vui lòng đăng nhập lại.');
+      return;
+    }
+    const adminUser = currentUser;
 
     setBlockingIp(alert.sourceIp);
     try {
@@ -177,30 +146,37 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
   const unresolvedCount = localAlerts.filter(a => !a.resolved).length;
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-auto max-h-[94vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center gis-modal-scrim p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white w-full max-w-2xl rounded-xl sm:rounded-2xl border border-slate-200 overflow-hidden animate-in fade-in duration-150 my-auto max-h-[94vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-red-700 via-amber-700 to-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 bg-red-800 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-800/90 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-800/90 flex items-center justify-center font-bold text-white shrink-0">
               <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-bold flex items-center gap-2">
-                Trung Tâm Cảnh Báo An Ninh & Giám Sát Địa Bàn
+              <h3 className="gis-dialog-title text-sm sm:text-base font-bold flex items-center gap-2">
+                Trung tâm cảnh báo an ninh & giám sát địa bàn
                 {unresolvedCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-extrabold animate-pulse">
+                  <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-[12px] font-extrabold tabular-nums">
                     {unresolvedCount} cần xử lý
                   </span>
                 )}
               </h3>
-              <p className="text-[11px] sm:text-xs text-amber-100">
+              <p className="text-[12px] sm:text-xs text-amber-100">
                 Xác minh cảnh báo cơ sở dữ liệu, chặn IP nghi vấn & đôn đốc giấy phép an ninh
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10">
+          <button
+            type="button"
+            aria-label="Đóng cảnh báo"
+            onClick={onClose}
+            className="p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-white/10"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -217,7 +193,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
             }`}
           >
             <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
-            Cảnh Báo An Ninh & Database ({localAlerts.length})
+            Cảnh báo an ninh & Database ({localAlerts.length})
           </button>
           <button
             type="button"
@@ -229,7 +205,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
             }`}
           >
             <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-            Cảnh Báo Giấy Phép Cơ Sở ({warningHouseholds.length})
+            Cảnh báo giấy phép cơ sở ({warningHouseholds.length})
           </button>
         </div>
 
@@ -244,7 +220,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
         {/* Tab Content: Security Alerts */}
         {activeTab === 'security' && (
           <div className="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1">
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 text-[11px] leading-relaxed flex items-start gap-2">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 text-[12px] leading-relaxed flex items-start gap-2">
               <Lock className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
               <div>
                 <strong>Chính sách Bảo mật CAND:</strong> Quản trị viên sau khi kiểm tra nhật ký truy vấn bất thường cần nhấn{' '}
@@ -257,7 +233,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
               {paginatedAlerts.map(alert => (
                 <div
                   key={alert.id}
-                  className={`p-4 rounded-xl border-2 transition-all space-y-3 ${
+                  className={`p-4 rounded-xl border-2 transition-colors space-y-3 ${
                     alert.resolved
                       ? 'bg-slate-50/80 border-slate-200 opacity-90'
                       : alert.severity === 'critical'
@@ -271,7 +247,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] uppercase font-black ${
+                          className={`px-2 py-0.5 rounded text-[12px] font-black ${
                             alert.severity === 'critical'
                               ? 'bg-red-700 text-white'
                               : alert.severity === 'high'
@@ -285,12 +261,12 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
                         {/* Resolved Status Badge */}
                         {alert.resolved ? (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[12px] font-bold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                             Đã xác minh & Xử lý xong
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold flex items-center gap-1 animate-pulse">
+                          <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-[12px] font-bold flex items-center gap-1">
                             <AlertOctagon className="w-3 h-3 text-rose-600" />
                             Chưa xử lý
                           </span>
@@ -300,14 +276,14 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                       <h4 className="font-extrabold text-sm text-slate-900 pt-0.5">{alert.title}</h4>
                     </div>
 
-                    <span className="text-[11px] font-mono text-slate-500 whitespace-nowrap">{alert.timestamp}</span>
+                    <span className="text-[12px] font-mono text-slate-500 whitespace-nowrap">{alert.timestamp}</span>
                   </div>
 
                   <p className="text-slate-700 text-xs leading-relaxed bg-white/70 p-2.5 rounded-lg border border-slate-200/80">
                     {alert.details}
                   </p>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600 bg-white/40 p-2 rounded">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[12px] text-slate-600 bg-white/40 p-2 rounded">
                     <div>
                       IP nguồn: <strong className="font-mono text-rose-700">{alert.sourceIp}</strong>
                     </div>
@@ -324,20 +300,20 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
                   {/* Resolution Detail Stamp if resolved */}
                   {alert.resolved && (
-                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] space-y-1">
+                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-[12px] space-y-1">
                       <div className="font-bold flex items-center gap-1.5">
                         <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
                         <span>Biên bản hoàn tất xử lý sự cố an ninh:</span>
                       </div>
-                      <div className="text-[10px] text-emerald-800">
+                      <div className="text-[12px] text-emerald-800">
                         Thời gian giải quyết: <strong>{alert.resolvedAt || 'Vừa xong'}</strong>
                       </div>
                       {alert.resolvedBy && (
-                        <div className="text-[10px] text-emerald-800">
+                        <div className="text-[12px] text-emerald-800">
                           Cán bộ xác nhận: <strong>{alert.resolvedBy}</strong>
                         </div>
                       )}
-                      {alert.resolvedNotes && <div className="text-[10px] italic text-emerald-700">Ghi chú: "{alert.resolvedNotes}"</div>}
+                      {alert.resolvedNotes && <div className="text-[12px] italic text-emerald-700">Ghi chú: "{alert.resolvedNotes}"</div>}
                     </div>
                   )}
 
@@ -348,7 +324,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                         type="button"
                         onClick={() => handleQuickBlacklist(alert)}
                         disabled={blockingIp === alert.sourceIp}
-                        className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-500/40 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-colors"
+                        className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-500/40 rounded-lg font-bold text-[12px] flex items-center gap-1.5 transition-colors"
                       >
                         <Ban className="w-3.5 h-3.5 text-rose-400" />
                         <span>{blockingIp === alert.sourceIp ? 'Đang chặn...' : `Thêm IP ${alert.sourceIp} vào Blacklist`}</span>
@@ -358,7 +334,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                         type="button"
                         onClick={() => handleConfirmResolve(alert)}
                         disabled={resolvingId === alert.id}
-                        className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] flex items-center gap-1.5 shadow-xs transition-colors"
+                        className="px-3.5 py-1.5 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white rounded-lg font-bold text-[12px] flex items-center gap-1.5 transition-colors"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>{resolvingId === alert.id ? 'Đang ghi nhận...' : 'Đã xác minh & Xử lý xong'}</span>
@@ -388,7 +364,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
         {/* Tab Content: Business License Warnings */}
         {activeTab === 'licenses' && (
           <div className="p-4 sm:p-6 space-y-3.5 sm:space-y-4 text-xs overflow-y-auto flex-1">
-            <p className="text-slate-600 text-[11px] sm:text-xs leading-relaxed">
+            <p className="text-slate-600 text-[12px] sm:text-xs leading-relaxed">
               Theo quy định an ninh trật tự và PCCC, các cơ sở kinh doanh có điều kiện phải nộp hồ sơ gia hạn tối thiểu 15 ngày trước thời
               hạn hết hiệu lực.
             </p>
@@ -403,20 +379,19 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
                         <Store className="w-4 h-4 text-amber-800 shrink-0" />
                         <span className="font-extrabold text-xs sm:text-sm text-slate-900">{h.businessName}</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0">
+                      <span className="px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-bold text-[12px] shrink-0">
                         Hạn: {h.licenseExpiry}
                       </span>
                     </div>
 
-                    <div className="text-slate-600 flex items-center gap-1 text-[11px] sm:text-xs">
+                    <div className="text-slate-600 flex items-center gap-1 text-[12px] sm:text-xs">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>
                         Số {h.houseNumber} {h.street}, {h.hamlet}
-                        {h.ward ? `, ${h.ward}` : ''}
                       </span>
                     </div>
 
-                    <div className="text-slate-600 flex items-center justify-between text-[11px] sm:text-xs">
+                    <div className="text-slate-600 flex items-center justify-between text-[12px] sm:text-xs">
                       <span>
                         Đại diện: <strong>{h.ownerName}</strong>
                       </span>
@@ -436,14 +411,14 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
                       <div className="flex items-center gap-2">
                         {isReminded ? (
-                          <span className="text-emerald-700 font-bold text-[11px] flex items-center gap-1">
+                          <span className="text-emerald-700 font-bold text-[12px] flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Đã gửi đôn đốc
                           </span>
                         ) : (
                           <button
                             onClick={() => handleRemind(h.id)}
-                            className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg font-bold text-[11px] transition-colors flex items-center gap-1 min-h-[36px]"
+                            className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg font-bold text-[12px] transition-colors flex items-center gap-1 min-h-[36px]"
                           >
                             <Send className="w-3 h-3" />
                             <span>Gửi nhắc hẹn</span>
@@ -474,7 +449,7 @@ export const WarningDetailModal: React.FC<WarningDetailModalProps> = ({
 
         {/* Footer */}
         <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-          <span className="text-[11px] text-slate-500">Hệ thống An ninh Địa bàn CAND - Bảo mật 24/7</span>
+          <span className="text-[12px] text-slate-500">Hệ thống An ninh Địa bàn CAND - Bảo mật 24/7</span>
           <button
             onClick={onClose}
             className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs min-h-[38px]"

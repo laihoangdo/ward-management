@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="20261112000000-1" author="claude">
+        <comment>Facility type, name, trade and licence on the roster household form: adds the licence number, limits the facility type
+            to the FacilityType codes and exposes the existing legacy columns through the tc2_roster.household view (appended columns,
+            so existing readers and the audit trigger keep working).</comment>
+        <sql>
+            ALTER TABLE public.household ADD COLUMN license_number varchar(100);
+            ALTER TABLE public.household ADD CONSTRAINT ck_household_facility_type
+                CHECK (type IN ('RESIDENTIAL','BUSINESS','BOARDING_HOUSE','RELIGIOUS','SPECIAL'));
+            CREATE OR REPLACE VIEW tc2_roster.household AS SELECT roster_id id,hamlet_id,code,source_case_number,case_scope,
+                owner_name representative_name,owner_phone phone,raw_address,street,alley,origin,verification_status,
+                longitude,latitude,coordinate_method,coordinate_seed,boundary_hash,version,created_at,updated_at,
+                type,business_name,business_category,license_type,license_number,license_expiry FROM public.household;
+        </sql>
+        <rollback>
+            <sql>
+                DROP VIEW tc2_roster.household;
+                CREATE VIEW tc2_roster.household AS SELECT roster_id id,hamlet_id,code,source_case_number,case_scope,
+                    owner_name representative_name,owner_phone phone,raw_address,street,alley,origin,verification_status,
+                    longitude,latitude,coordinate_method,coordinate_seed,boundary_hash,version,created_at,updated_at FROM public.household;
+                COMMENT ON VIEW tc2_roster.household IS 'Updatable UUID projection of public.household; no duplicated storage';
+                GRANT SELECT,INSERT,UPDATE,DELETE ON tc2_roster.household TO police_runtime;
+                ALTER TABLE public.household DROP CONSTRAINT ck_household_facility_type;
+                ALTER TABLE public.household DROP COLUMN license_number;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

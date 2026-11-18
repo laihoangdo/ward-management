@@ -1,0 +1,25 @@
+{
+  "status": "CANDIDATE_LOCAL_POINT_IDENTIFICATION_NOT_CONFIRMED",
+  "method": "4-control affine least squares in a local metre approximation",
+  "fit_residuals": [
+    {
+      "id": "G1",
+      "residual_m": 7.52
+    },
+    {
+      "id": "G2",
+      "residual_m": 13.98
+    },
+    {
+      "id": "G3",
+      "residual_m": 12.43
+    },
+    {
+      "id": "G4",
+      "residual_m": 5.96
+    }
+  ],
+  "fit_rmse_m": 10.51,
+  "independent_check_points": 0,
+  "limitations": "Fit residuals are not independent GPS accuracy. Local point IDs require confirmation. No household coordinates committed to DB."
+}

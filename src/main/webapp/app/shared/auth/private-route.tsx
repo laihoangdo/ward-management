@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, PathRouteProps, useLocation } from 'react-router';
+import { Link, Navigate, PathRouteProps, useLocation } from 'react-router';
 
 import { useAppSelector } from 'app/config/store';
 import ErrorBoundary from 'app/shared/error/error-boundary';
@@ -30,8 +30,14 @@ const PrivateRoute = ({ children, hasAnyAuthorities = [], ...rest }: IOwnProps) 
     }
 
     return (
-      <div className="insufficient-authority">
-        <div className="alert alert-danger">Bạn không có quyền xem trang này.</div>
+      <div className="insufficient-authority" role="alert">
+        <div className="alert alert-warning">
+          <h1 className="h5 mb-2">Tài khoản chưa được cấp quyền xem trang này</h1>
+          <p className="mb-3">Liên hệ cán bộ quản trị đơn vị nếu công việc cần quyền này.</p>
+          <Link to="/dashboard" className="btn btn-primary">
+            Về bảng điều hành
+          </Link>
+        </div>
       </div>
     );
   }

@@ -8,4 +8,6 @@ export enum FacilityType {
   RELIGIOUS = 'RELIGIOUS',
 
   SPECIAL = 'SPECIAL',
+
+  ENTERPRISE = 'ENTERPRISE',
 }
