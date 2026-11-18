@@ -115,7 +115,7 @@ export const Header: React.FC<HeaderProps> = ({
         <Link
           to="/"
           id="btn-header-home"
-          title="Về trang chủ (Tổng quan)"
+          title="Quay về Trang chủ Cổng thông tin"
           className="gis-header-home hidden sm:flex items-center gap-1.5 h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-colors shrink-0 no-underline"
           style={{ textDecoration: 'none', color: 'var(--gis-text, #172c35)' }}
         >
