@@ -665,22 +665,23 @@ export const ActiveMenuGuideBanner: React.FC<ActiveMenuGuideBannerProps> = ({ ac
       aria-label={`Hướng dẫn sử dụng ${guide.title}`}
       className="gis-guide-banner mb-3 rounded-lg border border-emerald-200/90 dark:border-emerald-800/70 bg-emerald-50/50 dark:bg-emerald-950/25 px-3 py-2 text-slate-800 dark:text-slate-100"
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <div className="flex items-center gap-2 min-w-0 flex-[1_1_16rem]">
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <BookOpen aria-hidden="true" className="w-4 h-4 shrink-0 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300" />
-          <p className="m-0 min-w-0 text-sm leading-snug">
+          <p className="m-0 min-w-0 truncate text-sm leading-snug" title={`${guide.title}: ${guide.summary}`}>
             <strong className="font-semibold text-slate-900 dark:text-white">{guide.title}:</strong>{' '}
             <span className="hidden md:inline text-slate-600 dark:text-slate-300">{guide.summary}</span>
           </p>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded(prev => !prev)}
             className="min-h-[36px] px-2.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 text-sm font-semibold cursor-pointer"
           >
-            {expanded ? 'Thu gọn các bước' : `Xem ${guide.steps.length} bước thao tác`}
+            {expanded ? 'Thu gọn' : `Xem ${guide.steps.length} bước`}
+            <span className="sr-only">{expanded ? ' các bước' : ' thao tác'}</span>
           </button>
           <button
             type="button"

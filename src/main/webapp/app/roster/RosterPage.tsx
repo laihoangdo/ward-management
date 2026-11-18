@@ -1487,9 +1487,28 @@ function RosterWorkspace({
   );
   // Embedded in the dashboard: its shell already owns <main> and the page <h1>.
   const [Root, Title] = embedded ? (['div', 'h2'] as const) : (['main', 'h1'] as const);
+  // Inside the dashboard the sidebar already switches between households and residents: keep one "Danh sách" tab to
+  // return to the list, and hide the bar entirely when no other function is available (all hamlets view).
+  const listTab = embedded && urlParams.get('tab') === 'residents' ? 'residents' : 'households';
+  const visibleRosterTabs = (
+    embedded
+      ? [
+          [listTab, 'Danh sách'],
+          ['import', 'Nhập Excel / đối soát'],
+          ['patrol', 'Tuần tra'],
+          ['history', 'Lịch sử & báo cáo'],
+        ]
+      : [
+          ['households', 'Danh sách hộ dân'],
+          ['residents', 'Quản lý nhân khẩu'],
+          ['import', 'Nhập Excel / đối soát'],
+          ['patrol', 'Tuần tra'],
+          ['history', 'Lịch sử & báo cáo'],
+        ]
+  ).filter(([v]) => !(allHamlets && SINGLE_HAMLET_TABS.includes(v)));
   return (
     <Root className={`roster-page ${embedded ? 'roster-embedded' : ''}`}>
-      <div className="roster-heading">
+      <div className={`roster-heading ${embedded ? 'roster-heading--embedded' : ''}`}>
         <div className="roster-heading-icon" aria-hidden="true">
           {tab === 'households' ? <House size={22} /> : <Users size={22} />}
         </div>
@@ -1515,16 +1534,9 @@ function RosterWorkspace({
           </p>
         </div>
       </div>
-      <nav className="roster-tabs" aria-label="Chức năng hồ sơ dân cư">
-        {[
-          ['households', 'Danh sách hộ dân'],
-          ['residents', 'Quản lý nhân khẩu'],
-          ['import', 'Nhập Excel / đối soát'],
-          ['patrol', 'Tuần tra'],
-          ['history', 'Lịch sử & báo cáo'],
-        ]
-          .filter(([v]) => !(allHamlets && SINGLE_HAMLET_TABS.includes(v)))
-          .map(([v, l]) => (
+      {visibleRosterTabs.length > 1 && (
+        <nav className="roster-tabs" aria-label="Chức năng hồ sơ dân cư">
+          {visibleRosterTabs.map(([v, l]) => (
             <button
               key={v}
               aria-pressed={tab === v}
@@ -1544,7 +1556,8 @@ function RosterWorkspace({
               {l}
             </button>
           ))}
-      </nav>
+        </nav>
+      )}
       {error && (
         <div className="roster-error" role="alert">
           {error}
@@ -1557,14 +1570,14 @@ function RosterWorkspace({
       )}
       <p className="roster-summary">
         {overview.households ?? '…'} hộ/nhóm địa chỉ · {overview.residents ?? '…'} cá nhân · {overview.records ?? '…'} hồ sơ cư trú ·{' '}
-        {overview.review_rows ?? '…'} dòng chờ đối soát. Số này chưa phải dân số thực tế đã xác minh.
+        {overview.review_rows ?? '…'} dòng chờ đối soát <span className="roster-summary-note">(chưa phải dân số đã xác minh)</span>
+        {allHamlets && (
+          <span className="roster-summary-hint" role="note">
+            {' '}
+            · Chọn một ấp ở ô &quot;Ấp&quot; để thêm hộ, nhập Excel, xem bản đồ, tuần tra hoặc báo cáo.
+          </span>
+        )}
       </p>
-      {allHamlets && (
-        <p className="roster-empty-hint" role="note">
-          Đang xem {hamletName ?? 'tất cả ấp'}. Chọn một ấp ở ô &quot;Ấp&quot; để thêm hộ, nhập Excel, xem bản đồ vị trí, tuần tra hoặc lịch
-          sử & báo cáo.
-        </p>
-      )}
       {tab === 'patrol' && <RosterPatrol />}
       {tab === 'households' && !allHamlets && (
         <div className="roster-view-toggle">

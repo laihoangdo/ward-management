@@ -1382,3 +1382,15 @@
   color: var(--roster-text);
   font-size: 15px;
 }
+/* Inside the dashboard the header already titles the screen: keep the roster heading for screen readers only. */
+.roster-heading.roster-heading--embedded {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.roster-summary-note {
+  color: var(--roster-muted);
+}
