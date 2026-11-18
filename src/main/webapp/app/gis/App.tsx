@@ -184,13 +184,27 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([]);
 
   const requestedTab = (routeParams.get('tab') || 'overview') as NavigationTab;
-  const activeTab = canOpenMenu(requestedTab) ? requestedTab : (effectiveDynamicMenus.find(menu => canOpenMenu(menu.id))?.id ?? 'overview');
+  // A refused menu always falls back to Tổng quan when allowed, so the destination does not depend on menu order.
+  const activeTab = canOpenMenu(requestedTab)
+    ? requestedTab
+    : canOpenMenu('overview')
+      ? 'overview'
+      : (effectiveDynamicMenus.find(menu => canOpenMenu(menu.id))?.id ?? 'overview');
+  const [deniedMenu, setDeniedMenu] = useState<string | null>(null);
   const setActiveTab = (tab: NavigationTab) => {
-    if (canOpenMenu(tab)) updateQuery({ tab, ...RECORD_QUERY_KEYS, page: null, section: null, rosterTab: null });
+    if (canOpenMenu(tab)) {
+      setDeniedMenu(null);
+      updateQuery({ tab, ...RECORD_QUERY_KEYS, page: null, section: null, rosterTab: null });
+    }
   };
   useEffect(() => {
-    if (requestedTab !== activeTab) updateQuery({ tab: activeTab, ...RECORD_QUERY_KEYS, page: null, section: null, rosterTab: null }, true);
-  }, [requestedTab, activeTab, updateQuery]);
+    if (requestedTab === activeTab) return;
+    // Say why the link did not open instead of switching screens silently.
+    const known = effectiveDynamicMenus.find(menu => menu.id === requestedTab);
+    if (known && !HIDDEN_MENU_IDS.includes(requestedTab)) setDeniedMenu(known.label);
+    updateQuery({ tab: activeTab, ...RECORD_QUERY_KEYS, page: null, section: null, rosterTab: null }, true);
+  }, [requestedTab, activeTab, updateQuery, effectiveDynamicMenus]);
+  const activeMenuLabel = effectiveDynamicMenus.find(menu => menu.id === activeTab)?.label;
   const [households, setHouseholds] = useState<HouseholdFacility[]>([]);
   const [hasCompleteHouseholds, setHasCompleteHouseholds] = useState(false);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
@@ -951,6 +965,9 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
           </button>
         </div>
       )}
+      <a href="#gis-main-content" className="gis-skip-link">
+        Bỏ qua tới nội dung
+      </a>
       {/* Left Sidebar (Desktop + Mobile Drawer) */}
       {!isMapFullscreen && (
         <Sidebar
@@ -980,6 +997,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
         {!isMapFullscreen && (
           <Header
             activeTab={activeTab}
+            title={activeMenuLabel}
             warningCount={warningCount}
             onOpenWarnings={() => setIsWarningModalOpen(true)}
             onRefresh={handleRefresh}
@@ -1013,6 +1031,17 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                 : 'overflow-y-auto p-2.5 sm:p-4 lg:p-5 pb-20 md:pb-6 scroll-smooth'
           }`}
         >
+          {deniedMenu && !isMapFullscreen && (
+            <div role="alert" className="gis-denied-notice mb-3 flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm">
+              <p className="m-0 flex-1 min-w-[16rem]">
+                <strong>Tài khoản chưa được cấp quyền mở “{deniedMenu}”.</strong> Đã chuyển sang {activeMenuLabel || 'màn hình được phép'}.
+                Liên hệ cán bộ quản trị đơn vị nếu cần quyền này.
+              </p>
+              <button type="button" className="gis-btn-secondary" onClick={() => setDeniedMenu(null)}>
+                Đã hiểu
+              </button>
+            </div>
+          )}
           {householdRouteLoading && <p role="status">Đang tải hồ sơ hộ…</p>}
           {householdRouteError && <p role="alert">{householdRouteError}</p>}
           {!isMapFullscreen && (isLoading || dataErrors.length > 0) && (
@@ -1060,7 +1089,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                       <span className="font-bold text-emerald-900 dark:text-emerald-200 truncate bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                         "{searchQuery}"
                       </span>
-                      <span className="text-slate-600 dark:text-slate-300 tabular-nums text-[11px] font-semibold">
+                      <span className="text-slate-600 dark:text-slate-300 tabular-nums text-[12px] font-semibold">
                         ({displayedHouseholds.length} hộ phù hợp)
                       </span>
                     </div>
@@ -1069,7 +1098,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                         <button
                           type="button"
                           onClick={() => setActiveTab('households')}
-                          className="px-2.5 py-1 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-semibold rounded-lg border border-[var(--gis-primary,#1c4e3a)] transition-colors text-[11px] cursor-pointer"
+                          className="px-2.5 py-1 bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-semibold rounded-lg border border-[var(--gis-primary,#1c4e3a)] transition-colors text-[12px] cursor-pointer"
                         >
                           Xem danh sách hộ ({displayedHouseholds.length})
                         </button>
@@ -1078,7 +1107,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                         <button
                           type="button"
                           onClick={() => setActiveTab('area-map')}
-                          className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-200 font-semibold rounded-lg border border-emerald-300 dark:border-emerald-700 transition-colors text-[11px] cursor-pointer"
+                          className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-emerald-50 text-emerald-800 dark:text-emerald-200 font-semibold rounded-lg border border-emerald-300 dark:border-emerald-700 transition-colors text-[12px] cursor-pointer"
                         >
                           Xem trên sơ đồ
                         </button>
@@ -1087,7 +1116,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                         type="button"
                         id="btn-clear-active-search"
                         onClick={() => setSearchQuery('')}
-                        className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[11px] flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors shrink-0 text-[12px] flex items-center gap-1 cursor-pointer"
                       >
                         <span>Xóa bộ lọc</span>
                       </button>
@@ -1323,7 +1352,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               <LayoutDashboard
                 className={`w-4.5 h-4.5 ${activeTab === 'overview' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
               />
-              <span className="text-[11px] mt-0.5 leading-tight">Tổng quan</span>
+              <span className="text-[12px] mt-0.5 leading-tight">Tổng quan</span>
             </button>
 
             <button
@@ -1340,7 +1369,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               <Map
                 className={`w-4.5 h-4.5 ${activeTab === 'area-map' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
               />
-              <span className="text-[11px] mt-0.5 leading-tight">Sơ đồ</span>
+              <span className="text-[12px] mt-0.5 leading-tight">Sơ đồ</span>
             </button>
 
             <button
@@ -1357,7 +1386,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               <Users
                 className={`w-4.5 h-4.5 ${activeTab === 'households' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
               />
-              <span className="text-[11px] mt-0.5 leading-tight">Hộ dân</span>
+              <span className="text-[12px] mt-0.5 leading-tight">Hộ dân</span>
             </button>
 
             <button
@@ -1374,7 +1403,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               <UserCheck
                 className={`w-4.5 h-4.5 ${activeTab === 'residents' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
               />
-              <span className="text-[11px] mt-0.5 leading-tight">Nhân khẩu</span>
+              <span className="text-[12px] mt-0.5 leading-tight">Nhân khẩu</span>
             </button>
 
             <button
@@ -1391,7 +1420,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
               <FileText
                 className={`w-4.5 h-4.5 ${activeTab === 'documents' ? 'text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300' : 'text-slate-400'}`}
               />
-              <span className="text-[11px] mt-0.5 leading-tight">Hồ sơ</span>
+              <span className="text-[12px] mt-0.5 leading-tight">Hồ sơ</span>
               {warningCount > 0 && <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white" />}
             </button>
 
@@ -1416,7 +1445,7 @@ function AuthenticatedDashboard({ currentUser }: { currentUser: AppUser }) {
                         : 'text-slate-400'
                     }`}
                   />
-                  <span className="text-[11px] mt-0.5 leading-tight">Thêm</span>
+                  <span className="text-[12px] mt-0.5 leading-tight">Thêm</span>
                 </button>
               );
             })()}

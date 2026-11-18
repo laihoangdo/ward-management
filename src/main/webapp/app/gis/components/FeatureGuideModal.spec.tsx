@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ActiveMenuGuideBanner, FeatureGuideModal, MENU_GUIDES } from './FeatureGuideModal';
 import { DEFAULT_MENUS } from '../data/defaultMenus';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 describe('feature guide', () => {
   it('has a guide for every visible default menu and none for the hidden grid map', () => {
@@ -22,10 +25,10 @@ describe('feature guide', () => {
     const list = screen.getByRole('complementary', { name: 'Danh sách các menu hướng dẫn' });
     expect(list.querySelectorAll('button')).toHaveLength(3);
     expect(screen.getByRole('heading', { level: 3 }).textContent).toContain('Danh sách hộ dân');
-    expect(screen.queryByText('Trung tâm Quản trị Tối cao')).toBeNull();
+    expect(screen.queryByText('Trung tâm quản trị tối cao')).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: /Bản Đồ Không Gian 3D Thực Địa/ }));
-    expect(screen.getByText(/Bật Hiệu ứng Three.js theo phạm vi quản lý/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Bản đồ không gian 3D thực địa/ }));
+    expect(screen.getByText(/Bật hiệu ứng Three.js theo phạm vi quản lý/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Mở phân hệ này/ }));
     expect(onNavigateTab).toHaveBeenCalledWith('field-3d-map');
     expect(onClose).toHaveBeenCalled();
@@ -46,5 +49,7 @@ describe('feature guide', () => {
     expect(screen.getByText(/Lọc hồ sơ theo trạng thái hiệu lực/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Tất cả menu/ }));
     expect(onOpen).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: 'Ẩn hướng dẫn của màn này' }));
+    expect(screen.queryByText('Quản lý giấy tờ & ANTT:')).toBeNull();
   });
 });

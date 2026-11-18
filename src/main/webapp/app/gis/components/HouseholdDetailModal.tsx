@@ -37,7 +37,7 @@ import { InspectionImage } from './InspectionImage';
 import { useInspectionImageUrl } from '../services/inspectionPhotos';
 import { errorText } from '../../subjects/subjectModel';
 
-const ALLEY_BADGE_CLASS = 'text-[11px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700'; // taste-skill-ignore: màu phân loại tuyến hẻm đồng bộ sơ đồ địa bàn
+const ALLEY_BADGE_CLASS = 'text-[12px] px-2 py-0.5 rounded-full font-bold bg-purple-900/60 text-purple-200 border border-purple-700'; // taste-skill-ignore: màu phân loại tuyến hẻm đồng bộ sơ đồ địa bàn
 const PHOTO_SCRIM_CLASS =
   'absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-2 flex flex-col justify-between'; // taste-skill-ignore: scrim trung tính trên ảnh thật để đọc caption và nút xoá
 
@@ -476,7 +476,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
             <h2 className="gis-dialog-title gis-hh-title">{title}</h2>
             <div className="gis-hh-badges">
               <span
-                className={`text-[11px] px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1 ${residenceConfig.badgeBg} ${residenceConfig.badgeText} border ${residenceConfig.badgeBorder}`}
+                className={`text-[12px] px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1 ${residenceConfig.badgeBg} ${residenceConfig.badgeText} border ${residenceConfig.badgeBorder}`}
               >
                 <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${residenceConfig.dotBg}`}></span>
                 {residenceType}
@@ -667,7 +667,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                   <div className="gis-hh-form space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-1">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-1">
                           Chủ hộ / Đại diện:
                         </label>
                         <input
@@ -681,7 +681,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-2">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-2">
                           Số điện thoại liên lạc:
                         </label>
                         <input
@@ -695,7 +695,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-3">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-3">
                           Số nhà:
                         </label>
                         <input
@@ -709,7 +709,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-4">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-4">
                           Tuyến đường:
                         </label>
                         <select
@@ -732,7 +732,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-5">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-5">
                           Ấp trực thuộc (51 ấp sau sáp nhập):
                         </label>
                         <select
@@ -763,7 +763,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-6">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-6">
                           Tổ dân phố / Tổ nhân dân:
                         </label>
                         <input
@@ -777,7 +777,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-7">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-7">
                           Loại hình cơ sở:
                         </label>
                         <select
@@ -794,7 +794,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-8">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-8">
                           Tình trạng ANTT & PCCC:
                         </label>
                         <select
@@ -811,7 +811,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-9">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-9">
                           Tổng nhân khẩu cư trú:
                         </label>
                         <input
@@ -827,7 +827,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-10">
+                        <label className="block text-[12px] font-bold text-slate-700 mb-1" htmlFor="household-edit-field-10">
                           Cảnh báo / Nhắc nhở nghiệp vụ:
                         </label>
                         <input
@@ -1027,8 +1027,8 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                             </button>
                           </div>
                           <div>
-                            <div className="text-[11px] font-semibold text-white truncate">{photo.caption}</div>
-                            <div className="text-[11px] text-slate-200 tabular-nums">{photo.timestamp}</div>
+                            <div className="text-[12px] font-semibold text-white truncate">{photo.caption}</div>
+                            <div className="text-[12px] text-slate-200 tabular-nums">{photo.timestamp}</div>
                           </div>
                         </div>
                       </div>
@@ -1144,7 +1144,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
             <div className="p-3 sm:p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-white">
               <div>
                 <h4 className="font-bold text-sm text-white">{selectedPhotoForView.caption || 'Ảnh kiểm tra hiện trạng thực tế'}</h4>
-                <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                <div className="text-[12px] text-slate-400 flex items-center gap-2 mt-0.5">
                   <span>Chụp lúc: {selectedPhotoForView.timestamp}</span>
                   <span>•</span>
                   <span>Người chụp: {selectedPhotoForView.takenBy}</span>
@@ -1188,7 +1188,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
 
             {/* Viewer Footer */}
             <div className="p-3 bg-slate-950 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
-              <span className="font-mono text-[11px]">
+              <span className="font-mono text-[12px]">
                 Hồ sơ: {household.code} - {household.houseNumber} {household.street}
               </span>
               {viewerImage.src && (

@@ -253,7 +253,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-1.5 py-0.5 rounded flex items-center gap-1">
+                <span className="text-[12px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 px-1.5 py-0.5 rounded flex items-center gap-1">
                   <Radio className={`w-2.5 h-2.5 ${isListening ? 'animate-spin' : ''}`} />
                   {isListening ? 'Đang lắng nghe (Tiếng Việt)' : 'Tìm kiếm giọng nói'}
                 </span>
@@ -343,7 +343,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                 )}
               </div>
               {interimText && !transcript && (
-                <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium mt-1">
+                <div className="text-[12px] text-emerald-700 dark:text-emerald-400 font-medium mt-1">
                   Đang nhận dạng thời gian thực: "{interimText}"
                 </div>
               )}
@@ -362,7 +362,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                   <button
                     type="button"
                     onClick={handleOpenInNewTab}
-                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                    className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-[12px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" />
                     <span>Mở app ở Tab mới để cấp quyền Micro</span>
@@ -370,7 +370,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                   <button
                     type="button"
                     onClick={startListening}
-                    className="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-md text-[11px] font-bold cursor-pointer transition-colors"
+                    className="px-2.5 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 rounded-md text-[12px] font-bold cursor-pointer transition-colors"
                   >
                     Thử lại
                   </button>
@@ -381,7 +381,7 @@ export const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
 
           {/* Quick Tactical Keywords for 1-Tap on the Field */}
           <div className="space-y-2 pt-1 border-t border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 dark:text-slate-400">
+            <div className="flex items-center justify-between text-[12px] font-bold text-slate-600 dark:text-slate-400">
               <span className="flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 Từ khóa thực địa mẫu (nhấn để áp dụng ngay):

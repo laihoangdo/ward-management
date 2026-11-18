@@ -364,7 +364,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 px-2 py-0.5 rounded">
+                <span className="text-[12px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 px-2 py-0.5 rounded">
                   OCR trên thiết bị
                 </span>
                 <span className="text-slate-300 text-xs font-semibold">Hộ {household.code}</span>
@@ -476,7 +476,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   {/* Top corners */}
                   <div className="flex justify-between items-start">
                     <div className="w-4 h-4 border-t-2 border-l-2 border-emerald-400" />
-                    <div className="text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/90 text-emerald-300 border border-emerald-500/40">
+                    <div className="text-[12px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-slate-950/90 text-emerald-300 border border-emerald-500/40">
                       Căn giấy tờ vào khung
                     </div>
                     <div className="w-4 h-4 border-t-2 border-r-2 border-emerald-400" />
@@ -488,7 +488,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   {/* Bottom corners */}
                   <div className="flex justify-between items-end">
                     <div className="w-4 h-4 border-b-2 border-l-2 border-emerald-400" />
-                    <div className="text-[11px] text-slate-300 bg-slate-900/90 px-2 py-0.5 rounded">
+                    <div className="text-[12px] text-slate-300 bg-slate-900/90 px-2 py-0.5 rounded">
                       Đảm bảo đủ sáng, rõ chữ, không bị chói lóa
                     </div>
                     <div className="w-4 h-4 border-b-2 border-r-2 border-emerald-400" />
@@ -545,7 +545,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
               {/* Gallery of already captured inspection photos to pick from */}
               {existingPhotos.length > 0 && (
                 <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
-                  <div className="text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-2 flex items-center gap-1.5">
+                  <div className="text-[12px] font-bold text-slate-600 dark:text-slate-400 mb-2 flex items-center gap-1.5">
                     <Images className="w-3.5 h-3.5 text-emerald-700" />
                     <span>Hoặc chọn từ ảnh hiện trường đã chụp của hộ này:</span>
                   </div>
@@ -610,7 +610,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   <button
                     type="button"
                     onClick={handleRetake}
-                    className="absolute bottom-1.5 right-1.5 px-2 py-1 bg-slate-900/90 hover:bg-slate-900 text-white rounded text-[11px] font-bold flex items-center gap-1"
+                    className="absolute bottom-1.5 right-1.5 px-2 py-1 bg-slate-900/90 hover:bg-slate-900 text-white rounded text-[12px] font-bold flex items-center gap-1"
                   >
                     <RotateCcw className="w-3 h-3" /> Chụp lại
                   </button>
@@ -618,12 +618,12 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
 
                 <div className="flex-1 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    <span className="text-[12px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                       {extractedData.documentType === 'business_license'
                         ? 'Giấy phép / Đăng ký kinh doanh'
                         : 'Căn cước công dân (CCCD / CMND)'}
                     </span>
-                    <span className="text-[11px] text-slate-500 font-semibold">Cần kiểm tra lại</span>
+                    <span className="text-[12px] text-slate-500 font-semibold">Cần kiểm tra lại</span>
                   </div>
 
                   <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -632,7 +632,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
 
                   {/* Apply Mode Selector */}
                   <div className="pt-1 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Tác vụ:</span>
+                    <span className="text-[12px] font-bold text-slate-700 dark:text-slate-300">Tác vụ:</span>
                     <button
                       type="button"
                       onClick={() => setApplyMode('add_resident')}
@@ -676,7 +676,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                 {applyMode === 'update_business' ? (
                   <>
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Tên cơ sở kinh doanh / Doanh nghiệp:
                       </label>
                       <input
@@ -687,7 +687,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Mã số thuế / Mã số doanh nghiệp:
                       </label>
                       <input
@@ -698,7 +698,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Người đại diện theo pháp luật:
                       </label>
                       <input
@@ -709,7 +709,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Ngành nghề kinh doanh:</label>
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">Ngành nghề kinh doanh:</label>
                       <input
                         type="text"
                         value={extractedData.businessLines || ''}
@@ -721,7 +721,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                 ) : (
                   <>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Họ và tên (viết hoa):</label>
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">Họ và tên (viết hoa):</label>
                       <input
                         type="text"
                         value={extractedData.fullName || ''}
@@ -731,7 +731,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Số CCCD / CMND (12 số):</label>
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">Số CCCD / CMND (12 số):</label>
                       <input
                         type="text"
                         value={extractedData.idCardNumber || ''}
@@ -741,7 +741,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Ngày sinh (DD/MM/YYYY):</label>
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">Ngày sinh (DD/MM/YYYY):</label>
                       <input
                         type="text"
                         value={extractedData.dateOfBirth || ''}
@@ -755,7 +755,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Giới tính:</label>
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">Giới tính:</label>
                       <select
                         value={extractedData.gender || ''}
                         onChange={e => setExtractedData({ ...extractedData, gender: e.target.value as 'Nam' | 'Nữ' })}
@@ -768,7 +768,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Nơi thường trú:</label>
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">Nơi thường trú:</label>
                       <input
                         type="text"
                         value={extractedData.permanentAddress || ''}
@@ -783,7 +783,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                 {applyMode === 'add_resident' && (
                   <>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Quan hệ với chủ hộ ({household.ownerName}):
                       </label>
                       <select
@@ -802,7 +802,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Hình thức cư trú:</label>
+                      <label className="block text-[12px] font-bold text-slate-700 dark:text-slate-300 mb-1">Hình thức cư trú:</label>
                       <select
                         value={residenceType}
                         onChange={e => setResidenceType(e.target.value as any)}
@@ -828,7 +828,7 @@ export const OcrScanModal: React.FC<OcrScanModalProps> = ({ isOpen, household, o
                   />
                   <span>Đồng thời lưu ảnh chụp giấy tờ này vào mục Ảnh kiểm tra của hộ</span>
                 </label>
-                <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded">
+                <span className="text-[12px] text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded">
                   Lưu trên thiết bị
                 </span>
               </div>

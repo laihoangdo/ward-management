@@ -17,7 +17,7 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
   selectedId,
   onSelect,
   accentColor = 'blue',
-  label = 'Chọn Hộ Dân Tiếp Nhận',
+  label = 'Chọn hộ dân tiếp nhận',
   required = true,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -80,7 +80,7 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
         <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
           {label} {required && <span className="text-rose-500">*</span>}
         </label>
-        <span className="text-[11px] text-slate-400 font-medium">{households.length} hộ trên địa bàn</span>
+        <span className="text-[12px] text-slate-400 font-medium">{households.length} hộ trên địa bàn</span>
       </div>
 
       {/* Trigger / Display Box */}
@@ -104,14 +104,14 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
       >
         {selectedHousehold ? (
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <span className={`px-2 py-0.5 rounded-md font-mono font-bold text-[11px] border shrink-0 ${badgeColorClass}`}>
+            <span className={`px-2 py-0.5 rounded-md font-mono font-bold text-[12px] border shrink-0 ${badgeColorClass}`}>
               {selectedHousehold.code}
             </span>
             <div className="min-w-0 flex-1 truncate">
               <span className="font-bold text-slate-900 dark:text-white truncate">
                 Số {selectedHousehold.houseNumber} {selectedHousehold.street}
               </span>
-              <span className="text-slate-500 dark:text-slate-400 text-[11px] ml-1.5 truncate">
+              <span className="text-slate-500 dark:text-slate-400 text-[12px] ml-1.5 truncate">
                 — Chủ hộ: <strong className="text-slate-700 dark:text-slate-200">{selectedHousehold.ownerName}</strong>
                 {selectedHousehold.hamlet ? ` (${selectedHousehold.hamlet})` : ''}
               </span>
@@ -125,7 +125,7 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
         )}
 
         <div className="flex items-center gap-1.5 shrink-0 text-slate-400">
-          <span className="text-[11px] font-medium hidden sm:inline text-blue-600 dark:text-blue-400">{isOpen ? 'Đóng' : 'Tìm kiếm'}</span>
+          <span className="text-[12px] font-medium hidden sm:inline text-blue-600 dark:text-blue-400">{isOpen ? 'Đóng' : 'Tìm kiếm'}</span>
           <ChevronDown
             className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : ''}`}
           />
@@ -170,7 +170,7 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
                 </button>
               )}
             </div>
-            <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-1">
+            <div className="mt-1.5 flex items-center justify-between text-[12px] text-slate-500 dark:text-slate-400 px-1">
               <span>
                 Tìm thấy <strong className="text-blue-600 dark:text-blue-400 font-bold">{filteredHouseholds.length}</strong> hộ dân phù hợp
               </span>
@@ -195,7 +195,7 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
             {filteredHouseholds.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 dark:text-slate-500 space-y-1">
                 <p className="font-semibold text-slate-600 dark:text-slate-300">Không tìm thấy hộ dân nào khớp với "{searchTerm}"</p>
-                <p className="text-[11px]">Thử tìm theo số nhà, tên đường, tên chủ hộ hoặc mã hộ khác.</p>
+                <p className="text-[12px]">Thử tìm theo số nhà, tên đường, tên chủ hộ hoặc mã hộ khác.</p>
               </div>
             ) : (
               filteredHouseholds.map(h => {
@@ -221,7 +221,7 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
                   >
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[11px] font-mono font-bold border shrink-0 ${
+                        className={`px-1.5 py-0.5 rounded text-[12px] font-mono font-bold border shrink-0 ${
                           isSelected
                             ? 'bg-blue-600 text-white border-blue-600'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
@@ -235,12 +235,12 @@ export const HouseholdSearchSelect: React.FC<HouseholdSearchSelectProps> = ({
                             Số {h.houseNumber} {h.street}
                           </span>
                           {h.type === 'business' && (
-                            <span className="text-[11px] px-1 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-normal shrink-0">
+                            <span className="text-[12px] px-1 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-normal shrink-0">
                               Kinh doanh
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 mt-0.5">
+                        <div className="text-[12px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-2 mt-0.5">
                           <span className="truncate flex items-center gap-1">
                             <User className="w-3 h-3 text-slate-400 shrink-0" />
                             {h.ownerName}

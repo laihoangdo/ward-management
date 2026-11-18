@@ -1,13 +1,24 @@
+/* Same look as the app's own sign-in card (gis LoginScreen) and MASTER.md tokens: light ground, white card,
+   green primary. Keeps the sign-in flow visually inside one product. */
 :root {
-  color-scheme: dark;
-  --territory-text: #f1f5f9;
-  --territory-muted: #cbd5e1;
+  color-scheme: light;
+  --territory-bg: #f8f9fa;
+  --territory-surface: #ffffff;
+  --territory-text: #172c35;
+  --territory-muted: #526170;
+  --territory-border: #cbd2d9;
+  --territory-control: #84939c;
+  --territory-primary: #1c4e3a;
+  --territory-primary-hover: #153c2c;
 }
 
 .login-pf body {
-  background: radial-gradient(ellipse at 50% 0, #172b49 0, #020617 65%);
+  background: var(--territory-bg);
   color: var(--territory-text);
   font-family:
+    Roboto,
+    Inter,
+    Arial,
     system-ui,
     -apple-system,
     'Segoe UI',
@@ -21,11 +32,12 @@
 
 #kc-header {
   color: var(--territory-text);
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 #kc-header-wrapper {
-  font-size: 24px;
+  color: var(--territory-text);
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1.4;
@@ -37,47 +49,48 @@
   background: url('../img/shield.svg') center / contain no-repeat;
   content: '';
   display: block;
-  height: 56px;
-  margin: 0 auto 18px;
-  width: 56px;
+  height: 48px;
+  margin: 0 auto 14px;
+  width: 48px;
 }
 
 .login-pf-page .card-pf {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 20px;
-  box-shadow: 0 24px 64px #0006;
-  max-width: 460px;
+  background: var(--territory-surface);
+  border: 1px solid var(--territory-border);
+  border-top: 4px solid var(--territory-primary);
+  border-radius: 8px;
+  box-shadow: none;
+  max-width: 440px;
   padding: 32px;
 }
 
 .login-pf-page .login-pf-header {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 #kc-page-title {
   color: var(--territory-text);
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.35;
   margin-top: 0;
 }
 
 .login-pf-page .form-group {
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .login-pf-page label {
-  color: var(--territory-muted);
+  color: var(--territory-text);
   font-size: 14px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .login-pf-page .pf-c-form-control {
-  background: #020617;
-  border: 1px solid #475569;
-  border-radius: 10px;
+  background: var(--territory-surface);
+  border: 1px solid var(--territory-control);
+  border-radius: 6px;
   color: var(--territory-text);
   font-size: 16px;
   height: 48px;
@@ -85,19 +98,25 @@
 }
 
 .login-pf-page .pf-c-form-control:focus {
-  border-color: #60a5fa;
-  outline: 2px solid #60a5fa;
+  border-color: var(--territory-primary);
+  outline: 2px solid var(--territory-primary);
   outline-offset: 2px;
 }
 
+/* Password field + show button read as one control (no light corners between them). */
 .login-pf-page .pf-c-input-group {
   gap: 6px;
+  background: transparent;
+}
+
+.login-pf-page .pf-c-input-group > * {
+  background-clip: padding-box;
 }
 
 .login-pf-page .pf-c-button.pf-m-control {
-  background: #1e293b;
-  border: 1px solid #475569;
-  border-radius: 10px;
+  background: var(--territory-surface);
+  border: 1px solid var(--territory-control);
+  border-radius: 6px;
   color: var(--territory-muted);
   min-width: 48px;
 }
@@ -107,38 +126,39 @@
 }
 
 #kc-login {
-  background: #2563eb;
+  background: var(--territory-primary);
   border: 0;
-  border-radius: 10px;
-  color: white;
+  border-radius: 6px;
+  color: #ffffff;
   font-size: 16px;
-  font-weight: 650;
+  font-weight: 600;
   min-height: 48px;
   width: 100%;
 }
 
 #kc-login:hover {
-  background: #3b82f6;
+  background: var(--territory-primary-hover);
 }
 
 #kc-login:focus-visible,
 .login-pf-page button:focus-visible,
 .login-pf-page a:focus-visible {
-  outline: 2px solid #93c5fd;
+  outline: 2px solid var(--territory-primary);
   outline-offset: 3px;
 }
 
 .login-pf-page a {
-  color: #93c5fd;
+  color: var(--territory-primary);
+  font-weight: 600;
 }
 
 .territory-footer {
-  border-top: 1px solid #334155;
-  color: #94a3b8;
+  border-top: 1px solid var(--territory-border);
+  color: var(--territory-muted);
   font-size: 13px;
   line-height: 1.7;
   margin-top: 24px;
-  padding-top: 20px;
+  padding-top: 18px;
   text-align: center;
 }
 
@@ -147,7 +167,7 @@
 }
 
 .login-pf-page .pf-c-alert {
-  border-radius: 10px;
+  border-radius: 6px;
 }
 
 #kc-info-wrapper {
@@ -168,7 +188,7 @@
   }
 
   #kc-header-wrapper {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .login-pf-page .card-pf {

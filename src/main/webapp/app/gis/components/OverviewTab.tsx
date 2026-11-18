@@ -111,10 +111,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
                 <AlertTriangle aria-hidden="true" className="h-4 w-4 text-amber-600 shrink-0" />
                 <span className="flex-1 min-w-0">
                   <strong className="block text-sm">
-                    {household.ownerName || household.businessName} · {household.code}
+                    {[household.ownerName || household.businessName, household.code].filter(Boolean).join(' · ') || 'Hộ chưa có tên'}
                   </strong>
-                  <span className="text-xs text-slate-500">
-                    {household.houseNumber} {household.street} · {household.hamlet}
+                  <span className="text-xs text-slate-600 dark:text-slate-400">
+                    {[[household.houseNumber, household.street].filter(Boolean).join(' '), household.hamlet].filter(Boolean).join(' · ')}
                   </span>
                 </span>
                 <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -145,7 +145,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               Tổng quan địa bàn
             </h2>
             <p id="overview-description" className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
-              {hamletNames.length > 0 ? `Phạm vi đang xem: ${hamletNames.join(', ')}` : 'Chưa có địa bàn trong phạm vi được giao.'}
+              {hamletNames.length > 0
+                ? `Phạm vi đang xem: ${hamletNames.join(', ')}`
+                : totalCount === 0
+                  ? 'Chưa có hộ nào trong phạm vi được giao. Nhập danh sách hoặc thêm hộ để bắt đầu.'
+                  : 'Phạm vi đang xem: toàn bộ địa bàn được giao.'}
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
@@ -166,9 +170,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
       </div>
 
-      {warningCount > 0 && attention}
-
-      {/* Top 4 Key Metric Cards */}
+      {/* Top 4 Key Metric Cards: figures first, the work queue right after them. */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total card */}
         <div
@@ -199,7 +201,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </span>
             <span className="text-xs text-slate-400 font-medium">hộ & cơ sở</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+          <div className="mt-2 sm:mt-3 text-[12px] text-slate-500 dark:text-slate-400 flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
             <span className="truncate">Hồ sơ trong phạm vi truy cập</span>
           </div>
@@ -234,7 +236,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </span>
             <span className="text-xs text-slate-400 font-medium">điểm kinh doanh</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+          <div className="mt-2 sm:mt-3 text-[12px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
             <span className="truncate">Quán net, cầm đồ, karaoke</span>
           </div>
@@ -285,7 +287,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </span>
           </div>
           <div
-            className={`mt-2 sm:mt-3 text-[11px] flex items-center gap-1 pt-1.5 sm:pt-2 border-t truncate ${
+            className={`mt-2 sm:mt-3 text-[12px] flex items-center gap-1 pt-1.5 sm:pt-2 border-t truncate ${
               warningCount > 0
                 ? 'text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-800/60'
                 : 'text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800'
@@ -326,19 +328,19 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             </span>
             <span className="text-xs text-slate-400 font-medium">người dân</span>
           </div>
-          <div className="mt-2 sm:mt-3 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
+          <div className="mt-2 sm:mt-3 text-[12px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800 truncate">
             <div className="flex items-center gap-1 truncate">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
               <span className="truncate">TB ~{totalCount > 0 ? (totalResidents / totalCount).toFixed(1) : 0} người / hộ</span>
             </div>
-            <span className="text-[11px] font-semibold text-[var(--gis-primary,#1c4e3a)] dark:text-[#a7dfbd] group-hover:underline flex items-center gap-0.5">
+            <span className="text-[12px] font-semibold text-[var(--gis-primary,#1c4e3a)] dark:text-[#a7dfbd] group-hover:underline flex items-center gap-0.5">
               Tra cứu <ArrowRight className="w-2.5 h-2.5" />
             </span>
           </div>
         </div>
       </div>
 
-      {warningCount === 0 && attention}
+      {attention}
 
       {/* Warning Box Banner */}
       {warningCount > 0 && (
@@ -350,7 +352,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
             <AlertTriangle aria-hidden="true" className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="flex-1 w-full min-w-0">
               <h3 id="warning-title" className="text-sm sm:text-base font-bold text-[#78350f] dark:text-amber-200 leading-snug">
-                CẢNH BÁO: {warningCount} Cơ sở sắp hết hạn Giấy phép kinh doanh / An ninh trật tự
+                Cảnh báo: {warningCount} cơ sở sắp hết hạn giấy phép kinh doanh / an ninh trật tự
               </h3>
               <p className="text-xs text-amber-900/80 dark:text-amber-300/80 mt-1">
                 Cán bộ CSKV cần kiểm tra thực địa, đôn đốc cơ sở nộp hồ sơ gia hạn đúng quy định trước ngày hết hiệu lực:
@@ -609,10 +611,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               >
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`}></span>
-                  <span className="text-[11px] font-bold truncate">Số {h.houseNumber}</span>
+                  <span className="text-[12px] font-bold truncate">Số {h.houseNumber}</span>
                 </div>
                 <div className="text-[12px] text-slate-500 dark:text-slate-400 truncate font-medium">{h.street}</div>
-                <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">{h.hamlet}</div>
+                <div className="text-[12px] text-slate-400 dark:text-slate-500 mt-1">{h.hamlet}</div>
               </div>
             );
           })}

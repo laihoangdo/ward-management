@@ -344,7 +344,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-[11px] font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/80">
+                <span className="text-[12px] font-mono font-bold text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/80">
                   {household.code}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">{household.hamlet}</span>
@@ -390,7 +390,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
 
               {/* Watermark Notice Tag on Live View */}
               {addWatermark && (
-                <div className="absolute top-3 left-3 bg-slate-950/90 px-2.5 py-1 rounded-lg border border-amber-500/50 text-[11px] font-semibold text-amber-300 flex items-center gap-1.5">
+                <div className="absolute top-3 left-3 bg-slate-950/90 px-2.5 py-1 rounded-lg border border-amber-500/50 text-[12px] font-semibold text-amber-300 flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
                   <span>Đóng dấu công vụ CSKV tự động</span>
                 </div>
@@ -497,7 +497,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Category Selection */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Phân loại ảnh kiểm tra:</label>
+                  <label className="block text-[12px] font-bold text-slate-400 mb-1">Phân loại ảnh kiểm tra:</label>
                   <select
                     value={category}
                     onChange={e => setCategory(e.target.value as any)}
@@ -512,7 +512,7 @@ export const InspectionCameraModal: React.FC<InspectionCameraModalProps> = ({
 
                 {/* Caption / Notes */}
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">Ghi chú ảnh thực địa:</label>
+                  <label className="block text-[12px] font-bold text-slate-400 mb-1">Ghi chú ảnh thực địa:</label>
                   <input
                     type="text"
                     value={caption}

@@ -40,7 +40,7 @@ it('offers DB roads only in assigned areas and preserves an existing legacy assi
   expect((screen.getByRole('checkbox', { name: 'Legacy road' }) as HTMLInputElement).checked).toBe(true);
   expect(screen.getByRole('checkbox', { name: /DB hamlet/ })).toBeTruthy();
   vi.mocked(saveDelegation).mockResolvedValue(officer);
-  fireEvent.click(screen.getByRole('button', { name: /Lưu Cấu Hình Phân Quyền/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Lưu cấu hình phân quyền/ }));
   await waitFor(() => expect(saveDelegation).toHaveBeenCalledWith(expect.objectContaining({ hamletIds: [7] })));
 });
 
@@ -149,7 +149,7 @@ it('saves the hamlets and roads chosen through the checklists', async () => {
   fireEvent.click(await screen.findByRole('checkbox', { name: 'Road B' }));
   expect(screen.getByText('Đã chọn 1/2')).toBeTruthy();
   vi.mocked(saveDelegation).mockResolvedValue(officer);
-  fireEvent.click(screen.getByRole('button', { name: /Lưu Cấu Hình Phân Quyền/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Lưu cấu hình phân quyền/ }));
   await waitFor(() =>
     expect(saveDelegation).toHaveBeenCalledWith(expect.objectContaining({ hamletIds: [8], assignedStreets: ['Road B'] })),
   );

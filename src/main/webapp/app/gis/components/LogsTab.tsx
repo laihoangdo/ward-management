@@ -53,7 +53,7 @@ const ValueChange: React.FC<{ before?: string; after?: string }> = ({ before, af
   return (
     <details className={box}>
       <summary className="cursor-pointer font-semibold text-slate-700 dark:text-slate-300">Xem dữ liệu thay đổi</summary>
-      <div className="mt-1.5 space-y-1 font-mono text-[11px] max-h-60 overflow-auto">{rows}</div>
+      <div className="mt-1.5 space-y-1 font-mono text-[12px] max-h-60 overflow-auto">{rows}</div>
     </details>
   );
 };
@@ -293,10 +293,10 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
   const MAP_3D_CHIP_CLASS = 'px-3 py-1.5 rounded-lg font-medium whitespace-nowrap bg-indigo-100 text-indigo-800'; // taste-skill-ignore: màu phân loại loại hành động
   const COORDINATE_STAT_STYLES = {
     card: 'p-3 sm:p-4 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40', // taste-skill-ignore: màu phân loại loại hành động
-    label: 'text-[11px] font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5', // taste-skill-ignore: màu phân loại loại hành động
+    label: 'text-[12px] font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5', // taste-skill-ignore: màu phân loại loại hành động
     icon: 'w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400', // taste-skill-ignore: màu phân loại loại hành động
     value: 'text-xl sm:text-2xl font-bold text-indigo-900 dark:text-indigo-100 mt-1', // taste-skill-ignore: màu phân loại loại hành động
-    caption: 'hidden sm:block text-[11px] text-indigo-700 dark:text-indigo-400/70 mt-0.5', // taste-skill-ignore: màu phân loại loại hành động
+    caption: 'hidden sm:block text-[12px] text-indigo-700 dark:text-indigo-400/70 mt-0.5', // taste-skill-ignore: màu phân loại loại hành động
   };
 
   return (
@@ -341,12 +341,12 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
         {/* 4 Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
           <div className="p-3 sm:p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/70">
-            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <div className="text-[12px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <History className="w-3.5 h-3.5 text-blue-500" />
               <span>Tổng số lượt thao tác</span>
             </div>
             <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1">{stats.total}</div>
-            <div className="hidden sm:block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Trong phạm vi bạn được xem</div>
+            <div className="hidden sm:block text-[12px] text-slate-500 dark:text-slate-400 mt-0.5">Trong phạm vi bạn được xem</div>
           </div>
 
           <div className={COORDINATE_STAT_STYLES.card}>
@@ -359,21 +359,21 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
           </div>
 
           <div className="p-3 sm:p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
-            <div className="text-[11px] font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+            <div className="text-[12px] font-medium text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Cập nhật hồ sơ & OCR</span>
             </div>
             <div className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100 mt-1">{stats.profileUpdates}</div>
-            <div className="hidden sm:block text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">Ghi chú & nhân khẩu thực tế</div>
+            <div className="hidden sm:block text-[12px] text-blue-700 dark:text-blue-400 mt-0.5">Ghi chú & nhân khẩu thực tế</div>
           </div>
 
           <div className="p-3 sm:p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40">
-            <div className="text-[11px] font-medium text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+            <div className="text-[12px] font-medium text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
               <Bell className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>Đôn đốc & Gia hạn</span>
             </div>
             <div className="text-xl sm:text-2xl font-bold text-amber-900 dark:text-amber-100 mt-1">{stats.reminders}</div>
-            <div className="hidden sm:block text-[11px] text-amber-800 dark:text-amber-400 mt-0.5">Văn bản & thông báo ANTT</div>
+            <div className="hidden sm:block text-[12px] text-amber-800 dark:text-amber-400 mt-0.5">Văn bản & thông báo ANTT</div>
           </div>
         </div>
       </div>
@@ -577,7 +577,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                         </span>
 
                         {log.targetCode && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[11px] font-mono text-slate-600 dark:text-slate-400">
+                          <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[12px] font-mono text-slate-600 dark:text-slate-400">
                             {log.targetCode}
                           </span>
                         )}
@@ -590,7 +590,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                       {(log.previousValue || log.newValue) && <ValueChange before={log.previousValue} after={log.newValue} />}
 
                       {/* Meta Footer: Officer, Device, Hash */}
-                      <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 pt-1 flex-wrap">
+                      <div className="flex items-center gap-3 text-[12px] text-slate-500 dark:text-slate-400 pt-1 flex-wrap">
                         <div className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
                           <UserCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                           <span>{log.officerName || 'Chưa rõ cán bộ'}</span>
@@ -672,7 +672,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                       </div>
                       <div>
                         <span className="font-semibold text-slate-800 dark:text-slate-200">Xác minh toàn vẹn:</span>{' '}
-                        <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                        <span className="font-mono text-[12px] text-emerald-600 dark:text-emerald-400 font-medium">
                           Chưa được máy chủ xác minh
                         </span>
                       </div>
@@ -680,7 +680,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                     {log.integrityHash && (
                       <div className="pt-1">
                         <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-0.5">Mã băm kiểm toán toàn văn:</span>
-                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 font-mono text-[11px] text-slate-600 dark:text-slate-300 break-all select-all">
+                        <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 font-mono text-[12px] text-slate-600 dark:text-slate-300 break-all select-all">
                           {log.integrityHash}
                         </div>
                       </div>
@@ -712,7 +712,7 @@ export const LogsTab: React.FC<LogsTabProps> = ({ logs, households, onSelectHous
                 <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                   <FileText className="w-4 h-4" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Ghi Nhật Ký Tuần Tra / Kiểm Tra Thực Địa</h3>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Ghi nhật ký tuần tra / kiểm tra thực địa</h3>
               </div>
               <button
                 type="button"

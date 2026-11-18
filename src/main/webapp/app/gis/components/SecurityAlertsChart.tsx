@@ -97,7 +97,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           <span>Thời điểm: {label}</span>
         </div>
         {payload.map((entry: any, index: number) => (
-          <div key={`item-${index}`} className="flex items-center justify-between gap-4 text-[11px]">
+          <div key={`item-${index}`} className="flex items-center justify-between gap-4 text-[12px]">
             <span className="flex items-center gap-1.5" style={{ color: entry.color }}>
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></span>
               {entry.name}:
@@ -179,7 +179,7 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
               <TrendingUp className="w-4 h-4" />
             </span>
             <h2 className="text-base font-bold text-white flex items-center gap-2">Biểu đồ thống kê & xu hướng cảnh báo an ninh địa bàn</h2>
-            <span className="px-2 py-0.5 rounded-md bg-red-900/60 text-red-200 text-[11px] font-bold border border-red-700/50">
+            <span className="px-2 py-0.5 rounded-md bg-red-900/60 text-red-200 text-[12px] font-bold border border-red-700/50">
               Dữ liệu thời gian thực
             </span>
           </div>
@@ -280,42 +280,42 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
         <div className="bg-slate-950/80 border border-slate-800/80 p-3.5 rounded-xl space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-slate-400 font-medium">Tổng số cảnh báo</span>
+            <span className="text-[12px] text-slate-400 font-medium">Tổng số cảnh báo</span>
             <ShieldAlert className="w-4 h-4 text-slate-400" />
           </div>
           <div className="text-2xl font-bold tabular-nums text-white">{stats.total}</div>
-          <div className="text-[11px] text-slate-500">Ghi nhận toàn hệ thống</div>
+          <div className="text-[12px] text-slate-500">Ghi nhận toàn hệ thống</div>
         </div>
 
         <div className="bg-red-950/20 border border-red-900/40 p-3.5 rounded-xl space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-red-300 font-medium">Nghiêm trọng (Critical)</span>
+            <span className="text-[12px] text-red-300 font-medium">Nghiêm trọng (Critical)</span>
             <AlertOctagon className="w-4 h-4 text-red-400" />
           </div>
           <div className="text-2xl font-bold tabular-nums text-red-400">{stats.critical}</div>
-          <div className="text-[11px] text-red-400/70">Yêu cầu can thiệp khẩn cấp</div>
+          <div className="text-[12px] text-red-400/70">Yêu cầu can thiệp khẩn cấp</div>
         </div>
 
         <div className="bg-emerald-950/20 border border-emerald-900/40 p-3.5 rounded-xl space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-emerald-300 font-medium">Tỷ lệ xử lý xong</span>
+            <span className="text-[12px] text-emerald-300 font-medium">Tỷ lệ xử lý xong</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-bold tabular-nums text-emerald-400">
             {stats.resolutionRate === null ? 'Chưa có dữ liệu' : `${stats.resolutionRate}%`}
           </div>
-          <div className="text-[11px] text-emerald-400/70 tabular-nums">
+          <div className="text-[12px] text-emerald-400/70 tabular-nums">
             Đã lưu Audit Log an ninh ({stats.resolved}/{stats.total})
           </div>
         </div>
 
         <div className="bg-rose-950/20 border border-rose-900/40 p-3.5 rounded-xl space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-rose-300 font-medium">IP đã chặn tường lửa</span>
+            <span className="text-[12px] text-rose-300 font-medium">IP đã chặn tường lửa</span>
             <Ban className="w-4 h-4 text-rose-400" />
           </div>
           <div className="text-2xl font-bold tabular-nums text-rose-300">{blacklistedCount}</div>
-          <div className="text-[11px] text-rose-400/70">Khóa truy cập API & DB</div>
+          <div className="text-[12px] text-rose-400/70">Khóa truy cập API & DB</div>
         </div>
       </div>
 
@@ -329,12 +329,12 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
                 <BarChart3 className="w-4 h-4 text-red-400" />
                 {timeRange === 'week' ? 'Biến động tần suất theo ngày trong tuần' : 'Biến động tần suất theo các tháng'}
               </h3>
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[12px] text-slate-400">
                 Hiển thị theo: <strong className="text-amber-300">{viewMode}</strong>
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-[11px] text-slate-400">
+            <div className="flex items-center gap-3 text-[12px] text-slate-400">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-sm bg-red-500"></span>
                 Nghiêm trọng
@@ -435,9 +435,9 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
                 <PieIcon className="w-4 h-4 text-amber-400" />
                 Cơ cấu nguy cơ an ninh
               </h3>
-              <span className="text-[11px] text-slate-500">Tỷ trọng %</span>
+              <span className="text-[12px] text-slate-500">Tỷ trọng %</span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Phân loại theo hành vi xâm nhập, cập nhật database và tài khoản trái phép.</p>
+            <p className="text-[12px] text-slate-400 mt-1">Phân loại theo hành vi xâm nhập, cập nhật database và tài khoản trái phép.</p>
           </div>
 
           <div className="h-52 w-full relative flex items-center justify-center">
@@ -458,14 +458,14 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
             {/* Center Donut Label */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-lg font-bold tabular-nums text-white leading-none">{stats.total}</span>
-              <span className="text-[11px] text-slate-400">Sự cố</span>
+              <span className="text-[12px] text-slate-400">Sự cố</span>
             </div>
           </div>
 
           {/* Custom Legend for Categories */}
           <div className="space-y-1.5 pt-1 border-t border-slate-800">
             {categoryData.map((item, idx) => (
-              <div key={item.name} className="flex items-center justify-between text-[11px]">
+              <div key={item.name} className="flex items-center justify-between text-[12px]">
                 <div className="flex items-center gap-1.5 truncate">
                   <span
                     className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -481,14 +481,14 @@ export const SecurityAlertsChart: React.FC<SecurityAlertsChartProps> = ({ alerts
       </div>
 
       {/* FOOTER NOTICE / SYSTEM ADVISORY */}
-      <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between flex-wrap gap-2">
+      <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-[12px] text-slate-400 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>
             Hệ thống an ninh địa bàn tự động ghi log mọi biến động và cảnh báo qua email quản trị viên <strong>24/7</strong>.
           </span>
         </div>
-        <div className="text-[11px] text-slate-500">Chu kỳ quét: 30 giây/lần</div>
+        <div className="text-[12px] text-slate-500">Chu kỳ quét: 30 giây/lần</div>
       </div>
     </div>
   );

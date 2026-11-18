@@ -771,17 +771,17 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
           <div>
             <div className="flex items-center flex-wrap gap-1.5 sm:space-x-2">
               <span className="font-bold text-slate-100 text-xs sm:text-sm tracking-wide">BẢN ĐỒ 3D VỆ TINH</span>
-              <span className="px-2 py-0.5 text-[11px] uppercase font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full">
+              <span className="px-2 py-0.5 text-[12px] uppercase font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full">
                 Xã Bà Điểm Mới
               </span>
               {hasUnsavedChanges && (
-                <span className="flex items-center space-x-1 px-2 py-0.5 text-[11px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full">
+                <span className="flex items-center space-x-1 px-2 py-0.5 text-[12px] font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                   <span>Chưa lưu</span>
                 </span>
               )}
             </div>
-            <p className="hidden xl:block text-[11px] text-slate-400">
+            <p className="hidden xl:block text-[12px] text-slate-400">
               960 công trình 3D thực địa • Khớp chính xác ảnh vệ tinh • Đồng bộ Blender & Three.js
             </p>
           </div>
@@ -918,7 +918,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                 <Layers className="w-3.5 h-3.5 text-blue-400" />
                 <span>Lớp bản đồ</span>
               </span>
-              <span className="text-[11px] text-slate-400 font-normal">Zoom 16 SAS</span>
+              <span className="text-[12px] text-slate-400 font-normal">Zoom 16 SAS</span>
             </div>
 
             {/* Satellite toggle & opacity */}
@@ -933,7 +933,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                   />
                   <span>Ảnh vệ tinh mặt đất</span>
                 </label>
-                <span className="text-[11px] text-slate-400 font-mono">{Math.round(satelliteOpacity * 100)}%</span>
+                <span className="text-[12px] text-slate-400 font-mono">{Math.round(satelliteOpacity * 100)}%</span>
               </div>
               {showSatellite && (
                 <input
@@ -965,8 +965,8 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
               {/* Building filter */}
               <div className="pt-2 border-t border-slate-800/80">
-                <span className="text-[11px] text-slate-400 block mb-1.5">Lọc công trình 3D:</span>
-                <div className="grid grid-cols-2 gap-1 text-[11px]">
+                <span className="text-[12px] text-slate-400 block mb-1.5">Lọc công trình 3D:</span>
+                <div className="grid grid-cols-2 gap-1 text-[12px]">
                   <button
                     onClick={() => setFilterCategory('all')}
                     className={`px-2 py-1 rounded text-center transition-colors ${
@@ -1012,22 +1012,22 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
           {/* Camera Presets & Time of day */}
           <div className="bg-slate-900/85 border border-slate-800 rounded-xl p-2.5 shadow-xl flex items-center space-x-2 text-xs">
-            <span className="text-[11px] text-slate-400 font-medium pl-1">Góc nhìn:</span>
+            <span className="text-[12px] text-slate-400 font-medium pl-1">Góc nhìn:</span>
             <button
               onClick={() => setCameraPreset('overview')}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px] font-medium"
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[12px] font-medium"
             >
               Toàn cảnh
             </button>
             <button
               onClick={() => setCameraPreset('top')}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px] font-medium"
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[12px] font-medium"
             >
               Từ trên
             </button>
             <button
               onClick={() => setCameraPreset('street')}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px] font-medium"
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[12px] font-medium"
             >
               Đường phố
             </button>
@@ -1071,7 +1071,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                     <Building2 className="w-3.5 h-3.5 text-blue-400" />
                     <span>{b.name}</span>
                   </div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-[12px] text-slate-400">
                     Cao {b.height_m.toFixed(1)}m • {b.floors} tầng • Diện tích {Math.round(b.area_m2)} m²
                   </div>
                 </div>
@@ -1087,7 +1087,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
             <div className="px-4 py-3 bg-slate-850 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400" aria-hidden="true"></span>
-                <span className="font-bold text-slate-100 text-sm">Chỉnh Sửa Công Trình</span>
+                <span className="font-bold text-slate-100 text-sm">Chỉnh sửa công trình</span>
               </div>
               <button
                 type="button"
@@ -1103,32 +1103,32 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {/* Name & ID */}
               <div>
-                <label className="text-[11px] font-medium text-slate-400 block mb-1">Tên công trình</label>
+                <label className="text-[12px] font-medium text-slate-400 block mb-1">Tên công trình</label>
                 <input
                   type="text"
                   value={currentSelected.name}
                   onChange={e => updateBuilding(currentSelected.id, { name: e.target.value }, 'Đổi tên')}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-blue-500"
                 />
-                <span className="text-[11px] text-slate-500 block mt-1">ID: {currentSelected.id}</span>
+                <span className="text-[12px] text-slate-500 block mt-1">ID: {currentSelected.id}</span>
               </div>
 
               {/* Geographic Coordinates */}
               <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60 space-y-1.5">
-                <div className="flex items-center justify-between text-slate-300 font-medium text-[11px]">
+                <div className="flex items-center justify-between text-slate-300 font-medium text-[12px]">
                   <span className="flex items-center space-x-1">
                     <MapPin className="w-3 h-3 text-red-400" />
                     <span>Tọa độ GPS WGS84</span>
                   </span>
-                  <button onClick={() => setCameraPreset('focus')} className="text-[11px] text-blue-400 hover:underline">
+                  <button onClick={() => setCameraPreset('focus')} className="text-[12px] text-blue-400 hover:underline">
                     Focus camera
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-300">
+                <div className="grid grid-cols-2 gap-2 text-[12px] font-mono text-slate-300">
                   <div className="bg-slate-900/60 p-1.5 rounded-md">Vĩ độ: {currentSelected.lat.toFixed(6)}°</div>
                   <div className="bg-slate-900/60 p-1.5 rounded-md">Kinh độ: {currentSelected.lng.toFixed(6)}°</div>
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[12px] text-slate-400">
                   Diện tích đáy: <b className="text-slate-200">{Math.round(currentSelected.area_m2)} m²</b>
                 </div>
               </div>
@@ -1137,7 +1137,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
               <div className="space-y-3 pt-1 border-t border-slate-800">
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[11px] font-medium text-slate-300">Chiều cao công trình</span>
+                    <span className="text-[12px] font-medium text-slate-300">Chiều cao công trình</span>
                     <span className="text-xs font-mono font-bold text-amber-400">{currentSelected.height_m.toFixed(1)} m</span>
                   </div>
                   <input
@@ -1156,7 +1156,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[11px] font-medium text-slate-300">Số tầng</span>
+                    <span className="text-[12px] font-medium text-slate-300">Số tầng</span>
                     <span className="text-xs font-mono font-bold text-blue-400">{currentSelected.floors} tầng</span>
                   </div>
                   <input
@@ -1176,7 +1176,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
               {/* Roof Type Selection */}
               <div className="space-y-2 pt-2 border-t border-slate-800">
-                <span className="text-[11px] font-medium text-slate-300 block">Kiểu dáng mái nhà:</span>
+                <span className="text-[12px] font-medium text-slate-300 block">Kiểu dáng mái nhà:</span>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     { id: 'gabled', label: 'Mái ngói chữ A' },
@@ -1187,7 +1187,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                     <button
                       key={r.id}
                       onClick={() => updateBuilding(currentSelected.id, { roofType: r.id as RoofType }, 'Đổi kiểu mái')}
-                      className={`px-2.5 py-1.5 rounded-lg border text-left transition-colors text-[11px] ${
+                      className={`px-2.5 py-1.5 rounded-lg border text-left transition-colors text-[12px] ${
                         currentSelected.roofType === r.id
                           ? 'border-amber-500 bg-amber-500/15 text-amber-200 font-medium'
                           : 'border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -1202,7 +1202,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
               {/* Roof & Wall Colors */}
               <div className="space-y-3 pt-2 border-t border-slate-800">
                 <div>
-                  <span className="text-[11px] font-medium text-slate-300 block mb-1.5">Màu sắc mái:</span>
+                  <span className="text-[12px] font-medium text-slate-300 block mb-1.5">Màu sắc mái:</span>
                   <div className="flex items-center space-x-2">
                     {[
                       { c: '#b91c1c', label: 'Ngói đỏ' },
@@ -1233,7 +1233,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                 </div>
 
                 <div>
-                  <span className="text-[11px] font-medium text-slate-300 block mb-1.5">Màu sắc tường:</span>
+                  <span className="text-[12px] font-medium text-slate-300 block mb-1.5">Màu sắc tường:</span>
                   <div className="flex items-center space-x-2">
                     {[
                       { c: '#f3e8d2', label: 'Vàng kem' },
@@ -1266,10 +1266,10 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
 
               {/* Footprint Scaling & Rotation */}
               <div className="space-y-2 pt-2 border-t border-slate-800">
-                <span className="text-[11px] font-medium text-slate-300 block">Kích thước & Góc xoay:</span>
+                <span className="text-[12px] font-medium text-slate-300 block">Kích thước & Góc xoay:</span>
                 <div className="space-y-2">
                   <div>
-                    <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                    <div className="flex justify-between text-[12px] text-slate-400 mb-1">
                       <span>Tỷ lệ footprint</span>
                       <span className="font-mono text-slate-200">{currentSelected.scale.toFixed(2)}x</span>
                     </div>
@@ -1285,7 +1285,7 @@ export const BaDiem3DMapEditor: React.FC<BaDiem3DMapEditorProps> = ({ onShowToas
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                    <div className="flex justify-between text-[12px] text-slate-400 mb-1">
                       <span>Xoay hướng</span>
                       <span className="font-mono text-slate-200">{Math.round(currentSelected.rotationY)}°</span>
                     </div>

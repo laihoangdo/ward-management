@@ -25,8 +25,8 @@ export const SuperAdminAccessGuard: React.FC<SuperAdminAccessGuardProps> = ({
             <Lock className="w-6 h-6" />
           </div>
           <div>
-            <span className="px-2.5 py-0.5 rounded text-[11px] uppercase font-mono font-bold bg-red-950 text-red-300 border border-red-700/60">
-              Yêu Cầu Thẩm Quyền Tối Cao
+            <span className="px-2.5 py-0.5 rounded text-[12px] uppercase font-mono font-bold bg-red-950 text-red-300 border border-red-700/60">
+              Yêu cầu thẩm quyền tối cao
             </span>
             <h2 className="text-xl sm:text-2xl font-bold text-white mt-0.5 tracking-tight">Trung tâm quản trị</h2>
           </div>
@@ -89,7 +89,7 @@ export const SuperAdminAccessGuard: React.FC<SuperAdminAccessGuardProps> = ({
             className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs sm:text-sm font-semibold border border-slate-700 flex items-center justify-center gap-2 transition cursor-pointer"
           >
             <LogIn className="w-4 h-4" />
-            Đăng Nhập Tài Khoản Khác / Google SSO
+            Đăng nhập tài khoản khác / Google SSO
           </button>
         </div>
 

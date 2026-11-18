@@ -137,7 +137,7 @@ export const PermissionGroupsPanel: React.FC<Props> = ({ onShowToast }) => {
                 <tr key={group.id} className="border-t border-slate-800">
                   <td data-label="Nhóm" className="py-2 pr-3">
                     <div className="font-semibold text-white">{group.name}</div>
-                    {group.builtIn && <div className="text-[11px] text-slate-500">Nhóm gốc</div>}
+                    {group.builtIn && <div className="text-[12px] text-slate-500">Nhóm gốc</div>}
                   </td>
                   <td data-label="Vai trò" className="py-2 pr-3">
                     {GROUP_ROLE_LABELS[group.role]}

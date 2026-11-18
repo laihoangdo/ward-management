@@ -1582,7 +1582,7 @@ export default function FieldHouseMap({
       {screenshotBlob && <MapCapturePreview blob={screenshotBlob} onClose={() => setScreenshotBlob(null)} />}
       <header>
         <div className="field-header-brand">
-          <strong>Bản Đồ Không Gian 3D Thực Địa</strong>
+          <strong>Bản đồ không gian 3D thực địa</strong>
           <span className="field-count-badge">
             {loading ? 'Đang tải công trình…' : `${houses.length.toLocaleString('vi-VN')} công trình`}
           </span>
@@ -1834,11 +1834,17 @@ export default function FieldHouseMap({
       </header>
       {threeEnabled && (
         <div role="status" className="field-notice field-three-banner">
-          <span>
-            {threeActive ? 'Hiệu ứng Three.js đang bật' : 'Đang chuẩn bị hiệu ứng Three.js…'} · Áp dụng{' '}
-            <strong>{threeHouses.length.toLocaleString('vi-VN')}</strong> công trình thuộc phạm vi quản lý (nhấp nhô 1–5 tầng, mái ngói/mái
-            bằng); công trình ngoài phạm vi giữ nguyên · Thuộc tính minh họa từ GeoJSON dùng chung, không phải khảo sát thực tế.
-          </span>
+          {/* One short line; the explanation folds away so the map keeps the screen on phones. */}
+          <details className="field-notice-more">
+            <summary>
+              {threeActive ? 'Hiệu ứng Three.js đang bật' : 'Đang chuẩn bị hiệu ứng Three.js…'} ·{' '}
+              <strong>{threeHouses.length.toLocaleString('vi-VN')}</strong> công trình trong phạm vi
+            </summary>
+            <span>
+              Áp dụng cho công trình thuộc phạm vi quản lý (nhấp nhô 1–5 tầng, mái ngói/mái bằng); công trình ngoài phạm vi giữ nguyên ·
+              Thuộc tính minh họa từ GeoJSON dùng chung, không phải khảo sát thực tế.
+            </span>
+          </details>
           {access.global && territoryShapes.length === 0 && realHamlets.length > 0 && (
             <label className="field-scope-picker">
               Phạm vi ấp:
@@ -1898,9 +1904,12 @@ export default function FieldHouseMap({
         </p>
       )}
       {!loading && !access.global && !access.territories.length && (
-        <p className="field-notice">
-          Chỉ xem hình khối toàn xã và hồ sơ hộ dân được giao. Chưa có ranh giới ấp được phân quyền để cho phép thao tác vị trí.
-        </p>
+        <details className="field-notice field-notice-more">
+          <summary>Chế độ chỉ xem</summary>
+          <span>
+            Chỉ xem hình khối toàn xã và hồ sơ hộ dân được giao. Chưa có ranh giới ấp được phân quyền để cho phép thao tác vị trí.
+          </span>
+        </details>
       )}
       {layers.temporaryHouseholds && temporaryHouseholds.length > 0 && (
         <p className="field-temporary-notice">

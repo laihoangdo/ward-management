@@ -21,12 +21,15 @@
   table.gis-stack-table tbody td {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 8px;
     padding: 2px 0;
     border: 0;
     text-align: left;
     overflow-wrap: anywhere;
+  }
+  table.gis-stack-table tbody td[data-label='STT'] {
+    display: none;
   }
   table.gis-stack-table tbody td[data-label]::before {
     content: attr(data-label);

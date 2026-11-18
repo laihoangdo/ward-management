@@ -90,7 +90,7 @@
   color: var(--field-text);
 }
 .field-house-map .field-quick-item span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--field-muted);
 }
 .field-house-map .field-quick-item-active {
@@ -707,7 +707,7 @@ html.dark .field-house-map button[aria-pressed='true'] {
   .field-three-banner,
   .field-temporary-notice {
     padding: 3px 8px;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1.35;
   }
   .field-map-body:has(.field-panel) .field-layers[open] {
@@ -745,7 +745,7 @@ html.dark .field-house-map button[aria-pressed='true'] {
     pointer-events: none;
     color: #fff;
     text-shadow: 0 1px 3px #000; /* taste-skill-ignore: chữ trên ảnh bản đồ cần shadow để đọc được */
-    font-size: 11px;
+    font-size: 12px;
     text-align: center;
   }
 }
@@ -991,7 +991,7 @@ html.dark .field-nav-warning {
 .field-nav-credit {
   display: block;
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--field-muted);
 }
 @media (max-width: 767px), (max-height: 600px) and (pointer: coarse) {
@@ -1011,5 +1011,38 @@ html.dark .field-nav-warning {
   .field-house-map .field-nav-hint,
   .field-house-map .field-nav-credit {
     display: none;
+  }
+}
+
+/* Folded notices (Three.js status, view-only mode): one line by default, details on demand. */
+.field-notice-more {
+  min-width: 0;
+}
+.field-notice-more > summary {
+  cursor: pointer;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style-position: inside;
+}
+.field-notice-more > span {
+  display: block;
+  margin-top: 4px;
+  color: var(--field-muted, inherit);
+}
+
+/* Touch: the header toolbar (outside the map canvas) and the layer panel get finger-sized targets.
+   The scrolling toolbar keeps one row; the canvas and MapLibre's own controls are unchanged. */
+@media (pointer: coarse) {
+  .field-house-map .field-map-actions button,
+  .field-house-map .field-quick-search input,
+  .field-house-map .field-layers summary,
+  .field-house-map .field-layer-select select {
+    min-height: 44px;
+  }
+  .field-house-map .field-layers input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
   }
 }

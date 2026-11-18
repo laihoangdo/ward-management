@@ -72,3 +72,16 @@
 .subject-match-list li:last-child {
   border-bottom: 0;
 }
+/* Phones: each filter group is one row that scrolls sideways, not 3–4 wrapped rows above the list. */
+@media (max-width: 640px) {
+  .subject-summary {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-bottom: 2px;
+  }
+  .roster-page .subject-summary button {
+    flex: none;
+    white-space: nowrap;
+  }
+}

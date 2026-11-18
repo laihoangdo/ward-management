@@ -257,7 +257,7 @@ export const AddHouseholdModal: React.FC<AddHouseholdModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-bold">Thêm hộ dân / Cơ sở mới</h3>
-              <p className="text-[11px] sm:text-xs text-white/80">Bổ sung vị trí quản lý thực địa trên địa bàn</p>
+              <p className="text-[12px] sm:text-xs text-white/80">Bổ sung vị trí quản lý thực địa trên địa bàn</p>
             </div>
           </div>
           <button

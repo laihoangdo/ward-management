@@ -11,7 +11,7 @@ vi.mock('./VoiceSearchModal', () => ({
 }));
 afterEach(cleanup);
 
-it('preserves search, refresh, navigation, theme, warning, logout and sidebar actions', () => {
+it('preserves search, refresh, theme, warning and sidebar actions and titles the open menu', () => {
   const props = {
     activeTab: 'overview' as const,
     warningCount: 2,
@@ -35,23 +35,22 @@ it('preserves search, refresh, navigation, theme, warning, logout and sidebar ac
   };
   render(
     <MemoryRouter>
-      <Header {...props} />
+      <Header {...props} title="Tổng quan & Thống kê" />
     </MemoryRouter>,
   );
+  expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Tổng quan & Thống kê');
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'hồ sơ' } });
   expect(props.onSearchChange).toHaveBeenLastCalledWith('hồ sơ');
   fireEvent.click(screen.getByTitle('Xóa tìm kiếm'));
   expect(props.onSearchChange).toHaveBeenLastCalledWith('');
   fireEvent.click(screen.getByRole('button', { name: 'Cập nhật dữ liệu' }));
   expect(props.onRefresh).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByTitle('Mở nhanh module Quản lý nhân khẩu & Định danh'));
-  expect(props.onTabChange).toHaveBeenLastCalledWith('residents');
   fireEvent.click(screen.getByTitle('Chuyển sang Chế độ Tối (Ban đêm)'));
   expect(props.onToggleTheme).toHaveBeenCalledOnce();
   fireEvent.click(screen.getByTitle('Thông báo & Cảnh báo an ninh địa bàn (2)'));
   expect(props.onOpenWarnings).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByTitle('Đăng xuất'));
-  expect(props.onLogout).toHaveBeenCalledOnce();
+  // Sign-out moved to the sidebar account block: the header no longer duplicates it.
+  expect(screen.queryByTitle('Đăng xuất')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Ẩn menu bên trái' }));
   expect(props.onToggleDesktopSidebar).toHaveBeenCalledOnce();
   fireEvent.click(screen.getByRole('button', { name: 'Mở menu điều hành' }));

@@ -71,11 +71,11 @@ const AssignmentChecklist: React.FC<{
           options.map(option => (
             <label
               key={option.value}
-              className="gis-assignment-option min-h-[36px] cursor-pointer rounded-md px-2 py-1.5 text-sm text-slate-200 transition-colors hover:bg-slate-800"
+              className="gis-assignment-option min-h-[40px] cursor-pointer rounded-md px-2 py-1.5 text-sm text-slate-200 transition-colors hover:bg-slate-800"
             >
               <input
                 type="checkbox"
-                className="h-4 w-4 shrink-0 accent-[var(--gis-primary,#1c4e3a)]"
+                className="h-5 w-5 shrink-0 accent-[var(--gis-primary,#1c4e3a)]"
                 checked={chosen.has(option.value)}
                 onChange={e => toggle(option.value, e.target.checked)}
               />
@@ -433,14 +433,9 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
             )}
           </div>
 
-          <button
-            type="button"
-            id="btn-save-delegation"
-            onClick={handleSaveDelegation}
-            className="py-2.5 px-5 rounded-xl bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white font-semibold text-sm flex items-center gap-2 transition-colors cursor-pointer self-start md:self-auto"
-          >
+          <button type="button" id="btn-save-delegation" onClick={handleSaveDelegation} className="gis-btn-primary self-start md:self-auto">
             <ShieldCheck className="w-4 h-4" />
-            Lưu Cấu Hình Phân Quyền
+            Lưu cấu hình phân quyền
           </button>
         </div>
       </div>
@@ -462,7 +457,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <button
                   type="button"
                   onClick={() => setRoleFilter('all')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-colors text-[11px] tabular-nums ${
+                  className={`flex-1 min-h-[36px] py-1.5 px-2 rounded-lg font-bold transition-colors text-[13px] tabular-nums ${
                     roleFilter === 'all' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -471,7 +466,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <button
                   type="button"
                   onClick={() => setRoleFilter('sub-admin')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-colors text-[11px] tabular-nums ${
+                  className={`flex-1 min-h-[36px] py-1.5 px-2 rounded-lg font-bold transition-colors text-[13px] tabular-nums ${
                     roleFilter === 'sub-admin' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -480,7 +475,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 <button
                   type="button"
                   onClick={() => setRoleFilter('officer')}
-                  className={`flex-1 py-1.5 px-2 rounded-lg font-bold transition-colors text-[11px] tabular-nums ${
+                  className={`flex-1 min-h-[36px] py-1.5 px-2 rounded-lg font-bold transition-colors text-[13px] tabular-nums ${
                     roleFilter === 'officer' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -488,29 +483,24 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                 </button>
               </div>
 
-              {/* Filter by Hamlet */}
-              <div
-                role="group"
-                aria-label="Lọc theo ấp"
-                className="flex max-h-40 flex-wrap gap-1 overflow-y-auto p-1 bg-slate-900/60 rounded-xl border border-slate-800 text-xs"
-              >
-                {[
-                  { id: 'all', label: 'Tất cả ấp' },
-                  ...Array.from(new Set(areas.map(a => a.hamletName).filter(Boolean))).map(name => ({ id: name, label: name })),
-                ].map(h => (
-                  <button
-                    key={h.id}
-                    type="button"
-                    onClick={() => setHamletDelegationFilter(h.id)}
-                    aria-pressed={hamletDelegationFilter === h.id}
-                    className={`px-2 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                      hamletDelegationFilter === h.id ? 'bg-blue-600 text-white' : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    {h.label}
-                  </button>
-                ))}
-              </div>
+              {/* Filter by Hamlet: one select instead of ~50 small text buttons. */}
+              <label className="flex flex-col gap-1 text-xs text-slate-400">
+                <span>Lọc theo ấp</span>
+                <select
+                  value={hamletDelegationFilter}
+                  onChange={e => setHamletDelegationFilter(e.target.value)}
+                  className="min-h-[40px] rounded-lg border border-slate-700 bg-slate-900 px-2.5 text-sm text-slate-100"
+                >
+                  {[
+                    { id: 'all', label: 'Tất cả ấp' },
+                    ...Array.from(new Set(areas.map(a => a.hamletName).filter(Boolean))).map(name => ({ id: name, label: name })),
+                  ].map(h => (
+                    <option key={h.id} value={h.id}>
+                      {h.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           )}
 
@@ -540,7 +530,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                           {off.rank} {off.fullName}
                         </span>
                         <span
-                          className={`text-[11px] px-1.5 py-0.5 rounded font-bold ${
+                          className={`text-[12px] px-1.5 py-0.5 rounded font-bold ${
                             isSubAdminRole
                               ? 'bg-blue-900/80 text-blue-200 border border-blue-700'
                               : 'bg-emerald-900/80 text-emerald-200 border border-emerald-700'
@@ -563,7 +553,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                       {off.assignedStreets && off.assignedStreets.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {off.assignedStreets.map((st, i) => (
-                            <span key={i} className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[12px] text-slate-300">
                               {st}
                             </span>
                           ))}
@@ -584,9 +574,9 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] text-emerald-400 font-bold">Đang thiết lập thẩm quyền cho</span>
+                    <span className="text-[12px] text-emerald-400 font-bold">Đang thiết lập thẩm quyền cho</span>
                     <span
-                      className={`text-[11px] px-2 py-0.5 rounded font-bold ${
+                      className={`text-[12px] px-2 py-0.5 rounded font-bold ${
                         selectedOfficer.role === 'sub-admin'
                           ? 'bg-blue-900/80 text-blue-200 border border-blue-700'
                           : 'bg-emerald-900/80 text-emerald-200 border border-emerald-700'
@@ -606,9 +596,11 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                   </h2>
                 </div>
 
-                <div className="text-xs text-slate-400">
-                  Đơn vị: <strong className="text-slate-200">{selectedOfficer.unit}</strong>
-                </div>
+                {selectedOfficer.unit && (
+                  <div className="text-xs text-slate-400">
+                    Đơn vị: <strong className="text-slate-200">{selectedOfficer.unit}</strong>
+                  </div>
+                )}
               </div>
 
               {/* Assignment of Hamlets (Địa bàn Ấp/Khu phố) */}
@@ -619,7 +611,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                     ? 'Phân bổ địa bàn ấp / khu phố quản lý toàn diện:'
                     : 'Phân bổ ấp / khu phố trực thuộc thực nhiệm:'}
                 </label>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[12px] text-slate-400">
                   {selectedOfficer.role === 'sub-admin'
                     ? 'Chỉ định các ấp do cán bộ này trực tiếp quản lý dân cư và giám sát công an viên:'
                     : 'Chỉ định ấp mà công an viên này thực hiện tuần tra kiểm soát:'}
@@ -628,7 +620,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                   label="Area assignments"
                   options={areas
                     .filter(area => selectedCommuneId === null || area.communeId === selectedCommuneId)
-                    .map(area => ({ value: String(area.id), label: `${area.hamletName} (ID ấp ${area.hamletId})` }))}
+                    .map(area => ({ value: String(area.id), label: area.hamletName }))}
                   selected={selectedHamletIds.map(String)}
                   onChange={values => setSelectedHamletIds(values.map(Number))}
                   emptyText="Chưa có ấp nào trong đơn vị đã chọn."
@@ -643,7 +635,7 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                     ? 'Tuyến đường trọng điểm & mạng lưới hẻm thuộc ấp:'
                     : 'Tuyến đường, đoạn phố & tuyến hẻm phụ trách tuần tra trực tiếp:'}
                 </label>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[12px] text-slate-400">
                   Giao cụ thể các tuyến đường hoặc hẻm thuộc ấp để thực hiện tuần tra, giám sát an ninh trật tự:
                 </p>
                 <AssignmentChecklist
@@ -672,10 +664,10 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                     <Sliders className="w-4 h-4 text-emerald-400" />
                     Bảng phân quyền tính năng nghiệp vụ
                   </h3>
-                  <span className="text-[11px] text-slate-400">Bật để cấp quyền, Tắt để khóa tính năng</span>
+                  <span className="text-[12px] text-slate-400">Bật để cấp quyền, Tắt để khóa tính năng</span>
                 </div>
                 {selectedOfficer?.permissionGroupName && (
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[12px] text-slate-400">
                     Nhóm quyền: <span className="font-semibold text-slate-200">{selectedOfficer.permissionGroupName}</span> (Super Admin đặt
                     phạm vi được phép; quyền cụ thể do bạn chọn)
                   </p>
@@ -727,9 +719,9 @@ export const SubAdminDelegationTab: React.FC<SubAdminDelegationTabProps> = ({ cu
                           </div>
                           <div>
                             <div className="text-xs font-bold text-white">{item.title}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">{item.desc}</div>
+                            <div className="text-[12px] text-slate-400 mt-0.5 leading-relaxed">{item.desc}</div>
                             {locked && (
-                              <div className="text-[11px] text-amber-300 mt-1 flex items-center gap-1">
+                              <div className="text-[12px] text-amber-300 mt-1 flex items-center gap-1">
                                 <Lock className="w-3 h-3" aria-hidden="true" />
                                 {locked}
                               </div>

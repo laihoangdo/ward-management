@@ -150,13 +150,13 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                <span className="px-2 py-0.5 rounded-full text-[12px] font-extrabold uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
                   Cán bộ chiến sĩ mới
                 </span>
                 <span className="text-xs text-slate-400 hidden sm:inline">• Bản đồ số thực địa quản lý địa bàn</span>
               </div>
               <h2 id="guide-title" className="text-lg sm:text-xl font-black tracking-tight text-white mt-0.5">
-                Hướng Dẫn Sử Dụng Nhanh Các Nút Bấm Trên Bản Đồ
+                Hướng dẫn nhanh các nút trên bản đồ
               </h2>
             </div>
           </div>
@@ -211,7 +211,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${active.tagColor}`}>
+                      <span className={`text-[12px] font-bold px-2 py-0.5 rounded-md border ${active.tagColor}`}>
                         Tính năng {activeFeatureIndex + 1}/{guideItems.length}
                       </span>
                       <h3 className="text-base font-bold text-slate-900 mt-0.5">{active.title}</h3>
@@ -247,7 +247,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
           <div>
             <h4 className="text-sm font-semibold text-slate-600 mb-3 flex items-center gap-1.5">
               <span>Danh mục toàn bộ các công cụ bản đồ</span>
-              <span className="text-[11px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full font-bold">6 công cụ</span>
+              <span className="text-[12px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full font-bold">6 công cụ</span>
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
@@ -282,7 +282,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                           <span className="text-xs font-bold text-slate-900">{item.title}</span>
                         </div>
                         {isSelected && (
-                          <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px]">
+                          <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[12px]">
                             <Check className="w-3 h-3" />
                           </span>
                         )}
@@ -290,7 +290,7 @@ export const MapQuickGuideModal: React.FC<MapQuickGuideModalProps> = ({ isOpen, 
                       <p className="text-xs text-slate-600 line-clamp-2 mt-1 leading-relaxed">{item.description}</p>
                     </div>
 
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[12px]">
                       <span className="text-slate-400">Vị trí nút:</span>
                       {item.buttonPreview}
                     </div>

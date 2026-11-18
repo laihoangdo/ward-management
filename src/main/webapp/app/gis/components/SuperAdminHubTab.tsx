@@ -596,7 +596,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               id="btn-test-security-alert"
               onClick={handleTriggerTestSecurityAlert}
               disabled={isSendingTestAlert}
-              className="py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-950/60 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+              className="min-h-[40px] py-2 px-3 rounded-lg border border-transparent hover:border-slate-700 hover:bg-slate-800 text-slate-300 text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-60"
             >
               <BellRing className="w-4 h-4 text-amber-300" />
               {isSendingTestAlert ? 'Đang lưu...' : 'Tạo cảnh báo kiểm thử'}
@@ -604,87 +604,48 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
           </div>
         </div>
 
-        {/* Sub Navigation Bar */}
-        <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-slate-800/80">
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('menus')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
-              activeSubTab === 'menus'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            <Settings2 className="w-3.5 h-3.5" />
-            Cài Đặt Menu Động
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('hcm-units')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
-              activeSubTab === 'hcm-units'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            Đơn Vị HC & Đường Hẻm TP.HCM ({effectiveUnitsList.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('users')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
-              activeSubTab === 'users'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            Quản Lý Tài Khoản CAND ({effectiveUsersList.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('groups')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
-              activeSubTab === 'groups'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            Nhóm Quyền ({permissionGroups.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('whitelist')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
-              activeSubTab === 'whitelist'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            <Mail className="w-3.5 h-3.5" />
-            Email được cấp phép ({effectiveEmailsList.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('security')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
-              activeSubTab === 'security'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-950/60 text-slate-400 hover:text-slate-200 border border-slate-800'
-            }`}
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            Cảnh Báo & Thống Kê An Ninh ({effectiveAlertsList.length})
-            {effectiveAlertsList.filter(a => !a.resolved).length > 0 && <span className="w-2 h-2 rounded-full bg-amber-400" />}
-          </button>
-        </div>
+        {/* Sub navigation: one row of tabs that scrolls sideways on narrow screens instead of wrapping. */}
+        <nav aria-label="Mục quản trị" className="gis-admin-subnav mt-5 pt-3 border-t border-slate-800/80">
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {(
+              [
+                { id: 'menus', icon: Settings2, label: 'Cài đặt menu động' },
+                { id: 'hcm-units', icon: MapPin, label: 'Đơn vị hành chính & đường hẻm', count: effectiveUnitsList.length },
+                { id: 'users', icon: Users, label: 'Tài khoản cán bộ', count: effectiveUsersList.length },
+                { id: 'groups', icon: ShieldAlert, label: 'Nhóm quyền', count: permissionGroups.length },
+                { id: 'whitelist', icon: Mail, label: 'Email được cấp phép', count: effectiveEmailsList.length },
+                {
+                  id: 'security',
+                  icon: ShieldAlert,
+                  label: 'Cảnh báo an ninh',
+                  count: effectiveAlertsList.length,
+                  dot: effectiveAlertsList.some(a => !a.resolved),
+                },
+              ] as const
+            ).map(tab => {
+              const Icon = tab.icon;
+              const active = activeSubTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => setActiveSubTab(tab.id)}
+                  className={`shrink-0 min-h-[40px] px-3 rounded-lg text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-colors border ${
+                    active
+                      ? 'bg-slate-100 text-slate-900 border-slate-100'
+                      : 'bg-transparent text-slate-300 hover:text-white hover:bg-slate-800 border-transparent'
+                  }`}
+                >
+                  <Icon aria-hidden="true" className="w-4 h-4" />
+                  {tab.label}
+                  {'count' in tab && <span className="tabular-nums opacity-80">({tab.count})</span>}
+                  {'dot' in tab && tab.dot && <span aria-label="Có cảnh báo chưa xử lý" className="w-2 h-2 rounded-full bg-amber-400" />}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       </div>
 
       {/* SUB-TAB 1: DYNAMIC MENUS CONFIGURATION */}
@@ -694,7 +655,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Settings2 className="w-5 h-5 text-amber-400" />
-                Cấu Hình Hiển Thị Menu Động Cho Từng Loại Tài Khoản
+                Cấu hình hiển thị menu theo vai trò
               </h2>
               <p className="text-xs text-slate-400 mt-1">
                 Chọn vai trò được phép nhìn thấy menu. Quyền thao tác và địa bàn được kiểm tra riêng tại máy chủ.
@@ -709,7 +670,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <table className="gis-stack-table w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 text-xs font-semibold text-slate-400 bg-slate-950/40">
-                  <th className="py-3 px-4">Menu & Tính Năng</th>
+                  <th className="py-3 px-4">Menu & tính năng</th>
                   <th className="py-3 px-4 text-center">Super Admin</th>
                   <th className="py-3 px-4 text-center">Admin (Trưởng CAX)</th>
                   <th className="py-3 px-4 text-center">Sub-admin (CA Phụ trách Ấp)</th>
@@ -717,11 +678,18 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 text-xs">
+                {menus.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-6 px-4 text-center text-sm text-slate-400">
+                      Máy chủ chưa lưu cấu hình menu nào, nên mọi vai trò đang dùng cấu hình mặc định của ứng dụng.
+                    </td>
+                  </tr>
+                )}
                 {menus.map(item => (
                   <tr key={item.id} className="hover:bg-slate-850/50 transition">
-                    <td data-label="Menu & Tính Năng" className="py-3.5 px-4">
+                    <td data-label="Menu & tính năng" className="py-3.5 px-4">
                       <div className="font-semibold text-slate-200">{item.label}</div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">{item.description}</div>
+                      <div className="text-[12px] text-slate-400 mt-0.5">{item.description}</div>
                       <span className="inline-block mt-1 font-mono text-[12px] text-slate-500 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
                         tabId: {item.id}
                       </span>
@@ -781,7 +749,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-red-400" />
-                Quản Lý Đơn Vị Hành Chính & Mạng Lưới Đường Hẻm TP. Hồ Chí Minh
+                Quản lý đơn vị hành chính & mạng lưới đường hẻm TP. Hồ Chí Minh
               </h2>
               <p className="text-xs text-slate-400 mt-1">
                 Import, cập nhật danh mục phường, xã, ấp/khu phố và các tuyến đường, hẻm dân cư mới nhất ở TP.HCM.
@@ -867,7 +835,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     </div>
 
                     <div className="text-xs text-slate-300 space-y-1 mb-3">
-                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <div className="flex items-center justify-between text-[12px] text-slate-400">
                         <span>
                           Cán bộ phụ trách: <strong className="text-slate-200">{unit.officerInChargeName || 'Chưa phân công'}</strong>
                         </span>
@@ -878,12 +846,12 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     </div>
 
                     <div>
-                      <span className="text-[11px] font-semibold text-amber-400 block mb-1">
+                      <span className="text-[12px] font-semibold text-amber-400 block mb-1">
                         Danh mục đường & hẻm mới nhất ({unit.streetsAndAlleys.length} tuyến):
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {unit.streetsAndAlleys.map((st, i) => (
-                          <span key={i} className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+                          <span key={i} className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-[12px] text-slate-300">
                             {st}
                           </span>
                         ))}
@@ -908,7 +876,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-5 h-5 text-blue-400" />
-                Quản Lý Tất Cả Tài Khoản Cán Bộ & Chiến Sĩ CAND
+                Quản lý tất cả tài khoản cán bộ & Chiến Sĩ CAND
               </h2>
               <p className="text-xs text-slate-400 mt-1">
                 Phân quyền chức vụ rõ ràng (Super Admin, Admin Trưởng CAX, Sub-admin CA Ấp, Công an viên).
@@ -934,7 +902,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition"
             >
               <Plus className="w-3.5 h-3.5" />
-              Tạo Mới Tài Khoản Cán Bộ
+              Tạo mới tài khoản cán bộ
             </button>
           </div>
 
@@ -958,7 +926,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   <th className="py-3 px-4">Cán Bộ & Số Hiệu</th>
                   <th className="py-3 px-4">Vai Trò RBAC</th>
                   <th className="py-3 px-4">Chức Vụ & Đơn Vị</th>
-                  <th className="py-3 px-4">Địa Bàn Phụ Trách</th>
+                  <th className="py-3 px-4">Địa bàn phụ trách</th>
                   <th className="py-3 px-4 text-center">Trạng Thái</th>
                   <th className="py-3 px-4 text-right">Thao Tác</th>
                 </tr>
@@ -975,7 +943,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                           {u.rank} {u.fullName}
                           {u.isOnline && <span className="w-2 h-2 rounded-full bg-emerald-400" title="Đang trực tuyến" />}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-mono">
+                        <div className="text-[12px] text-slate-400 font-mono">
                           Số hiệu: <strong className="text-amber-400">{u.badgeNumber}</strong> | User: {u.username}
                         </div>
                         {u.email && <div className="text-[12px] text-slate-500">{u.email}</div>}
@@ -999,12 +967,12 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
                       <td data-label="Chức Vụ & Đơn Vị" className="py-3 px-4">
                         <div className="text-slate-200 font-medium">{u.position}</div>
-                        <div className="text-[11px] text-slate-400">{u.unit}</div>
+                        <div className="text-[12px] text-slate-400">{u.unit}</div>
                       </td>
 
-                      <td data-label="Địa Bàn Phụ Trách" className="py-3 px-4">
+                      <td data-label="Địa bàn phụ trách" className="py-3 px-4">
                         <div className="text-slate-300">{u.assignedWard}</div>
-                        <div className="text-[11px] text-slate-400">{u.assignedHamlets?.join(', ') || 'Chưa phân công'}</div>
+                        <div className="text-[12px] text-slate-400">{u.assignedHamlets?.join(', ') || 'Chưa phân công'}</div>
                       </td>
 
                       <td data-label="Trạng Thái" className="py-3 px-4 text-center">
@@ -1075,7 +1043,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Mail className="w-5 h-5 text-amber-400" />
-                Danh Sách Email Được Cấp Phép Truy Cập (Whitelist)
+                Danh sách email được cấp phép truy cập (Whitelist)
               </h2>
               <p className="text-xs text-slate-400 mt-1">
                 Khi bật chính sách email, API chỉ chấp nhận tài khoản có email đang hoạt động trong danh sách này. Super Admin quản lý quản
@@ -1089,7 +1057,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               className="py-2 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-2 transition"
             >
               <Plus className="w-3.5 h-3.5" />
-              Thêm Email Vào Whitelist
+              Thêm email vào whitelist
             </button>
           </div>
 
@@ -1122,7 +1090,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-slate-400 space-y-1">
+                  <div className="text-[12px] text-slate-400 space-y-1">
                     <div>
                       Địa bàn: <strong className="text-slate-300">{item.assignedWard}</strong> ({item.assignedHamlets?.join(', ')})
                     </div>
@@ -1152,7 +1120,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               <div>
                 <h2 className="text-base font-bold text-white flex items-center gap-2">
                   <ShieldAlert className="w-5 h-5 text-red-400" />
-                  Giám Sát An Ninh & Cảnh Báo Cơ Sở Dữ Liệu
+                  Giám sát an ninh & cảnh báo cơ sở dữ liệu
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
                   Tự động phát hiện các thao tác lạ với database, cập nhật trường trái phép và gửi thông báo khẩn cấp tới email Quản trị.
@@ -1199,12 +1167,12 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
                         {/* Resolved Status Badge */}
                         {alert.resolved ? (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-700/60 flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-700/60 flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                             Đã xác minh & Xử lý xong
                           </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-950/90 text-rose-300 border border-rose-700/60 flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold bg-rose-950/90 text-rose-300 border border-rose-700/60 flex items-center gap-1">
                             <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
                             Cần xác minh & xử lý
                           </span>
@@ -1213,7 +1181,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
 
                       <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">{alert.details}</p>
 
-                      <div className="text-[11px] text-slate-400 flex flex-wrap gap-3 pt-1">
+                      <div className="text-[12px] text-slate-400 flex flex-wrap gap-3 pt-1">
                         <span>
                           Thời gian: <strong className="text-slate-200">{alert.timestamp}</strong>
                         </span>
@@ -1248,7 +1216,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                           </span>
                           {alert.resolvedBy && <span className="text-slate-400 block sm:inline sm:ml-2">Bởi: {alert.resolvedBy}</span>}
                           {alert.resolvedNotes && (
-                            <div className="text-[11px] text-emerald-400/80 italic mt-0.5">Ghi chú: "{alert.resolvedNotes}"</div>
+                            <div className="text-[12px] text-emerald-400/80 italic mt-0.5">Ghi chú: "{alert.resolvedNotes}"</div>
                           )}
                         </div>
                       </div>
@@ -1309,7 +1277,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                 <span className="text-xs text-slate-400">Chính sách truy cập API:</span>
                 <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-700/60 text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  Đang Bật Bảo Vệ (Active)
+                  Đang bật bảo vệ (Active)
                 </span>
               </div>
             </div>
@@ -1324,7 +1292,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
               <FormCheckSummary id="blacklist-form-errors" problems={blacklistCheck.problems} summaryRef={blacklistCheck.summaryRef} />
               <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5 text-rose-400" />
-                Thêm Địa Chỉ IP Nghi Vấn Vào Danh Sách Đen
+                Thêm địa chỉ IP nghi vấn vào danh sách đen
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
@@ -1380,7 +1348,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-300">Danh sách IP đang bị chặn ({blacklistedIps.length})</h3>
-                <span className="text-[11px] text-slate-500">Có hiệu lực tại API của ứng dụng</span>
+                <span className="text-[12px] text-slate-500">Có hiệu lực tại API của ứng dụng</span>
               </div>
 
               {blacklistedIps.length === 0 ? (
@@ -1410,7 +1378,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                         <button
                           type="button"
                           onClick={() => handleRemoveBlacklistIp(entry.id, entry.ipAddress)}
-                          className="py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center gap-1 transition"
+                          className="py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[12px] font-semibold flex items-center gap-1 transition"
                           title="Gỡ chặn IP"
                         >
                           <ShieldCheck className="w-3 h-3 text-amber-400" />
@@ -1423,12 +1391,12 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                       </div>
 
                       {entry.sourceAlertId && (
-                        <div className="text-[11px] text-slate-400 font-mono">
+                        <div className="text-[12px] text-slate-400 font-mono">
                           Mã cảnh báo: <span className="text-amber-400">{entry.sourceAlertId}</span>
                         </div>
                       )}
 
-                      {entry.notes && <div className="text-[11px] text-slate-500 italic">"{entry.notes}"</div>}
+                      {entry.notes && <div className="text-[12px] text-slate-500 italic">"{entry.notes}"</div>}
 
                       <div className="pt-2 border-t border-slate-850 flex items-center justify-between text-[12px] text-slate-500">
                         <span>
@@ -1452,7 +1420,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-400" />
-                Tạo Mới Tài Khoản Cán Bộ & Phân Quyền
+                Tạo mới tài khoản cán bộ & Phân Quyền
               </h3>
               <button
                 type="button"
@@ -1776,7 +1744,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-red-400" />
-                Thêm Đơn Vị Hành Chính & Tuyến Hẻm Mới Ở TP.HCM
+                Thêm đơn vị hành chính & Tuyến Hẻm Mới Ở TP.HCM
               </h3>
               <button
                 type="button"
@@ -1875,7 +1843,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
                   Hủy Bỏ
                 </button>
                 <button type="submit" className="py-2 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold">
-                  Lưu Đơn Vị Hành Chính
+                  Lưu đơn vị hành chính
                 </button>
               </div>
             </form>
@@ -1890,7 +1858,7 @@ export const SuperAdminHubTab: React.FC<SuperAdminHubTabProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Upload className="w-4 h-4 text-blue-400" />
-                Import Dữ Liệu Đơn Vị Hành Chính & Tuyến Hẻm Mới TP.HCM
+                Nhập dữ liệu đơn vị hành chính & Tuyến Hẻm Mới TP.HCM
               </h3>
               <button
                 type="button"

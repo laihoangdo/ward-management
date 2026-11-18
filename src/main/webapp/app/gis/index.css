@@ -519,7 +519,7 @@ html.dark .gis-hh-panel {
   padding: 0 6px;
   border-radius: 999px;
   background: var(--gis-surface-soft, #f1f5f3);
-  font-size: 11px;
+  font-size: 12px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -732,7 +732,7 @@ html.dark .gis-hh-panel {
   border-radius: 999px;
   background: var(--gis-surface-soft, #f1f5f3);
   color: var(--gis-accent-text, #1c4e3a);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 .gis-hh-chip.is-warning {
@@ -1103,7 +1103,7 @@ html.dark :is(#__page-root, .gis-login) {
   color: var(--gis-sidebar-muted) !important;
 }
 #__page-root .gis-sidebar .gis-role-badge {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   line-height: 1.6;
 }
@@ -1553,11 +1553,12 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
     padding-inline: 0 !important;
   }
   #__page-root .gis-sidebar--rail-tablet #account-card {
-    margin-inline: 8px;
     padding: 8px;
   }
   #__page-root .gis-sidebar--rail-tablet .gis-account-header {
+    flex-direction: column;
     justify-content: center;
+    gap: 4px;
     margin-bottom: 0;
   }
   #__page-root .gis-sidebar--rail-tablet .gis-sidebar-footer {
@@ -1665,4 +1666,102 @@ html.dark .gis-form-summary {
   padding-inline-end: 16px;
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%); /* taste-skill-ignore */
   mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent 100%); /* taste-skill-ignore */
+}
+
+/* ---------------------------------------------------------------------------------------------
+   UI/UX pass 11/2026 (see design-system/municipal-administration/MASTER.md, "Đợt cải thiện 11/2026").
+   Shared primitives for the shell and the minimum control sizes measured by tools/e2e/ui-audit.cjs.
+   --------------------------------------------------------------------------------------------- */
+.gis-skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 200;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--gis-primary, #1c4e3a);
+  color: #fff !important;
+  font-weight: 600;
+  text-decoration: none !important;
+}
+.gis-skip-link:focus {
+  top: 8px;
+}
+#__page-root .gis-denied-notice {
+  border-color: #e7c873;
+  background: #fff8e6;
+  color: #3d2a00;
+}
+html.dark #__page-root .gis-denied-notice {
+  border-color: #7a5b12;
+  background: #2a2006;
+  color: #f6e4b5;
+}
+#__page-root :is(.gis-btn-primary, .gis-btn-secondary) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+#__page-root .gis-btn-primary {
+  border: 1px solid var(--gis-primary, #1c4e3a);
+  background: var(--gis-primary, #1c4e3a);
+  color: #fff !important;
+}
+#__page-root .gis-btn-primary:hover:not(:disabled) {
+  background: var(--gis-primary-hover, #153c2c);
+}
+#__page-root .gis-btn-secondary {
+  border: 1px solid var(--gis-border, #cbd2d9);
+  background: var(--gis-surface, #fff);
+  color: var(--gis-text, #172c35) !important;
+}
+#__page-root .gis-btn-secondary:hover:not(:disabled) {
+  background: var(--gis-surface-soft, #f1f5f3);
+}
+/* Disabled stays readable: lighter fill, full-contrast text, not a dimmed dark-on-dark block. */
+#__page-root :is(.gis-btn-primary, .gis-btn-secondary):disabled {
+  border-color: var(--gis-border, #cbd2d9);
+  background: var(--gis-surface-soft, #f1f5f3);
+  color: var(--gis-muted, #526170) !important;
+  cursor: not-allowed;
+}
+
+/* Minimum control sizes in the work area. Map canvases and their floating tools keep their own sizing
+   (MASTER: do not stretch map controls until they lose function). */
+#__page-root
+  main
+  :is(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']), select):not(
+    :where(.field-house-map, .maplibregl-map, .roster-map-tools) *
+  ) {
+  min-height: 40px;
+}
+#__page-root main button:not(:where(.field-house-map, .maplibregl-map, .roster-map-tools, .gis-hit-target) *):not(.gis-hit-target) {
+  min-height: 36px;
+}
+#__page-root main :is(input[type='checkbox'], input[type='radio']):not(:where(.maplibregl-map) *) {
+  width: 20px;
+  height: 20px;
+}
+@media (pointer: coarse) {
+  #__page-root
+    main
+    :is(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']), select, button):not(
+      :where(.field-house-map, .maplibregl-map, .roster-map-tools) *
+    ) {
+    min-height: 44px;
+  }
+  #__page-root main :is(input, select, textarea):not([type='checkbox']):not([type='radio']) {
+    font-size: max(16px, 1em);
+  }
 }

@@ -80,7 +80,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
         {onPageSizeChange && (
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-500 text-[11px] hidden xs:inline">Mỗi trang:</span>
+            <span className="text-slate-500 text-[12px] hidden xs:inline">Mỗi trang:</span>
             <select
               value={pageSize}
               onChange={e => onPageSizeChange(Number(e.target.value))}

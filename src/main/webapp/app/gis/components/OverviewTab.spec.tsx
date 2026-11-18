@@ -34,7 +34,7 @@ describe('Overview attention block placement', () => {
     expect(firstBlock()).toBe('figures');
     cleanup();
   });
-  it('leads with the attention list when households carry a warning', () => {
+  it('shows the figures first and the attention list right after them when households carry a warning', () => {
     render(
       <OverviewTab
         households={[{ id: '2', code: 'H2', hamlet: 'Trung Chánh 2', status: 'warning', ownerName: 'Hộ thử', residentsCount: 1 } as never]}
@@ -42,7 +42,7 @@ describe('Overview attention block placement', () => {
         onSelectHousehold={vi.fn()}
       />,
     );
-    expect(firstBlock()).toBe('attention');
+    expect(firstBlock()).toBe('figures');
     expect(screen.getByRole('button', { name: /Hộ thử · H2/ })).toBeDefined();
     cleanup();
   });

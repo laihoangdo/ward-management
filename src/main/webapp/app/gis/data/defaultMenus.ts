@@ -5,7 +5,7 @@ const allRoles: DynamicMenuItemConfig['visibleRoles'] = ['superadmin', 'admin', 
 export const DEFAULT_MENUS: DynamicMenuItemConfig[] = [
   {
     id: 'overview',
-    label: 'Tổng quan & Thống kê',
+    label: 'Tổng quan & thống kê',
     description: 'Chỉ số từ dữ liệu đã ghi nhận',
     iconName: 'LayoutDashboard',
     visibleRoles: allRoles,
@@ -24,7 +24,7 @@ export const DEFAULT_MENUS: DynamicMenuItemConfig[] = [
     iconName: 'Grid',
     visibleRoles: allRoles,
   },
-  { id: 'field-3d-map', label: 'Bản Đồ 3D', description: 'Dữ liệu GIS và chỉnh sửa công trình', iconName: 'Boxes', visibleRoles: allRoles },
+  { id: 'field-3d-map', label: 'Bản đồ 3D', description: 'Dữ liệu GIS và chỉnh sửa công trình', iconName: 'Boxes', visibleRoles: allRoles },
   { id: 'households', label: 'Danh sách hộ dân', description: 'Hồ sơ hộ từ cơ sở dữ liệu', iconName: 'Building', visibleRoles: allRoles },
   {
     id: 'residents',
@@ -64,7 +64,7 @@ export const DEFAULT_MENUS: DynamicMenuItemConfig[] = [
   },
   {
     id: 'areas',
-    label: 'Quản lý khu vực & Tuyến',
+    label: 'Quản lý khu vực & tuyến',
     description: 'Địa bàn, tuyến đường và cán bộ',
     iconName: 'Building2',
     visibleRoles: ['superadmin', 'admin', 'sub-admin'],
@@ -78,21 +78,21 @@ export const DEFAULT_MENUS: DynamicMenuItemConfig[] = [
   },
   {
     id: 'subadmin-delegation',
-    label: 'Phân quyền Cán bộ & CAV',
+    label: 'Phân quyền cán bộ & CAV',
     description: 'Phân công địa bàn và ủy quyền nghiệp vụ',
     iconName: 'ShieldAlert',
     visibleRoles: ['superadmin', 'admin', 'sub-admin'],
   },
   {
     id: 'superadmin-hub',
-    label: 'Trung tâm Quản trị Tối cao',
+    label: 'Trung tâm quản trị tối cao',
     description: 'Tài khoản, cấu hình và bảo mật',
     iconName: 'ShieldCheck',
     visibleRoles: ['superadmin'],
   },
   {
     id: 'settings',
-    label: 'Cài đặt & Tài khoản',
+    label: 'Cài đặt & tài khoản',
     description: 'Thông tin tài khoản từ máy chủ',
     iconName: 'Settings',
     visibleRoles: allRoles,

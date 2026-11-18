@@ -139,7 +139,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           <label id={`${controlId}-label`} className="block font-bold text-slate-700 text-xs">
             {label} {required && <span className="text-rose-500">*</span>}
           </label>
-          {hint && <span className="text-[11px] text-slate-400">{hint}</span>}
+          {hint && <span className="text-[12px] text-slate-400">{hint}</span>}
         </div>
       )}
 
@@ -230,7 +230,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
               )}
             </div>
 
-            <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500 px-1">
+            <div className="mt-1 flex items-center justify-between text-[12px] text-slate-500 px-1">
               <span>
                 Khớp <strong className="text-blue-600 font-bold">{filteredOptions.length}</strong> / {options.length}
               </span>
@@ -268,7 +268,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 <span className="truncate">
                   Sử dụng: <strong className="underline">"{searchTerm.trim()}"</strong>
                 </span>
-                <span className="text-[11px] text-blue-500 ml-auto bg-blue-100 px-1.5 py-0.5 rounded shrink-0">Mới</span>
+                <span className="text-[12px] text-blue-500 ml-auto bg-blue-100 px-1.5 py-0.5 rounded shrink-0">Mới</span>
               </div>
             )}
 

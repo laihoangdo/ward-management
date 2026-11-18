@@ -60,7 +60,7 @@ Skill `design-taste-frontend` chạy ở chế độ `--app` (dashboard/admin), 
 - **Số liệu không dùng font mono**; dùng `tabular-nums` để canh cột.
 - **Không nhãn eyebrow** (chữ hoa, tracking rộng phía trên tiêu đề); viết thường, cỡ body.
 - **Card phẳng:** không shadow ở trạng thái nghỉ. Shadow chỉ cho overlay thật: menu thả, dialog, drawer, panel nổi trên bản đồ, sticky bar.
-- **Cỡ chữ nhỏ nhất 11px**; subline/meta 11–12px, dữ liệu và nhãn chính 13–14px, số KPI lớn.
+- **Cỡ chữ nhỏ nhất 12px** (đổi từ 11px trong đợt 11/2026); subline/meta 12px, dữ liệu và nhãn chính 13–14px, số KPI lớn. Không dùng `text-[11px]`.
 - **Transition gọi tên thuộc tính** (`transition-colors`, `transition-[width]`), không dùng `transition-all`.
 - **Không animation lặp** (ping/pulse/bounce) trong chrome; chỉ giữ trong phản hồi chức năng của modal (đang nghe, đang quét).
 - **Màu cảnh báo chỉ hiện khi có cảnh báo** (ví dụ thẻ "Cảnh báo hồ sơ" về trung tính khi count = 0).
@@ -76,7 +76,7 @@ Rút ra từ đợt rà soát 11/2026, áp dụng khi sửa các màn hình dùn
 
 - **Việc thường làm nằm trong màn hình đầu**, nhất là trên điện thoại 390 px: ô tìm kiếm và dòng kết quả đầu tiên của danh sách hộ/nhân khẩu phải thấy được mà không cuộn. Tab chức năng nằm một hàng, cuộn ngang trong chính nó.
 - **Dưới 640 px, bảng thành danh sách dòng hai tầng**: dòng 1 là định danh (mã hộ/họ tên, dạng liên kết chữ), các trường còn lại có nhãn cột (`data-label`). Không bỏ trường, không bắt cuộn ngang trang.
-- **Khối cảnh báo chỉ đứng đầu khi có việc cần xử lý**; khi trống thì là một dòng trạng thái trung tính sau các số liệu chính. Màu cảnh báo, nhãn đếm và bộ lọc "sắp hết hạn" chỉ mang màu khi số lượng > 0.
+- **Số liệu chính (4 KPI) luôn đứng đầu Tổng quan**, khối "Cần chú ý" ngay sau đó (đổi trong đợt 11/2026: trước đây cảnh báo đứng đầu khi có việc, làm KPI rơi xuống dưới màn hình đầu ở 900 px). Khi trống, "Cần chú ý" là một dòng trạng thái trung tính. Màu cảnh báo, nhãn đếm và bộ lọc "sắp hết hạn" chỉ mang màu khi số lượng > 0.
 - **Một `h1` mỗi màn hình** (tiêu đề ở header). Nội dung nhúng trong dashboard dùng `h2` và không lồng `<main>`.
 - **Không hiển thị nhãn trống**: thông tin hồ sơ (số hiệu, địa bàn) chỉ hiện khi có dữ liệu.
 - Dòng phụ dưới tiêu đề nói về dữ liệu (phạm vi đang xem), không hướng dẫn cách dùng giao diện.
@@ -92,9 +92,30 @@ Rút ra từ đợt rà soát 11/2026, áp dụng khi sửa các màn hình dùn
 - **Không đưa control ghi dữ liệu mà server luôn từ chối.** API cũ `/api/households`, `/api/residents` chỉ cho đọc (`UnifiedRosterWebConfiguration` trả 409 cho mọi lệnh ghi); với hộ TC2, sửa thông tin và cập nhật ghi chú phải dẫn sang hồ sơ hộ trong roster.
 - Trang Cài đặt chỉ hiện sự thật kiểm chứng được (trạng thái kết nối); không hiện danh mục API, phiên bản hay huy hiệu "đã xác thực" không có nguồn.
 
+## Đợt cải thiện 11/2026 (đánh giá độc lập + 5 giai đoạn)
+
+Rút từ đánh giá Playwright 114 lượt trên backend/DB thật (bảng 1–8 trong canvas đánh giá). Quy ước mới, thay thế điều mâu thuẫn ở trên:
+
+- **Header** chỉ giữ: thu/mở sidebar, tiêu đề = **đúng nhãn menu đang mở**, chấm trạng thái máy chủ, tìm kiếm (kèm giọng nói), cập nhật, hướng dẫn, giao diện sáng/tối, chuông. Không đặt nút trang chủ, lối tắt module, đồng hồ, tài khoản/đăng xuất trên header.
+- **Sidebar:** logo → menu theo nhóm → "Hướng dẫn sử dụng" → khối tài khoản gọn ở chân (tên, vai trò, chấm trạng thái, số hiệu/địa bàn nếu có, Đổi tài khoản, Đăng xuất). Thứ tự trong nhóm theo công việc (`workOrder` trong `Sidebar.tsx`), không theo thứ tự lưu trên server. Mục quản trị không có khung/viền riêng.
+- **Một đường dẫn đăng xuất** (chân sidebar). Trang `/` không còn là trang riêng: chuyển vào `/dashboard` (giữ xử lý đường dẫn quay lại sau đăng nhập).
+- **Dải "Hướng dẫn" theo menu** ẩn được bằng nút ✕, ghi nhớ theo menu (`localStorage gis.guideBanner.hidden`); nút "?" ở header và mục sidebar vẫn mở cẩm nang.
+- **Không âm thầm chuyển màn khi thiếu quyền:** hiện `.gis-denied-notice` ("Tài khoản chưa được cấp quyền mở …"), đích dự phòng luôn là Tổng quan nếu được phép. Trang `/admin` thiếu quyền có nút "Về bảng điều hành".
+- **Kích thước điều khiển trong vùng làm việc:** ô nhập/select ≥ 40px, nút ≥ 36px trên chuột; mọi ô nhập/select/nút ≥ 44px và chữ nhập ≥ 16px trên thiết bị cảm ứng (`pointer: coarse`); checkbox/radio 20px. Canvas bản đồ và control MapLibre không bị ép; thanh công cụ Bản đồ 3D (ngoài canvas) ≥ 44px khi cảm ứng.
+- **Nút dùng chung:** `.gis-btn-primary` / `.gis-btn-secondary`; trạng thái disabled nền sáng, chữ đủ tương phản (không làm mờ khối tối).
+- **Thẻ danh sách < 640px:** bỏ ô STT, giá trị đứng ngay sau nhãn (không căn phải xa nhãn). Ngày, STT, mã không bị bẻ giữa token (`overflow-wrap: break-word`, không `anywhere`).
+- **Danh sách rỗng** dùng `.roster-empty`: nói vì sao rỗng (bộ lọc hay chưa có dữ liệu) và bước tiếp theo. Bảng cấu hình trống có dòng giải thích.
+- **Chip lọc trên điện thoại** là một hàng cuộn ngang, không xếp nhiều hàng. Tab con của Trung tâm quản trị là một hàng `nav` cuộn ngang.
+- **Thông báo trên Bản đồ 3D** thu về một dòng `<details>` (Three.js, chế độ chỉ xem) để bản đồ giữ phần lớn màn hình điện thoại.
+- **Màn chờ đầu tiên** (`index.html`): chữ tiếng Việt + vòng xoay, sau 15 s gợi ý tải lại. Không hiển thị trang gỡ lỗi JHipster cho người dùng.
+- **Không tải font online** ở bất kỳ shell nào: Bootswatch `$web-font-path: false`, cùng một stack font hệ thống cho dashboard, `/roster`, `/admin` và theme đăng nhập Keycloak.
+- **Theme đăng nhập Keycloak (`territory`)** theo token sáng/xanh lá của app, không dùng nền xanh navy/nút xanh dương riêng.
+- **Chữ:** tiêu đề, nút, tab viết hoa đầu câu ("Lưu cấu hình phân quyền"), giữ hoa cho tên riêng và viết tắt (CSKV, CAV, ANTT).
+
 ## Kiểm tra hồi quy
 
 - Kiểm tra light/dark ở 375, 768, 1024 và 1440 px, nội dung đơn vị/label dài, không overflow toàn trang.
+- Chạy `tools/e2e/ui-audit.cjs` (xem đầu file) với tài khoản cán bộ ấp và quản trị trên DB thật, so `target/ui-audit/report.json` với lần trước: chữ < 12px, điều khiển < 44px, tràn ngang, lỗi JS/API, chuyển hướng ngầm.
 - Kiểm tra menu, tìm kiếm/xóa/giọng nói, refresh, theme, cảnh báo và các callback hiện có.
 - Chạy lại test GIS/roster và smoke chọn nhà/bật-tắt hiệu ứng/sửa thuộc tính trên bản đồ.
 - Baseline trước đợt thiết kế: 185/187 test GIS + roster đạt; hai lỗi sẵn có tại `operationalLoading.spec.ts` và `overviewDemographics.spec.ts`. Không sửa dịch vụ hoặc công thức để làm xanh test trong một phase chỉ tối ưu giao diện; báo riêng nếu vẫn còn.

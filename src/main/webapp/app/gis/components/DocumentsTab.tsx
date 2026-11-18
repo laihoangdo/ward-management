@@ -184,7 +184,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
             <FileText aria-hidden="true" className="w-4 h-4 text-slate-500" />
             <span>Danh sách giấy tờ đang theo dõi ({filteredDocs.length})</span>
           </h3>
-          <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
+          <span className="text-[12px] sm:text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
             Cập nhật tự động theo mốc thời gian hành chính
           </span>
         </div>
@@ -210,7 +210,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 font-mono text-[11px] font-bold border border-slate-200 dark:border-slate-700">
+                        <span className="px-2 py-0.5 rounded bg-white dark:bg-slate-800 text-blue-700 dark:text-blue-400 font-mono text-[12px] font-bold border border-slate-200 dark:border-slate-700">
                           {doc.docCode}
                         </span>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-300">• {doc.categoryLabel}</span>
@@ -230,7 +230,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                     {/* Expiry Badge and Actions */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between lg:justify-end gap-2.5 sm:gap-3 lg:self-center shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/60 dark:border-slate-700/60">
                       <div className="flex items-center justify-between sm:block sm:text-right">
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">Hạn hiệu lực:</div>
+                        <div className="text-[12px] text-slate-500 dark:text-slate-400">Hạn hiệu lực:</div>
                         <div
                           className={`text-xs font-bold tabular-nums ${isExpiring ? 'text-amber-900 dark:text-amber-300' : 'text-slate-700 dark:text-slate-200'}`}
                         >
@@ -238,7 +238,7 @@ export const DocumentsTab: React.FC<DocumentsTabProps> = ({
                           {doc.status === 'expired' && <span className="ml-2 text-red-700">Đã hết hạn</span>}
                           {doc.daysRemaining !== undefined && (
                             <span
-                              className={`ml-1.5 text-[11px] font-bold ${isExpired ? 'text-red-700 dark:text-red-400' : isExpiring ? 'text-amber-800 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}
+                              className={`ml-1.5 text-[12px] font-bold ${isExpired ? 'text-red-700 dark:text-red-400' : isExpiring ? 'text-amber-800 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}
                             >
                               {doc.daysRemaining < 0 ? `(Quá hạn ${-doc.daysRemaining} ngày)` : `(Còn ${doc.daysRemaining} ngày)`}
                             </span>

@@ -45,7 +45,7 @@
   border: 1px solid var(--gis-primary, #1c4e3a);
   border-radius: 0.35rem;
   color: var(--gis-accent-text, #1c4e3a);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 .tc2-household-panel-header button {
@@ -132,7 +132,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   color: var(--gis-muted, #526170);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 .tc2-household-panel-profile,
 .tc2-household-panel-phone {
@@ -375,7 +375,7 @@
   border-radius: 3px;
   background: var(--gis-surface, #fff);
   color: var(--gis-text, #172c35);
-  font-size: 11px;
+  font-size: 12px;
 }
 .tc2-map-search {
   display: flex;

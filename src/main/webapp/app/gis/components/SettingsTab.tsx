@@ -204,7 +204,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 <Bell className="w-4 h-4 text-amber-600" />
                 <div>
                   <div className="font-bold text-slate-800">Cảnh báo âm thanh hồ sơ quá hạn</div>
-                  <div className="text-slate-500 text-[11px]">Phát âm báo khi có cơ sở chạm ngưỡng 7 ngày hết hạn</div>
+                  <div className="text-slate-500 text-[12px]">Phát âm báo khi có cơ sở chạm ngưỡng 7 ngày hết hạn</div>
                 </div>
               </div>
               <input
@@ -246,7 +246,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   <Monitor className="w-4 h-4 text-blue-600" />
                   <span>Chế độ giao diện (Dark / Light Mode):</span>
                 </div>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                <span className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
                   {theme === 'dark' ? 'Đang bật: Chế độ Tối' : 'Đang bật: Chế độ Sáng'}
                 </span>
               </div>
@@ -268,12 +268,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       <Sun className="w-4 h-4 text-amber-500" />
                     </div>
                     {theme === 'light' && (
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">Đang chọn</span>
+                      <span className="text-[12px] font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">Đang chọn</span>
                     )}
                   </div>
                   <div>
                     <div className="font-bold text-slate-900 text-xs">Chế độ Sáng (Light)</div>
-                    <div className="text-[11px] text-slate-500 mt-1 leading-snug">
+                    <div className="text-[12px] text-slate-500 mt-1 leading-snug">
                       Độ tương phản cao, tối ưu hiển thị ngoài trời nắng khi CSKV đi tuần tra, kiểm tra thực địa.
                     </div>
                   </div>
@@ -295,12 +295,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                       <Moon className="w-4 h-4 text-slate-300" />
                     </div>
                     {theme === 'dark' && (
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">Đang chọn</span>
+                      <span className="text-[12px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-slate-950">Đang chọn</span>
                     )}
                   </div>
                   <div>
                     <div className="font-bold text-white text-xs">Chế độ Tối (Dark)</div>
-                    <div className="text-[11px] text-slate-300 mt-1 leading-snug">
+                    <div className="text-[12px] text-slate-300 mt-1 leading-snug">
                       Dịu mắt, bảo vệ thị lực trong môi trường thiếu sáng hoặc khi trực ca đêm tại địa bàn.
                     </div>
                   </div>
@@ -316,7 +316,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                   <span>Kết nối máy chủ</span>
                 </div>
                 <span
-                  className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                  className={`px-2 py-0.5 rounded text-[12px] font-bold ${
                     backendStatus === 'online' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                   }`}
                 >

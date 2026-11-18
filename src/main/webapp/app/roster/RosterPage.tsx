@@ -1766,7 +1766,18 @@ function RosterWorkspace({
                     </tbody>
                   </table>
                 </div>
-                {items.length === 0 && <p>Không có kết quả trong phạm vi được giao.</p>}
+                {items.length === 0 && (
+                  <div className="roster-empty" role="status">
+                    <strong>
+                      {search || kind || origin ? 'Không có người nào khớp bộ lọc' : 'Chưa có người nào trong phạm vi được giao'}
+                    </strong>
+                    <span>
+                      {search || kind || origin
+                        ? 'Thử từ khóa khác hoặc đặt lại bộ lọc.'
+                        : 'Thêm mới hoặc nhập danh sách từ Excel để bắt đầu.'}
+                    </span>
+                  </div>
+                )}
                 {campaign && unevaluable != null && unevaluable > 0 && (
                   <p className="roster-summary" role="note">
                     {unevaluable} cá nhân chưa có ngày sinh đầy đủ nên chưa thể xét theo độ tuổi; số này không nằm trong kết quả lọc.
@@ -1901,31 +1912,45 @@ function RosterWorkspace({
                             {h.member_count}
                           </td>
                           <td data-label="Nguồn">
-                            <span className="roster-origin-tag">{h.origin === 'EXCEL' ? 'Excel' : 'Nhập trực tiếp'}</span> ·{' '}
-                            <span
-                              className={`roster-badge ${
-                                h.verification_status === 'HEAD_CONFLICT'
-                                  ? 'roster-badge--warn'
-                                  : h.verification_status === 'UNVERIFIED'
-                                    ? 'roster-badge--muted'
-                                    : 'roster-badge--ok'
-                              }`}
-                            >
-                              {h.verification_status === 'HEAD_CONFLICT'
-                                ? 'Cần đối soát tên chủ hộ'
-                                : h.verification_status === 'UNVERIFIED'
-                                  ? 'Chưa xác minh'
-                                  : h.verification_status === 'VERIFIED'
-                                    ? 'Đã xác minh'
-                                    : h.verification_status}
-                            </span>
+                            <span className="roster-origin-tag">{h.origin === 'EXCEL' ? 'Excel' : 'Nhập trực tiếp'}</span>
+                            {h.verification_status && (
+                              <>
+                                {' · '}
+                                <span
+                                  className={`roster-badge ${
+                                    h.verification_status === 'HEAD_CONFLICT'
+                                      ? 'roster-badge--warn'
+                                      : h.verification_status === 'UNVERIFIED'
+                                        ? 'roster-badge--muted'
+                                        : 'roster-badge--ok'
+                                  }`}
+                                >
+                                  {h.verification_status === 'HEAD_CONFLICT'
+                                    ? 'Cần đối soát tên chủ hộ'
+                                    : h.verification_status === 'UNVERIFIED'
+                                      ? 'Chưa xác minh'
+                                      : h.verification_status === 'VERIFIED'
+                                        ? 'Đã xác minh'
+                                        : h.verification_status}
+                                </span>
+                              </>
+                            )}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                {items.length === 0 && <p>Không có kết quả trong phạm vi được giao.</p>}
+                {items.length === 0 && (
+                  <div className="roster-empty" role="status">
+                    <strong>{search || kind || origin ? 'Không có hộ nào khớp bộ lọc' : 'Chưa có hộ nào trong phạm vi được giao'}</strong>
+                    <span>
+                      {search || kind || origin
+                        ? 'Thử từ khóa khác hoặc đặt lại bộ lọc.'
+                        : 'Thêm mới hoặc nhập danh sách từ Excel để bắt đầu.'}
+                    </span>
+                  </div>
+                )}
                 <div className="roster-actions roster-pagination-bar">
                   <button disabled={page === 0} onClick={() => setPage(page - 1)}>
                     Trang trước

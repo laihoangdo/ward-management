@@ -35,7 +35,7 @@ export interface MenuGuideEntry {
 export const MENU_GUIDES: MenuGuideEntry[] = [
   {
     id: 'overview',
-    title: 'Tổng quan & Thống kê',
+    title: 'Tổng quan & thống kê',
     group: 'Công việc hằng ngày',
     summary: 'Theo dõi nhanh số liệu hộ dân, nhân khẩu, hộ chú ý/cảnh báo và giấy tờ sắp hết hạn trên địa bàn phụ trách.',
     purpose: 'Giúp chỉ huy và Cảnh sát khu vực nắm bắt toàn cảnh biến động dân cư, tình hình ANTT trong ngày ngay khi đăng nhập hệ thống.',
@@ -233,7 +233,7 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
   },
   {
     id: 'areas',
-    title: 'Quản lý khu vực & Tuyến',
+    title: 'Quản lý khu vực & tuyến',
     group: 'Địa bàn và bản đồ',
     summary: 'Danh mục các Ấp, Tuyến đường/hẻm và thống kê chi tiết số hộ dân, cơ sở kinh doanh trên từng tuyến.',
     purpose:
@@ -252,7 +252,7 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
   },
   {
     id: 'field-3d-map',
-    title: 'Bản Đồ Không Gian 3D Thực Địa',
+    title: 'Bản đồ không gian 3D thực địa',
     group: 'Địa bàn và bản đồ',
     summary: 'Bản đồ vệ tinh tích hợp khối nhà 3D, hiệu ứng Three.js theo phạm vi quản lý, vẽ công trình và liên kết hộ dân.',
     purpose:
@@ -264,7 +264,7 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
           'Kéo chuột trái để di chuyển; kéo chuột phải (hoặc giữ Ctrl + kéo chuột trái) để xoay/nghiêng 3D; lăn chuột để zoom. Nhập tên chủ hộ, mã hộ hoặc địa chỉ vào ô "Tìm nhanh chủ hộ, mã hộ, địa chỉ…" trên thanh công cụ để bay thẳng tới khối nhà.',
       },
       {
-        heading: '2. Bật Hiệu ứng Three.js theo phạm vi quản lý',
+        heading: '2. Bật hiệu ứng Three.js theo phạm vi quản lý',
         detail:
           'Bấm nút "Hiệu ứng Three.js": các khối nhà thuộc phạm vi ấp quản lý của cán bộ sẽ hiển thị kiến trúc 3D nhấp nhô (1–5 tầng, mái ngói/mái bằng chân thật), trong khi các khối nhà ngoài phạm vi giữ nguyên.',
       },
@@ -310,7 +310,7 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
   },
   {
     id: 'subadmin-delegation',
-    title: 'Phân quyền Cán bộ & CAV',
+    title: 'Phân quyền cán bộ & CAV',
     group: 'Quản trị và phân quyền',
     summary: 'Phân công ấp phụ trách và cấp/thu hồi từng quyền thao tác nghiệp vụ cho Công an viên địa bàn.',
     purpose:
@@ -335,7 +335,7 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
   },
   {
     id: 'superadmin-hub',
-    title: 'Trung tâm Quản trị Tối cao',
+    title: 'Trung tâm quản trị tối cao',
     group: 'Quản trị và phân quyền',
     summary: 'Quản trị tài khoản toàn hệ thống, cấu hình danh mục đơn vị hành chính, phân quyền menu và giám sát bảo mật.',
     purpose: 'Dành riêng cho Quản trị viên hệ thống (Super Admin) để vận hành hạ tầng phân quyền, tài khoản và an toàn thông tin.',
@@ -358,7 +358,7 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
   },
   {
     id: 'settings',
-    title: 'Cài đặt & Tài khoản',
+    title: 'Cài đặt & tài khoản',
     group: 'Tài khoản của tôi',
     summary: 'Cập nhật thông tin cá nhân của cán bộ, chuyển đổi giao diện Sáng/Tối và kiểm tra kết nối máy chủ.',
     purpose:
@@ -370,7 +370,7 @@ export const MENU_GUIDES: MenuGuideEntry[] = [
       },
       {
         heading: '2. Tùy chỉnh giao diện Sáng / Tối',
-        detail: 'Chọn Chế độ Sáng (ban ngày) hoặc Chế độ Tối (dịu mắt khi tuần tra ban đêm); cài đặt được tự động ghi nhớ trên thiết bị.',
+        detail: 'Chọn chế độ sáng (ban ngày) hoặc Chế độ Tối (dịu mắt khi tuần tra ban đêm); cài đặt được tự động ghi nhớ trên thiết bị.',
       },
       {
         heading: '3. Kiểm tra trạng thái máy chủ & phạm vi được giao',
@@ -462,7 +462,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
             </div>
             <div className="min-w-0">
               <h2 id="feature-guide-modal-title" className="text-sm sm:text-base font-bold text-slate-900 dark:text-white m-0 truncate">
-                Cẩm Nang Hướng Dẫn Sử Dụng Các Menu Chức Năng
+                Cẩm nang hướng dẫn sử dụng các menu chức năng
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 m-0 truncate">
                 Chọn từng mục menu bên dưới để xem quy trình thao tác chuẩn dành cho Cán bộ quản lý địa bàn ({availableGuides.length} phân
@@ -510,7 +510,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
                   </div>
                   {isCurrentScreen && (
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[11px] font-bold shrink-0 ${
+                      className={`px-1.5 py-0.5 rounded text-[12px] font-bold shrink-0 ${
                         isSelected
                           ? 'bg-white/20 text-white'
                           : 'bg-emerald-100 dark:bg-emerald-950 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300'
@@ -530,11 +530,11 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
             <div className="p-4 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--gis-primary,#1c4e3a)] text-white">
+                  <span className="text-[12px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--gis-primary,#1c4e3a)] text-white">
                     {currentGuide.group}
                   </span>
                   {currentGuide.id === normalizedActiveTab && (
-                    <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">• Phân hệ bạn đang làm việc</span>
+                    <span className="text-[12px] font-semibold text-emerald-800 dark:text-emerald-300">• Phân hệ bạn đang làm việc</span>
                   )}
                 </div>
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white m-0 flex items-center gap-2">
@@ -605,7 +605,7 @@ export const FeatureGuideModal: React.FC<FeatureGuideModalProps> = ({ isOpen, on
         <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between gap-3 shrink-0">
           <span className="text-xs text-slate-500 dark:text-slate-400">
             Nhấn phím{' '}
-            <kbd className="px-1.5 py-0.5 text-[11px] rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800">
+            <kbd className="px-1.5 py-0.5 text-[12px] rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800">
               Esc
             </kbd>{' '}
             hoặc bấm nút Đóng để quay lại màn hình làm việc
@@ -628,45 +628,76 @@ interface ActiveMenuGuideBannerProps {
   onOpenFullGuide: () => void;
 }
 
+const GUIDE_HIDDEN_KEY = 'gis.guideBanner.hidden';
+const readHiddenGuides = (): string[] => {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(GUIDE_HIDDEN_KEY) || '[]');
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
 export const ActiveMenuGuideBanner: React.FC<ActiveMenuGuideBannerProps> = ({ activeTab, onOpenFullGuide }) => {
   const [expanded, setExpanded] = useState(false);
   const normalizedTab: NavigationTab = activeTab === 'bando-3d' ? 'field-3d-map' : activeTab;
   const guide = MENU_GUIDES.find(g => g.id === normalizedTab) ?? MENU_GUIDES[0];
+  // Once a user has read a menu's hint they can put it away; the header "?" and the sidebar still open the guide.
+  const [hidden, setHidden] = useState<string[]>(readHiddenGuides);
 
   useEffect(() => {
     setExpanded(false);
   }, [normalizedTab]);
 
+  if (hidden.includes(normalizedTab)) return null;
+  const hide = () => {
+    const next = [...new Set([...hidden, normalizedTab])];
+    setHidden(next);
+    try {
+      localStorage.setItem(GUIDE_HIDDEN_KEY, JSON.stringify(next));
+    } catch {
+      /* Private mode: hidden for this visit only. */
+    }
+  };
+
   return (
     <section
       aria-label={`Hướng dẫn sử dụng ${guide.title}`}
-      className="mb-2 sm:mb-3 rounded-xl border border-emerald-200/90 dark:border-emerald-800/70 bg-emerald-50/50 dark:bg-emerald-950/25 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 text-slate-800 dark:text-slate-100"
+      className="gis-guide-banner mb-3 rounded-lg border border-emerald-200/90 dark:border-emerald-800/70 bg-emerald-50/50 dark:bg-emerald-950/25 px-3 py-2 text-slate-800 dark:text-slate-100"
     >
-      <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--gis-primary,#1c4e3a)] text-white text-[11px] font-bold shrink-0">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Hướng dẫn</span>
-          </span>
-          <strong className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate sm:shrink-0">{guide.title}:</strong>
-          <span className="hidden md:inline text-xs text-slate-600 dark:text-slate-300 truncate">{guide.summary}</span>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <div className="flex items-center gap-2 min-w-0 flex-[1_1_16rem]">
+          <BookOpen aria-hidden="true" className="w-4 h-4 shrink-0 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300" />
+          <p className="m-0 min-w-0 text-sm leading-snug">
+            <strong className="font-semibold text-slate-900 dark:text-white">{guide.title}:</strong>{' '}
+            <span className="hidden md:inline text-slate-600 dark:text-slate-300">{guide.summary}</span>
+          </p>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 ml-auto">
           <button
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded(prev => !prev)}
-            className="px-2 sm:px-2.5 py-1 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 text-xs font-semibold cursor-pointer"
+            className="min-h-[36px] px-2.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-slate-700 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 text-sm font-semibold cursor-pointer"
           >
             {expanded ? 'Thu gọn các bước' : `Xem ${guide.steps.length} bước thao tác`}
           </button>
           <button
             type="button"
             onClick={onOpenFullGuide}
-            className="px-2 sm:px-2.5 py-1 rounded-lg bg-[var(--gis-primary,#1c4e3a)] hover:bg-[var(--gis-primary-hover,#153c2c)] text-white text-xs font-semibold flex items-center gap-1 cursor-pointer"
+            className="hidden sm:flex min-h-[36px] px-2.5 rounded-lg border border-transparent hover:bg-emerald-100/70 dark:hover:bg-slate-800 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-300 text-sm font-semibold items-center gap-1 cursor-pointer"
           >
-            <HelpCircle className="w-3.5 h-3.5" />
+            <HelpCircle className="w-4 h-4" />
             <span>Tất cả menu</span>
+          </button>
+          <button
+            type="button"
+            onClick={hide}
+            aria-label="Ẩn hướng dẫn của màn này"
+            title="Ẩn hướng dẫn của màn này (mở lại bằng nút ? hoặc mục Hướng dẫn sử dụng)"
+            className="h-9 w-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-emerald-100/70 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            <X aria-hidden="true" className="w-4 h-4" />
           </button>
         </div>
       </div>
