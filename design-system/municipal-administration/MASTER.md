@@ -106,6 +106,7 @@ Rút từ đánh giá Playwright 114 lượt trên backend/DB thật (bảng 1�
 - **Thẻ danh sách < 640px:** bỏ ô STT, giá trị đứng ngay sau nhãn (không căn phải xa nhãn). Ngày, STT, mã không bị bẻ giữa token (`overflow-wrap: break-word`, không `anywhere`).
 - **Danh sách rỗng** dùng `.roster-empty`: nói vì sao rỗng (bộ lọc hay chưa có dữ liệu) và bước tiếp theo. Bảng cấu hình trống có dòng giải thích.
 - **Chip lọc trên điện thoại** là một hàng cuộn ngang, không xếp nhiều hàng. Tab con của Trung tâm quản trị là một hàng `nav` cuộn ngang.
+- **Panel hồ sơ hộ trên bản đồ** (`HouseholdDetailModal` dạng drawer): đầu panel = dòng địa bàn (chỉ phần có dữ liệu) + mã hồ sơ rút gọn (đủ khi rê chuột), địa chỉ làm tiêu đề tối đa 2 dòng; "Mở hồ sơ đầy đủ" là nút chính chiếm cả hàng; các thao tác khác là lưới 4 ô bằng nhau (icon trên nhãn ngắn, ≥ 56px), không xếp nút lẫn cỡ. Tổ dân phố hiện trong "Thông tin hộ" ("Chưa có tổ dân phố" khi trống, không bịa giá trị). Điện thoại: bottom sheet 72dvh.
 - **Thông báo trên Bản đồ 3D** thu về một dòng `<details>` (Three.js, chế độ chỉ xem) để bản đồ giữ phần lớn màn hình điện thoại.
 - **Màn chờ đầu tiên** (`index.html`): chữ tiếng Việt + vòng xoay, sau 15 s gợi ý tải lại. Không hiển thị trang gỡ lỗi JHipster cho người dùng.
 - **Không tải font online** ở bất kỳ shell nào: Bootswatch `$web-font-path: false`, cùng một stack font hệ thống cho dashboard, `/roster`, `/admin` và theme đăng nhập Keycloak.

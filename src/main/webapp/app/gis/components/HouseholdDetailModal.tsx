@@ -466,11 +466,11 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
       >
         <div className="gis-hh-head">
           <div className="gis-hh-heading">
+            {/* Area first, only the parts on file; the long record code is shortened and shown in full on hover. */}
             <p className="gis-hh-meta">
-              <span className="gis-hh-code">{household.code}</span>
-              <span>
-                {household.hamlet || 'Chưa có địa bàn'} · {household.neighborhoodGroup || 'Chưa có tổ dân phố'} · Xã Bà Điểm, TP. Hồ Chí
-                Minh
+              <span>{[household.hamlet || 'Chưa có địa bàn', household.neighborhoodGroup].filter(Boolean).join(' · ')}</span>
+              <span className="gis-hh-code" title={`Mã hồ sơ: ${household.code}`}>
+                {household.code}
               </span>
             </p>
             <h2 className="gis-dialog-title gis-hh-title">{title}</h2>
@@ -520,7 +520,7 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
             <div className="gis-hh-toolbar">
               {unified && (
                 <Link
-                  className="gis-hh-btn is-primary"
+                  className="gis-hh-btn is-primary gis-hh-primary"
                   title="Chỉnh sửa, nguồn dữ liệu và lịch sử thay đổi"
                   to={`/dashboard?tab=households&legacyHousehold=${encodeURIComponent(household.id)}`}
                   onClick={event => {
@@ -534,74 +534,77 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                   <span>Mở hồ sơ đầy đủ</span>
                 </Link>
               )}
-              <button
-                type="button"
-                className={`gis-hh-btn${isEditingInfo ? ' is-active' : ''}`}
-                disabled={isSaving || rosterLoading || !canInspect}
-                onClick={() => void toggleEditInfo()}
-              >
-                <Edit3 aria-hidden="true" className="w-4 h-4" />
-                <span>{isEditingInfo ? 'Hủy chỉnh sửa' : 'Chỉnh sửa thông tin hộ'}</span>
-              </button>
-              {onNavigate && (
+              <div className="gis-hh-actions" role="group" aria-label="Thao tác với hộ">
                 <button
                   type="button"
-                  className="gis-hh-btn"
-                  disabled={isSaving || locked}
-                  title="Chỉ đường từ vị trí của bạn tới hộ này trên bản đồ"
-                  onClick={() => onNavigate(household)}
+                  className={`gis-hh-action${isEditingInfo ? ' is-active' : ''}`}
+                  aria-label={isEditingInfo ? 'Hủy chỉnh sửa' : 'Chỉnh sửa thông tin hộ'}
+                  disabled={isSaving || rosterLoading || !canInspect}
+                  onClick={() => void toggleEditInfo()}
                 >
-                  <Navigation aria-hidden="true" className="w-4 h-4" />
-                  <span>Chỉ đường</span>
+                  <Edit3 aria-hidden="true" className="w-4 h-4" />
+                  <span>{isEditingInfo ? 'Hủy sửa' : 'Chỉnh sửa'}</span>
                 </button>
-              )}
-              <button
-                type="button"
-                id="btn-trigger-inspection-camera"
-                className="gis-hh-btn"
-                disabled={isSaving || !canInspect}
-                onClick={handleTriggerCamera}
-                title="Bật camera chụp ảnh hiện trạng"
-              >
-                <Camera aria-hidden="true" className="w-4 h-4" />
-                <span>Chụp ảnh</span>
-              </button>
-              <button
-                type="button"
-                id="btn-open-ocr-header"
-                className="gis-hh-btn"
-                disabled={isSaving || !canScan}
-                onClick={handleTriggerOcr}
-                title="Quét OCR căn cước công dân"
-              >
-                <ScanLine aria-hidden="true" className="w-4 h-4" />
-                <span>Quét OCR</span>
-              </button>
-              {/* No number on file: no empty "Gọi ()" link that dials nothing. */}
-              {phone && (
-                <a className="gis-hh-btn" href={`tel:${phone}`}>
-                  <Phone aria-hidden="true" className="w-4 h-4" />
-                  <span>Gọi ({phone})</span>
-                </a>
-              )}
-              {!unified && (
+                {onNavigate && (
+                  <button
+                    type="button"
+                    className="gis-hh-action"
+                    disabled={isSaving || locked}
+                    title="Chỉ đường từ vị trí của bạn tới hộ này trên bản đồ"
+                    onClick={() => onNavigate(household)}
+                  >
+                    <Navigation aria-hidden="true" className="w-4 h-4" />
+                    <span>Chỉ đường</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="gis-hh-btn is-danger"
-                  title="Dữ liệu thật được giữ lịch sử; không xóa cứng"
-                  disabled={isSaving}
-                  onClick={() => {
-                    if (infoDirty || notesDirty) {
-                      setSaveError('Lưu hoặc bỏ nội dung đang chỉnh sửa trước khi xóa hồ sơ.');
-                      return;
-                    }
-                    handleDeleteHouseholdClick();
-                  }}
+                  id="btn-trigger-inspection-camera"
+                  className="gis-hh-action"
+                  disabled={isSaving || !canInspect}
+                  onClick={handleTriggerCamera}
+                  title="Bật camera chụp ảnh hiện trạng"
                 >
-                  <Trash2 aria-hidden="true" className="w-4 h-4" />
-                  <span>Xóa hộ</span>
+                  <Camera aria-hidden="true" className="w-4 h-4" />
+                  <span>Chụp ảnh</span>
                 </button>
-              )}
+                <button
+                  type="button"
+                  id="btn-open-ocr-header"
+                  className="gis-hh-action"
+                  disabled={isSaving || !canScan}
+                  onClick={handleTriggerOcr}
+                  title="Quét OCR căn cước công dân"
+                >
+                  <ScanLine aria-hidden="true" className="w-4 h-4" />
+                  <span>Quét OCR</span>
+                </button>
+                {/* No number on file: no empty "Gọi ()" link that dials nothing. */}
+                {phone && (
+                  <a className="gis-hh-action" href={`tel:${phone}`}>
+                    <Phone aria-hidden="true" className="w-4 h-4" />
+                    <span>Gọi</span>
+                  </a>
+                )}
+                {!unified && (
+                  <button
+                    type="button"
+                    className="gis-hh-action is-danger"
+                    title="Dữ liệu thật được giữ lịch sử; không xóa cứng"
+                    disabled={isSaving}
+                    onClick={() => {
+                      if (infoDirty || notesDirty) {
+                        setSaveError('Lưu hoặc bỏ nội dung đang chỉnh sửa trước khi xóa hồ sơ.');
+                        return;
+                      }
+                      handleDeleteHouseholdClick();
+                    }}
+                  >
+                    <Trash2 aria-hidden="true" className="w-4 h-4" />
+                    <span>Xóa hộ</span>
+                  </button>
+                )}
+              </div>
             </div>
             {(unified || !canInspect || !canScan) && (
               <p className="gis-hh-note">
@@ -882,6 +885,10 @@ const HouseholdDetailModalContent: React.FC<HouseholdDetailModalProps & { househ
                         <dd>{household.businessCategory}</dd>
                       </div>
                     )}
+                    <div>
+                      <dt>Tổ dân phố</dt>
+                      <dd>{household.neighborhoodGroup || 'Chưa có tổ dân phố'}</dd>
+                    </div>
                     <div>
                       <dt>Vị trí</dt>
                       <dd className="tabular-nums">
