@@ -90,7 +90,7 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 
 ## Current serving state (reviewed 2026-11-10)
 
-- Public site serves production: image `police-app-production:20261118-1` since 2026-11-18 (previously `20261117-1`, `20261116-1`) (see the release section below; this review paragraph describes the 2026-11-10 state) (rollback candidates `20261111-2`, `20261111-1`, `20261108-1`, `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
+- Public site serves production: image `police-app-production:20261119-1` since 2026-11-19 (previously `20261118-1`, `20261117-1`, `20261116-1`) (see the release section below; this review paragraph describes the 2026-11-10 state) (rollback candidates `20261111-2`, `20261111-1`, `20261108-1`, `20261107-2`, `20261107-1` stay on the host), realm `jhipster`, database container `police-production-candidate-db-20261105` with the restricted `police_runtime` role.
 - Read-only review evidence: public root 200, issuer `https://sunnytech.cloud/realms/jhipster`, anonymous RBAC 401, `staging-manifest.json`, `/admin/` and `/management/health` 404, MapLibre worker asset 200. `/realms/master/*` reaches only the application's SPA fallback, not Keycloak. Production, staging, audit-export and certbot units last ran with `Result=success`; root disk 52% used.
 - The staging application and realm `police-staging` remain publicly discoverable on the same host. Decide whether staging should stay public now that production is live.
 - Duplicate response headers: Cloudflare adds `Strict-Transport-Security: max-age=31536000; includeSubDomains` while the origin sends `max-age=86400`, and both the application CSP and an Nginx `frame-ancestors 'none'` CSP are present beside `X-Frame-Options: SAMEORIGIN`. Not a functional fault; unify deliberately (the Cloudflare value commits every subdomain to HTTPS for a year).
@@ -156,6 +156,15 @@ All steps below were executed on the VPS with root-only scripts; no secret mater
 - **Rollback:** `update-production-app.py police-app-production:20261113-2 --rollback`.
   - The schema changes are additive, so the old code ignores the new tables.
   - The old code reads inspection photos only from `gis_inspection_photo`, which is now empty. Photos taken after this release would not show until the release is restored.
+
+## Release 20261119-1 — UI/UX shell pass, home page, map record panel, server badge and app icons (2026-11-19)
+
+- **Source and tests:** commit `99a2f26` on `develop/3d-map`, separate worktree; `mvn -Pprod,vps clean verify` BUILD SUCCESS (backend 332 unit, 51 skipped DB-gated; 372/372 integration; frontend 579/579). The first build stopped on ESLint `no-undef` in the dev-only `tools/e2e/ui-audit.cjs` (browser globals inside `page.evaluate`), fixed in `99a2f26`.
+- **Artifact:** audit PASS; JAR SHA256 `ecbe9d6d8c382a07a2a28affce194d28e72f78b168e7434a55afcb644434043e`; image `police-app-production:20261119-1` (`sha256:63b219edf510…`). Supersedes the built-but-never-deployed `20261118-2` (`815f866`), whose changes are included.
+- **`update-production-app.py` (unit `police-release-20261119-1`): `PRODUCTION_APP_UPDATED`, `liveVerified: true`.** Frontend-only; no Liquibase changeset.
+- **Change:** header server badge reads `/api/authenticate` (no false "Mất kết nối" where `/management/*` is closed); app icons served at the root; unified shell with readable sizes and clearer states; portal home page at `/` restored with the header home button and clock; officer card back at the top of the sidebar; map household record panel with a calmer head and an action grid.
+- **Independent checks:** container healthy, no ERROR/Exception after start; `/`, `/dashboard`, `/sign-in` 200; `/api/rbac/me` 401; `/management/info` 404; `/jhipster_family_member_2_head-192.png` 200; the web manifest is now served hashed (`/assets/manifest-*.webapp`, 200) so the old `/manifest.webapp` path 404s by design.
+- **Rollback:** `update-production-app.py police-app-production:20261118-1 --rollback`.
 
 ## Release 20261118-1 — hide the closed monitoring screens on production (2026-11-18)
 
