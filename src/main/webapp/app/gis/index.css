@@ -1552,9 +1552,13 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
        otherwise leaves ~9px for a 16px icon in the 72px rail, clipping it. */
     padding-inline: 0 !important;
   }
+  /* In the 72px rail the officer card shrinks to its sign-out button: no frame, same size as a menu item. */
+  /* !important: Bootstrap's own `.p-3`/`.border` utilities share the Tailwind class names and are !important. */
   #__page-root .gis-sidebar--rail-tablet #account-card {
-    margin-inline: 8px;
-    padding: 8px;
+    margin: 4px 8px !important;
+    padding: 0 !important;
+    border-color: transparent !important;
+    background: transparent;
   }
   #__page-root .gis-sidebar--rail-tablet .gis-account-header {
     flex-direction: column;
