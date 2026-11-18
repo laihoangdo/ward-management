@@ -1553,6 +1553,7 @@ html:not(.dark) #__page-root :is(#superadmin-hub-tab, #subadmin-delegation-tab) 
     padding-inline: 0 !important;
   }
   #__page-root .gis-sidebar--rail-tablet #account-card {
+    margin-inline: 8px;
     padding: 8px;
   }
   #__page-root .gis-sidebar--rail-tablet .gis-account-header {

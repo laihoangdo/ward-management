@@ -212,7 +212,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div className="gis-sidebar-brand-text min-w-0">
             <div id="brand-name" className="text-sm font-bold text-white flex items-center gap-1.5 transition-colors">
-              QLĐB An ninh
+              QLĐB AN NINH
             </div>
             <div id="brand-subtitle" className="text-xs font-medium text-slate-400 leading-snug mt-0.5 whitespace-normal break-words">
               {currentUser.unit || currentUser.assignedWard || 'Quản lý địa bàn'}
@@ -244,6 +244,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <X aria-hidden="true" className="h-5 w-5" />
           </button>
+        )}
+      </div>
+
+      {/* Officer card: role, rank and name, position, badge number, switch account, assigned area. The only sign-out
+          button in the app lives here. */}
+      <div id="account-card" className="gis-account-card p-3 sm:p-3.5 mx-2.5 my-2 rounded-xl border border-slate-750">
+        <div className="gis-account-header flex items-start justify-between gap-2">
+          <div className="gis-account-details min-w-0">
+            <span className={`gis-role-badge inline-block text-xs font-bold px-1.5 py-0.5 rounded border mb-1 ${roleInfo.bg}`}>
+              {roleInfo.label}
+            </span>
+            <div id="officer-name" className="text-sm font-semibold text-white leading-snug break-words">
+              {currentUser.rank} {currentUser.fullName}
+            </div>
+            {currentUser.position && <div className="text-xs text-slate-400 mt-0.5 break-words">{currentUser.position}</div>}
+          </div>
+          <button
+            type="button"
+            onClick={onLogout}
+            aria-label="Đăng xuất khỏi hệ thống"
+            className="gis-account-logout h-10 w-10 rounded-lg text-slate-400 hover:text-red-300 hover:bg-slate-800 transition-colors shrink-0 flex items-center justify-center"
+            title="Đăng xuất khỏi hệ thống"
+          >
+            <LogOut aria-hidden="true" className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="gis-account-meta mt-2 pt-2 border-t border-slate-750 flex items-center justify-between gap-2 text-xs">
+          {/* Only facts the profile actually has: no empty "SH:" or bare location pin. */}
+          {currentUser.badgeNumber ? (
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span aria-hidden="true" className={`w-2 h-2 rounded-full shrink-0 ${roleInfo.indicator}`} />
+              <span className="text-slate-300 tabular-nums truncate" title={`Số hiệu: ${currentUser.badgeNumber}`}>
+                Số hiệu: {currentUser.badgeNumber}
+              </span>
+            </div>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            onClick={onSwitchAccount}
+            className="min-h-[36px] text-xs text-amber-300 hover:underline flex items-center gap-1 shrink-0"
+            title="Chuyển tài khoản khác"
+          >
+            <RefreshCw aria-hidden="true" className="w-3 h-3" />
+            Đổi tài khoản
+          </button>
+        </div>
+        {(currentUser.assignedWard || currentUser.assignedHamlets?.length > 0) && (
+          <div className="gis-sidebar-territory mt-2 text-xs text-slate-400 flex items-start gap-1.5">
+            <MapPin aria-hidden="true" className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <TerritorySummary ward={currentUser.assignedWard} hamlets={currentUser.assignedHamlets ?? []} />
+          </div>
         )}
       </div>
 
@@ -307,78 +360,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </nav>
 
-      {/* Account: one compact block at the foot of the menu (was a tall card above the menu). */}
-      <div id="account-card" className="gis-sidebar-footer gis-account-card px-3 py-2.5 border-t border-slate-800 text-xs">
-        <div className="gis-account-header flex items-center gap-2.5">
+      {/* Footer: connection status only (the officer card sits at the top). */}
+      <div className="gis-sidebar-footer px-3.5 py-2.5 border-t border-slate-800 text-xs">
+        <span
+          id="sidebar-status"
+          title={
+            backendStatus === 'online'
+              ? 'Máy chủ trực tuyến'
+              : backendStatus === 'offline'
+                ? 'Mất kết nối máy chủ'
+                : 'Đang kiểm tra máy chủ'
+          }
+          className={`flex items-center gap-1.5 font-semibold ${backendStatus === 'online' ? 'text-emerald-400' : 'text-amber-400'}`}
+        >
           <span
             aria-hidden="true"
-            className="gis-account-avatar w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 bg-slate-800 text-emerald-200"
-          >
-            {(currentUser.fullName || currentUser.username || '?').trim().charAt(0).toUpperCase()}
+            className={`h-2 w-2 rounded-full inline-block shrink-0 ${backendStatus === 'online' ? 'bg-emerald-500' : 'bg-amber-400'}`}
+          />
+          <span className="gis-sidebar-footer-label">
+            {backendStatus === 'online'
+              ? 'Máy chủ trực tuyến'
+              : backendStatus === 'offline'
+                ? 'Mất kết nối máy chủ'
+                : 'Đang kiểm tra máy chủ'}
           </span>
-          <div className="gis-account-details min-w-0 flex-1">
-            <div
-              id="officer-name"
-              className="text-sm font-semibold text-white leading-snug truncate"
-              title={`${currentUser.rank} ${currentUser.fullName}`.trim()}
-            >
-              {currentUser.rank} {currentUser.fullName}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
-              <span
-                id="sidebar-status"
-                aria-label={
-                  backendStatus === 'online'
-                    ? 'Máy chủ trực tuyến'
-                    : backendStatus === 'offline'
-                      ? 'Mất kết nối máy chủ'
-                      : 'Đang kiểm tra máy chủ'
-                }
-                title={
-                  backendStatus === 'online'
-                    ? 'Máy chủ trực tuyến'
-                    : backendStatus === 'offline'
-                      ? 'Mất kết nối máy chủ'
-                      : 'Đang kiểm tra máy chủ'
-                }
-                className={`h-2 w-2 rounded-full inline-block shrink-0 ${backendStatus === 'online' ? 'bg-emerald-500' : 'bg-amber-400'}`}
-              />
-              <span className="gis-role-label truncate">{roleInfo.label}</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onLogout}
-            aria-label="Đăng xuất khỏi hệ thống"
-            className="gis-account-logout h-10 w-10 rounded-lg text-slate-400 hover:text-red-300 hover:bg-slate-800 transition-colors shrink-0 flex items-center justify-center"
-            title="Đăng xuất khỏi hệ thống"
-          >
-            <LogOut aria-hidden="true" className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="gis-account-meta mt-1.5 flex items-center justify-between gap-2 text-xs text-slate-400">
-          {/* Only facts the profile actually has: no empty "SH:" or bare location pin. */}
-          {currentUser.badgeNumber ? (
-            <span className="text-slate-300 tabular-nums truncate">Số hiệu: {currentUser.badgeNumber}</span>
-          ) : (
-            <span />
-          )}
-          <button
-            type="button"
-            onClick={onSwitchAccount}
-            className="min-h-[36px] px-1 text-xs text-amber-300 hover:underline flex items-center gap-1 shrink-0"
-            title="Chuyển tài khoản khác"
-          >
-            <RefreshCw aria-hidden="true" className="w-3 h-3" />
-            Đổi tài khoản
-          </button>
-        </div>
-        {(currentUser.assignedWard || currentUser.assignedHamlets?.length > 0) && (
-          <div className="gis-sidebar-territory mt-1 text-xs text-slate-400 flex items-start gap-1.5">
-            <MapPin aria-hidden="true" className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <TerritorySummary ward={currentUser.assignedWard} hamlets={currentUser.assignedHamlets ?? []} />
-          </div>
-        )}
+        </span>
       </div>
     </div>
   );
