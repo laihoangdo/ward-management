@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Search, RefreshCw, Menu, X, Sun, Moon, Mic, Bell, PanelLeftClose, PanelLeftOpen, HelpCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router';
+import { Search, RefreshCw, Menu, X, Sun, Moon, Mic, Bell, PanelLeftClose, PanelLeftOpen, HelpCircle, Home } from 'lucide-react';
 import { NavigationTab, AppUser } from '../types';
 import { VoiceSearchModal } from './VoiceSearchModal';
 
@@ -68,6 +69,15 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const pad = (n: number) => String(n).padStart(2, '0'); // taste-skill-ignore: đồng hồ thời gian thực
+  const clockTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+  const dayNames = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+  const clockDate = `${dayNames[now.getDay()]}, ${now.getDate()} tháng ${now.getMonth() + 1}, ${now.getFullYear()}`;
   const statusText =
     backendStatus === 'online' ? 'Máy chủ trực tuyến' : backendStatus === 'offline' ? 'Mất kết nối máy chủ' : 'Đang kiểm tra máy chủ';
 
@@ -101,6 +111,17 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
         )}
+
+        <Link
+          to="/"
+          id="btn-header-home"
+          title="Về trang chủ (Tổng quan)"
+          className="gis-header-home hidden sm:flex items-center gap-1.5 h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm transition-colors shrink-0 no-underline"
+          style={{ textDecoration: 'none' }}
+        >
+          <Home aria-hidden="true" className="w-4 h-4 text-[var(--gis-primary,#1c4e3a)] dark:text-emerald-400 shrink-0" />
+          <span>Trang chủ</span>
+        </Link>
 
         <div className="min-w-0 flex-1 flex items-center gap-2">
           <h1
@@ -205,6 +226,17 @@ export const Header: React.FC<HeaderProps> = ({
             <HelpCircle className="w-4 h-4" />
           </button>
         )}
+
+        <div
+          className="gis-clock hidden md:flex flex-col items-end justify-center shrink-0 px-1 leading-tight text-right select-none"
+          aria-label={`${clockTime}, ${clockDate}`}
+          role="timer"
+        >
+          <span className="font-semibold tabular-nums text-base leading-none text-slate-900 dark:text-white">{clockTime}</span>
+          <span className="hidden lg:block text-xs font-medium text-slate-600 dark:text-slate-400 mt-0.5 whitespace-nowrap">
+            {clockDate}
+          </span>
+        </div>
 
         {onToggleTheme && (
           <button

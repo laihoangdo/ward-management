@@ -305,6 +305,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {groupedMenus.map((item, index) => {
           const Icon = iconMap[item.id] || LayoutDashboard;
           const isActive = activeTab === item.id;
+          // Administration entries stand out (amber, framed) so they are not mistaken for daily work.
+          const isSpecial = item.id === 'superadmin-hub' || item.id === 'subadmin-delegation';
           const badgeVal = item.id === 'overview' || item.id === 'documents' ? warningCount : undefined;
 
           return (
@@ -321,11 +323,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`gis-nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150 min-h-[44px] cursor-pointer ${
                   isActive
                     ? 'bg-[var(--gis-sidebar-active,#e8f1ec)] text-[var(--gis-on-selected,#153c2c)]'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    : isSpecial
+                      ? 'gis-nav-special text-amber-300 hover:bg-slate-800/80 bg-slate-900/40 border border-amber-500/40'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0 text-left">
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : isSpecial ? 'text-amber-400' : 'text-slate-400'}`} />
                   <span className="gis-nav-item-label whitespace-normal break-words leading-snug">{item.label}</span>
                 </div>
                 {badgeVal !== undefined && badgeVal > 0 && (
